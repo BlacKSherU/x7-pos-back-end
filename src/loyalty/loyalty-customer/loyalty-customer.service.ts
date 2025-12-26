@@ -36,12 +36,10 @@ export class LoyaltyCustomerService {
     const { loyalty_program_id, loyalty_tier_id, customer_id } =
       createLoyaltyCustomerDto;
 
-    const loyaltyProgram = await this.loyaltyProgramRepo.findOne({
-      where: {
-        id: loyalty_program_id,
-        merchantId: merchant_id,
-        is_active: true,
-      },
+    const loyaltyProgram = await this.loyaltyProgramRepo.findOneBy({
+      id: loyalty_program_id,
+      merchantId: merchant_id,
+      is_active: true,
     });
     if (!loyaltyProgram) {
       ErrorHandler.notFound(ErrorMessage.LOYALTY_PROGRAM_NOT_FOUND);
@@ -49,6 +47,7 @@ export class LoyaltyCustomerService {
 
     const loyaltyTier = await this.loyaltyTierRepo.findOneBy({
       id: loyalty_tier_id,
+      loyalty_program_id: loyalty_program_id,
       loyaltyProgram: { merchantId: merchant_id },
       is_active: true,
     });
@@ -65,10 +64,9 @@ export class LoyaltyCustomerService {
 
     const existingLoyaltyCustomer =
       await this.loyaltyCustomerRepository.findOneBy({
-        id: customer_id,
+        customerId: customer_id,
         loyaltyProgramId: loyalty_program_id,
         loyaltyProgram: { merchantId: merchant_id },
-        customerId: customer_id,
         is_active: true,
       });
 
@@ -313,9 +311,7 @@ export class LoyaltyCustomerService {
     if (!id || id <= 0) {
       ErrorHandler.invalidId('Loyalty Customer ID is incorrect');
     }
-
-    const { loyalty_program_id, loyalty_tier_id, customer_id } =
-      updateLoyaltyCustomerDto;
+    const { loyalty_tier_id, ...update_data } = updateLoyaltyCustomerDto;
 
     const loyaltyCustomer = await this.loyaltyCustomerRepository.findOneBy({
       id,
@@ -327,35 +323,22 @@ export class LoyaltyCustomerService {
       ErrorHandler.notFound(ErrorMessage.LOYALTY_CUSTOMER_NOT_FOUND);
     }
 
-    const loyaltyProgram = await this.loyaltyProgramRepo.findOne({
-      where: {
-        id: loyalty_program_id,
-        merchantId: merchant_id,
+    if (loyalty_tier_id && loyalty_tier_id !== loyaltyCustomer.loyaltyTierId) {
+      const loyaltyTier = await this.loyaltyTierRepo.findOneBy({
+        id: loyalty_tier_id,
+        loyalty_program_id: loyaltyCustomer.loyaltyProgramId,
+        loyaltyProgram: { merchantId: merchant_id },
         is_active: true,
-      },
-    });
-    if (!loyaltyProgram) {
-      ErrorHandler.notFound(ErrorMessage.LOYALTY_PROGRAM_NOT_FOUND);
+      });
+      if (!loyaltyTier) {
+        ErrorHandler.notFound(ErrorMessage.LOYALTY_TIER_NOT_FOUND);
+      }
     }
 
-    const loyaltyTier = await this.loyaltyTierRepo.findOneBy({
-      id: loyalty_tier_id,
-      loyaltyProgram: { merchantId: merchant_id },
-      is_active: true,
+    Object.assign(loyaltyCustomer, {
+      ...update_data,
+      loyaltyTierId: loyalty_tier_id,
     });
-    if (!loyaltyTier) {
-      ErrorHandler.notFound(ErrorMessage.LOYALTY_TIER_NOT_FOUND);
-    }
-
-    const customer = await this.customerRepo.findOneBy({
-      id: customer_id,
-      merchantId: merchant_id,
-    });
-    if (!customer) {
-      ErrorHandler.notFound(ErrorMessage.CUSTOMER_NOT_FOUND);
-    }
-
-    Object.assign(loyaltyCustomer, updateLoyaltyCustomerDto);
 
     try {
       await this.loyaltyCustomerRepository.save(loyaltyCustomer);

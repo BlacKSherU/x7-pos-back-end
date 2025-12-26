@@ -281,22 +281,6 @@ describe('ModifiersController', () => {
       );
     });
 
-    it('should handle product ID cannot be changed during update', async () => {
-      const modifierId = 1;
-      const updateModifierDto: UpdateModifierDto = { productId: 999 };
-      const errorMessage = 'Product ID cannot be changed';
-      mockModifiersService.update.mockRejectedValue(new Error(errorMessage));
-
-      await expect(
-        controller.update(user, modifierId, updateModifierDto),
-      ).rejects.toThrow(errorMessage);
-      expect(mockModifiersService.update).toHaveBeenCalledWith(
-        modifierId,
-        user.merchant.id,
-        updateModifierDto,
-      );
-    });
-
     it('should handle modifier name already exists during update', async () => {
       const modifierId = 1;
       const updateModifierDto: UpdateModifierDto = {

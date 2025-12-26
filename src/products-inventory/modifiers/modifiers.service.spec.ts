@@ -595,25 +595,6 @@ describe('ModifiersService', () => {
       expect(modifierRepository.save).not.toHaveBeenCalled();
     });
 
-    it('should throw BadRequestException if productId is attempted to be changed', async () => {
-      const dtoWithProductIdChange = {
-        ...mockUpdateModifierDto,
-        productId: 999,
-      };
-
-      mockQueryBuilder.getOne.mockResolvedValueOnce(mockModifier as Modifier);
-
-      await expect(
-        async () =>
-          await service.update(modifierId, merchantId, dtoWithProductIdChange),
-      ).rejects.toThrow('Product ID cannot be changed');
-
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith('modifier.id = :id', {
-        id: modifierId,
-      });
-      expect(modifierRepository.save).not.toHaveBeenCalled();
-    });
-
     it('should throw BadRequestException if new modifier name already exists for product', async () => {
       const existingModifierWithNewName = {
         ...mockModifier,

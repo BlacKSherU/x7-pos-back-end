@@ -283,14 +283,6 @@ export class LoyaltyTierService {
       }
     }
 
-    if (
-      updateLoyaltyTierDto.loyalty_program_id &&
-      updateLoyaltyTierDto.loyalty_program_id !== loyaltyTier.loyalty_program_id
-    ) {
-      ErrorHandler.forbidden(
-        ErrorMessage.LOYALTY_PROGRAM_ID_CANNOT_BE_MODIFIED,
-      );
-    }
     Object.assign(loyaltyTier, updateLoyaltyTierDto);
 
     try {

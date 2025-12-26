@@ -191,6 +191,7 @@ describe('LoyaltyCustomerService', () => {
       });
       expect(loyaltyTierRepo.findOneBy).toHaveBeenCalledWith({
         id: createLoyaltyCustomerDto.loyalty_tier_id,
+        loyalty_program_id: createLoyaltyCustomerDto.loyalty_program_id,
         loyaltyProgram: { merchantId: merchant_id },
         is_active: true,
       });
@@ -199,7 +200,6 @@ describe('LoyaltyCustomerService', () => {
         merchantId: merchant_id,
       });
       expect(loyaltyCustomerRepo.findOneBy).toHaveBeenCalledWith({
-        id: createLoyaltyCustomerDto.customer_id,
         loyaltyProgramId: createLoyaltyCustomerDto.loyalty_program_id,
         loyaltyProgram: { merchantId: merchant_id },
         customerId: createLoyaltyCustomerDto.customer_id,
@@ -228,8 +228,8 @@ describe('LoyaltyCustomerService', () => {
       };
 
       loyaltyProgramRepo.findOneBy.mockResolvedValue(mockLoyaltyProgram as any);
-      loyaltyTierRepo.findOneBy.mockResolvedValue(mockLoyaltyTier as any);
       customerRepo.findOneBy.mockResolvedValue(mockCustomer as any);
+      loyaltyTierRepo.findOneBy.mockResolvedValue(mockLoyaltyTier as any);
       loyaltyCustomerRepo.findOneBy
         .mockResolvedValueOnce(null) // existingLoyaltyCustomer
         .mockResolvedValueOnce(inactiveLoyaltyCustomer as any); // existingButInactive
@@ -552,6 +552,7 @@ describe('LoyaltyCustomerService', () => {
     const mockUpdateDto: UpdateLoyaltyCustomerDto = {
       current_points: 100,
       lifetime_points: 200,
+      loyalty_tier_id: 2,
     };
     const mockLoyaltyCustomer = {
       id: loyalty_customer_id,
@@ -579,7 +580,9 @@ describe('LoyaltyCustomerService', () => {
 
     const updatedLoyaltyCustomer = {
       ...mockLoyaltyCustomer,
-      ...mockUpdateDto,
+      current_points: mockUpdateDto.current_points,
+      lifetime_points: mockUpdateDto.lifetime_points,
+      loyaltyTierId: 2,
     };
 
     const expectedResponse = {
@@ -636,19 +639,11 @@ describe('LoyaltyCustomerService', () => {
         is_active: true,
         loyaltyProgram: { merchantId: merchant_id },
       });
-      expect(loyaltyProgramRepo.findOneBy).toHaveBeenCalledWith({
-        id: mockUpdateDto.loyalty_program_id,
-        merchantId: merchant_id,
-        is_active: true,
-      });
       expect(loyaltyTierRepo.findOneBy).toHaveBeenCalledWith({
         id: mockUpdateDto.loyalty_tier_id,
+        loyalty_program_id: mockLoyaltyCustomer.loyaltyProgramId,
         loyaltyProgram: { merchantId: merchant_id },
         is_active: true,
-      });
-      expect(customerRepo.findOneBy).toHaveBeenCalledWith({
-        id: mockUpdateDto.customer_id,
-        merchantId: merchant_id,
       });
       expect(loyaltyCustomerRepo.save).toHaveBeenCalledWith(
         updatedLoyaltyCustomer,
@@ -682,29 +677,6 @@ describe('LoyaltyCustomerService', () => {
       ).rejects.toThrow(ErrorMessage.LOYALTY_CUSTOMER_NOT_FOUND);
     });
 
-    it('should throw an error if loyalty program not found during update validation', async () => {
-      loyaltyCustomerRepo.findOneBy.mockResolvedValue(
-        mockLoyaltyCustomer as any,
-      );
-      loyaltyProgramRepo.findOneBy.mockResolvedValue(null);
-      jest.spyOn(ErrorHandler, 'notFound').mockImplementation(() => {
-        throw new Error(ErrorMessage.LOYALTY_PROGRAM_NOT_FOUND);
-      });
-
-      const updateDtoWithProgramId: UpdateLoyaltyCustomerDto = {
-        ...mockUpdateDto,
-        loyalty_program_id: 999, // Simulate a non-existent program ID
-      };
-
-      await expect(
-        service.update(
-          loyalty_customer_id,
-          merchant_id,
-          updateDtoWithProgramId,
-        ),
-      ).rejects.toThrow(ErrorMessage.LOYALTY_PROGRAM_NOT_FOUND);
-    });
-
     it('should throw an error if loyalty tier not found during update validation', async () => {
       loyaltyCustomerRepo.findOneBy.mockResolvedValue(
         mockLoyaltyCustomer as any,
@@ -725,35 +697,6 @@ describe('LoyaltyCustomerService', () => {
       await expect(
         service.update(loyalty_customer_id, merchant_id, updateDtoWithTierId),
       ).rejects.toThrow(ErrorMessage.LOYALTY_TIER_NOT_FOUND);
-    });
-
-    it('should throw an error if customer not found during update validation', async () => {
-      loyaltyCustomerRepo.findOneBy.mockResolvedValue(
-        mockLoyaltyCustomer as any,
-      );
-      loyaltyProgramRepo.findOneBy.mockResolvedValue(
-        mockLoyaltyCustomer.loyaltyProgram as any,
-      );
-      loyaltyTierRepo.findOneBy.mockResolvedValue(
-        mockLoyaltyCustomer.loyaltyTier as any,
-      );
-      customerRepo.findOneBy.mockResolvedValue(null);
-      jest.spyOn(ErrorHandler, 'notFound').mockImplementation(() => {
-        throw new Error(ErrorMessage.CUSTOMER_NOT_FOUND);
-      });
-
-      const updateDtoWithCustomerId: UpdateLoyaltyCustomerDto = {
-        ...mockUpdateDto,
-        customer_id: 999, // Simulate a non-existent customer ID
-      };
-
-      await expect(
-        service.update(
-          loyalty_customer_id,
-          merchant_id,
-          updateDtoWithCustomerId,
-        ),
-      ).rejects.toThrow(ErrorMessage.CUSTOMER_NOT_FOUND);
     });
 
     it('should handle database errors', async () => {

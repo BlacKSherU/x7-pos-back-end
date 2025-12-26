@@ -494,22 +494,6 @@ describe('LoyaltyTierService', () => {
       loyaltyTierRepo.findOne.mockResolvedValueOnce({ id: 2 } as LoyaltyTier);
     });
 
-    it('should throw an error if loyalty_program_id is attempted to be changed', async () => {
-      const updateDtoWithLoyaltyProgramId: UpdateLoyaltyTierDto = {
-        ...mockUpdateDto,
-        loyalty_program_id: 999, // Attempt to change loyalty_program_id
-      };
-
-      mockQueryBuilder.getOne.mockResolvedValue(mockLoyaltyTier);
-      jest.spyOn(ErrorHandler, 'forbidden').mockImplementation(() => {
-        throw new Error(ErrorMessage.LOYALTY_PROGRAM_ID_CANNOT_BE_MODIFIED);
-      });
-
-      await expect(
-        service.update(tier_id, merchant_id, updateDtoWithLoyaltyProgramId),
-      ).rejects.toThrow(ErrorMessage.LOYALTY_PROGRAM_ID_CANNOT_BE_MODIFIED);
-    });
-
     it('should handle database errors', async () => {
       mockQueryBuilder.getOne.mockResolvedValueOnce(mockLoyaltyTier);
       loyaltyTierRepo.findOne.mockResolvedValueOnce(null);

@@ -9,7 +9,6 @@ export enum ErrorMessage {
   MISSING_REQUIRED_FIELD = 'Required field is missing',
   INVALID_EMAIL_FORMAT = 'Invalid email format',
   INVALID_PASSWORD_FORMAT = 'Password must be at least 8 characters long',
-  LOYALTY_PROGRAM_ID_CANNOT_BE_MODIFIED = 'Loyalty Program ID cannot be modified',
 
   // 401 Unauthorized
   UNAUTHORIZED = 'Authentication required',
@@ -23,7 +22,6 @@ export enum ErrorMessage {
   DIFFERENT_MERCHANT = 'You can only access resources from your own merchant',
   CHANGED_MERCHANT = 'Merchant ID cannot be changed',
   NOT_OWNER = 'You can only modify your own resources',
-  PRODUCT_ID_NOT_CHANGED = 'Product ID cannot be changed',
 
   // 404 Not Found
   USER_NOT_FOUND = 'User not found',
