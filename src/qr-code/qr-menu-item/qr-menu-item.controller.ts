@@ -1,14 +1,13 @@
-//src/qr-code/qr-menu-section/qr-menu-section.controller
 import {
-  BadRequestException,
   Body,
   Controller,
   Get,
+  Post,
+  UseGuards,
+  Query,
   Param,
   ParseIntPipe,
-  Post,
-  Query,
-  UseGuards,
+  BadRequestException,
   Patch,
   Delete,
 } from '@nestjs/common';
@@ -25,26 +24,26 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { QRMenuItemService } from './qr-menu-item.service';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Scopes } from 'src/auth/decorators/scopes.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { UserRole } from 'src/users/constants/role.enum';
 import { Scope } from 'src/users/constants/scope.enum';
-import { CreateQRMenuSectionDto } from './dto/create-qr-menu-section.dto';
 import {
-  OneQRMenuSectionResponseDto,
-  QRMenuSectionResponseDto,
-} from './dto/qr-menu-section-response.dto';
-import { QRMenuSectionService } from './qr-menu-section.service';
-import { PaginatedQRMenuSectionResponseDto } from './dto/paginated-qr-menu-section-response.dto';
-import { QueryQRMenuSectionDto } from './dto/query-qr-menu-section.dto';
-import { UpdateQRMenuSectionDto } from './dto/update-qr-menu-section.dto';
+  OneQRMenuItemResponseDto,
+  QRMenuItemResponseDto,
+} from './dto/qr-menu-item-response.dto';
+import { CreateQRMenuItemDto } from './dto/create-qr-menu-item.dto';
+import { PaginatedQRMenuItemResponseDto } from './dto/paginated-qr-menu-item-response.dto';
+import { QueryQRMenuItemDto } from './dto/query-qr-menu-item.dto';
+import { UpdateQRMenuItemDto } from './dto/update-qr-menu-item.dto';
 
-@ApiTags('QR Menu Section')
-@Controller('qr-menu-section')
-export class QrMenuSectionController {
-  constructor(private readonly qrMenuSectionService: QRMenuSectionService) {}
+@ApiTags('QR Menu Item')
+@Controller('qr-menu-item')
+export class QRMenuItemController {
+  constructor(private readonly qrMenuItemService: QRMenuItemService) {}
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
@@ -56,24 +55,35 @@ export class QrMenuSectionController {
     Scope.MERCHANT_CLOVER,
   )
   @ApiOperation({
-    summary: 'Create a new QR Menu Section',
-    description: 'Endpoint for creating a new QR Menu Section',
+    summary: 'Create a new QR Menu Item',
+    description: 'Endpoint for creating a new QR Menu Item',
   })
   @ApiBody({
-    type: QRMenuSectionResponseDto,
+    type: QRMenuItemResponseDto,
     description: 'Require data for a new QR Menu Section',
   })
   @ApiCreatedResponse({
-    description: 'The QR Menu Section has been created successfully',
-    type: QRMenuSectionResponseDto,
+    description: 'The QR Menu Item has been successfully created.',
+    type: QRMenuItemResponseDto,
     schema: {
       example: {
-        id: 1,
-        qrMenu: { id: 5, name: 'QR MEnu' },
-        name: 'Star Menu QR, Drinks Section',
-        description: 'This is the Drink Section QR Menu of the Restaurant',
+        id: '1',
+        qrMenuSection: {
+          id: 1,
+          name: 'Appetizers',
+        },
+        product: {
+          id: 1,
+          name: 'Spring Rolls',
+        },
+        variant: {
+          id: 1,
+          name: 'Vegetarian',
+        },
         status: 'active',
-        display_order: 10,
+        display_order: 1,
+        notes: 'Delicious vegetarian spring rolls',
+        is_visible: false,
       },
     },
   })
@@ -83,7 +93,7 @@ export class QrMenuSectionController {
       example: {
         statusCode: 400,
         message: [
-          'QR Menu Section must be a number',
+          'QR Menu Item must be a number',
           'status must be one of the following values: active, inactive',
         ],
         error: 'Bad Request',
@@ -121,11 +131,10 @@ export class QrMenuSectionController {
     },
   })
   async create(
-    @Body() dto: CreateQRMenuSectionDto,
-  ): Promise<OneQRMenuSectionResponseDto> {
-    return this.qrMenuSectionService.create(dto);
+    @Body() dto: CreateQRMenuItemDto,
+  ): Promise<OneQRMenuItemResponseDto> {
+    return this.qrMenuItemService.create(dto);
   }
-
   @Get()
   @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
   @Scopes(
@@ -136,12 +145,12 @@ export class QrMenuSectionController {
     Scope.MERCHANT_CLOVER,
   )
   @ApiOperation({
-    summary: 'Get All QR Menu Section',
-    description: 'Endpoint for get ALL of the QR Menu Section.',
+    summary: 'Get All QR Menu Item',
+    description: 'Endpoint for get ALL of the QR Menu Items.',
   })
   @ApiOkResponse({
-    description: 'Paginated list of QR Menu Sections',
-    type: PaginatedQRMenuSectionResponseDto,
+    description: 'Paginated list of QR Menu Items',
+    type: PaginatedQRMenuItemResponseDto,
   })
   @ApiUnauthorizedResponse({
     description: 'Unauthorized. Authentication required',
@@ -174,9 +183,9 @@ export class QrMenuSectionController {
     },
   })
   async findAll(
-    @Query() query: QueryQRMenuSectionDto,
-  ): Promise<PaginatedQRMenuSectionResponseDto> {
-    return this.qrMenuSectionService.findAll(query);
+    @Query() query: QueryQRMenuItemDto,
+  ): Promise<PaginatedQRMenuItemResponseDto> {
+    return this.qrMenuItemService.findAll(query);
   }
   @Get(':id')
   @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
@@ -189,26 +198,36 @@ export class QrMenuSectionController {
   )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiOperation({
-    summary: 'Get a QR Menu Section by ID',
-    description:
-      'Endpoint to retrieve a specific QR Menu Section using its ID.',
+    summary: 'Get a QR Menu Item by ID',
+    description: 'Endpoint to retrieve a specific QR Menu Item using its ID.',
   })
   @ApiParam({
     name: 'id',
     type: Number,
-    description: 'QR Menu Section ID',
+    description: 'QR Menu Item ID',
     example: 1,
   })
   @ApiOkResponse({
-    description: 'QR Menu Section retrieved successfully',
+    description: 'QR Menu S retrieved successfully',
     schema: {
       example: {
-        id: 1,
-        qrMenu: { id: 5, name: 'QR MEnu' },
-        name: 'Star Menu QR, Drinks Section',
-        description: 'This is the Drink Section QR Menu of the Restaurant',
+        id: '1',
+        qrMenuSection: {
+          id: 1,
+          name: 'Appetizers',
+        },
+        product: {
+          id: 1,
+          name: 'Spring Rolls',
+        },
+        variant: {
+          id: 1,
+          name: 'Vegetarian',
+        },
         status: 'active',
-        display_order: 10,
+        display_order: 1,
+        notes: 'Delicious vegetarian spring rolls',
+        is_visible: false,
       },
     },
   })
@@ -243,11 +262,11 @@ export class QrMenuSectionController {
     },
   })
   @ApiNotFoundResponse({
-    description: 'Not Found: QR Menu Section not found',
+    description: 'Not Found: QR Menu Item not found',
     schema: {
       example: {
         statusCode: 404,
-        message: 'QR Menu Section not found',
+        message: 'QR Menu Item not found',
         error: 'Not Found',
       },
     },
@@ -264,14 +283,13 @@ export class QrMenuSectionController {
   })
   async findOne(
     @Param('id', ParseIntPipe) id: number,
-  ): Promise<OneQRMenuSectionResponseDto> {
+  ): Promise<OneQRMenuItemResponseDto> {
     if (id <= 0) {
       throw new BadRequestException('Invalid ID. Must be a positive number.');
     }
-    const qrMenuSection = await this.qrMenuSectionService.findOne(id);
-    return qrMenuSection;
+    const qrMenuItem = await this.qrMenuItemService.findOne(id);
+    return qrMenuItem;
   }
-
   @Patch(':id')
   @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
   @Scopes(
@@ -283,29 +301,40 @@ export class QrMenuSectionController {
   )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiOperation({
-    summary: 'Update a QR Menu Section',
-    description: 'Endpoint to update an existing QR Menu Section by its ID.',
+    summary: 'Update a QR Menu Item',
+    description: 'Endpoint to update an existing QR Menu Item by its ID.',
   })
   @ApiParam({
     name: 'id',
     type: Number,
-    description: 'QR Menu Section ID',
+    description: 'QR Menu Item ID',
     example: 1,
   })
   @ApiBody({
-    type: UpdateQRMenuSectionDto,
-    description: 'Data for updating the QR Menu Section',
+    type: UpdateQRMenuItemDto,
+    description: 'Data for updating the QR Menu Item',
   })
   @ApiOkResponse({
-    description: 'QR Menu Section updated successfully',
+    description: 'QR Menu Item retrieved successfully',
     schema: {
       example: {
-        id: 1,
-        qrMenu: { id: 5, name: 'QR MEnu' },
-        name: 'Star Menu QR, Drinks Section',
-        description: 'This is the Drink Section QR Menu of the Restaurant',
-        status: 'inactive',
-        display_order: 10,
+        id: '1',
+        qrMenuSection: {
+          id: 1,
+          name: 'Appetizers',
+        },
+        product: {
+          id: 1,
+          name: 'Spring Rolls',
+        },
+        variant: {
+          id: 1,
+          name: 'Vegetarian',
+        },
+        status: 'active',
+        display_order: 1,
+        notes: 'Delicious vegetarian spring rolls',
+        is_visible: false,
       },
     },
   })
@@ -323,7 +352,7 @@ export class QrMenuSectionController {
     },
   })
   @ApiNotFoundResponse({
-    description: 'Not Found: QR Menu Section not found',
+    description: 'Not Found: QR Menu Item not found',
     schema: {
       example: {
         statusCode: 404,
@@ -364,9 +393,9 @@ export class QrMenuSectionController {
   })
   async update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateQRMenuSectionDto,
-  ): Promise<OneQRMenuSectionResponseDto> {
-    return this.qrMenuSectionService.update(id, dto);
+    @Body() dto: UpdateQRMenuItemDto,
+  ): Promise<OneQRMenuItemResponseDto> {
+    return this.qrMenuItemService.update(id, dto);
   }
   @Delete(':id')
   @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
@@ -379,25 +408,36 @@ export class QrMenuSectionController {
   )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiOperation({
-    summary: 'Delete a QR Menu Section',
+    summary: 'Delete a QR Menu Item',
     description: 'Endpoint to delete an existing QR Menu by its ID.',
   })
   @ApiParam({
     name: 'id',
     type: Number,
-    description: 'QR Menu Section ID',
+    description: 'QR Menu Item ID',
     example: 1,
   })
   @ApiOkResponse({
-    description: 'QR Menu Section retrieved successfully',
+    description: 'QR Menu Item retrieved successfully',
     schema: {
       example: {
-        id: 1,
-        qrMenu: { id: 5, name: 'QR MEnu' },
-        name: 'Star Menu QR, Drinks Section',
-        description: 'This is the Drink Section QR Menu of the Restaurant',
-        status: 'deleted',
-        display_order: 10,
+        id: '1',
+        qrMenuSection: {
+          id: 1,
+          name: 'Appetizers',
+        },
+        product: {
+          id: 1,
+          name: 'Spring Rolls',
+        },
+        variant: {
+          id: 1,
+          name: 'Vegetarian',
+        },
+        status: 'active',
+        display_order: 1,
+        notes: 'Delicious vegetarian spring rolls',
+        is_visible: false,
       },
     },
   })
@@ -412,11 +452,11 @@ export class QrMenuSectionController {
     },
   })
   @ApiNotFoundResponse({
-    description: 'Not Found: QR Menu Section not found',
+    description: 'Not Found: QR Menu Item not found',
     schema: {
       example: {
         statusCode: 404,
-        message: 'QR Menu Section not found',
+        message: 'QR Menu Item not found',
         error: 'Not Found',
       },
     },
@@ -453,7 +493,7 @@ export class QrMenuSectionController {
   })
   async remove(
     @Param('id', ParseIntPipe) id: number,
-  ): Promise<OneQRMenuSectionResponseDto> {
-    return this.qrMenuSectionService.remove(id);
+  ): Promise<OneQRMenuItemResponseDto> {
+    return this.qrMenuItemService.remove(id);
   }
 }

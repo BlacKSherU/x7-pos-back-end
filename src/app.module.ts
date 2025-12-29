@@ -91,6 +91,8 @@ import { OnlineOrderItemModule } from './online-ordering-system/online-order-ite
 import { OnlineOrderItem } from './online-ordering-system/online-order-item/entities/online-order-item.entity';
 import { QRMenuSection } from './qr-code/qr-menu-section/entity/qr-menu-section.entity';
 import { QrMenuSectionModule } from './qr-code/qr-menu-section/qr-menu-section.module';
+import { QRMenuItem } from './qr-code/qr-menu-item/entity/qr-menu-item.entity';
+import { QrMenuItemModule } from './qr-code/qr-menu-item/qr-menu-item.module';
 
 @Module({
   imports: [
@@ -152,6 +154,7 @@ import { QrMenuSectionModule } from './qr-code/qr-menu-section/qr-menu-section.m
           QRMenu,
           QRMenuSection,
           OnlineMenu,
+          QRMenuItem,
           LoyaltyProgram,
           LoyaltyTier,
           LoyaltyCustomer,
@@ -211,6 +214,7 @@ import { QrMenuSectionModule } from './qr-code/qr-menu-section/qr-menu-section.m
 
     OnlineOrderItemModule,
     QrMenuSectionModule,
+    QrMenuItemModule,
   ],
 })
 export class AppModule {}

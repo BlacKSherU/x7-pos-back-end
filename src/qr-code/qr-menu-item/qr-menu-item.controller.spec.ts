@@ -1,37 +1,52 @@
 //src/qr-code/qr-menu-section/qr-menu.controller.spec.ts
 import { Test, TestingModule } from '@nestjs/testing';
-import { QrMenuSectionController } from './qr-menu-section.controller';
-import { QRMenuSectionService } from './qr-menu-section.service';
-import { QRMenu } from '../qr-menu/entity/qr-menu.entity';
-import { OneQRMenuSectionResponseDto } from './dto/qr-menu-section-response.dto';
-import { PaginatedQRMenuSectionResponseDto } from './dto/paginated-qr-menu-section-response.dto';
-import { UpdateQRMenuSectionDto } from './dto/update-qr-menu-section.dto';
+import { QRMenuItemController } from './qr-menu-item.controller';
+import { QRMenuItemService } from './qr-menu-item.service';
+import { QRMenuItem } from '../qr-menu-item/entity/qr-menu-item.entity';
+import { QRMenuSection } from '../qr-menu-section/entity/qr-menu-section.entity';
+import { Product } from 'src/products-inventory/products/entities/product.entity';
+import { Variant } from 'src/products-inventory/variants/entities/variant.entity';
+import { OneQRMenuItemResponseDto } from './dto/qr-menu-item-response.dto';
+import { PaginatedQRMenuItemResponseDto } from './dto/paginated-qr-menu-item-response.dto';
 
-describe('QrMenuSectionController', () => {
-  let controller: QrMenuSectionController;
-  let service: QRMenuSectionService;
+describe('QrMenuItemController', () => {
+  let controller: QRMenuItemController;
+  let service: QRMenuItemService;
 
   //Mock data
-  const mockQRMenu: QRMenu = {
+  const mockQRMenuSection: QRMenuSection = {
     id: 1,
-    name: 'TEXAS MENU',
-  } as QRMenu;
-
-  const mockQRMenuSection = {
-    id: 1,
-    qrMenu: mockQRMenu,
     name: 'Dessert Section',
-    description: 'All kind of desserts',
+  } as QRMenuSection;
+
+  const mockProduct: Product = {
+    id: 1,
+    name: 'Chocolate Cake',
+  } as Product;
+
+  const mockVariant: Variant = {
+    id: 1,
+    name: 'Large',
+  } as Variant;
+
+  const mockQRMenuItem: QRMenuItem = {
+    id: 1,
+    qrMenuSection: mockQRMenuSection,
+    product: mockProduct,
+    variant: mockVariant,
+    display_order: 1,
     status: 'active',
-    display_order: 100,
+    notes: 'Special item',
+    is_visible: true,
   };
-
-  const mockCreateQRMenuSection = {
-    qrMenu: 1,
-    name: 'Dessert Section',
-    description: 'All kind of desserts',
+  const mockCreateQRMenuItemDto = {
+    qrMenuSection: 1,
+    product: 1,
+    variant: 1,
+    display_order: 1,
     status: 'active',
-    display_order: 100,
+    notes: 'Special item',
+    is_visible: true,
   };
 
   const mockPagination = {
@@ -41,29 +56,31 @@ describe('QrMenuSectionController', () => {
     totalPages: 1,
   };
 
-  const mockPaginatedResponse: PaginatedQRMenuSectionResponseDto = {
+  const mockPaginatedResponse: PaginatedQRMenuItemResponseDto = {
     statusCode: 200,
-    message: 'QR Menu Sections retrieved successfully',
-    data: [mockQRMenuSection],
+    message: 'QR Menu Items retrieved successfully',
+    data: [mockQRMenuItem],
     pagination: mockPagination,
   };
 
-  const mockOneQrMenuSectionResponseDto: OneQRMenuSectionResponseDto = {
+  const mockOneQrMenuItemResponseDto: OneQRMenuItemResponseDto = {
     statusCode: 200,
-    message: 'QR Menu Section retrieved successfully',
-    data: mockQRMenuSection,
+    message: 'QR Menu Item retrieved successfully',
+    data: mockQRMenuItem,
   };
 
-  const mockUpdateQrMenuSectionDto: UpdateQRMenuSectionDto = {
-    qrMenu: 1,
-    name: 'Drinks Section',
-    description: 'This is de Driks section of the menu',
-    status: 'active',
-    display_order: 500,
+  const mockUpdateQRMenuItemDto = {
+    qrMenuSection: 1,
+    product: 1,
+    variant: 1,
+    display_order: 1000,
+    status: 'inactive',
+    notes: 'Special item 2',
+    is_visible: true,
   };
 
   beforeEach(async () => {
-    const mockQrMenuSectionService = {
+    const mockQrMenuItemService = {
       create: jest.fn(),
       findAll: jest.fn(),
       findOne: jest.fn(),
@@ -72,17 +89,17 @@ describe('QrMenuSectionController', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      controllers: [QrMenuSectionController],
+      controllers: [QRMenuItemController],
       providers: [
         {
-          provide: QRMenuSectionService,
-          useValue: mockQrMenuSectionService,
+          provide: QRMenuItemService,
+          useValue: mockQrMenuItemService,
         },
       ],
     }).compile();
 
-    controller = module.get<QrMenuSectionController>(QrMenuSectionController);
-    service = module.get(QRMenuSectionService);
+    controller = module.get<QRMenuItemController>(QRMenuItemController);
+    service = module.get(QRMenuItemService);
   });
 
   describe('Controller Initialization', () => {
@@ -90,49 +107,48 @@ describe('QrMenuSectionController', () => {
       expect(controller).toBeDefined();
     });
 
-    it('should have QrMenuSectionService defined', () => {
+    it('should have QrMenuItemService defined', () => {
       expect(service).toBeDefined();
     });
   });
 
   // ----------------------------------------------------------
-  // POST /qr-menu-section
+  // POST /qr-menu-item
   // ----------------------------------------------------------
-  describe('POST /qr-menu-section', () => {
-    it('should create a qr menu section successfully', async () => {
-      const createResponse: OneQRMenuSectionResponseDto = {
+  describe('POST /qr-menu-item', () => {
+    it('should create a qr menu item successfully', async () => {
+      const createResponse: OneQRMenuItemResponseDto = {
         statusCode: 201,
         message: 'QR Menu Section created successfully',
-        data: mockQRMenuSection,
+        data: mockQRMenuItem,
       };
 
       const createSpy = jest.spyOn(service, 'create');
       createSpy.mockResolvedValue(createResponse);
 
-      const result = await controller.create(mockCreateQRMenuSection);
+      const result = await controller.create(mockCreateQRMenuItemDto);
 
-      expect(createSpy).toHaveBeenCalledWith(mockCreateQRMenuSection);
+      expect(createSpy).toHaveBeenCalledWith(mockCreateQRMenuItemDto);
       expect(result).toEqual(createResponse);
     });
 
     it('should handle errors during creation', async () => {
-      const errorMessage = 'Failed to create QR Menu Section';
+      const errorMessage = 'Failed to create QR Menu Item';
       const createSpy = jest.spyOn(service, 'create');
       createSpy.mockRejectedValue(new Error(errorMessage));
 
-      await expect(controller.create(mockCreateQRMenuSection)).rejects.toThrow(
+      await expect(controller.create(mockCreateQRMenuItemDto)).rejects.toThrow(
         errorMessage,
       );
 
-      expect(createSpy).toHaveBeenCalledWith(mockCreateQRMenuSection);
+      expect(createSpy).toHaveBeenCalledWith(mockCreateQRMenuItemDto);
     });
   });
-
   // ----------------------------------------------------------
-  // GET /qr-menu-section
+  // GET /qr-menu-item
   // ----------------------------------------------------------
-  describe('GET /qr-menu-section', () => {
-    it('should retrieve all qr menu section successfully', async () => {
+  describe('GET /qr-menu-item', () => {
+    it('should retrieve all qr menu item successfully', async () => {
       const findAllSpy = jest.spyOn(service, 'findAll');
       findAllSpy.mockResolvedValue(mockPaginatedResponse);
 
@@ -143,9 +159,9 @@ describe('QrMenuSectionController', () => {
     });
 
     it('should return empty list with pagination', async () => {
-      const emptyPaginatedResponse: PaginatedQRMenuSectionResponseDto = {
+      const emptyPaginatedResponse: PaginatedQRMenuItemResponseDto = {
         statusCode: 200,
-        message: 'QR Menu Sections retrieved successfully',
+        message: 'QR Menu Items retrieved successfully',
         data: [],
         pagination: {
           total: 0,
@@ -179,21 +195,21 @@ describe('QrMenuSectionController', () => {
   });
 
   // ----------------------------------------------------------
-  // GET /qr-menu-section/:id
+  // GET /qr-menu-item/:id
   // ----------------------------------------------------------
-  describe('GET /qr-menu-section/:id', () => {
-    it('should retrieve a qr menu section by ID successfully', async () => {
+  describe('GET /qr-menu-item/:id', () => {
+    it('should retrieve a qr menu item by ID successfully', async () => {
       const findOneSpy = jest.spyOn(service, 'findOne');
-      findOneSpy.mockResolvedValue(mockOneQrMenuSectionResponseDto);
+      findOneSpy.mockResolvedValue(mockOneQrMenuItemResponseDto);
 
       const result = await controller.findOne(1);
 
       expect(findOneSpy).toHaveBeenCalledWith(1);
-      expect(result).toEqual(mockOneQrMenuSectionResponseDto);
+      expect(result).toEqual(mockOneQrMenuItemResponseDto);
     });
 
     it('should handle errors when retrieving by ID', async () => {
-      const errorMessage = 'QR Menu Section not found';
+      const errorMessage = 'QR Menu Item not found';
       const findOneSpy = jest.spyOn(service, 'findOne');
       findOneSpy.mockRejectedValue(new Error(errorMessage));
 
@@ -202,49 +218,48 @@ describe('QrMenuSectionController', () => {
       expect(findOneSpy).toHaveBeenCalledWith(999);
     });
   });
-
   // ----------------------------------------------------------
-  // PATCH /qr-menu-section/:id
+  // PATCH /qr-menu-item/:id
   // ----------------------------------------------------------
-  describe('PATCH /qr-menu-section/:id', () => {
-    it('should update a qr menu section successfully', async () => {
-      const updateResponse: OneQRMenuSectionResponseDto = {
+  describe('PATCH /qr-menu-item/:id', () => {
+    it('should update a qr menu item successfully', async () => {
+      const updateResponse: OneQRMenuItemResponseDto = {
         statusCode: 200,
-        message: 'QR Menu Section updated successfully',
-        data: mockQRMenuSection,
+        message: 'QR Menu Item updated successfully',
+        data: mockQRMenuItem,
       };
 
       const updateSpy = jest.spyOn(service, 'update');
       updateSpy.mockResolvedValue(updateResponse);
 
-      const result = await controller.update(1, mockUpdateQrMenuSectionDto);
+      const result = await controller.update(1, mockUpdateQRMenuItemDto);
 
-      expect(updateSpy).toHaveBeenCalledWith(1, mockUpdateQrMenuSectionDto);
+      expect(updateSpy).toHaveBeenCalledWith(1, mockUpdateQRMenuItemDto);
       expect(result).toEqual(updateResponse);
     });
 
     it('should handle errors during update', async () => {
-      const errorMessage = 'Failed to update QR Menu Section';
+      const errorMessage = 'Failed to update QR Menu Item';
       const updateSpy = jest.spyOn(service, 'update');
       updateSpy.mockRejectedValue(new Error(errorMessage));
 
       await expect(
-        controller.update(999, mockUpdateQrMenuSectionDto),
+        controller.update(999, mockUpdateQRMenuItemDto),
       ).rejects.toThrow(errorMessage);
 
-      expect(updateSpy).toHaveBeenCalledWith(999, mockUpdateQrMenuSectionDto);
+      expect(updateSpy).toHaveBeenCalledWith(999, mockUpdateQRMenuItemDto);
     });
   });
 
   // ----------------------------------------------------------
   // DELETE /qr-menu-section/:id
   // ----------------------------------------------------------
-  describe('DELETE /qr-menu-section/:id', () => {
-    it('should delete a qr menu section successfully', async () => {
+  describe('DELETE /qr-menu-item/:id', () => {
+    it('should delete a qr menu item successfully', async () => {
       const deleteResponse = {
         statusCode: 200,
-        message: 'QR Menu Section deleted successfully',
-        data: mockOneQrMenuSectionResponseDto.data,
+        message: 'QR Menu Item deleted successfully',
+        data: mockOneQrMenuItemResponseDto.data,
       };
       const removeSpy = jest.spyOn(service, 'remove');
       removeSpy.mockResolvedValue(deleteResponse);
@@ -256,7 +271,7 @@ describe('QrMenuSectionController', () => {
     });
 
     it('should handle errors during deletion', async () => {
-      const errorMessage = 'Failed to delete QR Menu Section';
+      const errorMessage = 'Failed to delete QR Menu Item';
       const removeSpy = jest.spyOn(service, 'remove');
       removeSpy.mockRejectedValue(new Error(errorMessage));
 
