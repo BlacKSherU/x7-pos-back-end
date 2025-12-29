@@ -57,7 +57,16 @@ export class PaginatedCashTransactionsResponseDto extends SuccessResponse {
   };
 }
 
+export class CashTransactionLittleResponseDto {
+  @ApiProperty({ example: 1 })
+  id: number;
 
+  @ApiProperty({ example: 'sale', enum: CashTransactionType })
+  type: CashTransactionType;
 
+  @ApiProperty({ example: 125.5 })
+  amount: number;
 
-
+  @ApiProperty({ example: 'active', enum: CashTransactionStatus })
+  status: CashTransactionStatus;
+}

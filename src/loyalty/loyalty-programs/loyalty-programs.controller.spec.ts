@@ -46,7 +46,7 @@ describe('LoyaltyProgramsController', () => {
 
   describe('Controller Initialization', () => {
     it('should be defined', () => {
-        expect(controller).toBeDefined();
+      expect(controller).toBeDefined();
     });
   });
 
@@ -81,29 +81,29 @@ describe('LoyaltyProgramsController', () => {
     });
 
     it('should handle empty loyalty program list', async () => {
-        const query: GetLoyaltyProgramsQueryDto = { page: 1, limit: 10 };
-        const emptyResult: AllPaginatedLoyaltyPrograms = {
-          statusCode: 200,
-          message: 'Loyalty programs retrieved successfully',
-          data: [],
-          page: 1,
-          limit: 10,
-          total: 0,
-          totalPages: 0,
-          hasNext: false,
-          hasPrev: false,
-        };
-        mockLoyaltyProgramsService.findAll.mockResolvedValue(emptyResult);
-  
-        const result = await controller.findAll(user, query);
-  
-        expect(result).toEqual(emptyResult);
-        expect(result.data).toHaveLength(0);
-        expect(mockLoyaltyProgramsService.findAll).toHaveBeenCalledWith(
-          query,
-          user.merchant.id,
-        );
-      });
+      const query: GetLoyaltyProgramsQueryDto = { page: 1, limit: 10 };
+      const emptyResult: AllPaginatedLoyaltyPrograms = {
+        statusCode: 200,
+        message: 'Loyalty programs retrieved successfully',
+        data: [],
+        page: 1,
+        limit: 10,
+        total: 0,
+        totalPages: 0,
+        hasNext: false,
+        hasPrev: false,
+      };
+      mockLoyaltyProgramsService.findAll.mockResolvedValue(emptyResult);
+
+      const result = await controller.findAll(user, query);
+
+      expect(result).toEqual(emptyResult);
+      expect(result.data).toHaveLength(0);
+      expect(mockLoyaltyProgramsService.findAll).toHaveBeenCalledWith(
+        query,
+        user.merchant.id,
+      );
+    });
   });
 
   describe('FindOne', () => {
@@ -131,18 +131,20 @@ describe('LoyaltyProgramsController', () => {
     });
 
     it('should handle loyalty program not found', async () => {
-        const loyaltyProgramId = 999;
-        const errorMessage = 'Loyalty Program not found';
-        mockLoyaltyProgramsService.findOne.mockRejectedValue(new Error(errorMessage));
-  
-        await expect(controller.findOne(user, loyaltyProgramId)).rejects.toThrow(
-          errorMessage,
-        );
-        expect(mockLoyaltyProgramsService.findOne).toHaveBeenCalledWith(
-            loyaltyProgramId,
-          user.merchant.id,
-        );
-      });
+      const loyaltyProgramId = 999;
+      const errorMessage = 'Loyalty Program not found';
+      mockLoyaltyProgramsService.findOne.mockRejectedValue(
+        new Error(errorMessage),
+      );
+
+      await expect(controller.findOne(user, loyaltyProgramId)).rejects.toThrow(
+        errorMessage,
+      );
+      expect(mockLoyaltyProgramsService.findOne).toHaveBeenCalledWith(
+        loyaltyProgramId,
+        user.merchant.id,
+      );
+    });
   });
 
   describe('Create', () => {
@@ -175,23 +177,25 @@ describe('LoyaltyProgramsController', () => {
     });
 
     it('should handle loyalty program name already exists', async () => {
-        const createLoyaltyProgramDto: CreateLoyaltyProgramDto = {
-            name: 'Existing Loyalty Program',
-            description: 'Test Description',
-            points_per_currency: 1,
-            min_points_to_redeem: 100,
-          };
-        const errorMessage = 'Loyalty Program name already exists';
-        mockLoyaltyProgramsService.create.mockRejectedValue(new Error(errorMessage));
-  
-        await expect(controller.create(user, createLoyaltyProgramDto)).rejects.toThrow(
-          errorMessage,
-        );
-        expect(mockLoyaltyProgramsService.create).toHaveBeenCalledWith(
-          user.merchant.id,
-          createLoyaltyProgramDto,
-        );
-      });
+      const createLoyaltyProgramDto: CreateLoyaltyProgramDto = {
+        name: 'Existing Loyalty Program',
+        description: 'Test Description',
+        points_per_currency: 1,
+        min_points_to_redeem: 100,
+      };
+      const errorMessage = 'Loyalty Program name already exists';
+      mockLoyaltyProgramsService.create.mockRejectedValue(
+        new Error(errorMessage),
+      );
+
+      await expect(
+        controller.create(user, createLoyaltyProgramDto),
+      ).rejects.toThrow(errorMessage);
+      expect(mockLoyaltyProgramsService.create).toHaveBeenCalledWith(
+        user.merchant.id,
+        createLoyaltyProgramDto,
+      );
+    });
   });
 
   describe('Update', () => {
@@ -227,20 +231,24 @@ describe('LoyaltyProgramsController', () => {
     });
 
     it('should handle loyalty program not found during update', async () => {
-        const loyaltyProgramId = 999;
-        const updateLoyaltyProgramDto: UpdateLoyaltyProgramDto = { name: 'Non Existent' };
-        const errorMessage = 'Loyalty Program not found';
-        mockLoyaltyProgramsService.update.mockRejectedValue(new Error(errorMessage));
-  
-        await expect(
-          controller.update(user, loyaltyProgramId, updateLoyaltyProgramDto),
-        ).rejects.toThrow(errorMessage);
-        expect(mockLoyaltyProgramsService.update).toHaveBeenCalledWith(
-            loyaltyProgramId,
-          user.merchant.id,
-          updateLoyaltyProgramDto,
-        );
-      });
+      const loyaltyProgramId = 999;
+      const updateLoyaltyProgramDto: UpdateLoyaltyProgramDto = {
+        name: 'Non Existent',
+      };
+      const errorMessage = 'Loyalty Program not found';
+      mockLoyaltyProgramsService.update.mockRejectedValue(
+        new Error(errorMessage),
+      );
+
+      await expect(
+        controller.update(user, loyaltyProgramId, updateLoyaltyProgramDto),
+      ).rejects.toThrow(errorMessage);
+      expect(mockLoyaltyProgramsService.update).toHaveBeenCalledWith(
+        loyaltyProgramId,
+        user.merchant.id,
+        updateLoyaltyProgramDto,
+      );
+    });
   });
 
   describe('Remove', () => {
@@ -268,18 +276,20 @@ describe('LoyaltyProgramsController', () => {
     });
 
     it('should handle loyalty program not found during removal', async () => {
-        const loyaltyProgramId = 999;
-        const errorMessage = 'Loyalty Program not found';
-        mockLoyaltyProgramsService.remove.mockRejectedValue(new Error(errorMessage));
-  
-        await expect(controller.remove(user, loyaltyProgramId)).rejects.toThrow(
-          errorMessage,
-        );
-        expect(mockLoyaltyProgramsService.remove).toHaveBeenCalledWith(
-            loyaltyProgramId,
-          user.merchant.id,
-        );
-      });
+      const loyaltyProgramId = 999;
+      const errorMessage = 'Loyalty Program not found';
+      mockLoyaltyProgramsService.remove.mockRejectedValue(
+        new Error(errorMessage),
+      );
+
+      await expect(controller.remove(user, loyaltyProgramId)).rejects.toThrow(
+        errorMessage,
+      );
+      expect(mockLoyaltyProgramsService.remove).toHaveBeenCalledWith(
+        loyaltyProgramId,
+        user.merchant.id,
+      );
+    });
   });
 
   describe('Service Integration', () => {
@@ -296,7 +306,9 @@ describe('LoyaltyProgramsController', () => {
         points_per_currency: 1,
         min_points_to_redeem: 10,
       };
-      const updateLoyaltyProgramDto: UpdateLoyaltyProgramDto = { name: 'Updated Integration Test' };
+      const updateLoyaltyProgramDto: UpdateLoyaltyProgramDto = {
+        name: 'Updated Integration Test',
+      };
       const loyaltyProgramId = 1;
       const query: GetLoyaltyProgramsQueryDto = { page: 1, limit: 10 };
 

@@ -9,6 +9,8 @@ import {
 import { ApiProperty } from '@nestjs/swagger';
 import { LoyaltyCustomer } from 'src/loyalty/loyalty-customer/entities/loyalty-customer.entity';
 import { Order } from 'src/orders/entities/order.entity';
+import { CashTransaction } from 'src/cash-transactions/entities/cash-transaction.entity';
+import { LoyaltyPointsSource } from '../constants/loyalty-points-source.enum';
 
 @Entity('loyalty_point_transactions')
 export class LoyaltyPointTransaction {
@@ -26,11 +28,16 @@ export class LoyaltyPointTransaction {
   description: string;
 
   @ApiProperty({
-    example: 'POS',
+    example: LoyaltyPointsSource.ORDER,
     description: 'Source of the loyalty points transaction',
+    enum: LoyaltyPointsSource,
   })
-  @Column({ type: 'varchar', nullable: true })
-  source: string;
+  @Column({
+    type: 'enum',
+    enum: LoyaltyPointsSource,
+    default: LoyaltyPointsSource.ORDER,
+  })
+  source: LoyaltyPointsSource;
 
   @ApiProperty({
     example: 100,
@@ -68,9 +75,9 @@ export class LoyaltyPointTransaction {
   @Column({ type: 'bigint', name: 'payment_id', nullable: true })
   paymentId: number;
 
-  @ManyToOne(() => Order)
+  @ManyToOne(() => CashTransaction)
   @JoinColumn({ name: 'payment_id' })
-  payment: Order;
+  payment: CashTransaction;
 
   @ApiProperty({
     description: 'Timestamp of when the customer joined the loyalty program',
