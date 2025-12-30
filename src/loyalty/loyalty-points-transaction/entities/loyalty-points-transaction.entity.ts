@@ -48,7 +48,7 @@ export class LoyaltyPointTransaction {
 
   @ApiProperty({
     example: 1,
-    description: 'ID of the loyalty program',
+    description: 'ID of the loyalty customer associated with the transaction',
   })
   @Column({ type: 'bigint', name: 'loyalty_customer_id' })
   loyaltyCustomerId: number;

@@ -2,9 +2,9 @@ import { ApiProperty } from '@nestjs/swagger';
 import { LoyaltyRewardResponseDto } from './loyalty-reward-response.dto';
 import { SuccessResponse } from 'src/common/dtos/success-response.dto';
 
-export class AllPaginatedLoyaltyReward extends SuccessResponse {
+export class AllPaginatedLoyaltyRewardDto extends SuccessResponse {
   @ApiProperty({
-    description: 'Array of loyalty programs',
+    description: 'Array of loyalty rewards',
     type: [LoyaltyRewardResponseDto],
   })
   data: LoyaltyRewardResponseDto[];
@@ -23,7 +23,7 @@ export class AllPaginatedLoyaltyReward extends SuccessResponse {
 
   @ApiProperty({
     example: 25,
-    description: 'Total number of loyalty programs',
+    description: 'Total number of loyalty rewards',
   })
   total: number;
 

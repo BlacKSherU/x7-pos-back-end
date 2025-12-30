@@ -1,10 +1,20 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToMany,
+} from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { CashDrawer } from '../../cash-drawers/entities/cash-drawer.entity';
 import { Collaborator } from '../../collaborators/entities/collaborator.entity';
 import { Order } from '../../orders/entities/order.entity';
 import { CashTransactionType } from '../constants/cash-transaction-type.enum';
 import { CashTransactionStatus } from '../constants/cash-transaction-status.enum';
+import { LoyaltyPointTransaction } from 'src/loyalty/loyalty-points-transaction/entities/loyalty-points-transaction.entity';
 
 @Entity('cash_transactions')
 export class CashTransaction {
@@ -16,24 +26,44 @@ export class CashTransaction {
   @Column({ type: 'int', name: 'cash_drawer_id' })
   cash_drawer_id: number;
 
-  @ApiProperty({ example: 200, description: 'Order ID associated to the transaction', required: false, nullable: true })
+  @ApiProperty({
+    example: 200,
+    description: 'Order ID associated to the transaction',
+    required: false,
+    nullable: true,
+  })
   @Column({ type: 'int', name: 'order_id', nullable: true })
   order_id: number | null;
 
-  @ApiProperty({ example: 'sale', enum: CashTransactionType, description: 'Transaction type' })
+  @ApiProperty({
+    example: 'sale',
+    enum: CashTransactionType,
+    description: 'Transaction type',
+  })
   @Column({ type: 'enum', enum: CashTransactionType })
   type: CashTransactionType;
 
-  @ApiProperty({ example: 125.50, description: 'Transaction amount' })
+  @ApiProperty({ example: 125.5, description: 'Transaction amount' })
   @Column({ type: 'decimal', precision: 12, scale: 2 })
   amount: number;
 
-  @ApiProperty({ example: 5, description: 'Collaborator ID who performed the transaction' })
+  @ApiProperty({
+    example: 5,
+    description: 'Collaborator ID who performed the transaction',
+  })
   @Column({ type: 'int', name: 'collaborator_id' })
   collaborator_id: number;
 
-  @ApiProperty({ example: 'active', enum: CashTransactionStatus, description: 'Logical status' })
-  @Column({ type: 'enum', enum: CashTransactionStatus, default: CashTransactionStatus.ACTIVE })
+  @ApiProperty({
+    example: 'active',
+    enum: CashTransactionStatus,
+    description: 'Logical status',
+  })
+  @Column({
+    type: 'enum',
+    enum: CashTransactionStatus,
+    default: CashTransactionStatus.ACTIVE,
+  })
   status: CashTransactionStatus;
 
   @ApiProperty({ example: 'Some notes about the transaction', required: false })
@@ -76,4 +106,10 @@ export class CashTransaction {
   })
   @JoinColumn({ name: 'order_id' })
   order: Order;
+
+  @OneToMany(
+    () => LoyaltyPointTransaction,
+    (loyaltyPointTransaction) => loyaltyPointTransaction.payment,
+  )
+  loyaltyPointTransactions: LoyaltyPointTransaction[];
 }

@@ -157,6 +157,24 @@ export class LoyaltyCustomerService {
         );
       }
 
+      if (query.customer) {
+        queryBuilder.andWhere(
+          'LOWER(customer.name) LIKE LOWER(:customerName)',
+          {
+            customerName: `%${query.customer}%`,
+          },
+        );
+      }
+
+      if (query.loyaltyProgram) {
+        queryBuilder.andWhere(
+          'LOWER(loyaltyProgram.name) LIKE LOWER(:loyaltyProgramName)',
+          {
+            loyaltyProgramName: `%${query.loyaltyProgram}%`,
+          },
+        );
+      }
+
       const total = await queryBuilder.getCount();
 
       const loyaltyCustomers = await queryBuilder

@@ -22,11 +22,20 @@ export class GetLoyaltyRewardQueryDto {
   limit?: number;
 
   @ApiProperty({
-    example: 'Gold Program',
-    description: 'Filter by loyalty program name',
+    example: 'Name of the reward',
+    description: 'Filter by reward name',
     required: false,
   })
   @IsString()
   @IsOptional()
   name?: string;
+
+  @ApiProperty({
+    example: 'Type of the reward',
+    description: 'Filter by reward type',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  type?: string;
 }

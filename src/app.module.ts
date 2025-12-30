@@ -92,6 +92,7 @@ import { OnlineOrderItem } from './online-ordering-system/online-order-item/enti
 import { QRMenuSection } from './qr-code/qr-menu-section/entity/qr-menu-section.entity';
 import { QrMenuSectionModule } from './qr-code/qr-menu-section/qr-menu-section.module';
 import { LoyaltyPointTransaction } from './loyalty/loyalty-points-transaction/entities/loyalty-points-transaction.entity';
+import { LoyaltyReward } from './loyalty/loyalty-reward/entities/loyalty-reward.entity';
 
 @Module({
   imports: [
@@ -157,6 +158,7 @@ import { LoyaltyPointTransaction } from './loyalty/loyalty-points-transaction/en
           LoyaltyTier,
           LoyaltyCustomer,
           LoyaltyPointTransaction,
+          LoyaltyReward,
           OnlineMenuCategory,
           OnlineMenuItem,
           OnlineOrder,

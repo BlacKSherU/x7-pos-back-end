@@ -1,28 +1,8 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNumber, IsOptional, Min, Max } from 'class-validator';
+import { IsNumber, IsOptional, Min, Max, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class GetLoyaltyPointsTransactionQueryDto {
-  @ApiPropertyOptional({
-    description: 'Filter by minimum current points (greater than or equal to)',
-    type: Number,
-  })
-  @IsOptional()
-  @IsNumber()
-  @Type(() => Number)
-  @Min(0)
-  min_points?: number;
-
-  @ApiPropertyOptional({
-    description: 'Filter by maximum current points (less than or equal to)',
-    type: Number,
-  })
-  @IsOptional()
-  @IsNumber()
-  @Type(() => Number)
-  @Min(0)
-  max_points?: number;
-
   @ApiPropertyOptional({
     description: 'Page number for pagination',
     type: Number,
@@ -45,4 +25,32 @@ export class GetLoyaltyPointsTransactionQueryDto {
   @Max(100)
   @Type(() => Number)
   limit?: number = 10;
+
+  @ApiPropertyOptional({
+    description: 'Filter by minimum current points (greater than or equal to)',
+    type: Number,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  @Min(0)
+  min_points?: number;
+
+  @ApiPropertyOptional({
+    description: 'Filter by maximum current points (less than or equal to)',
+    type: Number,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  @Min(0)
+  max_points?: number;
+
+  @ApiPropertyOptional({
+    example: 'ORDER',
+    description: 'Filter loyalty points transactions by source',
+  })
+  @IsOptional()
+  @IsString()
+  source?: string;
 }

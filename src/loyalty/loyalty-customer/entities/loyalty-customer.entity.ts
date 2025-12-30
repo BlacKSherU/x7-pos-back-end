@@ -5,11 +5,13 @@ import {
   CreateDateColumn,
   ManyToOne,
   JoinColumn,
+  OneToMany,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { LoyaltyProgram } from '../../loyalty-programs/entities/loyalty-program.entity';
 import { Customer } from '../../../customers/entities/customer.entity';
 import { LoyaltyTier } from '../../loyalty-tier/entities/loyalty-tier.entity';
+import { LoyaltyPointTransaction } from 'src/loyalty/loyalty-points-transaction/entities/loyalty-points-transaction.entity';
 
 @Entity('loyalty_customers')
 export class LoyaltyCustomer {
@@ -67,6 +69,7 @@ export class LoyaltyCustomer {
   @ManyToOne(() => LoyaltyTier)
   @JoinColumn({ name: 'loyalty_tier_id' })
   loyaltyTier: LoyaltyTier;
+
   @Column({ default: true })
   is_active: boolean;
 
@@ -75,4 +78,10 @@ export class LoyaltyCustomer {
   })
   @CreateDateColumn({ name: 'joined_at' })
   joinedAt: Date;
+
+  @OneToMany(
+    () => LoyaltyPointTransaction,
+    (loyaltyPointTransaction) => loyaltyPointTransaction.loyaltyCustomer,
+  )
+  loyaltyPointTransactions: LoyaltyPointTransaction[];
 }

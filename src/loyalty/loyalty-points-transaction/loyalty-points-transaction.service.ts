@@ -106,6 +106,12 @@ export class LoyaltyPointsTransactionService {
         );
       }
 
+      if (query.source) {
+        queryBuilder.andWhere('LOWER(source.name) LIKE LOWER(:source)', {
+          source: `%${query.source}%`,
+        });
+      }
+
       const total = await queryBuilder.getCount();
 
       const loyaltyPointsTransaction = await queryBuilder

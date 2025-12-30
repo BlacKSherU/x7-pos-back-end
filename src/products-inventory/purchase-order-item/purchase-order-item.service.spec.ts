@@ -81,6 +81,7 @@ describe('PurchaseOrderItemService', () => {
     modifiers: [],
     items: [],
     purchaseOrderItems: [],
+    loyaltyRewards: [],
   };
 
   const mockVariant = {
