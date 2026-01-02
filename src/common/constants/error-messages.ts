@@ -57,6 +57,7 @@ export enum ErrorMessage {
   LOYALTY_POINTS_TRANSACTION_NOT_FOUND = 'Loyalty Points Transaction not found',
   QR_MENU_NOT_FOUND = 'QR Menu not found',
   QR_MENU_SECTION_NOT_FOUND = 'QR Menu Section not found',
+  QR_MENU_ITEM_NOT_FOUND = 'QR Menu Item not found',
 
   // 409 Conflict
   EMAIL_ALREADY_EXISTS = 'Email address is already registered',

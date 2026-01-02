@@ -75,6 +75,18 @@ export class ErrorHandler {
     throw new NotFoundException(message);
   }
 
+  static productNotFound(
+    message: string = ErrorMessage.PRODUCT_NOT_FOUND,
+  ): never {
+    throw new NotFoundException(message);
+  }
+
+  static variantNotFound(
+    message: string = ErrorMessage.VARIANT_NOT_FOUND,
+  ): never {
+    throw new NotFoundException(message);
+  }
+
   static applicationNotFound(
     message: string = ErrorMessage.APPLICATION_NOT_FOUND,
   ): never {
@@ -131,6 +143,12 @@ export class ErrorHandler {
 
   static qrMenuSectionNotFound(
     message: string = ErrorMessage.QR_MENU_SECTION_NOT_FOUND,
+  ): never {
+    throw new NotFoundException(message);
+  }
+
+  static qrMenuItemNotFound(
+    message: string = ErrorMessage.QR_MENU_ITEM_NOT_FOUND,
   ): never {
     throw new NotFoundException(message);
   }

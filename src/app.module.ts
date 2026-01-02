@@ -93,6 +93,8 @@ import { QRMenuSection } from './qr-code/qr-menu-section/entity/qr-menu-section.
 import { QrMenuSectionModule } from './qr-code/qr-menu-section/qr-menu-section.module';
 import { LoyaltyPointTransaction } from './loyalty/loyalty-points-transaction/entities/loyalty-points-transaction.entity';
 import { LoyaltyReward } from './loyalty/loyalty-reward/entities/loyalty-reward.entity';
+import { QRMenuItem } from './qr-code/qr-menu-item/entity/qr-menu-item.entity';
+import { QrMenuItemModule } from './qr-code/qr-menu-item/qr-menu-item.module';
 
 @Module({
   imports: [
@@ -154,6 +156,7 @@ import { LoyaltyReward } from './loyalty/loyalty-reward/entities/loyalty-reward.
           QRMenu,
           QRMenuSection,
           OnlineMenu,
+          QRMenuItem,
           LoyaltyProgram,
           LoyaltyTier,
           LoyaltyCustomer,
@@ -215,6 +218,7 @@ import { LoyaltyReward } from './loyalty/loyalty-reward/entities/loyalty-reward.
 
     OnlineOrderItemModule,
     QrMenuSectionModule,
+    QrMenuItemModule,
   ],
 })
 export class AppModule {}
