@@ -15,4 +15,4 @@ import { Variant } from 'src/products-inventory/variants/entities/variant.entity
   controllers: [QRMenuItemController],
   providers: [QRMenuItemService],
 })
-export class QrMenuItemModule {}
+export class QRMenuItemModule {}
