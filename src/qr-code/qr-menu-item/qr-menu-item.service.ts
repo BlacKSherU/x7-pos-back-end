@@ -1,3 +1,4 @@
+// src/qr-code/qr-menu-item/qr-menu-item.service.ts
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { QRMenuItem } from './entity/qr-menu-item.entity';
