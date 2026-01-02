@@ -1,10 +1,10 @@
-// src/qr-code/qr-menu-item/qr-menu-item.controller.ts
+// src/qr-code/qr-location/qr-location.controller.ts
 import {
-  Body,
   Controller,
-  Get,
   Post,
   UseGuards,
+  Body,
+  Get,
   Query,
   Param,
   ParseIntPipe,
@@ -18,14 +18,13 @@ import {
   ApiCreatedResponse,
   ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
-  ApiNotFoundResponse,
-  ApiOkResponse,
   ApiOperation,
-  ApiParam,
+  ApiOkResponse,
   ApiTags,
   ApiUnauthorizedResponse,
+  ApiParam,
+  ApiNotFoundResponse,
 } from '@nestjs/swagger';
-import { QRMenuItemService } from './qr-menu-item.service';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Scopes } from 'src/auth/decorators/scopes.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
@@ -33,18 +32,19 @@ import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { UserRole } from 'src/users/constants/role.enum';
 import { Scope } from 'src/users/constants/scope.enum';
 import {
-  OneQRMenuItemResponseDto,
-  QRMenuItemResponseDto,
-} from './dto/qr-menu-item-response.dto';
-import { CreateQRMenuItemDto } from './dto/create-qr-menu-item.dto';
-import { PaginatedQRMenuItemResponseDto } from './dto/paginated-qr-menu-item-response.dto';
-import { QueryQRMenuItemDto } from './dto/query-qr-menu-item.dto';
-import { UpdateQRMenuItemDto } from './dto/update-qr-menu-item.dto';
+  OneQRLocationResponseDto,
+  QRLocationResponseDto,
+} from './dto/qr-location-response.dto';
+import { CreateQRLocationDto } from './dto/create-qr-location.dto';
+import { QRLocationService } from './qr-location.service';
+import { PaginatedQRLocationResponseDto } from './dto/paginated-qr-location-response.dto';
+import { QueryQRLocationDto } from './dto/query-qr-location.dto';
+import { UpdateQrLocationDto } from './dto/update-qr-location.dto';
 
-@ApiTags('QR Menu Item')
-@Controller('qr-menu-item')
-export class QRMenuItemController {
-  constructor(private readonly qrMenuItemService: QRMenuItemService) {}
+@ApiTags('QR Location')
+@Controller('qr-location')
+export class QRLocationController {
+  constructor(private readonly qrLocationService: QRLocationService) {}
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
@@ -56,35 +56,27 @@ export class QRMenuItemController {
     Scope.MERCHANT_CLOVER,
   )
   @ApiOperation({
-    summary: 'Create a new QR Menu Item',
-    description: 'Endpoint for creating a new QR Menu Item',
+    summary: 'Create a new QR Location',
+    description: 'Endpoint for creating a new QR Location',
   })
   @ApiBody({
-    type: QRMenuItemResponseDto,
-    description: 'Require data for a new QR Menu Section',
+    type: QRLocationResponseDto,
+    description: 'Require data for a new QR Location',
   })
   @ApiCreatedResponse({
-    description: 'The QR Menu Item has been successfully created.',
-    type: QRMenuItemResponseDto,
+    description: 'The QR Location has been successfully created.',
+    type: QRLocationResponseDto,
     schema: {
       example: {
-        id: '1',
-        qrMenuSection: {
-          id: 1,
-          name: 'Appetizers',
-        },
-        product: {
-          id: 1,
-          name: 'Spring Rolls',
-        },
-        variant: {
-          id: 1,
-          name: 'Vegetarian',
-        },
+        id: 1,
+        merchant: { id: 1, name: 'Merchant Name' },
+        qr_menu: { id: 1, title: 'QR Menu Title' },
+        table: { id: 1 },
+        name: 'Main Entrance',
+        qr_code_url: 'https://example.com/qr-code',
+        qr_code_image: 'base64encodedimagestring',
+        location_type: 'delivery',
         status: 'active',
-        display_order: 1,
-        notes: 'Delicious vegetarian spring rolls',
-        is_visible: false,
       },
     },
   })
@@ -94,7 +86,9 @@ export class QRMenuItemController {
       example: {
         statusCode: 400,
         message: [
-          'QR Menu Item must be a number',
+          'QR Menu must be a number',
+          'Table must be a number',
+          'Merchant must be a number',
           'status must be one of the following values: active, inactive',
         ],
         error: 'Bad Request',
@@ -132,9 +126,9 @@ export class QRMenuItemController {
     },
   })
   async create(
-    @Body() dto: CreateQRMenuItemDto,
-  ): Promise<OneQRMenuItemResponseDto> {
-    return this.qrMenuItemService.create(dto);
+    @Body() dto: CreateQRLocationDto,
+  ): Promise<OneQRLocationResponseDto> {
+    return this.qrLocationService.create(dto);
   }
   @Get()
   @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
@@ -146,12 +140,12 @@ export class QRMenuItemController {
     Scope.MERCHANT_CLOVER,
   )
   @ApiOperation({
-    summary: 'Get All QR Menu Item',
-    description: 'Endpoint for get ALL of the QR Menu Items.',
+    summary: 'Get All QR Location',
+    description: 'Endpoint for get ALL of the QR Location.',
   })
   @ApiOkResponse({
-    description: 'Paginated list of QR Menu Items',
-    type: PaginatedQRMenuItemResponseDto,
+    description: 'Paginated list of QR Location',
+    type: PaginatedQRLocationResponseDto,
   })
   @ApiUnauthorizedResponse({
     description: 'Unauthorized. Authentication required',
@@ -184,9 +178,9 @@ export class QRMenuItemController {
     },
   })
   async findAll(
-    @Query() query: QueryQRMenuItemDto,
-  ): Promise<PaginatedQRMenuItemResponseDto> {
-    return this.qrMenuItemService.findAll(query);
+    @Query() query: QueryQRLocationDto,
+  ): Promise<PaginatedQRLocationResponseDto> {
+    return this.qrLocationService.findAll(query);
   }
   @Get(':id')
   @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
@@ -199,36 +193,28 @@ export class QRMenuItemController {
   )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiOperation({
-    summary: 'Get a QR Menu Item by ID',
-    description: 'Endpoint to retrieve a specific QR Menu Item using its ID.',
+    summary: 'Get a QR Location by ID',
+    description: 'Endpoint to retrieve a specific QR Location using its ID.',
   })
   @ApiParam({
     name: 'id',
     type: Number,
-    description: 'QR Menu Item ID',
+    description: 'QR Location ID',
     example: 1,
   })
   @ApiOkResponse({
-    description: 'QR Menu Item retrieved successfully',
+    description: 'QR Location retrieved successfully',
     schema: {
       example: {
-        id: '1',
-        qrMenuSection: {
-          id: 1,
-          name: 'Appetizers',
-        },
-        product: {
-          id: 1,
-          name: 'Spring Rolls',
-        },
-        variant: {
-          id: 1,
-          name: 'Vegetarian',
-        },
+        id: 1,
+        merchant: { id: 1, name: 'Merchant Name' },
+        qr_menu: { id: 1, title: 'QR Menu Title' },
+        table: { id: 1 },
+        name: 'Main Entrance',
+        qr_code_url: 'https://example.com/qr-code',
+        qr_code_image: 'base64encodedimagestring',
+        location_type: 'delivery',
         status: 'active',
-        display_order: 1,
-        notes: 'Delicious vegetarian spring rolls',
-        is_visible: false,
       },
     },
   })
@@ -263,11 +249,11 @@ export class QRMenuItemController {
     },
   })
   @ApiNotFoundResponse({
-    description: 'Not Found: QR Menu Item not found',
+    description: 'Not Found: QR Location not found',
     schema: {
       example: {
         statusCode: 404,
-        message: 'QR Menu Item not found',
+        message: 'QR Location not found',
         error: 'Not Found',
       },
     },
@@ -284,12 +270,12 @@ export class QRMenuItemController {
   })
   async findOne(
     @Param('id', ParseIntPipe) id: number,
-  ): Promise<OneQRMenuItemResponseDto> {
+  ): Promise<OneQRLocationResponseDto> {
     if (id <= 0) {
       throw new BadRequestException('Invalid ID. Must be a positive number.');
     }
-    const qrMenuItem = await this.qrMenuItemService.findOne(id);
-    return qrMenuItem;
+    const qrLocation = await this.qrLocationService.findOne(id);
+    return qrLocation;
   }
   @Patch(':id')
   @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
@@ -302,40 +288,32 @@ export class QRMenuItemController {
   )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiOperation({
-    summary: 'Update a QR Menu Item',
-    description: 'Endpoint to update an existing QR Menu Item by its ID.',
+    summary: 'Update a QR Location',
+    description: 'Endpoint to update an existing QR Location by its ID.',
   })
   @ApiParam({
     name: 'id',
     type: Number,
-    description: 'QR Menu Item ID',
+    description: 'QR Location ID',
     example: 1,
   })
   @ApiBody({
-    type: UpdateQRMenuItemDto,
-    description: 'Data for updating the QR Menu Item',
+    type: CreateQRLocationDto,
+    description: 'Data for updating the QR Location',
   })
   @ApiOkResponse({
-    description: 'QR Menu Item retrieved successfully',
+    description: 'QR Location retrieved successfully',
     schema: {
       example: {
-        id: '1',
-        qrMenuSection: {
-          id: 1,
-          name: 'Appetizers',
-        },
-        product: {
-          id: 1,
-          name: 'Spring Rolls',
-        },
-        variant: {
-          id: 1,
-          name: 'Vegetarian',
-        },
+        id: 1,
+        merchant: { id: 1, name: 'Merchant Name' },
+        qr_menu: { id: 1, title: 'QR Menu Title' },
+        table: { id: 1 },
+        name: 'Main Entrance',
+        qr_code_url: 'https://example.com/qr-code',
+        qr_code_image: 'base64encodedimagestring',
+        location_type: 'delivery',
         status: 'active',
-        display_order: 1,
-        notes: 'Delicious vegetarian spring rolls',
-        is_visible: false,
       },
     },
   })
@@ -353,11 +331,11 @@ export class QRMenuItemController {
     },
   })
   @ApiNotFoundResponse({
-    description: 'Not Found: QR Menu Item not found',
+    description: 'Not Found: QR Location not found',
     schema: {
       example: {
         statusCode: 404,
-        message: 'QR Menu Item not found',
+        message: 'QR Location not found',
         error: 'Not Found',
       },
     },
@@ -394,9 +372,9 @@ export class QRMenuItemController {
   })
   async update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateQRMenuItemDto,
-  ): Promise<OneQRMenuItemResponseDto> {
-    return this.qrMenuItemService.update(id, dto);
+    @Body() dto: UpdateQrLocationDto,
+  ): Promise<OneQRLocationResponseDto> {
+    return this.qrLocationService.update(id, dto);
   }
   @Delete(':id')
   @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
@@ -409,36 +387,28 @@ export class QRMenuItemController {
   )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiOperation({
-    summary: 'Delete a QR Menu Item',
+    summary: 'Delete a QR Location',
     description: 'Endpoint to delete an existing QR Location by its ID.',
   })
   @ApiParam({
     name: 'id',
     type: Number,
-    description: 'QR Menu Item ID',
+    description: 'QR Location ID',
     example: 1,
   })
   @ApiOkResponse({
-    description: 'QR Menu Item retrieved successfully',
+    description: 'QR Location retrieved successfully',
     schema: {
       example: {
-        id: '1',
-        qrMenuSection: {
-          id: 1,
-          name: 'Appetizers',
-        },
-        product: {
-          id: 1,
-          name: 'Spring Rolls',
-        },
-        variant: {
-          id: 1,
-          name: 'Vegetarian',
-        },
+        id: 1,
+        merchant: { id: 1, name: 'Merchant Name' },
+        qr_menu: { id: 1, title: 'QR Menu Title' },
+        table: { id: 1 },
+        name: 'Main Entrance',
+        qr_code_url: 'https://example.com/qr-code',
+        qr_code_image: 'base64encodedimagestring',
+        location_type: 'delivery',
         status: 'active',
-        display_order: 1,
-        notes: 'Delicious vegetarian spring rolls',
-        is_visible: false,
       },
     },
   })
@@ -453,11 +423,11 @@ export class QRMenuItemController {
     },
   })
   @ApiNotFoundResponse({
-    description: 'Not Found: QR Menu Item not found',
+    description: 'Not Found: QR Location not found',
     schema: {
       example: {
         statusCode: 404,
-        message: 'QR Menu Item not found',
+        message: 'QR Location not found',
         error: 'Not Found',
       },
     },
@@ -494,7 +464,7 @@ export class QRMenuItemController {
   })
   async remove(
     @Param('id', ParseIntPipe) id: number,
-  ): Promise<OneQRMenuItemResponseDto> {
-    return this.qrMenuItemService.remove(id);
+  ): Promise<OneQRLocationResponseDto> {
+    return this.qrLocationService.remove(id);
   }
 }

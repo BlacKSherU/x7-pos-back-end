@@ -11,4 +11,4 @@ import { QRMenu } from '../qr-menu/entity/qr-menu.entity';
   controllers: [QrMenuSectionController],
   providers: [QRMenuSectionService],
 })
-export class QrMenuSectionModule {}
+export class QRMenuSectionModule {}

@@ -72,8 +72,8 @@ import { PurchaseOrderModule } from './products-inventory/purchase-order/purchas
 import { PurchaseOrderItemModule } from './products-inventory/purchase-order-item/purchase-order-item.module';
 import { PurchaseOrder } from './products-inventory/purchase-order/entities/purchase-order.entity';
 import { PurchaseOrderItem } from './products-inventory/purchase-order-item/entities/purchase-order-item.entity';
-import { QrCodeModule } from './qr-code/qr-code.module';
-import { QrMenuModule } from './qr-code/qr-menu/qr-menu.module';
+import { QRCodeModule } from './qr-code/qr-code.module';
+import { QRMenuModule } from './qr-code/qr-menu/qr-menu.module';
 import { QRMenu } from './qr-code/qr-menu/entity/qr-menu.entity';
 import { OnlineMenuModule } from './online-ordering-system/online-menu/online-menu.module';
 import { OnlineMenu } from './online-ordering-system/online-menu/entities/online-menu.entity';
@@ -90,9 +90,11 @@ import { OnlineOrder } from './online-ordering-system/online-order/entities/onli
 import { OnlineOrderItemModule } from './online-ordering-system/online-order-item/online-order-item.module';
 import { OnlineOrderItem } from './online-ordering-system/online-order-item/entities/online-order-item.entity';
 import { QRMenuSection } from './qr-code/qr-menu-section/entity/qr-menu-section.entity';
-import { QrMenuSectionModule } from './qr-code/qr-menu-section/qr-menu-section.module';
+import { QRMenuSectionModule } from './qr-code/qr-menu-section/qr-menu-section.module';
 import { QRMenuItem } from './qr-code/qr-menu-item/entity/qr-menu-item.entity';
-import { QrMenuItemModule } from './qr-code/qr-menu-item/qr-menu-item.module';
+import { QRMenuItemModule } from './qr-code/qr-menu-item/qr-menu-item.module';
+import { QRLocation } from './qr-code/qr-location/entity/qr-location.entity';
+import { QRLocationModule } from './qr-code/qr-location/qr-location.module';
 
 @Module({
   imports: [
@@ -162,6 +164,7 @@ import { QrMenuItemModule } from './qr-code/qr-menu-item/qr-menu-item.module';
           OnlineMenuItem,
           OnlineOrder,
           OnlineOrderItem,
+          QRLocation,
         ],
         synchronize: true,
       }),
@@ -200,9 +203,9 @@ import { QrMenuItemModule } from './qr-code/qr-menu-item/qr-menu-item.module';
     OnlineStoresModule,
     PlanFeaturesModule,
     SubscriptionPaymentsModule,
-    QrCodeModule,
+    QRCodeModule,
 
-    QrMenuModule,
+    QRMenuModule,
     OnlineMenuModule,
     LoyaltyModule,
 
@@ -213,8 +216,9 @@ import { QrMenuItemModule } from './qr-code/qr-menu-item/qr-menu-item.module';
     OnlineOrderModule,
 
     OnlineOrderItemModule,
-    QrMenuSectionModule,
-    QrMenuItemModule,
+    QRMenuSectionModule,
+    QRMenuItemModule,
+    QRLocationModule,
   ],
 })
 export class AppModule {}
