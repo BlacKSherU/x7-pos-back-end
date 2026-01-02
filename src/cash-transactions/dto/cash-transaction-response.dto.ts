@@ -66,7 +66,4 @@ export class CashTransactionLittleResponseDto {
 
   @ApiProperty({ example: 125.5 })
   amount: number;
-
-  @ApiProperty({ example: 'active', enum: CashTransactionStatus })
-  status: CashTransactionStatus;
 }

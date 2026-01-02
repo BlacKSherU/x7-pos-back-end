@@ -11,8 +11,12 @@ import {
 import { LoyaltyPointTransaction } from './entities/loyalty-points-transaction.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { LoyaltyCustomer } from '../loyalty-customer/entities/loyalty-customer.entity';
-import { Repository } from 'typeorm';
-import { OrderStatus } from 'src/orders/constants/order-status.enum';
+import { DataSource, Repository } from 'typeorm';
+import { ErrorMessage } from 'src/common/constants/error-messages';
+import { Order } from 'src/orders/entities/order.entity';
+import { CashTransaction } from 'src/cash-transactions/entities/cash-transaction.entity';
+import { CashTransactionStatus } from 'src/cash-transactions/constants/cash-transaction-status.enum';
+import { OrderBusinessStatus } from 'src/orders/constants/order-business-status.enum';
 
 @Injectable()
 export class LoyaltyPointsTransactionService {
@@ -21,47 +25,79 @@ export class LoyaltyPointsTransactionService {
     private readonly loyaltyCustomerRepository: Repository<LoyaltyCustomer>,
     @InjectRepository(LoyaltyPointTransaction)
     private readonly loyaltyPointsTransactionRepository: Repository<LoyaltyPointTransaction>,
+    @InjectRepository(Order)
+    private readonly orderRepository: Repository<Order>,
+    @InjectRepository(CashTransaction)
+    private readonly cashTransactionRepository: Repository<CashTransaction>,
+    private readonly dataSource: DataSource,
   ) {}
 
   async create(
-    merchantId: number,
+    merchant_id: number,
     createLoyaltyPointsTransactionDto: CreateLoyaltyPointsTransactionDto,
   ): Promise<OneLoyaltyPointsTransactionResponse> {
-    const { loyalty_customer_id, points, ...transactionData } =
-      createLoyaltyPointsTransactionDto;
+    const {
+      loyalty_customer_id,
+      order_id,
+      payment_id,
+      points,
+      ...transactionData
+    } = createLoyaltyPointsTransactionDto;
 
-    const loyaltyCustomer = await this.loyaltyCustomerRepository.findOne({
-      where: { id: loyalty_customer_id },
-      relations: ['loyaltyProgram'],
+    const [order, payment] = await Promise.all([
+      this.orderRepository.findOneBy({
+        id: order_id,
+        merchant_id: merchant_id,
+      }),
+      this.cashTransactionRepository.findOneBy({
+        id: payment_id,
+        order: { merchant_id: merchant_id },
+        status: CashTransactionStatus.ACTIVE,
+      }),
+    ]);
+
+    if (!order) ErrorHandler.notFound(ErrorMessage.ORDER_NOT_FOUND);
+    if (!payment)
+      ErrorHandler.notFound(ErrorMessage.CASH_TRANSACTION_NOT_FOUND);
+
+    const loyaltyCustomer = await this.loyaltyCustomerRepository.findOneBy({
+      id: loyalty_customer_id,
+      loyaltyProgram: { merchantId: merchant_id },
+      is_active: true,
     });
 
-    if (!loyaltyCustomer) {
-      ErrorHandler.notFound('Loyalty Customer not found');
-    }
+    if (!loyaltyCustomer)
+      ErrorHandler.notFound(ErrorMessage.LOYALTY_CUSTOMER_NOT_FOUND);
 
-    if (loyaltyCustomer.loyaltyProgram.merchantId !== merchantId) {
-      ErrorHandler.notFound('Loyalty Customer not found');
-    }
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
     try {
       loyaltyCustomer.currentPoints += points;
       if (points > 0) {
         loyaltyCustomer.lifetimePoints += points;
       }
-      await this.loyaltyCustomerRepository.save(loyaltyCustomer);
+      await queryRunner.manager.save(loyaltyCustomer);
 
       const newTransaction = this.loyaltyPointsTransactionRepository.create({
         points,
         ...transactionData,
-        loyaltyCustomer,
+        loyaltyCustomerId: loyalty_customer_id,
+        orderId: order_id,
+        paymentId: payment_id,
       });
 
-      const savedTransaction =
-        await this.loyaltyPointsTransactionRepository.save(newTransaction);
+      const savedTransaction = await queryRunner.manager.save(newTransaction);
 
-      return this.findOne(savedTransaction.id, merchantId, 'Created');
+      await queryRunner.commitTransaction();
+
+      return this.findOne(savedTransaction.id, merchant_id, 'Created');
     } catch (error) {
+      await queryRunner.rollbackTransaction();
       ErrorHandler.handleDatabaseError(error);
+    } finally {
+      await queryRunner.release();
     }
   }
 
@@ -77,16 +113,16 @@ export class LoyaltyPointsTransactionService {
       const queryBuilder = this.loyaltyPointsTransactionRepository
         .createQueryBuilder('loyaltyPointsTransaction')
         .leftJoinAndSelect('loyaltyPointsTransaction.order', 'order')
-        .leftJoinAndSelect(
-          'loyaltyPointsTransaction.cash_transaction',
-          'cash_transaction',
-        )
+        .leftJoinAndSelect('loyaltyPointsTransaction.payment', 'payment')
         .leftJoinAndSelect(
           'loyaltyPointsTransaction.loyaltyCustomer',
           'loyaltyCustomer',
         )
         .leftJoin('loyaltyCustomer.loyaltyProgram', 'loyaltyProgram')
-        .where('loyaltyProgram.merchantId = :merchantId', { merchantId });
+        .where('loyaltyProgram.merchantId = :merchantId', { merchantId })
+        .andWhere('loyaltyPointsTransaction.is_active = :isActive', {
+          isActive: true,
+        });
 
       if (query.min_points !== undefined) {
         queryBuilder.andWhere(
@@ -133,7 +169,8 @@ export class LoyaltyPointsTransactionService {
           order: lpt.order
             ? {
                 id: lpt.order.id,
-                status: lpt.order.status as unknown as OrderStatus,
+                businessStatus: lpt.order
+                  .status as unknown as OrderBusinessStatus,
               }
             : null,
           payment: lpt.payment
@@ -141,7 +178,6 @@ export class LoyaltyPointsTransactionService {
                 id: lpt.payment.id,
                 amount: lpt.payment.amount,
                 type: lpt.payment.type,
-                status: lpt.payment.status,
               }
             : null,
           loyaltyCustomer: lpt.loyaltyCustomer
@@ -182,10 +218,7 @@ export class LoyaltyPointsTransactionService {
     const queryBuilder = this.loyaltyPointsTransactionRepository
       .createQueryBuilder('loyaltyPointsTransaction')
       .leftJoinAndSelect('loyaltyPointsTransaction.order', 'order')
-      .leftJoinAndSelect(
-        'loyaltyPointsTransaction.cash_transaction',
-        'cash_transaction',
-      )
+      .leftJoinAndSelect('loyaltyPointsTransaction.payment', 'payment')
       .leftJoinAndSelect(
         'loyaltyPointsTransaction.loyaltyCustomer',
         'loyaltyCustomer',
@@ -197,7 +230,7 @@ export class LoyaltyPointsTransactionService {
     const loyaltyPointsTransaction = await queryBuilder.getOne();
 
     if (!loyaltyPointsTransaction) {
-      ErrorHandler.notFound('Loyalty Points Transaction not found');
+      ErrorHandler.notFound(ErrorMessage.LOYALTY_POINTS_TRANSACTION_NOT_FOUND);
     }
 
     const dataForResponse: LoyaltyPointsTransactionResponseDto = {
@@ -208,8 +241,8 @@ export class LoyaltyPointsTransactionService {
       order: loyaltyPointsTransaction.order
         ? {
             id: loyaltyPointsTransaction.order.id,
-            status: loyaltyPointsTransaction.order
-              .status as unknown as OrderStatus,
+            businessStatus: loyaltyPointsTransaction.order
+              .status as unknown as OrderBusinessStatus,
           }
         : null,
       payment: loyaltyPointsTransaction.payment
@@ -217,7 +250,6 @@ export class LoyaltyPointsTransactionService {
             id: loyaltyPointsTransaction.payment.id,
             amount: loyaltyPointsTransaction.payment.amount,
             type: loyaltyPointsTransaction.payment.type,
-            status: loyaltyPointsTransaction.payment.status,
           }
         : null,
       loyaltyCustomer: loyaltyPointsTransaction.loyaltyCustomer
@@ -289,35 +321,44 @@ export class LoyaltyPointsTransactionService {
     const transaction = await queryBuilder.getOne();
 
     if (!transaction) {
-      ErrorHandler.notFound('Loyalty Points Transaction not found');
+      ErrorHandler.notFound(ErrorMessage.LOYALTY_POINTS_TRANSACTION_NOT_FOUND);
     }
 
     const { points, ...otherUpdates } = updateLoyaltyPointsTransactionDto;
 
-    if (points !== undefined && points !== transaction.points) {
-      const customer = transaction.loyaltyCustomer;
-      if (customer) {
-        customer.currentPoints -= transaction.points;
-        if (transaction.points > 0) {
-          customer.lifetimePoints -= transaction.points;
-        }
-
-        customer.currentPoints += points;
-        if (points > 0) {
-          customer.lifetimePoints += points;
-        }
-        await this.loyaltyCustomerRepository.save(customer);
-      }
-      transaction.points = points;
-    }
-
-    Object.assign(transaction, otherUpdates);
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
     try {
-      await this.loyaltyPointsTransactionRepository.save(transaction);
+      if (points !== undefined && points !== transaction.points) {
+        const customer = transaction.loyaltyCustomer;
+        if (customer) {
+          customer.currentPoints -= transaction.points;
+          if (transaction.points > 0) {
+            customer.lifetimePoints -= transaction.points;
+          }
+
+          customer.currentPoints += points;
+          if (points > 0) {
+            customer.lifetimePoints += points;
+          }
+          await queryRunner.manager.save(customer);
+        }
+        transaction.points = points;
+      }
+
+      Object.assign(transaction, otherUpdates);
+
+      await queryRunner.manager.save(transaction);
+      await queryRunner.commitTransaction();
+
       return this.findOne(id, merchantId, 'Updated');
     } catch (error) {
+      await queryRunner.rollbackTransaction();
       ErrorHandler.handleDatabaseError(error);
+    } finally {
+      await queryRunner.release();
     }
   }
 
@@ -325,29 +366,44 @@ export class LoyaltyPointsTransactionService {
     id: number,
     merchantId: number,
   ): Promise<OneLoyaltyPointsTransactionResponse> {
-    const response = await this.findOne(id, merchantId, 'Deleted');
-
     const transaction = await this.loyaltyPointsTransactionRepository.findOne({
       where: { id },
-      relations: ['loyaltyCustomer'],
+      relations: ['loyaltyCustomer', 'loyaltyCustomer.loyaltyProgram'],
     });
 
-    if (transaction) {
+    if (!transaction) {
+      ErrorHandler.notFound(ErrorMessage.LOYALTY_POINTS_TRANSACTION_NOT_FOUND);
+    }
+
+    if (transaction.loyaltyCustomer.loyaltyProgram.merchantId !== merchantId) {
+      ErrorHandler.notFound(ErrorMessage.LOYALTY_POINTS_TRANSACTION_NOT_FOUND);
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
       const customer = transaction.loyaltyCustomer;
       if (customer) {
         customer.currentPoints -= transaction.points;
         if (transaction.points > 0) {
           customer.lifetimePoints -= transaction.points;
         }
-        await this.loyaltyCustomerRepository.save(customer);
+        await queryRunner.manager.save(customer);
       }
 
-      try {
-        await this.loyaltyPointsTransactionRepository.remove(transaction);
-      } catch (error) {
-        ErrorHandler.handleDatabaseError(error);
-      }
+      transaction.is_active = false;
+      await queryRunner.manager.save(transaction);
+
+      await queryRunner.commitTransaction();
+
+      return this.findOne(id, merchantId, 'Deleted');
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      ErrorHandler.handleDatabaseError(error);
+    } finally {
+      await queryRunner.release();
     }
-    return response;
   }
 }

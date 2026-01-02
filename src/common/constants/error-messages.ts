@@ -46,11 +46,15 @@ export enum ErrorMessage {
   SUBSCRIPTION_PLAN_NOT_FOUND = 'Subscription Plan not found',
   SUBSCRIPTION_APPLICATION_NOT_FOUND = 'Subscription Application not found',
   FEATURE_NOT_FOUND = 'Feature not found',
+  ORDER_NOT_FOUND = 'Order not found',
+  CASH_TRANSACTION_NOT_FOUND = 'Cash Transaction not found',
   PLAN_FEATURE_NOT_FOUND = 'Plan Feature not found',
   SUBSCRIPTION_PAYMENT_NOT_FOUND = 'Subscription Payment not found',
   LOYALTY_PROGRAM_NOT_FOUND = 'Loyalty Program not found',
   LOYALTY_TIER_NOT_FOUND = 'Loyalty Tier not found',
   LOYALTY_CUSTOMER_NOT_FOUND = 'Loyalty Customer not found',
+  LOYALTY_REWARD_NOT_FOUND = 'Loyalty Reward not found',
+  LOYALTY_POINTS_TRANSACTION_NOT_FOUND = 'Loyalty Points Transaction not found',
   QR_MENU_NOT_FOUND = 'QR Menu not found',
   QR_MENU_SECTION_NOT_FOUND = 'QR Menu Section not found',
 
@@ -75,6 +79,8 @@ export enum ErrorMessage {
   LOYALTY_PROGRAM_NAME_EXISTS = 'Loyalty Program name already exists',
   LOYALTY_TIER_NAME_EXISTS = 'Loyalty Tier name already exists',
   LOYALTY_CUSTOMER_EXISTS = 'Loyalty Customer already exists',
+  LOYALTY_POINTS_TRANSACTION_EXISTS = 'Loyalty Points Transaction already exists',
+  LOYALTY_REWARD_EXISTS = 'Loyalty Reward already exists',
 
   // 422 Unprocessable Entity
   VALIDATION_FAILED = 'Validation failed',

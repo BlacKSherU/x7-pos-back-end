@@ -40,7 +40,7 @@ export class LoyaltyReward {
   @Column({
     type: 'enum',
     enum: LoyaltyRewardType,
-    default: LoyaltyRewardType.FREE_ITEM,
+    default: LoyaltyRewardType.CASHBACK,
   })
   type: LoyaltyRewardType;
 
@@ -75,7 +75,7 @@ export class LoyaltyReward {
     scale: 2,
     nullable: true,
   })
-  discountValue: string;
+  discountValue: number | null;
 
   @ApiProperty({
     example: 5.0,
@@ -88,18 +88,18 @@ export class LoyaltyReward {
     scale: 2,
     nullable: true,
   })
-  cashbackValue: string;
+  cashbackValue: number | null;
 
   @ApiProperty({
     example: 1,
     description: 'ID of the free product associated with the reward',
   })
   @Column({ name: 'free_product_id', nullable: true })
-  freeProductId: number;
+  freeProductId: number | null;
 
   @ManyToOne(() => Product)
   @JoinColumn({ name: 'free_product_id' })
-  freeProduct: Product;
+  freeProduct: Product | null;
 
   @ApiProperty({
     description: 'Timestamp when the reward was created',
@@ -112,4 +112,7 @@ export class LoyaltyReward {
   })
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
+
+  @Column({ default: true })
+  is_active: boolean;
 }

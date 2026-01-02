@@ -82,7 +82,10 @@ export class LoyaltyProgramsController {
       },
     },
   })
-  @ApiBadRequestResponse({ description: 'Invalid input data', type: ErrorResponse })
+  @ApiBadRequestResponse({
+    description: 'Invalid input data',
+    type: ErrorResponse,
+  })
   @ApiConflictResponse({ description: 'Loyalty Program already exists' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
   @ApiBody({ type: CreateLoyaltyProgramDto })

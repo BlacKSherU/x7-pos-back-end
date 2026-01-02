@@ -40,14 +40,14 @@ export class LoyaltyRewardResponseDto {
     description: 'Discount value associated with the reward',
     nullable: true,
   })
-  discount_value: string;
+  discount_value: number;
 
   @ApiProperty({
     example: '5.00',
     description: 'Cashback value associated with the reward',
     nullable: true,
   })
-  cashback_value: string;
+  cashback_value: number;
 
   @ApiProperty({
     description: 'Timestamp when the reward was created',

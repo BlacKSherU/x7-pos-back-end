@@ -68,6 +68,6 @@ export class OrderLittleResponseDto {
   @ApiProperty({ example: 1 })
   id: number;
 
-  @ApiProperty({ example: OrderStatus.ACTIVE, enum: OrderStatus })
-  status: OrderStatus | null;
+  @ApiProperty({ example: OrderBusinessStatus.PENDING, enum: OrderBusinessStatus })
+  businessStatus: OrderBusinessStatus | null;
 }

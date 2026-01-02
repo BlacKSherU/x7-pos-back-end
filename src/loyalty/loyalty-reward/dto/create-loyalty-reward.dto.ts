@@ -3,7 +3,7 @@ import {
   IsEnum,
   IsInt,
   IsNotEmpty,
-  IsNumberString,
+  IsNumber,
   IsOptional,
   IsString,
   MaxLength,
@@ -21,7 +21,7 @@ export class CreateLoyaltyRewardDto {
   loyalty_program_id: number;
 
   @ApiProperty({
-    example: LoyaltyRewardType.FREE_ITEM,
+    example: LoyaltyRewardType.CASHBACK,
     description: 'Type of the loyalty reward',
     enum: LoyaltyRewardType,
   })
@@ -61,8 +61,8 @@ export class CreateLoyaltyRewardDto {
       'Discount value associated with the reward (e.g., for a discount type reward)',
   })
   @IsOptional()
-  @IsNumberString()
-  discount_value?: string;
+  @IsNumber()
+  discount_value: number;
 
   @ApiPropertyOptional({
     example: '5.00',
@@ -70,8 +70,8 @@ export class CreateLoyaltyRewardDto {
       'Cashback value associated with the reward (e.g., for a cashback type reward)',
   })
   @IsOptional()
-  @IsNumberString()
-  cashback_value?: string;
+  @IsNumber()
+  cashback_value: number;
 
   @ApiPropertyOptional({
     example: 123,
@@ -80,5 +80,5 @@ export class CreateLoyaltyRewardDto {
   })
   @IsOptional()
   @IsInt()
-  free_product_id?: number;
+  free_product_id: number;
 }

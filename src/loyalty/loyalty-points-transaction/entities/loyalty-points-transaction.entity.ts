@@ -72,7 +72,7 @@ export class LoyaltyPointTransaction {
     example: 1,
     description: 'ID of the associated payment transaction',
   })
-  @Column({ type: 'bigint', name: 'payment_id', nullable: true })
+  @Column({ type: 'int', name: 'payment_id', nullable: true })
   paymentId: number;
 
   @ManyToOne(() => CashTransaction)
@@ -84,4 +84,7 @@ export class LoyaltyPointTransaction {
   })
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
+
+  @Column({ default: true })
+  is_active: boolean;
 }
