@@ -198,7 +198,6 @@ describe('VariantsController', () => {
       const updateVariantDto: UpdateVariantDto = {
         name: 'Updated Variant',
         price: 12.0, // Added price
-        productId: 1, // Added productId
       };
       const expectedResult = {
         statusCode: 201,
@@ -229,7 +228,6 @@ describe('VariantsController', () => {
       const updateVariantDto: UpdateVariantDto = {
         name: 'Non Existent',
         price: 0,
-        productId: 1,
       };
       const errorMessage = 'Variant not found';
       mockVariantsService.update.mockRejectedValue(new Error(errorMessage));
@@ -298,7 +296,6 @@ describe('VariantsController', () => {
       const updateVariantDto: UpdateVariantDto = {
         name: 'Updated Integration Test Variant',
         price: 17.5,
-        productId: 2,
       };
       const variantId = 1;
       const query: GetVariantsQueryDto = { page: 1, limit: 10 };

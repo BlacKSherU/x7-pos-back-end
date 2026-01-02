@@ -662,25 +662,6 @@ describe('VariantsService', () => {
       expect(variantRepository.save).not.toHaveBeenCalled();
     });
 
-    it('should throw BadRequestException if productId is attempted to be changed', async () => {
-      const dtoWithProductIdChange = {
-        ...mockUpdateVariantDto,
-        productId: 999,
-      };
-
-      mockQueryBuilder.getOne.mockResolvedValueOnce(mockVariant as Variant);
-
-      await expect(
-        async () =>
-          await service.update(variantId, merchantId, dtoWithProductIdChange),
-      ).rejects.toThrow('Product ID cannot be changed');
-
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith('variant.id = :id', {
-        id: variantId,
-      });
-      expect(variantRepository.save).not.toHaveBeenCalled();
-    });
-
     it('should throw BadRequestException if new variant name already exists for product', async () => {
       const existingVariantWithNewName = {
         ...mockVariant,

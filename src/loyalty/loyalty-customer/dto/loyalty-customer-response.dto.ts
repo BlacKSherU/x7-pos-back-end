@@ -58,3 +58,23 @@ export class OneLoyaltyCustomerResponse extends SuccessResponse {
   })
   data: LoyaltyCustomerResponseDto;
 }
+
+export class LoyaltyCustomerLittleResponseDto {
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier for the loyalty customer',
+  })
+  id: number;
+
+  @ApiProperty({
+    example: 100,
+    description: 'Current loyalty points of the customer',
+  })
+  current_points: number;
+
+  @ApiProperty({
+    example: 500,
+    description: 'Lifetime loyalty points accumulated by the customer',
+  })
+  lifetime_points: number;
+}

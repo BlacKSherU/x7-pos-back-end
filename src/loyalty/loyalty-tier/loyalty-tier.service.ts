@@ -89,13 +89,6 @@ export class LoyaltyTierService {
       .where('loyaltyProgram.merchantId = :merchantId', { merchantId })
       .andWhere('loyaltyTier.is_active = :isActive', { isActive: true });
 
-    if (query.loyalty_program_id) {
-      queryBuilder.andWhere(
-        'loyaltyTier.loyalty_program_id = :loyalty_program_id',
-        { loyalty_program_id: query.loyalty_program_id },
-      );
-    }
-
     if (query.name) {
       queryBuilder.andWhere('LOWER(loyaltyTier.name) LIKE LOWER(:name)', {
         name: `%${query.name}%`,
@@ -111,12 +104,6 @@ export class LoyaltyTierService {
     if (query.min_points) {
       queryBuilder.andWhere('loyaltyTier.min_points >= :min_points', {
         min_points: query.min_points,
-      });
-    }
-
-    if (query.benefits && query.benefits.length > 0) {
-      queryBuilder.andWhere('loyaltyTier.benefits @> :benefits', {
-        benefits: query.benefits,
       });
     }
 
@@ -283,14 +270,6 @@ export class LoyaltyTierService {
       }
     }
 
-    if (
-      updateLoyaltyTierDto.loyalty_program_id &&
-      updateLoyaltyTierDto.loyalty_program_id !== loyaltyTier.loyalty_program_id
-    ) {
-      ErrorHandler.forbidden(
-        ErrorMessage.LOYALTY_PROGRAM_ID_CANNOT_BE_MODIFIED,
-      );
-    }
     Object.assign(loyaltyTier, updateLoyaltyTierDto);
 
     try {

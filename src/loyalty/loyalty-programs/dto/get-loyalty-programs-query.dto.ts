@@ -10,14 +10,22 @@ export class GetLoyaltyProgramsQueryDto {
   @Min(1)
   page?: number;
 
-  @ApiProperty({ example: 10, description: 'Number of items per page', required: false })
+  @ApiProperty({
+    example: 10,
+    description: 'Number of items per page',
+    required: false,
+  })
   @IsNumber()
   @IsOptional()
   @Type(() => Number)
   @Min(1)
   limit?: number;
 
-  @ApiProperty({ example: 'Gold Program', description: 'Filter by loyalty program name', required: false })
+  @ApiProperty({
+    example: 'Gold Program',
+    description: 'Filter by loyalty program name',
+    required: false,
+  })
   @IsString()
   @IsOptional()
   name?: string;

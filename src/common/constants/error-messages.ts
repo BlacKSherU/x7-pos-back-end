@@ -9,7 +9,6 @@ export enum ErrorMessage {
   MISSING_REQUIRED_FIELD = 'Required field is missing',
   INVALID_EMAIL_FORMAT = 'Invalid email format',
   INVALID_PASSWORD_FORMAT = 'Password must be at least 8 characters long',
-  LOYALTY_PROGRAM_ID_CANNOT_BE_MODIFIED = 'Loyalty Program ID cannot be modified',
 
   // 401 Unauthorized
   UNAUTHORIZED = 'Authentication required',
@@ -23,7 +22,6 @@ export enum ErrorMessage {
   DIFFERENT_MERCHANT = 'You can only access resources from your own merchant',
   CHANGED_MERCHANT = 'Merchant ID cannot be changed',
   NOT_OWNER = 'You can only modify your own resources',
-  PRODUCT_ID_NOT_CHANGED = 'Product ID cannot be changed',
 
   // 404 Not Found
   USER_NOT_FOUND = 'User not found',
@@ -48,11 +46,15 @@ export enum ErrorMessage {
   SUBSCRIPTION_PLAN_NOT_FOUND = 'Subscription Plan not found',
   SUBSCRIPTION_APPLICATION_NOT_FOUND = 'Subscription Application not found',
   FEATURE_NOT_FOUND = 'Feature not found',
+  ORDER_NOT_FOUND = 'Order not found',
+  CASH_TRANSACTION_NOT_FOUND = 'Cash Transaction not found',
   PLAN_FEATURE_NOT_FOUND = 'Plan Feature not found',
   SUBSCRIPTION_PAYMENT_NOT_FOUND = 'Subscription Payment not found',
   LOYALTY_PROGRAM_NOT_FOUND = 'Loyalty Program not found',
   LOYALTY_TIER_NOT_FOUND = 'Loyalty Tier not found',
   LOYALTY_CUSTOMER_NOT_FOUND = 'Loyalty Customer not found',
+  LOYALTY_REWARD_NOT_FOUND = 'Loyalty Reward not found',
+  LOYALTY_POINTS_TRANSACTION_NOT_FOUND = 'Loyalty Points Transaction not found',
   QR_MENU_NOT_FOUND = 'QR Menu not found',
   QR_MENU_SECTION_NOT_FOUND = 'QR Menu Section not found',
   QR_MENU_ITEM_NOT_FOUND = 'QR Menu Item not found',
@@ -80,6 +82,8 @@ export enum ErrorMessage {
   LOYALTY_PROGRAM_NAME_EXISTS = 'Loyalty Program name already exists',
   LOYALTY_TIER_NAME_EXISTS = 'Loyalty Tier name already exists',
   LOYALTY_CUSTOMER_EXISTS = 'Loyalty Customer already exists',
+  LOYALTY_POINTS_TRANSACTION_EXISTS = 'Loyalty Points Transaction already exists',
+  LOYALTY_REWARD_EXISTS = 'Loyalty Reward already exists',
 
   // 422 Unprocessable Entity
   VALIDATION_FAILED = 'Validation failed',

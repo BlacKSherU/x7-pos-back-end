@@ -14,6 +14,7 @@ import {
 } from 'typeorm';
 import { Item } from 'src/products-inventory/stocks/items/entities/item.entity';
 import { PurchaseOrderItem } from 'src/products-inventory/purchase-order-item/entities/purchase-order-item.entity';
+import { LoyaltyReward } from 'src/loyalty/loyalty-reward/entities/loyalty-reward.entity';
 
 @Entity({ name: 'product' })
 export class Product {
@@ -94,4 +95,7 @@ export class Product {
     (purchaseOrderItem) => purchaseOrderItem.product,
   )
   purchaseOrderItems: PurchaseOrderItem[];
+
+  @OneToMany(() => LoyaltyReward, (loyaltyReward) => loyaltyReward.freeProduct)
+  loyaltyRewards: LoyaltyReward[];
 }

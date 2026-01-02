@@ -55,9 +55,9 @@ describe('LoyaltyCustomerController', () => {
     loyaltyTier: mockLoyaltyTier as LoyaltyTier,
     is_active: true,
     joinedAt: new Date(),
+    loyaltyPointTransactions: [],
   };
 
-  // Función de ayuda para transformar LoyaltyCustomer a LoyaltyCustomerResponseDto
   const toLoyaltyCustomerResponseDto = (
     lc: LoyaltyCustomer,
   ): LoyaltyCustomerResponseDto => ({

@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -11,7 +16,11 @@ import { Table } from '../tables/entities/table.entity';
 import { Collaborator } from '../collaborators/entities/collaborator.entity';
 import { MerchantSubscription } from '../subscriptions/merchant-subscriptions/entities/merchant-subscription.entity';
 import { Customer } from '../customers/entities/customer.entity';
-import { OneOrderResponseDto, PaginatedOrdersResponseDto, OrderResponseDto } from './dto/order-response.dto';
+import {
+  OneOrderResponseDto,
+  PaginatedOrdersResponseDto,
+  OrderResponseDto,
+} from './dto/order-response.dto';
 
 @Injectable()
 export class OrdersService {
@@ -30,22 +39,29 @@ export class OrdersService {
     private readonly customerRepo: Repository<Customer>,
   ) {}
 
-  async create(dto: CreateOrderDto, authenticatedUserMerchantId: number): Promise<OneOrderResponseDto> {
-
-
+  async create(
+    dto: CreateOrderDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneOrderResponseDto> {
     if (!authenticatedUserMerchantId) {
       throw new ForbiddenException('You must be associated with a merchant');
     }
 
     // Validate that the user can only create orders for their own merchant
     if (dto.merchantId !== authenticatedUserMerchantId) {
-      throw new ForbiddenException('You can only create orders for your own merchant');
+      throw new ForbiddenException(
+        'You can only create orders for your own merchant',
+      );
     }
 
     // Validate merchant exists and belongs to user
-    const merchant = await this.merchantRepo.findOne({ where: { id: dto.merchantId } });
+    const merchant = await this.merchantRepo.findOne({
+      where: { id: dto.merchantId },
+    });
     if (!merchant) {
-      throw new NotFoundException(`Merchant with ID ${dto.merchantId} not found`);
+      throw new NotFoundException(
+        `Merchant with ID ${dto.merchantId} not found`,
+      );
     }
 
     // Validate table exists and belongs to user merchant
@@ -58,27 +74,43 @@ export class OrdersService {
     }
 
     // Validate collaborator exists and belongs to user merchant
-    const collaborator = await this.collaboratorRepo.findOne({ where: { id: dto.collaboratorId } });
+    const collaborator = await this.collaboratorRepo.findOne({
+      where: { id: dto.collaboratorId },
+    });
     if (!collaborator) {
-      throw new NotFoundException(`Collaborator with ID ${dto.collaboratorId} not found`);
+      throw new NotFoundException(
+        `Collaborator with ID ${dto.collaboratorId} not found`,
+      );
     }
     if (collaborator.merchant_id !== authenticatedUserMerchantId) {
-      throw new ForbiddenException('Collaborator does not belong to your merchant');
+      throw new ForbiddenException(
+        'Collaborator does not belong to your merchant',
+      );
     }
 
     // Validate subscription exists and belongs to user merchant
-    const subscription = await this.subscriptionRepo.findOne({ where: { id: dto.subscriptionId } });
+    const subscription = await this.subscriptionRepo.findOne({
+      where: { id: dto.subscriptionId },
+    });
     if (!subscription) {
-      throw new NotFoundException(`Subscription with ID ${dto.subscriptionId} not found`);
+      throw new NotFoundException(
+        `Subscription with ID ${dto.subscriptionId} not found`,
+      );
     }
     if (subscription.merchant.id !== authenticatedUserMerchantId) {
-      throw new ForbiddenException('Subscription does not belong to your merchant');
+      throw new ForbiddenException(
+        'Subscription does not belong to your merchant',
+      );
     }
 
     // Validate customer exists and belongs to user merchant
-    const customer = await this.customerRepo.findOne({ where: { id: dto.customerId } });
+    const customer = await this.customerRepo.findOne({
+      where: { id: dto.customerId },
+    });
     if (!customer) {
-      throw new NotFoundException(`Customer with ID ${dto.customerId} not found`);
+      throw new NotFoundException(
+        `Customer with ID ${dto.customerId} not found`,
+      );
     }
     if (customer.merchantId !== authenticatedUserMerchantId) {
       throw new ForbiddenException('Customer does not belong to your merchant');
@@ -109,7 +141,6 @@ export class OrdersService {
 
     const saved = await this.orderRepo.save(order);
 
-
     return {
       statusCode: 201,
       message: 'Order created successfully',
@@ -117,17 +148,22 @@ export class OrdersService {
     };
   }
 
-  async findAll(query: GetOrdersQueryDto, authenticatedUserMerchantId: number): Promise<PaginatedOrdersResponseDto> {
-
-
+  async findAll(
+    query: GetOrdersQueryDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<PaginatedOrdersResponseDto> {
     if (!authenticatedUserMerchantId) {
       throw new ForbiddenException('You must be associated with a merchant');
     }
 
     // Validate merchant exists
-    const merchant = await this.merchantRepo.findOne({ where: { id: authenticatedUserMerchantId } });
+    const merchant = await this.merchantRepo.findOne({
+      where: { id: authenticatedUserMerchantId },
+    });
     if (!merchant) {
-      throw new NotFoundException(`Merchant with ID ${authenticatedUserMerchantId} not found`);
+      throw new NotFoundException(
+        `Merchant with ID ${authenticatedUserMerchantId} not found`,
+      );
     }
 
     // Configure pagination
@@ -148,7 +184,9 @@ export class OrdersService {
 
     if (query.tableId) {
       // Validate table belongs to user merchant
-      const table = await this.tableRepo.findOne({ where: { id: query.tableId } });
+      const table = await this.tableRepo.findOne({
+        where: { id: query.tableId },
+      });
       if (!table || table.merchant_id !== authenticatedUserMerchantId) {
         throw new ForbiddenException('Table does not belong to your merchant');
       }
@@ -157,27 +195,45 @@ export class OrdersService {
 
     if (query.collaboratorId) {
       // Validate collaborator belongs to user merchant
-      const collaborator = await this.collaboratorRepo.findOne({ where: { id: query.collaboratorId } });
-      if (!collaborator || collaborator.merchant_id !== authenticatedUserMerchantId) {
-        throw new ForbiddenException('Collaborator does not belong to your merchant');
+      const collaborator = await this.collaboratorRepo.findOne({
+        where: { id: query.collaboratorId },
+      });
+      if (
+        !collaborator ||
+        collaborator.merchant_id !== authenticatedUserMerchantId
+      ) {
+        throw new ForbiddenException(
+          'Collaborator does not belong to your merchant',
+        );
       }
       where.collaborator_id = query.collaboratorId;
     }
 
     if (query.subscriptionId) {
       // Validate subscription belongs to user merchant
-      const subscription = await this.subscriptionRepo.findOne({ where: { id: query.subscriptionId } });
-      if (!subscription || subscription.merchant.id !== authenticatedUserMerchantId) {
-        throw new ForbiddenException('Subscription does not belong to your merchant');
+      const subscription = await this.subscriptionRepo.findOne({
+        where: { id: query.subscriptionId },
+      });
+      if (
+        !subscription ||
+        subscription.merchant.id !== authenticatedUserMerchantId
+      ) {
+        throw new ForbiddenException(
+          'Subscription does not belong to your merchant',
+        );
       }
       where.subscription_id = query.subscriptionId;
     }
 
     if (query.customerId) {
       // Validate customer belongs to user merchant
-      const customer = await this.customerRepo.findOne({ where: { id: query.customerId } });
+      const customer = await this.customerRepo.findOne({
+        where: { id: query.customerId },
+      });
       if (!customer || customer.merchantId !== authenticatedUserMerchantId) {
-        throw new ForbiddenException('Customer does not belong to your merchant');
+        throw new ForbiddenException(
+          'Customer does not belong to your merchant',
+        );
       }
       where.customer_id = query.customerId;
     }
@@ -217,7 +273,6 @@ export class OrdersService {
       order.created_at = 'DESC';
     }
 
-
     const [rows, total] = await this.orderRepo.findAndCount({
       where,
       order,
@@ -225,11 +280,10 @@ export class OrdersService {
       take: limit,
     });
 
-
     return {
       statusCode: 200,
       message: 'Orders retrieved successfully',
-      data: rows.map(r => this.format(r)),
+      data: rows.map((r) => this.format(r)),
       paginationMeta: {
         page,
         limit,
@@ -241,7 +295,10 @@ export class OrdersService {
     };
   }
 
-  async findOne(id: number, authenticatedUserMerchantId: number): Promise<OneOrderResponseDto> {
+  async findOne(
+    id: number,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneOrderResponseDto> {
     if (!id || id <= 0) {
       throw new BadRequestException('Invalid id');
     }
@@ -259,7 +316,9 @@ export class OrdersService {
 
     // Ensure ownership
     if (row.merchant_id !== authenticatedUserMerchantId) {
-      throw new ForbiddenException('You can only access orders from your merchant');
+      throw new ForbiddenException(
+        'You can only access orders from your merchant',
+      );
     }
 
     return {
@@ -269,7 +328,11 @@ export class OrdersService {
     };
   }
 
-  async update(id: number, dto: UpdateOrderDto, authenticatedUserMerchantId: number): Promise<OneOrderResponseDto> {
+  async update(
+    id: number,
+    dto: UpdateOrderDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneOrderResponseDto> {
     if (!id || id <= 0) {
       throw new BadRequestException('Invalid id');
     }
@@ -287,14 +350,18 @@ export class OrdersService {
 
     // Ensure ownership
     if (existing.merchant_id !== authenticatedUserMerchantId) {
-      throw new ForbiddenException('You can only update orders from your merchant');
+      throw new ForbiddenException(
+        'You can only update orders from your merchant',
+      );
     }
 
     const updateData: any = {};
 
     if (dto.tableId !== undefined) {
       // Validate table exists and belongs to user merchant
-      const table = await this.tableRepo.findOne({ where: { id: dto.tableId } });
+      const table = await this.tableRepo.findOne({
+        where: { id: dto.tableId },
+      });
       if (!table) {
         throw new NotFoundException(`Table with ID ${dto.tableId} not found`);
       }
@@ -306,24 +373,36 @@ export class OrdersService {
 
     if (dto.collaboratorId !== undefined) {
       // Validate collaborator exists and belongs to user merchant
-      const collaborator = await this.collaboratorRepo.findOne({ where: { id: dto.collaboratorId } });
+      const collaborator = await this.collaboratorRepo.findOne({
+        where: { id: dto.collaboratorId },
+      });
       if (!collaborator) {
-        throw new NotFoundException(`Collaborator with ID ${dto.collaboratorId} not found`);
+        throw new NotFoundException(
+          `Collaborator with ID ${dto.collaboratorId} not found`,
+        );
       }
       if (collaborator.merchant_id !== authenticatedUserMerchantId) {
-        throw new ForbiddenException('Collaborator does not belong to your merchant');
+        throw new ForbiddenException(
+          'Collaborator does not belong to your merchant',
+        );
       }
       updateData.collaborator_id = dto.collaboratorId;
     }
 
     if (dto.subscriptionId !== undefined) {
       // Validate subscription exists and belongs to user merchant
-      const subscription = await this.subscriptionRepo.findOne({ where: { id: dto.subscriptionId } });
+      const subscription = await this.subscriptionRepo.findOne({
+        where: { id: dto.subscriptionId },
+      });
       if (!subscription) {
-        throw new NotFoundException(`Subscription with ID ${dto.subscriptionId} not found`);
+        throw new NotFoundException(
+          `Subscription with ID ${dto.subscriptionId} not found`,
+        );
       }
       if (subscription.merchant.id !== authenticatedUserMerchantId) {
-        throw new ForbiddenException('Subscription does not belong to your merchant');
+        throw new ForbiddenException(
+          'Subscription does not belong to your merchant',
+        );
       }
       updateData.subscription_id = dto.subscriptionId;
     }
@@ -340,12 +419,18 @@ export class OrdersService {
 
     if (dto.customerId !== undefined) {
       // Validate customer exists and belongs to user merchant
-      const customer = await this.customerRepo.findOne({ where: { id: dto.customerId } });
+      const customer = await this.customerRepo.findOne({
+        where: { id: dto.customerId },
+      });
       if (!customer) {
-        throw new NotFoundException(`Customer with ID ${dto.customerId} not found`);
+        throw new NotFoundException(
+          `Customer with ID ${dto.customerId} not found`,
+        );
       }
       if (customer.merchantId !== authenticatedUserMerchantId) {
-        throw new ForbiddenException('Customer does not belong to your merchant');
+        throw new ForbiddenException(
+          'Customer does not belong to your merchant',
+        );
       }
       updateData.customer_id = dto.customerId;
     }
@@ -375,7 +460,10 @@ export class OrdersService {
     };
   }
 
-  async remove(id: number, authenticatedUserMerchantId: number): Promise<OneOrderResponseDto> {
+  async remove(
+    id: number,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneOrderResponseDto> {
     if (!id || id <= 0) {
       throw new BadRequestException('Invalid id');
     }
@@ -393,7 +481,9 @@ export class OrdersService {
 
     // Ensure ownership
     if (existing.merchant_id !== authenticatedUserMerchantId) {
-      throw new ForbiddenException('You can only delete orders from your merchant');
+      throw new ForbiddenException(
+        'You can only delete orders from your merchant',
+      );
     }
 
     await this.orderRepo.update(id, { logical_status: OrderStatus.DELETED });

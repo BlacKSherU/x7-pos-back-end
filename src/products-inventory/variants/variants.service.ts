@@ -243,7 +243,7 @@ export class VariantsService {
       ErrorHandler.invalidId('Variant ID is incorrect');
     }
 
-    const { productId, ...variantData } = updateVariantDto;
+    const { ...variantData } = updateVariantDto;
 
     const variant = await this.variantRepository
       .createQueryBuilder('variant')
@@ -256,10 +256,6 @@ export class VariantsService {
 
     if (!variant) {
       ErrorHandler.notFound(ErrorMessage.VARIANT_NOT_FOUND);
-    }
-
-    if (productId && productId !== variant.productId) {
-      ErrorHandler.forbidden(ErrorMessage.PRODUCT_ID_NOT_CHANGED);
     }
 
     if (variantData.name && variantData.name !== variant.name) {

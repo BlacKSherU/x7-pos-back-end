@@ -34,13 +34,13 @@ import { Roles } from 'src/auth/decorators/roles.decorator';
 import { UserRole } from 'src/users/constants/role.enum';
 import { Scope } from 'src/users/constants/scope.enum';
 import { Scopes } from 'src/auth/decorators/scopes.decorator';
-import { LoyaltyProgram } from './entities/loyalty-program.entity';
 import { ErrorResponse } from 'src/common/dtos/error-response.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
 import { AllPaginatedLoyaltyPrograms } from './dto/all-paginated-loyalty-programs.dto';
+import { OneLoyaltyProgramResponse } from './dto/loyalty-program-response.dto';
 
 @ApiExtraModels(ErrorResponse)
 @ApiBearerAuth()
@@ -65,15 +65,30 @@ export class LoyaltyProgramsController {
   @ApiOperation({ summary: 'Create a new Loyalty Program' })
   @ApiCreatedResponse({
     description: 'Loyalty Program created successfully',
-    type: LoyaltyProgram,
+    type: OneLoyaltyProgramResponse,
   })
   @ApiResponse({
     status: 400,
     description: 'Bad Request',
     type: ErrorResponse,
+    schema: {
+      example: {
+        statusCode: 400,
+        message: [
+          'name must be a string',
+          'points_per_currency must be a number',
+        ],
+        error: 'Bad Request',
+      },
+    },
   })
-  @ApiBadRequestResponse({ description: 'Invalid input data' })
+  @ApiBadRequestResponse({
+    description: 'Invalid input data',
+    type: ErrorResponse,
+  })
   @ApiConflictResponse({ description: 'Loyalty Program already exists' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
+  @ApiBody({ type: CreateLoyaltyProgramDto })
   create(
     @CurrentUser() user: AuthenticatedUser,
     @Body() createLoyaltyProgramDto: CreateLoyaltyProgramDto,
@@ -113,23 +128,93 @@ export class LoyaltyProgramsController {
     description: 'Number of items per page (1-100)',
     example: 10,
   })
+  @ApiQuery({
+    name: 'name',
+    required: false,
+    type: String,
+    description: 'Filter by loyalty program name',
+    example: 'Gold Program',
+  })
   @ApiOkResponse({
     description: 'Paginated list of loyalty programs retrieved successfully',
     type: AllPaginatedLoyaltyPrograms,
+    schema: {
+      example: {
+        statusCode: 200,
+        message: 'Loyalty programs retrieved successfully',
+        data: [
+          {
+            id: 1,
+            name: 'Gold Program',
+            description: 'Earn points for every purchase',
+            is_active: true,
+            points_per_currency: 1,
+            min_points_to_redeem: 100,
+            created_at: '2025-12-30T17:50:12.000Z',
+            updated_at: '2025-12-30T17:50:12.000Z',
+            merchant: {
+              id: 1,
+              name: 'Super Merchant',
+            },
+          },
+        ],
+        page: 1,
+        limit: 10,
+        total: 1,
+        totalPages: 1,
+        hasNext: false,
+        hasPrev: false,
+      },
+    },
   })
   @ApiUnauthorizedResponse({
     description: 'Unauthorized - Invalid or missing authentication token',
+    type: ErrorResponse,
+    schema: {
+      example: {
+        statusCode: 401,
+        message: 'Unauthorized',
+      },
+    },
   })
   @ApiNotFoundResponse({
     description: 'Merchant not found',
+    type: ErrorResponse,
   })
   @ApiBadRequestResponse({
     description: 'Invalid query parameters or business rule violation',
+    type: ErrorResponse,
+    schema: {
+      examples: {
+        invalidPage: {
+          summary: 'Invalid page number',
+          value: {
+            statusCode: 400,
+            message: 'page must not be less than 1',
+            error: 'Bad Request',
+          },
+        },
+        invalidLimit: {
+          summary: 'Invalid limit',
+          value: {
+            statusCode: 400,
+            message: 'limit must not be greater than 100',
+            error: 'Bad Request',
+          },
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 500,
     description: 'Internal server error',
     type: ErrorResponse,
+    schema: {
+      example: {
+        statusCode: 500,
+        message: 'Internal server error',
+      },
+    },
   })
   async findAll(
     @CurrentUser() user: AuthenticatedUser,
@@ -150,18 +235,38 @@ export class LoyaltyProgramsController {
   )
   @ApiOperation({ summary: 'Get a Loyalty Program by ID' })
   @ApiParam({ name: 'id', type: Number, description: 'Loyalty Program ID' })
-  @ApiOkResponse({ description: 'Loyalty Program found', type: LoyaltyProgram })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  @ApiNotFoundResponse({ description: 'Loyalty Program not found' })
+  @ApiOkResponse({
+    description: 'Loyalty Program found',
+    type: OneLoyaltyProgramResponse,
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
+  @ApiNotFoundResponse({
+    description: 'Loyalty Program not found',
+    type: ErrorResponse,
+  })
   @ApiResponse({
     status: 404,
     description: 'Loyalty Program not found',
     type: ErrorResponse,
+    schema: {
+      example: {
+        statusCode: 404,
+        message: 'Loyalty Program not found',
+        error: 'Not Found',
+      },
+    },
   })
   @ApiResponse({
     status: 400,
     description: 'Invalid ID',
     type: ErrorResponse,
+    schema: {
+      example: {
+        statusCode: 400,
+        message: 'Validation failed (numeric string is expected)',
+        error: 'Bad Request',
+      },
+    },
   })
   findOne(
     @CurrentUser() user: AuthenticatedUser,
@@ -182,23 +287,43 @@ export class LoyaltyProgramsController {
   )
   @ApiOperation({ summary: 'Update a Loyalty Program' })
   @ApiParam({ name: 'id', type: Number, description: 'Loyalty Program ID' })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  @ApiNotFoundResponse({ description: 'Loyalty Program not found' })
-  @ApiBadRequestResponse({ description: 'Invalid input data' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
+  @ApiNotFoundResponse({
+    description: 'Loyalty Program not found',
+    type: ErrorResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid input data',
+    type: ErrorResponse,
+  })
   @ApiBody({ type: UpdateLoyaltyProgramDto })
   @ApiOkResponse({
     description: 'Loyalty Program updated successfully',
-    type: LoyaltyProgram,
+    type: OneLoyaltyProgramResponse,
   })
   @ApiResponse({
     status: 404,
     description: 'Loyalty Program not found',
     type: ErrorResponse,
+    schema: {
+      example: {
+        statusCode: 404,
+        message: 'Loyalty Program not found',
+        error: 'Not Found',
+      },
+    },
   })
   @ApiResponse({
     status: 400,
     description: 'Bad Request',
     type: ErrorResponse,
+    schema: {
+      example: {
+        statusCode: 400,
+        message: 'name must be a string',
+        error: 'Bad Request',
+      },
+    },
   })
   update(
     @CurrentUser() user: AuthenticatedUser,
@@ -224,19 +349,42 @@ export class LoyaltyProgramsController {
   )
   @ApiOperation({ summary: 'Delete a Loyalty Program' })
   @ApiParam({ name: 'id', type: Number, description: 'Loyalty Program ID' })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  @ApiNotFoundResponse({ description: 'Loyalty Program not found' })
-  @ApiBadRequestResponse({ description: 'Invalid input data' })
-  @ApiOkResponse({ description: 'Loyalty Program deleted' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
+  @ApiNotFoundResponse({
+    description: 'Loyalty Program not found',
+    type: ErrorResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid input data',
+    type: ErrorResponse,
+  })
+  @ApiOkResponse({
+    description: 'Loyalty Program deleted successfully',
+    type: OneLoyaltyProgramResponse,
+  })
   @ApiResponse({
     status: 404,
     description: 'Loyalty Program not found',
     type: ErrorResponse,
+    schema: {
+      example: {
+        statusCode: 404,
+        message: 'Loyalty Program not found',
+        error: 'Not Found',
+      },
+    },
   })
   @ApiResponse({
     status: 400,
     description: 'Invalid ID',
     type: ErrorResponse,
+    schema: {
+      example: {
+        statusCode: 400,
+        message: 'Validation failed (numeric string is expected)',
+        error: 'Bad Request',
+      },
+    },
   })
   remove(
     @CurrentUser() user: AuthenticatedUser,

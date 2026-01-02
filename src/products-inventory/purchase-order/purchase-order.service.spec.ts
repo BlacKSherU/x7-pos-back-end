@@ -76,6 +76,7 @@ describe('PurchaseOrderService', () => {
     modifiers: [],
     items: [],
     purchaseOrderItems: [],
+    loyaltyRewards: [],
   };
 
   const mockPurchaseOrder: PurchaseOrder = {

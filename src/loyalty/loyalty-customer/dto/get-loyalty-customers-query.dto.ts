@@ -1,8 +1,31 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNumber, IsOptional, Min, Max } from 'class-validator';
+import { IsNumber, IsOptional, Min, Max, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class GetLoyaltyCustomersQueryDto {
+  @ApiPropertyOptional({
+    description: 'Page number for pagination',
+    type: Number,
+    default: 1,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Type(() => Number)
+  page?: number = 1;
+
+  @ApiPropertyOptional({
+    description: 'Number of items per page for pagination',
+    type: Number,
+    default: 10,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(100)
+  @Type(() => Number)
+  limit?: number = 10;
+
   @ApiPropertyOptional({
     description: 'Filter by minimum current points (greater than or equal to)',
     type: Number,
@@ -44,25 +67,18 @@ export class GetLoyaltyCustomersQueryDto {
   max_lifetime_points?: number;
 
   @ApiPropertyOptional({
-    description: 'Page number for pagination',
-    type: Number,
-    default: 1,
+    example: 'Jose',
+    description: 'Filter loyalty customer by customer',
   })
   @IsOptional()
-  @IsNumber()
-  @Min(1)
-  @Type(() => Number)
-  page?: number = 1;
+  @IsString()
+  customer?: string;
 
   @ApiPropertyOptional({
-    description: 'Number of items per page for pagination',
-    type: Number,
-    default: 10,
+    example: 'Gold Program',
+    description: 'Filter loyalty program by name',
   })
   @IsOptional()
-  @IsNumber()
-  @Min(1)
-  @Max(100)
-  @Type(() => Number)
-  limit?: number = 10;
+  @IsString()
+  loyaltyProgram?: string;
 }
