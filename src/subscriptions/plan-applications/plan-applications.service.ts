@@ -126,7 +126,7 @@ export class PlanApplicationsService {
       limits: item.limits,
       status: item.status,
 
-      subscriptionplan: {
+      subscriptionPlan: {
         id: item.subscriptionPlan.id,
         name: item.subscriptionPlan.name,
       },
@@ -225,7 +225,7 @@ export class PlanApplicationsService {
     await this.planApplicationRepository.save(planApp);
     return {
       statusCode: 200,
-      message: `Plan Application with ID ${id} deleted successfully`,
+      message: 'Plan Application removed successfully',
       data: planApp,
     };
   }

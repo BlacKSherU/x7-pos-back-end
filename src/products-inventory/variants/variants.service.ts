@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { CreateVariantDto } from './dto/create-variant.dto';
 import { UpdateVariantDto } from './dto/update-variant.dto';
 import {
@@ -11,7 +11,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Variant } from './entities/variant.entity';
 import { ProductsService } from '../products/products.service';
-import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
 import { ErrorHandler } from 'src/common/utils/error-handler.util';
 import { ErrorMessage } from 'src/common/constants/error-messages';
 
@@ -20,11 +19,12 @@ export class VariantsService {
   constructor(
     @InjectRepository(Variant)
     private readonly variantRepository: Repository<Variant>,
+    @Inject(forwardRef(() => ProductsService))
     private readonly productsService: ProductsService,
   ) {}
 
   async create(
-    user: AuthenticatedUser,
+    merchant_id: number,
     createVariantDto: CreateVariantDto,
   ): Promise<OneVariantResponse> {
     const { productId, ...variantData } = createVariantDto;
@@ -35,12 +35,14 @@ export class VariantsService {
       ErrorHandler.notFound(ErrorMessage.PRODUCT_NOT_FOUND);
     }
 
-    if (product.data.merchant?.id !== user.merchant.id) {
-      ErrorHandler.differentMerchant();
-    }
-
     const existingVariantByName = await this.variantRepository.findOne({
-      where: [{ name: variantData.name, isActive: true }],
+      where: [
+        {
+          name: variantData.name,
+          isActive: true,
+          product: { merchantId: merchant_id },
+        },
+      ],
     });
 
     if (existingVariantByName) {
@@ -48,20 +50,32 @@ export class VariantsService {
     }
 
     const existingVariantBySku = await this.variantRepository.findOne({
-      where: [{ sku: variantData.sku, isActive: true }],
+      where: [
+        {
+          sku: variantData.sku,
+          isActive: true,
+          product: { merchantId: merchant_id },
+        },
+      ],
     });
 
     if (existingVariantBySku) {
       ErrorHandler.exists(ErrorMessage.VARIANT_SKU_EXISTS);
     }
     const existingButIsNotActive = await this.variantRepository.findOne({
-      where: [{ name: variantData.name, isActive: false }],
+      where: [
+        {
+          name: variantData.name,
+          isActive: false,
+          product: { merchantId: merchant_id },
+        },
+      ],
     });
 
     if (existingButIsNotActive) {
       existingButIsNotActive.isActive = true;
       await this.variantRepository.save(existingButIsNotActive);
-      return this.findOne(existingButIsNotActive.id, undefined, 'Created');
+      return this.findOne(existingButIsNotActive.id, merchant_id, 'Created');
     } else {
       const newVariant = this.variantRepository.create({
         ...variantData,
@@ -70,7 +84,7 @@ export class VariantsService {
 
       const savedVariant = await this.variantRepository.save(newVariant);
 
-      return this.findOne(savedVariant.id, undefined, 'Created');
+      return this.findOne(savedVariant.id, merchant_id, 'Created');
     }
   }
 
@@ -150,7 +164,7 @@ export class VariantsService {
     createdUpdateDelete?: string,
   ): Promise<OneVariantResponse> {
     if (!id || id <= 0) {
-      ErrorHandler.invalidId('Variant ID incorrect');
+      ErrorHandler.invalidId('Variant ID is incorrect');
     }
 
     const queryBuilder = this.variantRepository
@@ -221,10 +235,14 @@ export class VariantsService {
   }
 
   async update(
-    user: AuthenticatedUser,
     id: number,
+    merchant_id: number,
     updateVariantDto: UpdateVariantDto,
   ): Promise<OneVariantResponse> {
+    if (!id || id <= 0) {
+      ErrorHandler.invalidId('Variant ID is incorrect');
+    }
+
     const { productId, ...variantData } = updateVariantDto;
 
     const variant = await this.variantRepository
@@ -233,14 +251,11 @@ export class VariantsService {
       .leftJoinAndSelect('product.merchant', 'merchant')
       .where('variant.id = :id', { id })
       .andWhere('variant.isActive = :isActive', { isActive: true })
+      .andWhere('product.merchantId = :merchantId', { merchant_id })
       .getOne();
 
     if (!variant) {
       ErrorHandler.notFound(ErrorMessage.VARIANT_NOT_FOUND);
-    }
-
-    if (variant.product.merchant.id !== user.merchant.id) {
-      ErrorHandler.differentMerchant();
     }
 
     if (productId && productId !== variant.productId) {
@@ -249,7 +264,11 @@ export class VariantsService {
 
     if (variantData.name && variantData.name !== variant.name) {
       const existingVariantName = await this.variantRepository.findOne({
-        where: { name: variantData.name },
+        where: {
+          name: variantData.name,
+          isActive: true,
+          product: { merchantId: merchant_id },
+        },
       });
 
       if (existingVariantName && existingVariantName.id !== id) {
@@ -259,7 +278,11 @@ export class VariantsService {
 
     if (variantData.sku && variantData.sku !== variant.sku) {
       const existingVariantSku = await this.variantRepository.findOne({
-        where: { sku: variantData.sku },
+        where: {
+          sku: variantData.sku,
+          isActive: true,
+          product: { merchantId: merchant_id },
+        },
       });
 
       if (existingVariantSku && existingVariantSku.id !== id) {
@@ -270,37 +293,54 @@ export class VariantsService {
     Object.assign(variant, variantData);
     await this.variantRepository.save(variant);
 
-    return this.findOne(id, undefined, 'Updated');
+    return this.findOne(id, merchant_id, 'Updated');
   }
 
-  async remove(
-    user: AuthenticatedUser,
-    id: number,
-  ): Promise<OneVariantResponse> {
+  async remove(id: number, merchant_id: number): Promise<OneVariantResponse> {
+    if (!id || id <= 0) {
+      ErrorHandler.invalidId('Variant ID is incorrect');
+    }
+
     const variant = await this.variantRepository
       .createQueryBuilder('variant')
       .leftJoinAndSelect('variant.product', 'product')
       .leftJoinAndSelect('product.merchant', 'merchant')
       .where('variant.id = :id', { id })
       .andWhere('variant.isActive = :isActive', { isActive: true })
+      .andWhere('product.merchantId = :merchantId', { merchant_id })
       .getOne();
 
     if (!variant) {
       ErrorHandler.notFound(ErrorMessage.VARIANT_NOT_FOUND);
     }
 
-    if (variant.product.merchant.id !== user.merchant.id) {
-      ErrorHandler.differentMerchant();
-    }
-
     try {
       variant.isActive = false;
       await this.variantRepository.save(variant);
 
-      return this.findOne(id, undefined, 'Deleted');
+      return this.findOne(id, merchant_id, 'Deleted');
     } catch (error) {
-      console.log(error);
       ErrorHandler.handleDatabaseError(error);
+    }
+  }
+
+  async softRemoveByProductId(
+    productId: number,
+    merchant_id: number,
+  ): Promise<void> {
+    const variants = await this.variantRepository
+      .createQueryBuilder('variant')
+      .leftJoinAndSelect('variant.product', 'product')
+      .where('variant.productId = :productId', { productId })
+      .andWhere('variant.isActive = :isActive', { isActive: true })
+      .andWhere('product.merchantId = :merchant_id', { merchant_id })
+      .getMany();
+
+    if (variants.length > 0) {
+      for (const variant of variants) {
+        variant.isActive = false;
+      }
+      await this.variantRepository.save(variants);
     }
   }
 }

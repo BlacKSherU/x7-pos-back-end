@@ -46,7 +46,7 @@ export class MerchantSubscriptionService {
           where: { id: dto.merchantId },
         });
         if (!merchant) {
-          ErrorHandler.merchantSubscriptionNotFound();
+          ErrorHandler.differentMerchant();
         }
       }
       if (dto.planId) {
@@ -221,7 +221,7 @@ export class MerchantSubscriptionService {
     await this.merchantSubscriptionRepository.save(merchantSubscription);
     return {
       statusCode: 200,
-      message: `Merchant-Subscription with ID ${id} deleted successfully`,
+      message: 'Merchant Subscription removed successfully',
       data: merchantSubscription,
     };
   }

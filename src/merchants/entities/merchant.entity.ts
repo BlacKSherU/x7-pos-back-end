@@ -22,6 +22,7 @@ import { ShiftAssignment } from 'src/shift-assignments/entities/shift-assignment
 import { TableAssignment } from 'src/table-assignments/entities/table-assignment.entity';
 import { CashDrawer } from 'src/cash-drawers/entities/cash-drawer.entity';
 import { Order } from 'src/orders/entities/order.entity';
+import { Movement } from 'src/products-inventory/stocks/movements/entities/movement.entity';
 
 @Entity()
 export class Merchant {
@@ -144,6 +145,15 @@ export class Merchant {
   })
   @OneToMany(() => Supplier, (supplier) => supplier.merchant)
   suppliers: Supplier[];
+
+  @ApiProperty({
+    type: () => Movement,
+    isArray: true,
+    required: false,
+    description: 'List of movements associated with the merchant',
+  })
+  @OneToMany(() => Movement, (movement) => movement.merchant)
+  movements: Movement[];
 
   @ApiProperty({
     type: () => Table,

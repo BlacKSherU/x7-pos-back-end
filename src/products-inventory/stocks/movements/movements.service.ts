@@ -13,7 +13,6 @@ import { AllPaginatedMovements } from './dto/all-paginated-movements.dto';
 import { ItemLittleResponseDto } from '../items/dto/item-response.dto';
 import { ErrorHandler } from 'src/common/utils/error-handler.util';
 import { ErrorMessage } from 'src/common/constants/error-messages';
-import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
 import { Item } from '../items/entities/item.entity';
 
 @Injectable()
@@ -26,11 +25,20 @@ export class MovementsService {
   ) {}
 
   async create(
-    user: AuthenticatedUser,
+    merchant_id: number,
     createMovementDto: CreateMovementDto,
   ): Promise<OneMovementResponse> {
-    const { stockItemId, quantity, type, reference } = createMovementDto;
-    const merchantId = user.merchant.id;
+    const { stockItemId, quantity, type, reference, reason } =
+      createMovementDto;
+    const merchantId = merchant_id;
+
+    if (!stockItemId || stockItemId <= 0) {
+      ErrorHandler.invalidId(ErrorMessage.ITEM_ID_INCORRECT);
+    }
+
+    if (quantity <= 0) {
+      ErrorHandler.invalidId(ErrorMessage.MOVEMENT_QUANTITY_INVALID);
+    }
 
     const item = await this.itemRepository
       .createQueryBuilder('item')
@@ -49,6 +57,8 @@ export class MovementsService {
       quantity,
       type,
       reference,
+      reason,
+      merchantId: merchant_id,
       isActive: true,
     });
 
@@ -71,6 +81,7 @@ export class MovementsService {
       .createQueryBuilder('movement')
       .leftJoinAndSelect('movement.item', 'item')
       .leftJoinAndSelect('item.product', 'product')
+      .leftJoinAndSelect('movement.merchant', 'merchant')
       .where('product.merchantId = :merchantId', { merchantId })
       .andWhere('movement.isActive = :isActive', { isActive: true });
 
@@ -110,6 +121,13 @@ export class MovementsService {
           quantity: movement.quantity,
           type: movement.type,
           reference: movement.reference,
+          reason: movement.reason,
+          merchant: movement.merchant
+            ? {
+                id: movement.merchant.id,
+                name: movement.merchant.name,
+              }
+            : null,
           createdAt: movement.createdAt,
         };
         return result;
@@ -135,7 +153,7 @@ export class MovementsService {
     createdUpdateDelete?: string,
   ): Promise<OneMovementResponse> {
     if (!id || id <= 0) {
-      ErrorHandler.invalidId(ErrorMessage.INVALID_ID);
+      ErrorHandler.invalidId('Movement ID is incorrect');
     }
 
     const whereCondition: {
@@ -151,16 +169,23 @@ export class MovementsService {
       whereCondition.merchantId = merchantId;
     }
 
-    const movement = await this.movementRepository
+    const movementQueryBuilder = this.movementRepository
       .createQueryBuilder('movement')
       .leftJoinAndSelect('movement.item', 'item')
       .leftJoinAndSelect('item.product', 'product') // Join product through item
+      .leftJoinAndSelect('movement.merchant', 'merchant')
       .where('movement.id = :id', { id })
-      .andWhere('product.merchantId = :merchantId', { merchantId })
       .andWhere('movement.isActive = :isActive', {
         isActive: whereCondition.isActive,
-      })
-      .getOne();
+      });
+
+    if (merchantId !== undefined) {
+      movementQueryBuilder.andWhere('product.merchantId = :merchantId', {
+        merchantId,
+      });
+    }
+
+    const movement = await movementQueryBuilder.getOne();
 
     if (!movement) {
       ErrorHandler.notFound(ErrorMessage.MOVEMENT_NOT_FOUND); // Need to add MOVEMENT_NOT_FOUND to error-messages.ts
@@ -177,6 +202,13 @@ export class MovementsService {
       quantity: movement.quantity,
       type: movement.type,
       reference: movement.reference,
+      reason: movement.reason,
+      merchant: movement.merchant
+        ? {
+            id: movement.merchant.id,
+            name: movement.merchant.name,
+          }
+        : null,
       createdAt: movement.createdAt,
     };
 
@@ -216,17 +248,22 @@ export class MovementsService {
   }
 
   async update(
-    user: AuthenticatedUser,
     id: number,
+    merchant_id: number,
     updateMovementDto: UpdateMovementDto,
   ): Promise<OneMovementResponse> {
-    const merchantId = user.merchant.id;
-    const { stockItemId, quantity, type, reference } = updateMovementDto;
+    if (!id || id <= 0) {
+      ErrorHandler.invalidId('Movement ID is incorrect');
+    }
+    const merchantId = merchant_id;
+    const { stockItemId, quantity, type, reference, reason } =
+      updateMovementDto;
 
     const movement = await this.movementRepository
       .createQueryBuilder('movement')
       .leftJoinAndSelect('movement.item', 'item')
       .leftJoinAndSelect('item.product', 'product')
+      .leftJoinAndSelect('movement.merchant', 'merchant')
       .where('movement.id = :id', { id })
       .andWhere('product.merchantId = :merchantId', { merchantId })
       .andWhere('movement.isActive = :isActive', { isActive: true })
@@ -263,21 +300,26 @@ export class MovementsService {
       movement.reference = reference;
     }
 
+    if (reason) {
+      movement.reason = reason;
+    }
+
     const updatedMovement = await this.movementRepository.save(movement);
 
     return this.findOne(updatedMovement.id, merchantId, 'Updated');
   }
 
-  async remove(
-    user: AuthenticatedUser,
-    id: number,
-  ): Promise<OneMovementResponse> {
-    const merchantId = user.merchant.id;
+  async remove(id: number, merchant_id: number): Promise<OneMovementResponse> {
+    if (!id || id <= 0) {
+      ErrorHandler.invalidId('Movement ID is incorrect');
+    }
+    const merchantId = merchant_id;
 
     const movement = await this.movementRepository
       .createQueryBuilder('movement')
       .leftJoinAndSelect('movement.item', 'item')
       .leftJoinAndSelect('item.product', 'product')
+      .leftJoinAndSelect('movement.merchant', 'merchant')
       .where('movement.id = :id', { id })
       .andWhere('product.merchantId = :merchantId', { merchantId })
       .andWhere('movement.isActive = :isActive', { isActive: true })

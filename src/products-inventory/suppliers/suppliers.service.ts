@@ -10,7 +10,6 @@ import {
   SupplierResponseDto,
   OneSupplierResponse,
 } from './dto/supplier-response.dto';
-import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
 import { ErrorHandler } from 'src/common/utils/error-handler.util';
 import { Merchant } from 'src/merchants/entities/merchant.entity';
 import { ErrorMessage } from 'src/common/constants/error-messages';
@@ -25,15 +24,13 @@ export class SuppliersService {
   ) {}
 
   async create(
-    user: AuthenticatedUser,
+    merchant_id: number,
     createSupplierDto: CreateSupplierDto,
   ): Promise<OneSupplierResponse> {
-    const { name, contactInfo, merchantId } = createSupplierDto;
-
-    if (merchantId !== user.merchant.id) ErrorHandler.differentMerchant();
+    const { name, contactInfo } = createSupplierDto;
 
     const existingSupplier = await this.supplierRepository.findOne({
-      where: { name, merchantId, isActive: true },
+      where: { name, merchantId: merchant_id, isActive: true },
     });
 
     if (existingSupplier)
@@ -41,25 +38,24 @@ export class SuppliersService {
 
     try {
       const existingButIsNotActive = await this.supplierRepository.findOne({
-        where: { name, merchantId, isActive: false },
+        where: { name, merchantId: merchant_id, isActive: false },
       });
 
       if (existingButIsNotActive) {
         existingButIsNotActive.isActive = true;
         await this.supplierRepository.save(existingButIsNotActive);
-        return this.findOne(existingButIsNotActive.id, merchantId, 'Created');
+        return this.findOne(existingButIsNotActive.id, merchant_id, 'Created');
       } else {
         const newSupplier = this.supplierRepository.create({
           name,
           contactInfo,
-          merchantId,
+          merchantId: merchant_id,
         });
         const savedSupplier = await this.supplierRepository.save(newSupplier);
-        return this.findOne(savedSupplier.id, undefined, 'Created');
+        return this.findOne(savedSupplier.id, merchant_id, 'Created');
       }
     } catch (error) {
       ErrorHandler.handleDatabaseError(error);
-      console.log(error);
     }
   }
 
@@ -76,7 +72,8 @@ export class SuppliersService {
     const queryBuilder = this.supplierRepository
       .createQueryBuilder('supplier')
       .leftJoinAndSelect('supplier.merchant', 'merchant')
-      .where('supplier.merchantId = :merchantId', { merchantId });
+      .where('supplier.merchantId = :merchantId', { merchantId })
+      .andWhere('supplier.isActive = :isActive', { isActive: true });
 
     // 3. Apply optional filters
     if (query.name) {
@@ -206,24 +203,19 @@ export class SuppliersService {
   }
 
   async update(
-    user: AuthenticatedUser,
     id: number,
+    merchant_id: number,
     updateSupplierDto: UpdateSupplierDto,
   ): Promise<OneSupplierResponse> {
+    if (!id || id <= 0) {
+      ErrorHandler.invalidId('Supplier ID incorrect');
+    }
     const supplier = await this.supplierRepository.findOneBy({
       id,
+      merchantId: merchant_id,
       isActive: true,
     });
     if (!supplier) ErrorHandler.notFound(ErrorMessage.SUPPLIER_NOT_FOUND);
-
-    if (user.merchant.id !== supplier.merchantId)
-      ErrorHandler.differentMerchant();
-
-    if (
-      updateSupplierDto.merchantId !== undefined &&
-      updateSupplierDto.merchantId !== supplier.merchantId
-    )
-      ErrorHandler.changedMerchant();
 
     if (
       updateSupplierDto.name !== undefined &&
@@ -232,7 +224,7 @@ export class SuppliersService {
       const existingSupplier = await this.supplierRepository.findOne({
         where: {
           name: updateSupplierDto.name,
-          merchantId: supplier.merchantId,
+          merchantId: merchant_id,
           isActive: true,
         },
       });
@@ -244,34 +236,28 @@ export class SuppliersService {
 
     try {
       await this.supplierRepository.save(supplier);
-      return this.findOne(id, user.merchant.id, 'Updated');
+      return this.findOne(id, merchant_id, 'Updated');
     } catch (error) {
       ErrorHandler.handleDatabaseError(error);
-      console.log(error);
     }
   }
 
-  async remove(
-    user: AuthenticatedUser,
-    id: number,
-  ): Promise<OneSupplierResponse> {
+  async remove(id: number, merchant_id: number): Promise<OneSupplierResponse> {
+    if (!id || id <= 0) {
+      ErrorHandler.invalidId('Supplier ID incorrect');
+    }
     const supplier = await this.supplierRepository.findOne({
-      where: { id, isActive: true },
+      where: { id, merchantId: merchant_id, isActive: true },
       relations: ['merchant'],
     });
     if (!supplier) ErrorHandler.notFound(ErrorMessage.SUPPLIER_NOT_FOUND);
 
-    if (user.merchant.id !== supplier.merchantId) {
-      ErrorHandler.differentMerchant();
-    }
-
     try {
       supplier.isActive = false;
       await this.supplierRepository.save(supplier);
-      return this.findOne(id, user.merchant.id, 'Deleted');
+      return this.findOne(id, merchant_id, 'Deleted');
     } catch (error) {
       ErrorHandler.handleDatabaseError(error);
-      console.log(error);
     }
   }
 }

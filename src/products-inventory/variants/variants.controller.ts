@@ -75,7 +75,8 @@ export class VariantsController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() createVariantDto: CreateVariantDto,
   ) {
-    return this.variantsService.create(user, createVariantDto);
+    const merchantId = user.merchant.id;
+    return this.variantsService.create(merchantId, createVariantDto);
   }
 
   @Get()
@@ -301,7 +302,8 @@ export class VariantsController {
     @Param('id', ParseIntPipe) id: number,
     @Body() updateVariantDto: UpdateVariantDto,
   ) {
-    return this.variantsService.update(user, id, updateVariantDto);
+    const merchantId = user.merchant.id;
+    return this.variantsService.update(id, merchantId, updateVariantDto);
   }
 
   @Delete(':id')
@@ -347,6 +349,7 @@ export class VariantsController {
     @CurrentUser() user: AuthenticatedUser,
     @Param('id', ParseIntPipe) id: number,
   ) {
-    return this.variantsService.remove(user, id);
+    const merchantId = user.merchant.id;
+    return this.variantsService.remove(id, merchantId);
   }
 }

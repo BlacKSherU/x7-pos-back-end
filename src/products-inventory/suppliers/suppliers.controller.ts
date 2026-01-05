@@ -80,7 +80,8 @@ export class SuppliersController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() createSupplierDto: CreateSupplierDto,
   ) {
-    return this.suppliersService.create(user, createSupplierDto);
+    const merchantId = user.merchant.id;
+    return this.suppliersService.create(merchantId, createSupplierDto);
   }
 
   @Get()
@@ -300,7 +301,8 @@ export class SuppliersController {
     @Param('id', ParseIntPipe) id: number,
     @Body() updateSupplierDto: UpdateSupplierDto,
   ) {
-    return this.suppliersService.update(user, id, updateSupplierDto);
+    const merchantId = user.merchant.id;
+    return this.suppliersService.update(id, merchantId, updateSupplierDto);
   }
 
   @Delete(':id')
@@ -346,6 +348,7 @@ export class SuppliersController {
     @CurrentUser() user: AuthenticatedUser,
     @Param('id', ParseIntPipe) id: number,
   ) {
-    return this.suppliersService.remove(user, id);
+    const merchantId = user.merchant.id;
+    return this.suppliersService.remove(id, merchantId);
   }
 }

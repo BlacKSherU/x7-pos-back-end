@@ -3,12 +3,13 @@ import { VariantsService } from './variants.service';
 import { VariantsController } from './variants.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Variant } from './entities/variant.entity';
-import { ProductsInventoryModule } from '../products-inventory.module';
+import { Product } from '../products/entities/product.entity';
+import { ProductsModule } from '../products/products.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Variant]),
-    forwardRef(() => ProductsInventoryModule),
+    TypeOrmModule.forFeature([Variant, Product]),
+    forwardRef(() => ProductsModule),
   ],
   controllers: [VariantsController],
   providers: [VariantsService],

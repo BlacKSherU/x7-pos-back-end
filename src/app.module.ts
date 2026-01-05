@@ -74,6 +74,9 @@ import { PurchaseOrderModule } from './products-inventory/purchase-order/purchas
 import { PurchaseOrderItemModule } from './products-inventory/purchase-order-item/purchase-order-item.module';
 import { PurchaseOrder } from './products-inventory/purchase-order/entities/purchase-order.entity';
 import { PurchaseOrderItem } from './products-inventory/purchase-order-item/entities/purchase-order-item.entity';
+import { QrCodeModule } from './qr-code/qr-code.module';
+import { QrMenuModule } from './qr-code/qr-menu/qr-menu.module';
+import { QRMenu } from './qr-code/qr-menu/entity/qr-menu.entity';
 import { OnlineMenuModule } from './online-ordering-system/online-menu/online-menu.module';
 import { OnlineMenu } from './online-ordering-system/online-menu/entities/online-menu.entity';
 import { OnlineMenuCategoryModule } from './online-ordering-system/online-menu-category/online-menu-category.module';
@@ -90,6 +93,8 @@ import { OnlinePaymentModule } from './online-ordering-system/online-payment/onl
 import { OnlinePayment } from './online-ordering-system/online-payment/entities/online-payment.entity';
 import { KitchenDisplayDeviceModule } from './kitchen-display-system/kitchen-display-device/kitchen-display-device.module';
 import { KitchenOrderModule } from './kitchen-display-system/kitchen-order/kitchen-order.module';
+import { QRMenuSection } from './qr-code/qr-menu-section/entity/qr-menu-section.entity';
+import { QrMenuSectionModule } from './qr-code/qr-menu-section/qr-menu-section.module';
 
 @Module({
   imports: [
@@ -150,6 +155,8 @@ import { KitchenOrderModule } from './kitchen-display-system/kitchen-order/kitch
           KitchenDisplayDevice,
           KitchenOrder,
           OnlineStore,
+          QRMenu,
+          QRMenuSection,
           OnlineMenu,
           OnlineMenuCategory,
           OnlineMenuItem,
@@ -198,6 +205,9 @@ import { KitchenOrderModule } from './kitchen-display-system/kitchen-order/kitch
 
     SubscriptionPaymentsModule,
 
+    QrCodeModule,
+
+    QrMenuModule,
     OnlineMenuModule,
 
     OnlineMenuCategoryModule,
@@ -215,6 +225,7 @@ import { KitchenOrderModule } from './kitchen-display-system/kitchen-order/kitch
     KitchenDisplayDeviceModule,
 
     KitchenOrderModule,
+    QrMenuSectionModule,
   ],
 })
 export class AppModule {}

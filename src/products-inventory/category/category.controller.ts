@@ -81,7 +81,8 @@ export class CategoryController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() createCategoryDto: CreateCategoryDto,
   ) {
-    return this.categoryService.create(user, createCategoryDto);
+    const merchantId = user.merchant.id;
+    return this.categoryService.create(merchantId, createCategoryDto);
   }
 
   @Get()
@@ -310,7 +311,8 @@ export class CategoryController {
     @Param('id', ParseIntPipe) id: number,
     @Body() updateCategoryDto: UpdateCategoryDto,
   ) {
-    return this.categoryService.update(user, id, updateCategoryDto);
+    const merchantId = user.merchant.id;
+    return this.categoryService.update(id, merchantId, updateCategoryDto);
   }
 
   @Delete(':id')
@@ -356,6 +358,7 @@ export class CategoryController {
     @CurrentUser() user: AuthenticatedUser,
     @Param('id', ParseIntPipe) id: number,
   ) {
-    return this.categoryService.remove(user, id);
+    const merchantId = user.merchant.id;
+    return this.categoryService.remove(id, merchantId);
   }
 }

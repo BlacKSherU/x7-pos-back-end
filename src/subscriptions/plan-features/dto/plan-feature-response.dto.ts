@@ -8,10 +8,10 @@ export class PlanFeatureResponseDto {
   id: number;
 
   @ApiProperty({ example: { id: 1, name: 'SubscriptionPlan' } })
-  subscriptionPlanId: { id: number; name: string };
+  subscriptionPlan: { id: number; name: string };
 
   @ApiProperty({ example: { id: 1, name: 'Feature' } })
-  featureId: { id: number; name: string };
+  feature: { id: number; name: string };
 
   @ApiProperty({ example: 10990 })
   limit_value: number;

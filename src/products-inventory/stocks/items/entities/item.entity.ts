@@ -12,7 +12,7 @@ import { Product } from 'src/products-inventory/products/entities/product.entity
 import { Location } from 'src/products-inventory/stocks/locations/entities/location.entity';
 import { Movement } from 'src/products-inventory/stocks/movements/entities/movement.entity';
 
-@Entity({ name: 'item' })
+@Entity({ name: 'stock_item' })
 export class Item {
   @ApiProperty({ example: 1, description: 'Item ID' })
   @PrimaryGeneratedColumn()

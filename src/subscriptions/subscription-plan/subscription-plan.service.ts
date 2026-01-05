@@ -129,7 +129,7 @@ export class SubscriptionPlanService {
     await this.subscriptionPlanRepo.save(plan);
     return {
       statusCode: 200,
-      message: `Subscription with ID ${id} deleted successfully`,
+      message: 'Subscription Plan removed successfully',
       data: plan,
     };
   }

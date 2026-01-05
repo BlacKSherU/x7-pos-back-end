@@ -13,7 +13,8 @@ import { Repository } from 'typeorm';
 import { Category } from '../category/entities/category.entity';
 import { Merchant } from 'src/merchants/entities/merchant.entity';
 import { Supplier } from '../suppliers/entities/supplier.entity';
-import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
+import { ModifiersService } from '../modifiers/modifiers.service';
+import { VariantsService } from '../variants/variants.service';
 import { CategoryLittleResponseDto } from '../category/dto/category-response.dto';
 import { ErrorHandler } from 'src/common/utils/error-handler.util';
 import { ErrorMessage } from 'src/common/constants/error-messages';
@@ -29,30 +30,35 @@ export class ProductsService {
     private readonly merchantRepository: Repository<Merchant>,
     @InjectRepository(Supplier)
     private readonly supplierRepository: Repository<Supplier>,
+    private readonly modifiersService: ModifiersService,
+    private readonly variantsService: VariantsService,
   ) {}
   async create(
-    user: AuthenticatedUser,
+    merchant_id: number,
     createProductDto: CreateProductDto,
   ): Promise<OneProductResponse> {
-    const { name, sku, basePrice, categoryId, merchantId, supplierId } =
-      createProductDto;
+    const { name, sku, basePrice, categoryId, supplierId } = createProductDto;
 
-    if (merchantId !== user.merchant.id) ErrorHandler.differentMerchant();
-
-    const [merchant, category, supplier] = await Promise.all([
-      this.merchantRepository.findOneBy({ id: merchantId }),
-      this.categoryRepository.findOneBy({ id: categoryId, merchantId }),
-      this.supplierRepository.findOneBy({ id: supplierId, merchantId }),
+    const [category, supplier] = await Promise.all([
+      this.categoryRepository.findOneBy({
+        id: categoryId,
+        merchantId: merchant_id,
+        isActive: true,
+      }),
+      this.supplierRepository.findOneBy({
+        id: supplierId,
+        merchantId: merchant_id,
+        isActive: true,
+      }),
     ]);
 
-    if (!merchant) ErrorHandler.notFound(ErrorMessage.MERCHANT_NOT_FOUND);
     if (!category) ErrorHandler.notFound(ErrorMessage.CATEGORY_NOT_FOUND);
     if (!supplier) ErrorHandler.notFound(ErrorMessage.SUPPLIER_NOT_FOUND);
 
     const existingProduct = await this.productRepository.findOne({
       where: [
-        { name: name, isActive: true },
-        { sku: sku, isActive: true },
+        { name: name, merchantId: merchant_id, isActive: true },
+        { sku: sku, merchantId: merchant_id, isActive: true },
       ],
     });
 
@@ -65,26 +71,26 @@ export class ProductsService {
 
     try {
       const existingButIsNotActive = await this.productRepository.findOne({
-        where: [{ name: name, isActive: false }],
+        where: [{ name: name, merchantId: merchant_id, isActive: false }],
       });
 
       if (existingButIsNotActive) {
         existingButIsNotActive.isActive = true;
         await this.productRepository.save(existingButIsNotActive);
-        return this.findOne(existingButIsNotActive.id, undefined, 'Created');
+        return this.findOne(existingButIsNotActive.id, merchant_id, 'Created');
       } else {
         const newProduct = this.productRepository.create({
           name,
           sku,
           basePrice,
-          merchantId,
+          merchantId: merchant_id,
           categoryId,
           supplierId,
         });
 
         const savedProduct = await this.productRepository.save(newProduct);
 
-        return this.findOne(savedProduct.id, undefined, 'Created');
+        return this.findOne(savedProduct.id, merchant_id, 'Created');
       }
     } catch (error) {
       ErrorHandler.handleDatabaseError(error);
@@ -196,7 +202,7 @@ export class ProductsService {
     createdUpdateDelete?: string,
   ): Promise<OneProductResponse> {
     if (!id || id <= 0) {
-      ErrorHandler.invalidId('Product ID incorrect');
+      ErrorHandler.invalidId('Product ID is incorrect');
     }
     const whereCondition: {
       id: number;
@@ -291,42 +297,43 @@ export class ProductsService {
   }
 
   async update(
-    user: AuthenticatedUser,
     id: number,
+    merchant_id: number,
     updateProductDto: UpdateProductDto,
   ): Promise<OneProductResponse> {
-    const { name, merchantId, categoryId, supplierId, sku, ...updateData } =
+    if (!id || id <= 0) ErrorHandler.invalidId('Product ID is incorrect');
+
+    const { name, categoryId, supplierId, sku, ...updateData } =
       updateProductDto;
 
     const product = await this.productRepository.findOneBy({
       id,
+      merchantId: merchant_id,
       isActive: true,
     });
 
     if (!product) ErrorHandler.notFound(ErrorMessage.PRODUCT_NOT_FOUND);
 
-    if (product.merchantId !== user.merchant.id)
-      ErrorHandler.differentMerchant();
-
-    if (merchantId && merchantId !== product.merchantId)
-      ErrorHandler.changedMerchant();
-
     if (categoryId && categoryId !== product.categoryId) {
       const category = await this.categoryRepository.findOneBy({
         id: categoryId,
+        merchantId: merchant_id,
+        isActive: true,
       });
       if (!category) ErrorHandler.notFound(ErrorMessage.CATEGORY_NOT_FOUND);
     }
     if (supplierId && supplierId !== product.supplierId) {
       const supplier = await this.supplierRepository.findOneBy({
         id: supplierId,
+        merchantId: merchant_id,
+        isActive: true,
       });
       if (!supplier) ErrorHandler.notFound(ErrorMessage.SUPPLIER_NOT_FOUND);
     }
 
     if (name && name !== product.name) {
       const existingProductWithName = await this.productRepository.findOne({
-        where: { name, isActive: true },
+        where: { name, merchantId: merchant_id, isActive: true },
       });
       if (
         existingProductWithName &&
@@ -338,7 +345,7 @@ export class ProductsService {
 
     if (sku && sku !== product.sku) {
       const existingProductWithSku = await this.productRepository.findOne({
-        where: { sku, isActive: true },
+        where: { sku, merchantId: merchant_id, isActive: true },
       });
       if (existingProductWithSku && existingProductWithSku.id !== product.id) {
         ErrorHandler.exists(ErrorMessage.PRODUCT_SKU_EXISTS);
@@ -354,33 +361,31 @@ export class ProductsService {
     });
     try {
       await this.productRepository.save(product);
-      return this.findOne(id, undefined, 'Updated');
+      return this.findOne(id, merchant_id, 'Updated');
     } catch (error) {
       console.log(error);
       ErrorHandler.handleDatabaseError(error);
     }
   }
 
-  async remove(
-    user: AuthenticatedUser,
-    id: number,
-  ): Promise<OneProductResponse> {
+  async remove(id: number, merchant_id: number): Promise<OneProductResponse> {
+    if (!id || id <= 0) ErrorHandler.invalidId('Product ID is incorrect');
+
     const product = await this.productRepository.findOneBy({
       id,
+      merchantId: merchant_id,
       isActive: true,
     });
 
     if (!product) ErrorHandler.notFound(ErrorMessage.PRODUCT_NOT_FOUND);
 
-    if (product.merchantId !== user.merchant.id)
-      ErrorHandler.differentMerchant();
-
     try {
+      await this.modifiersService.softRemoveByProductId(id, merchant_id);
+      await this.variantsService.softRemoveByProductId(id, merchant_id);
       product.isActive = false;
       await this.productRepository.save(product);
-      return this.findOne(id, undefined, 'Deleted');
+      return this.findOne(id, merchant_id, 'Deleted');
     } catch (error) {
-      console.log(error);
       ErrorHandler.handleDatabaseError(error);
     }
   }

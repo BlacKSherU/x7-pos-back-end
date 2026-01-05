@@ -234,7 +234,7 @@ export class PlanFeaturesController {
       },
     },
   })
-  async getOne(
+  async findOne(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<OnePlanFeatureResponseDto> {
     if (id <= 0) {

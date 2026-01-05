@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { CreateModifierDto } from './dto/create-modifier.dto';
 import { UpdateModifierDto } from './dto/update-modifier.dto';
 import {
@@ -11,7 +11,6 @@ import { Modifier } from './entities/modifier.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ProductsService } from '../products/products.service';
-import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
 import { ErrorHandler } from 'src/common/utils/error-handler.util';
 import { ErrorMessage } from 'src/common/constants/error-messages';
 import { Product } from '../products/entities/product.entity';
@@ -23,43 +22,50 @@ export class ModifiersService {
     private readonly modifierRepository: Repository<Modifier>,
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
+    @Inject(forwardRef(() => ProductsService))
     private readonly productsService: ProductsService,
   ) {}
 
   async create(
-    user: AuthenticatedUser,
+    merchant_id: number,
     createModifierDto: CreateModifierDto,
   ): Promise<OneModifierResponse> {
     const { productId, ...modifierData } = createModifierDto;
 
     const product = await this.productRepository.findOneBy({
       id: productId,
-      merchantId: user.merchant.id,
+      merchantId: merchant_id,
+      isActive: true,
     });
 
     if (!product) {
       ErrorHandler.notFound(ErrorMessage.PRODUCT_NOT_FOUND);
     }
 
-    if (product.merchantId !== user.merchant.id) {
-      ErrorHandler.differentMerchant();
-    }
-
     const existingModifierByName = await this.modifierRepository.findOne({
-      where: [{ name: modifierData.name, isActive: true }],
+      where: {
+        name: modifierData.name,
+        product: { merchantId: merchant_id },
+        isActive: true,
+      },
+      relations: ['product'],
     });
 
     if (existingModifierByName) {
       ErrorHandler.exists(ErrorMessage.MODIFIER_NAME_EXISTS);
     }
     const existingButIsNotActive = await this.modifierRepository.findOne({
-      where: [{ name: modifierData.name, isActive: false }],
+      where: {
+        name: modifierData.name,
+        product: { merchantId: merchant_id },
+        isActive: false,
+      },
     });
 
     if (existingButIsNotActive) {
       existingButIsNotActive.isActive = true;
       await this.modifierRepository.save(existingButIsNotActive);
-      return this.findOne(existingButIsNotActive.id, undefined, 'Created');
+      return this.findOne(existingButIsNotActive.id, merchant_id, 'Created');
     } else {
       const newModifier = this.modifierRepository.create({
         ...modifierData,
@@ -68,7 +74,7 @@ export class ModifiersService {
 
       const savedModifier = await this.modifierRepository.save(newModifier);
 
-      return this.findOne(savedModifier.id, undefined, 'Created');
+      return this.findOne(savedModifier.id, merchant_id, 'Created');
     }
   }
 
@@ -147,7 +153,7 @@ export class ModifiersService {
     createdUpdateDelete?: string,
   ): Promise<OneModifierResponse> {
     if (!id || id <= 0) {
-      ErrorHandler.invalidId('Modifier ID incorrect');
+      ErrorHandler.invalidId('Modifier ID is incorrect');
     }
 
     const queryBuilder = this.modifierRepository
@@ -189,28 +195,28 @@ export class ModifiersService {
       case 'Created':
         response = {
           statusCode: 201,
-          message: `Product ${createdUpdateDelete} successfully`,
+          message: `Modifier ${createdUpdateDelete} successfully`,
           data: result,
         };
         break;
       case 'Updated':
         response = {
           statusCode: 201,
-          message: `Product ${createdUpdateDelete} successfully`,
+          message: `Modifier ${createdUpdateDelete} successfully`,
           data: result,
         };
         break;
       case 'Deleted':
         response = {
           statusCode: 201,
-          message: `Product ${createdUpdateDelete} successfully`,
+          message: `Modifier ${createdUpdateDelete} successfully`,
           data: result,
         };
         break;
       default:
         response = {
           statusCode: 200,
-          message: 'Product retrieved successfully',
+          message: 'Modifier retrieved successfully',
           data: result,
         };
         break;
@@ -219,10 +225,14 @@ export class ModifiersService {
   }
 
   async update(
-    user: AuthenticatedUser,
     id: number,
+    merchant_id: number,
     updateModifierDto: UpdateModifierDto,
   ): Promise<OneModifierResponse> {
+    if (!id || id <= 0) {
+      ErrorHandler.invalidId('Modifier ID is incorrect');
+    }
+
     const { productId, ...modifierData } = updateModifierDto;
 
     const modifier = await this.modifierRepository
@@ -231,14 +241,11 @@ export class ModifiersService {
       .leftJoinAndSelect('product.merchant', 'merchant')
       .where('modifier.id = :id', { id })
       .andWhere('modifier.isActive = :isActive', { isActive: true })
+      .andWhere('product.merchantId = :merchantId', { merchant_id })
       .getOne();
 
     if (!modifier) {
       ErrorHandler.notFound(ErrorMessage.MODIFIER_NOT_FOUND);
-    }
-
-    if (modifier.product.merchant.id !== user.merchant.id) {
-      ErrorHandler.differentMerchant();
     }
 
     if (productId && productId !== modifier.productId) {
@@ -247,7 +254,11 @@ export class ModifiersService {
 
     if (modifierData.name && modifierData.name !== modifier.name) {
       const existingModifierName = await this.modifierRepository.findOne({
-        where: { name: modifierData.name },
+        where: {
+          name: modifierData.name,
+          product: { merchantId: merchant_id },
+          isActive: true,
+        },
       });
 
       if (existingModifierName && existingModifierName.id !== id) {
@@ -258,37 +269,54 @@ export class ModifiersService {
     Object.assign(modifier, modifierData);
     await this.modifierRepository.save(modifier);
 
-    return this.findOne(id, undefined, 'Updated');
+    return this.findOne(id, merchant_id, 'Updated');
   }
 
-  async remove(
-    user: AuthenticatedUser,
-    id: number,
-  ): Promise<OneModifierResponse> {
+  async remove(id: number, merchant_id: number): Promise<OneModifierResponse> {
+    if (!id || id <= 0) {
+      ErrorHandler.invalidId('Modifier ID is incorrect');
+    }
+
     const modifier = await this.modifierRepository
       .createQueryBuilder('modifier')
       .leftJoinAndSelect('modifier.product', 'product')
       .leftJoinAndSelect('product.merchant', 'merchant')
       .where('modifier.id = :id', { id })
       .andWhere('modifier.isActive = :isActive', { isActive: true })
+      .andWhere('product.merchantId = :merchantId', { merchant_id })
       .getOne();
 
     if (!modifier) {
       ErrorHandler.notFound(ErrorMessage.MODIFIER_NOT_FOUND);
     }
 
-    if (modifier.product.merchant.id !== user.merchant.id) {
-      ErrorHandler.differentMerchant();
-    }
-
     try {
       modifier.isActive = false;
       await this.modifierRepository.save(modifier);
 
-      return this.findOne(id, undefined, 'Deleted');
+      return this.findOne(id, merchant_id, 'Deleted');
     } catch (error) {
-      console.log(error);
       ErrorHandler.handleDatabaseError(error);
+    }
+  }
+
+  async softRemoveByProductId(
+    productId: number,
+    merchant_id: number,
+  ): Promise<void> {
+    const modifiers = await this.modifierRepository
+      .createQueryBuilder('modifier')
+      .leftJoinAndSelect('modifier.product', 'product')
+      .where('modifier.productId = :productId', { productId })
+      .andWhere('modifier.isActive = :isActive', { isActive: true })
+      .andWhere('product.merchantId = :merchant_id', { merchant_id })
+      .getMany();
+
+    if (modifiers.length > 0) {
+      for (const modifier of modifiers) {
+        modifier.isActive = false;
+      }
+      await this.modifierRepository.save(modifiers);
     }
   }
 }

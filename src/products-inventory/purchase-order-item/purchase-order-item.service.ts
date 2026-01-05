@@ -13,7 +13,6 @@ import {
   OnePurchaseOrderItemResponse,
   PurchaseOrderItemResponseDto,
 } from './dto/purchase-order-item-response.dto';
-import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
 import { ProductsService } from '../products/products.service';
 import { VariantsService } from '../variants/variants.service';
 import { Product } from '../products/entities/product.entity';
@@ -35,7 +34,7 @@ export class PurchaseOrderItemService {
   ) {}
 
   async create(
-    user: AuthenticatedUser,
+    merchant_id: number,
     createPurchaseOrderDto: CreatePurchaseOrderItemDto,
   ): Promise<OnePurchaseOrderItemResponse> {
     const { productId, variantId, purchaseOrderId, ...purchaseOrderItemData } =
@@ -44,32 +43,31 @@ export class PurchaseOrderItemService {
     const [product, variant, purchaseOrder] = await Promise.all([
       this.productRepository.findOneBy({
         id: productId,
-        merchantId: user.merchant.id,
+        merchantId: merchant_id,
         isActive: true,
       }),
-      this.variantRepository.findOneBy({
-        id: variantId,
-        productId,
-        product: { merchantId: user.merchant.id },
-        isActive: true,
-      }),
+      variantId
+        ? this.variantRepository.findOneBy({
+            id: variantId,
+            productId,
+            product: { merchantId: merchant_id },
+            isActive: true,
+          })
+        : Promise.resolve(null),
       this.purchaseOrderRepository.findOneBy({
         id: purchaseOrderId,
-        merchantId: user.merchant.id,
+        merchantId: merchant_id,
         isActive: true,
       }),
     ]);
 
     if (!product) ErrorHandler.notFound(ErrorMessage.PRODUCT_NOT_FOUND);
 
-    if (!variant) ErrorHandler.notFound(ErrorMessage.VARIANT_NOT_FOUND);
+    if (variantId && !variant)
+      ErrorHandler.notFound(ErrorMessage.VARIANT_NOT_FOUND);
 
     if (!purchaseOrder) {
       ErrorHandler.notFound(ErrorMessage.PURCHASE_ORDER_NOT_FOUND);
-    }
-
-    if (product.merchantId !== user.merchant.id) {
-      ErrorHandler.differentMerchant();
     }
 
     try {
@@ -85,10 +83,9 @@ export class PurchaseOrderItemService {
       const savedPurchaseOrderItem =
         await this.purchaseOrderItemRepository.save(newPurchaseOrderItem);
 
-      return this.findOne(savedPurchaseOrderItem.id, undefined, 'Created');
+      return this.findOne(savedPurchaseOrderItem.id, merchant_id, 'Created');
     } catch (error) {
       ErrorHandler.handleDatabaseError(error);
-      console.log(error);
     }
   }
 
@@ -274,10 +271,13 @@ export class PurchaseOrderItemService {
   }
 
   async update(
-    user: AuthenticatedUser,
     id: number,
+    merchant_id: number,
     updatePurchaseOrderItemDto: UpdatePurchaseOrderItemDto,
   ): Promise<OnePurchaseOrderItemResponse> {
+    if (!id || id <= 0) {
+      ErrorHandler.invalidId('Purchase Order Item ID incorrect');
+    }
     const { ...updateData } = updatePurchaseOrderItemDto;
 
     const purchaseOrderItem = await this.purchaseOrderItemRepository.findOneBy({
@@ -291,18 +291,20 @@ export class PurchaseOrderItemService {
     const [product, variant, purchaseOrder] = await Promise.all([
       this.productRepository.findOneBy({
         id: updateData.productId,
-        merchantId: user.merchant.id,
+        merchantId: merchant_id,
         isActive: true,
       }),
-      this.variantRepository.findOneBy({
-        id: updateData.variantId,
-        productId: updateData.productId,
-        product: { merchantId: user.merchant.id },
-        isActive: true,
-      }),
+      updateData.variantId
+        ? this.variantRepository.findOneBy({
+            id: updateData.variantId,
+            productId: updateData.productId,
+            product: { merchantId: merchant_id },
+            isActive: true,
+          })
+        : Promise.resolve(null),
       this.purchaseOrderRepository.findOneBy({
         id: updateData.purchaseOrderId,
-        merchantId: user.merchant.id,
+        merchantId: merchant_id,
         isActive: true,
       }),
     ]);
@@ -313,12 +315,8 @@ export class PurchaseOrderItemService {
     if (!product) {
       ErrorHandler.notFound(ErrorMessage.PRODUCT_NOT_FOUND);
     }
-    if (!variant) {
+    if (updateData.variantId && !variant) {
       ErrorHandler.notFound(ErrorMessage.VARIANT_NOT_FOUND);
-    }
-
-    if (product.merchantId !== user.merchant.id) {
-      ErrorHandler.differentMerchant();
     }
 
     Object.assign(purchaseOrderItem, {
@@ -329,20 +327,26 @@ export class PurchaseOrderItemService {
     });
     try {
       await this.purchaseOrderItemRepository.save(purchaseOrderItem);
-      return this.findOne(id, undefined, 'Updated');
+      return this.findOne(id, merchant_id, 'Updated');
     } catch (error) {
-      console.log(error);
       ErrorHandler.handleDatabaseError(error);
     }
   }
 
   async remove(
-    user: AuthenticatedUser,
     id: number,
+    merchant_id: number,
   ): Promise<OnePurchaseOrderItemResponse> {
+    if (!id || id <= 0) {
+      ErrorHandler.invalidId('Purchase Order Item ID incorrect');
+    }
     const purchaseOrderItem = await this.purchaseOrderItemRepository.findOne({
-      where: { id, isActive: true },
-      relations: ['purchaseOrder'],
+      where: {
+        id,
+        purchaseOrder: { merchantId: merchant_id },
+        isActive: true,
+      },
+      relations: ['purchaseOrder', 'product'],
     });
 
     if (!purchaseOrderItem)
@@ -352,15 +356,11 @@ export class PurchaseOrderItemService {
       ErrorHandler.notFound(ErrorMessage.PURCHASE_ORDER_NOT_FOUND);
     }
 
-    if (purchaseOrderItem.purchaseOrder.merchantId !== user.merchant.id)
-      ErrorHandler.differentMerchant();
-
     try {
       purchaseOrderItem.isActive = false;
       await this.purchaseOrderItemRepository.save(purchaseOrderItem); // Corregir el repositorio
-      return this.findOne(id, undefined, 'Deleted');
+      return this.findOne(id, merchant_id, 'Deleted');
     } catch (error) {
-      console.log(error);
       ErrorHandler.handleDatabaseError(error);
     }
   }

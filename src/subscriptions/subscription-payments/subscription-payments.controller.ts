@@ -235,7 +235,7 @@ export class SubscriptionPaymentsController {
       },
     },
   })
-  async getOne(
+  async findOne(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<OneSubscriptionPaymentResponseDto> {
     if (id <= 0) {

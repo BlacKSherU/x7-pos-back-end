@@ -75,7 +75,7 @@ export class SubscriptionApplicationService {
 
     return {
       statusCode: 201,
-      message: 'Subscription-Application created successfully',
+      message: 'Subscription Application created successfully',
       data: savedApplication,
     };
   }
@@ -137,7 +137,7 @@ export class SubscriptionApplicationService {
       merchantSubscription: {
         id: item.merchantSubscription.id,
         merchant: item.merchantSubscription.merchant,
-        subscriptionPlan: item.merchantSubscription.plan,
+        plan: item.merchantSubscription.plan,
       },
 
       application: {
@@ -207,7 +207,7 @@ export class SubscriptionApplicationService {
 
     return {
       statusCode: 200,
-      message: `Subscription Application with ID ${id} updated successfully`,
+      message: 'Subscription Application updated successfully',
       data: updatedApplication,
     };
   }
@@ -229,7 +229,7 @@ export class SubscriptionApplicationService {
 
     return {
       statusCode: 200,
-      message: `Subscription Application with ID ${id} deleted successfully`,
+      message: 'Subscription Application removed successfully',
       data: subscriptionApplication,
     };
   }

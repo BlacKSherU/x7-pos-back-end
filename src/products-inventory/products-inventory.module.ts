@@ -15,6 +15,11 @@ import { ItemsModule } from './stocks/items/items.module';
 import { LocationsModule } from './stocks/locations/locations.module';
 import { MovementsModule } from './stocks/movements/movements.module';
 import { Item } from './stocks/items/entities/item.entity';
+import { Movement } from './stocks/movements/entities/movement.entity';
+import { Location } from './stocks/locations/entities/location.entity';
+import { PurchaseOrderItem } from './purchase-order-item/entities/purchase-order-item.entity';
+import { PurchaseOrder } from './purchase-order/entities/purchase-order.entity';
+import { Supplier } from './suppliers/entities/supplier.entity';
 import { PurchaseOrderModule } from './purchase-order/purchase-order.module';
 import { PurchaseOrderItemModule } from './purchase-order-item/purchase-order-item.module';
 
@@ -22,7 +27,18 @@ import { PurchaseOrderItemModule } from './purchase-order-item/purchase-order-it
   controllers: [ProductsInventoryController],
   providers: [ProductsInventoryService],
   imports: [
-    TypeOrmModule.forFeature([Category, Product, Variant, Modifier, Item]),
+    TypeOrmModule.forFeature([
+      Category,
+      Product,
+      Variant,
+      Modifier,
+      Item,
+      Movement,
+      Location,
+      PurchaseOrderItem,
+      PurchaseOrder,
+      Supplier,
+    ]),
     CategoryModule,
     ProductsModule,
     SuppliersModule,
@@ -34,6 +50,18 @@ import { PurchaseOrderItemModule } from './purchase-order-item/purchase-order-it
     PurchaseOrderModule,
     PurchaseOrderItemModule,
   ],
-  exports: [ProductsInventoryService, ProductsModule],
+  exports: [
+    ProductsInventoryService,
+    ProductsModule,
+    CategoryModule,
+    SuppliersModule,
+    VariantsModule,
+    ModifiersModule,
+    ItemsModule,
+    LocationsModule,
+    MovementsModule,
+    PurchaseOrderModule,
+    PurchaseOrderItemModule,
+  ],
 })
 export class ProductsInventoryModule {}

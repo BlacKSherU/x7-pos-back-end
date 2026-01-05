@@ -20,7 +20,7 @@ export class SubscriptionApplicationResponseDto {
   merchantSubscription: {
     id: number;
     merchant: any;
-    subscriptionPlan: any;
+    plan: any;
   };
 
   @ApiProperty({

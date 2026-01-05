@@ -11,7 +11,7 @@ export class PlanApplicationSummaryDto {
   application: { id: number; name: string };
 
   @ApiProperty({ example: { id: 1, name: 'Subscription Plan' } })
-  subscriptionplan: { id: number; name: string };
+  subscriptionPlan: { id: number; name: string };
 
   @ApiProperty({ example: 'Basic usage limit: 100 users per month' })
   limits: string;

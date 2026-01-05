@@ -3,13 +3,13 @@ import { ModifiersService } from './modifiers.service';
 import { ModifiersController } from './modifiers.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Modifier } from './entities/modifier.entity';
-import { ProductsInventoryModule } from '../products-inventory.module';
 import { Product } from '../products/entities/product.entity';
+import { ProductsModule } from '../products/products.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Modifier, Product]),
-    forwardRef(() => ProductsInventoryModule),
+    forwardRef(() => ProductsModule),
   ],
   controllers: [ModifiersController],
   providers: [ModifiersService],

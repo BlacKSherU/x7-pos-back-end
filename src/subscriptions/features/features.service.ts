@@ -131,7 +131,7 @@ export class FeaturesService {
     await this.featureRepo.save(feature);
     return {
       statusCode: 200,
-      message: 'Feature deleted successfully',
+      message: 'Feature removed successfully',
       data: feature,
     };
   }

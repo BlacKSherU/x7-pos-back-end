@@ -237,7 +237,7 @@ export class PlanApplicationsController {
       },
     },
   })
-  async getOne(
+  async findOne(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<OnePlanApplicationResponseDto> {
     if (id <= 0) {

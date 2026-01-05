@@ -12,7 +12,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ErrorHandler } from 'src/common/utils/error-handler.util';
 import { ErrorMessage } from 'src/common/constants/error-messages';
-import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
 import { Supplier } from '../suppliers/entities/supplier.entity';
 import { Merchant } from 'src/merchants/entities/merchant.entity';
 import { PurchaseOrderItem } from '../purchase-order-item/entities/purchase-order-item.entity';
@@ -31,40 +30,34 @@ export class PurchaseOrderService {
   ) {}
 
   async create(
-    user: AuthenticatedUser,
+    merchant_id: number,
     createPurchaseOrderDto: CreatePurchaseOrderDto,
   ): Promise<OnePurchaseOrderResponse> {
-    const { merchantId, supplierId, ...purchaseOrderData } =
-      createPurchaseOrderDto;
+    const { supplierId, ...purchaseOrderData } = createPurchaseOrderDto;
 
-    if (merchantId !== user.merchant.id) ErrorHandler.differentMerchant();
-
-    const [merchant, supplier] = await Promise.all([
-      this.merchantRepository.findOneBy({ id: merchantId }),
+    const [supplier] = await Promise.all([
       this.supplierRepository.findOneBy({
         id: supplierId,
-        merchantId,
+        merchantId: merchant_id,
       }),
     ]);
 
-    if (!merchant) ErrorHandler.notFound(ErrorMessage.MERCHANT_NOT_FOUND);
     if (!supplier) ErrorHandler.notFound(ErrorMessage.SUPPLIER_NOT_FOUND);
 
     try {
       const newPurchaseOrder = this.purchaseOrderRepository.create({
         status: purchaseOrderData.status,
         totalAmount: purchaseOrderData.totalAmount,
-        merchantId,
+        merchantId: merchant_id,
         supplierId,
       });
 
       const savedPurchaseOrder =
         await this.purchaseOrderRepository.save(newPurchaseOrder);
 
-      return this.findOne(savedPurchaseOrder.id, undefined, 'Created');
+      return this.findOne(savedPurchaseOrder.id, merchant_id, 'Created');
     } catch (error) {
       ErrorHandler.handleDatabaseError(error);
-      console.log(error);
     }
   }
 
@@ -229,30 +222,28 @@ export class PurchaseOrderService {
   }
 
   async update(
-    user: AuthenticatedUser,
     id: number,
+    merchant_id: number,
     updateProductDto: UpdatePurchaseOrderDto,
   ): Promise<OnePurchaseOrderResponse> {
-    const { merchantId, supplierId, ...updateData } = updateProductDto;
+    if (!id || id <= 0) {
+      ErrorHandler.invalidId('Purchase Order ID incorrect');
+    }
+    const { supplierId, ...updateData } = updateProductDto;
 
     const purchaseOrder = await this.purchaseOrderRepository.findOneBy({
       id,
       isActive: true,
+      merchantId: merchant_id,
     });
 
     if (!purchaseOrder)
       ErrorHandler.notFound(ErrorMessage.PURCHASE_ORDER_NOT_FOUND);
 
-    if (purchaseOrder.merchantId !== user.merchant.id)
-      ErrorHandler.differentMerchant();
-
-    if (merchantId && merchantId !== purchaseOrder.merchantId)
-      ErrorHandler.changedMerchant();
-
     if (supplierId && supplierId !== purchaseOrder.supplierId) {
       const supplier = await this.supplierRepository.findOneBy({
         id: supplierId,
-        merchantId: purchaseOrder.merchantId,
+        merchantId: merchant_id,
       });
       if (!supplier) ErrorHandler.notFound(ErrorMessage.SUPPLIER_NOT_FOUND);
     }
@@ -267,27 +258,27 @@ export class PurchaseOrderService {
     });
     try {
       await this.purchaseOrderRepository.save(purchaseOrder);
-      return this.findOne(id, undefined, 'Updated');
+      return this.findOne(id, merchant_id, 'Updated');
     } catch (error) {
-      console.log(error);
       ErrorHandler.handleDatabaseError(error);
     }
   }
 
   async remove(
-    user: AuthenticatedUser,
     id: number,
+    merchant_id: number,
   ): Promise<OnePurchaseOrderResponse> {
+    if (!id || id <= 0) {
+      ErrorHandler.invalidId('Purchase Order ID incorrect');
+    }
     const purchaseOrder = await this.purchaseOrderRepository.findOneBy({
       id,
       isActive: true,
+      merchantId: merchant_id,
     });
 
     if (!purchaseOrder)
       ErrorHandler.notFound(ErrorMessage.PURCHASE_ORDER_NOT_FOUND);
-
-    if (purchaseOrder.merchantId !== user.merchant.id)
-      ErrorHandler.differentMerchant();
 
     try {
       purchaseOrder.isActive = false;
@@ -302,9 +293,8 @@ export class PurchaseOrderService {
         await this.purchaseOrderItemRepository.save(item);
       }
 
-      return this.findOne(id, undefined, 'Deleted');
+      return this.findOne(id, merchant_id, 'Deleted');
     } catch (error) {
-      console.log(error);
       ErrorHandler.handleDatabaseError(error);
     }
   }

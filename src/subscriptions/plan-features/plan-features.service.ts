@@ -29,11 +29,9 @@ export class PlanFeaturesService {
   ) {}
   async create(dto: CreatePlanFeatureDto): Promise<OnePlanFeatureResponseDto> {
     if (
-      (dto.featureId &&
-        (!Number.isInteger(dto.featureId) || dto.featureId <= 0)) ||
-      (dto.subscriptionPlanId &&
-        (!Number.isInteger(dto.subscriptionPlanId) ||
-          dto.subscriptionPlanId <= 0))
+      (dto.feature && (!Number.isInteger(dto.feature) || dto.feature <= 0)) ||
+      (dto.subscriptionPlan &&
+        (!Number.isInteger(dto.subscriptionPlan) || dto.subscriptionPlan <= 0))
     ) {
       ErrorHandler.invalidId(
         'SubscriptionPlan and Feature ID must be positive integers',
@@ -42,18 +40,18 @@ export class PlanFeaturesService {
     let subscriptionPlan: SubscriptionPlan | null = null;
     let feature: FeatureEntity | null = null;
 
-    if (dto.featureId || dto.subscriptionPlanId) {
-      if (dto.featureId) {
+    if (dto.feature || dto.subscriptionPlan) {
+      if (dto.feature) {
         feature = await this.featureRepo.findOne({
-          where: { id: dto.featureId },
+          where: { id: dto.feature },
         });
         if (!feature) {
           ErrorHandler.featureNotFound();
         }
       }
-      if (dto.subscriptionPlanId) {
+      if (dto.subscriptionPlan) {
         subscriptionPlan = await this.subscriptionPlanRepo.findOne({
-          where: { id: dto.subscriptionPlanId },
+          where: { id: dto.subscriptionPlan },
         });
         if (!subscriptionPlan) {
           ErrorHandler.subscriptionPlanNotFound();
@@ -127,12 +125,12 @@ export class PlanFeaturesService {
       limit_value: Number(item.limit_value),
       status: item.status,
 
-      subscriptionPlanId: {
+      subscriptionPlan: {
         id: item.subscriptionPlan.id,
         name: item.subscriptionPlan.name,
       },
 
-      featureId: {
+      feature: {
         id: item.feature.id,
         name: item.feature.name,
       },
@@ -140,7 +138,7 @@ export class PlanFeaturesService {
 
     return {
       statusCode: 200,
-      message: 'Plan Application retrieved successfully',
+      message: 'Plan Feature retrieved successfully',
       data: mapped,
       pagination: {
         total,
@@ -187,7 +185,7 @@ export class PlanFeaturesService {
 
     return {
       statusCode: 200,
-      message: `Subscription Application with ID ${id} updated successfully`,
+      message: 'Plan Feature updated successfully',
       data: updatedPlanFeature,
     };
   }
@@ -206,7 +204,7 @@ export class PlanFeaturesService {
 
     return {
       statusCode: 200,
-      message: `Plan Feature with ID ${id} deleted successfully`,
+      message: 'Plan Feature removed successfully',
       data: planFeature,
     };
   }

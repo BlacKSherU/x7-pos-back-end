@@ -8,8 +8,10 @@ import {
 } from 'typeorm';
 import { Item } from 'src/products-inventory/stocks/items/entities/item.entity';
 import { ApiProperty } from '@nestjs/swagger';
+import { Merchant } from 'src/merchants/entities/merchant.entity';
+import { MovementsStatus } from '../constants/movements-status';
 
-@Entity('movement')
+@Entity('stock_movement')
 export class Movement {
   @ApiProperty({ example: 1, description: 'Movement ID' })
   @PrimaryGeneratedColumn()
@@ -31,11 +33,16 @@ export class Movement {
   quantity: number;
 
   @ApiProperty({
-    example: 'entry',
-    description: 'Type of movement (entry/exit)',
+    example: MovementsStatus.IN,
+    description: 'Type of movement',
+    enum: MovementsStatus,
   })
-  @Column('varchar')
-  type: string;
+  @Column({
+    type: 'enum',
+    enum: MovementsStatus,
+    default: MovementsStatus.IN,
+  })
+  type: MovementsStatus;
 
   @ApiProperty({
     example: 'REF-001',
@@ -45,8 +52,27 @@ export class Movement {
   @Column('varchar', { nullable: true })
   reference: string;
 
-  @Column({ type: 'boolean', default: true })
-  isActive: boolean;
+  @ApiProperty({
+    example: 'Reason 1',
+    description: 'Reason for the movement',
+    nullable: true,
+  })
+  @Column('varchar', { nullable: true })
+  reason: string;
+
+  @ApiProperty({
+    example: 123,
+    description: 'Merchant ID associated to the category',
+  })
+  @Column({ type: 'int' })
+  merchantId: number;
+
+  @ManyToOne(() => Merchant, (merchant) => merchant.movements, {
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
+  })
+  @JoinColumn({ name: 'merchantId' })
+  merchant: Merchant;
 
   @ApiProperty({
     example: '2023-01-01T12:00:00Z',
@@ -54,4 +80,7 @@ export class Movement {
   })
   @CreateDateColumn()
   createdAt: Date;
+
+  @Column({ type: 'boolean', default: true })
+  isActive: boolean;
 }

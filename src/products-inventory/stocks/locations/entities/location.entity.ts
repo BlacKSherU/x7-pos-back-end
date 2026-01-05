@@ -10,7 +10,7 @@ import {
 } from 'typeorm';
 import { Item } from 'src/products-inventory/stocks/items/entities/item.entity';
 
-@Entity({ name: 'location' })
+@Entity({ name: 'stock_location' })
 export class Location {
   @ApiProperty({ example: 1, description: 'Location ID' })
   @PrimaryGeneratedColumn()

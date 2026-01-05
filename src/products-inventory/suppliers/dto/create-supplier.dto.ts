@@ -1,11 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsNotEmpty,
-  IsNumber,
-  IsString,
-  MaxLength,
-  MinLength,
-} from 'class-validator';
+import { IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class CreateSupplierDto {
   @ApiProperty({ example: 'Coca-Cola', description: 'Supplier name' })
@@ -22,11 +16,11 @@ export class CreateSupplierDto {
   @IsNotEmpty()
   contactInfo: string;
 
-  @ApiProperty({
+  /* @ApiProperty({
     example: 1,
     description: 'Merchant ID associated with the supplier',
   })
   @IsNotEmpty()
   @IsNumber()
-  merchantId: number;
+  merchantId: number; */
 }

@@ -135,7 +135,7 @@ export class ApplicationsService {
     await this.applicationRepo.save(application);
     return {
       statusCode: 200,
-      message: `Application with ID ${id} deleted successfully`,
+      message: 'Application removed successfully',
       data: application,
     };
   }

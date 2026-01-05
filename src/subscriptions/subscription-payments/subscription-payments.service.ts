@@ -115,7 +115,7 @@ export class SubscriptionPaymentsService {
 
     const mapped: SubscriptionPaymentResponseDto[] = data.map((item) => ({
       id: item.id,
-      merchantSubscriptionId: item.merchantSubscription.id,
+      merchantSubscription: item.merchantSubscription,
       amount: Number(item.amount),
       currency: item.currency,
       status: item.status,
@@ -146,7 +146,7 @@ export class SubscriptionPaymentsService {
       relations: ['merchantSubscription'],
     });
     if (!subscriptionPayment) {
-      ErrorHandler.subscriptionApplicationNotFound();
+      ErrorHandler.subscriptionPaymentNotFound();
     }
     return {
       statusCode: 200,
@@ -167,7 +167,7 @@ export class SubscriptionPaymentsService {
       where: { id: id },
     });
     if (!subscriptionPayment) {
-      ErrorHandler.subscriptionApplicationNotFound();
+      ErrorHandler.subscriptionPaymentNotFound();
     }
 
     if (dto.status !== undefined) {
@@ -179,7 +179,7 @@ export class SubscriptionPaymentsService {
 
     return {
       statusCode: 200,
-      message: `Subscription Payment with ID ${id} updated successfully`,
+      message: 'Subscription Payment updated successfully',
       data: updatedPayment,
     };
   }
@@ -193,14 +193,14 @@ export class SubscriptionPaymentsService {
       where: { id: id },
     });
     if (!subscriptionPayment) {
-      ErrorHandler.subscriptionApplicationNotFound();
+      ErrorHandler.subscriptionPaymentNotFound();
     }
     subscriptionPayment.status = 'deleted';
     await this.subscriptionPaymentRepo.save(subscriptionPayment);
 
     return {
       statusCode: 200,
-      message: `Subscription Application with ID ${id} deleted successfully`,
+      message: 'Subscription Payment removed successfully',
       data: subscriptionPayment,
     };
   }

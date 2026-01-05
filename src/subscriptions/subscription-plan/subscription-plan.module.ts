@@ -1,4 +1,4 @@
-// src/sub-plan/sub-plan.module.ts
+// src/subscription-plan/subscription-plan.module.ts
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SubscriptionPlanService } from './subscription-plan.service';

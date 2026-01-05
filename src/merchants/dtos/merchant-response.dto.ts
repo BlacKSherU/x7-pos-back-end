@@ -37,6 +37,21 @@ export class MerchantResponseDto {
   address?: string;
 }
 
+export class MerchantLittleResponseDto {
+  @IsNumber()
+  @ApiProperty({ example: 1, description: 'Merchant ID' })
+  id: number;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  @ApiPropertyOptional({
+    example: 'Acme Corp',
+    description: 'Name of the Merchant',
+  })
+  name?: string;
+}
+
 export class OneMerchantResponseDto extends SuccessResponse {
   @ApiProperty()
   data: Merchant;

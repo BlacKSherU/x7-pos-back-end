@@ -121,8 +121,9 @@ export class PurchaseOrderItemController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() createPurchaseOrderItemDto: CreatePurchaseOrderItemDto,
   ) {
+    const merchantId = user.merchant.id;
     return this.purchaseOrderItemService.create(
-      user,
+      merchantId,
       createPurchaseOrderItemDto,
     );
   }
@@ -425,9 +426,10 @@ export class PurchaseOrderItemController {
     @Param('id') id: string,
     @Body() updatePurchaseOrderItemDto: UpdatePurchaseOrderItemDto,
   ) {
+    const merchantId = user.merchant.id;
     return this.purchaseOrderItemService.update(
-      user,
       +id,
+      merchantId,
       updatePurchaseOrderItemDto,
     );
   }
@@ -506,6 +508,7 @@ export class PurchaseOrderItemController {
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
   ) {
-    return this.purchaseOrderItemService.remove(user, +id);
+    const merchantId = user.merchant.id;
+    return this.purchaseOrderItemService.remove(+id, merchantId);
   }
 }

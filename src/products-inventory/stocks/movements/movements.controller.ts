@@ -24,6 +24,7 @@ import {
   ApiResponse,
   ApiUnauthorizedResponse,
   ApiQuery,
+  ApiTags,
 } from '@nestjs/swagger';
 import { MovementsService } from './movements.service';
 import { CreateMovementDto } from './dto/create-movement.dto';
@@ -44,6 +45,7 @@ import { OneMovementResponse } from './dto/movement-response.dto';
 
 @ApiExtraModels(ErrorResponse)
 @ApiBearerAuth()
+@ApiTags('Stock Movements')
 @Controller('movements')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class MovementsController {
@@ -58,9 +60,9 @@ export class MovementsController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ summary: 'Create a new Movement' })
+  @ApiOperation({ summary: 'Create a new Stock Movement' })
   @ApiCreatedResponse({
-    description: 'Movement created successfully',
+    description: 'Stock Movement created successfully',
     type: Movement,
   })
   @ApiResponse({
@@ -70,18 +72,19 @@ export class MovementsController {
     schema: {
       example: {
         statusCode: 400,
-        message: ['movement quantity must be an integer number'],
+        message: ['stock movement quantity must be an integer number'],
         error: 'Bad Request',
       },
     },
   })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
-  @ApiConflictResponse({ description: 'Movement already exists' })
+  @ApiConflictResponse({ description: 'Stock Movement already exists' })
   create(
     @CurrentUser() user: AuthenticatedUser,
     @Body() createMovementDto: CreateMovementDto,
   ): Promise<OneMovementResponse> {
-    return this.movementsService.create(user, createMovementDto);
+    const merchantId = user.merchant.id;
+    return this.movementsService.create(merchantId, createMovementDto);
   }
 
   @Get()
@@ -94,9 +97,9 @@ export class MovementsController {
     Scope.MERCHANT_CLOVER,
   )
   @ApiOperation({
-    summary: 'Get all movements with pagination and filters',
+    summary: 'Get all stock movements with pagination and filters',
     description:
-      'Retrieves a paginated list of movements with optional filters. Users can only see movements from their own merchant. Supports filtering by item ID.',
+      'Retrieves a paginated list of stock movements with optional filters. Users can only see movements from their own merchant. Supports filtering by item ID.',
   })
   @ApiQuery({
     name: 'page',
@@ -162,11 +165,11 @@ export class MovementsController {
     },
   })
   @ApiNotFoundResponse({
-    description: 'Merchant not found',
+    description: 'Stock Movement not found',
     schema: {
       example: {
         statusCode: 404,
-        message: 'Merchant with ID 999 not found',
+        message: 'Stock Movement with ID 999 not found',
         error: 'Not Found',
       },
     },
@@ -223,19 +226,19 @@ export class MovementsController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ summary: 'Get a Movement by ID' })
-  @ApiParam({ name: 'id', type: Number, description: 'Movement ID' })
-  @ApiOkResponse({ description: 'Movement found', type: Movement })
+  @ApiOperation({ summary: 'Get a Stock Movement by ID' })
+  @ApiParam({ name: 'id', type: Number, description: 'Stock Movement ID' })
+  @ApiOkResponse({ description: 'Stock Movement found', type: Movement })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  @ApiNotFoundResponse({ description: 'Movement not found' })
+  @ApiNotFoundResponse({ description: 'Stock Movement not found' })
   @ApiResponse({
     status: 404,
-    description: 'Movement not found',
+    description: 'Stock Movement not found',
     type: ErrorResponse,
     schema: {
       example: {
         statusCode: 404,
-        message: 'Movement not found',
+        message: 'Stock Movement not found',
         error: 'Not Found',
       },
     },
@@ -269,24 +272,24 @@ export class MovementsController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ summary: 'Update a Movement' })
-  @ApiParam({ name: 'id', type: Number, description: 'Movement ID' })
+  @ApiOperation({ summary: 'Update a Stock Movement' })
+  @ApiParam({ name: 'id', type: Number, description: 'Stock Movement ID' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  @ApiNotFoundResponse({ description: 'Movement not found' })
+  @ApiNotFoundResponse({ description: 'Stock Movement not found' })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
   @ApiBody({ type: UpdateMovementDto })
   @ApiOkResponse({
-    description: 'Movement updated successfully',
+    description: 'Stock Movement updated successfully',
     type: Movement,
   })
   @ApiResponse({
     status: 404,
-    description: 'Movement not found',
+    description: 'Stock Movement not found',
     type: ErrorResponse,
     schema: {
       example: {
         statusCode: 404,
-        message: 'Movement not found',
+        message: 'Stock Movement not found',
         error: 'Not Found',
       },
     },
@@ -298,7 +301,7 @@ export class MovementsController {
     schema: {
       example: {
         statusCode: 400,
-        message: 'quantity must be an integer number',
+        message: 'stock movement quantity must be an integer number',
         error: 'Bad Request',
       },
     },
@@ -308,7 +311,8 @@ export class MovementsController {
     @Param('id', ParseIntPipe) id: number,
     @Body() updateMovementDto: UpdateMovementDto,
   ): Promise<OneMovementResponse> {
-    return this.movementsService.update(user, id, updateMovementDto);
+    const merchantId = user.merchant.id;
+    return this.movementsService.update(id, merchantId, updateMovementDto);
   }
 
   @Delete(':id')
@@ -320,20 +324,20 @@ export class MovementsController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ summary: 'Delete a Movement' })
-  @ApiParam({ name: 'id', type: Number, description: 'Movement ID' })
+  @ApiOperation({ summary: 'Delete a Stock Movement' })
+  @ApiParam({ name: 'id', type: Number, description: 'Stock Movement ID' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  @ApiNotFoundResponse({ description: 'Movement not found' })
+  @ApiNotFoundResponse({ description: 'Stock Movement not found' })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
-  @ApiOkResponse({ description: 'Movement deleted' })
+  @ApiOkResponse({ description: 'Stock Movement deleted' })
   @ApiResponse({
     status: 404,
-    description: 'Movement not found',
+    description: 'Stock Movement not found',
     type: ErrorResponse,
     schema: {
       example: {
         statusCode: 404,
-        message: 'Movement not found',
+        message: 'Stock Movement not found',
         error: 'Not Found',
       },
     },
@@ -354,6 +358,7 @@ export class MovementsController {
     @CurrentUser() user: AuthenticatedUser,
     @Param('id', ParseIntPipe) id: number,
   ): Promise<OneMovementResponse> {
-    return this.movementsService.remove(user, id);
+    const merchantId = user.merchant.id;
+    return this.movementsService.remove(id, merchantId);
   }
 }

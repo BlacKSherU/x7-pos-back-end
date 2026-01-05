@@ -1,5 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
+import { MovementsStatus } from '../constants/movements-status';
 
 export class CreateMovementDto {
   @ApiProperty({
@@ -17,12 +25,14 @@ export class CreateMovementDto {
   quantity: number;
 
   @ApiProperty({
-    example: 'entry',
-    description: 'Type of movement (entry/exit)',
+    example: MovementsStatus.IN,
+    description: 'Type of movement',
+    enum: MovementsStatus,
+    default: MovementsStatus.IN,
   })
   @IsNotEmpty()
-  @IsString()
-  type: string;
+  @IsEnum(MovementsStatus)
+  type?: MovementsStatus;
 
   @ApiProperty({
     example: 'REF-001',
@@ -32,4 +42,13 @@ export class CreateMovementDto {
   @IsOptional()
   @IsString()
   reference?: string;
+
+  @ApiProperty({
+    example: 'Reason 1',
+    description: 'Reason for the movement (optional)',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString()
+  reason?: string;
 }

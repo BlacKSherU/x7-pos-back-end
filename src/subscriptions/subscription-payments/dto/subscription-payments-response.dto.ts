@@ -11,7 +11,7 @@ export class SubscriptionPaymentResponseDto {
     example: 1,
     description: 'ID of the Merchant Subscription Associated',
   })
-  merchantSubscriptionId: number;
+  merchantSubscription: { id: number };
 
   @ApiProperty({ example: 10900 })
   amount: number;

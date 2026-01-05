@@ -10,7 +10,7 @@ export class CreatePlanFeatureDto {
   })
   @IsNumber()
   @IsNotEmpty()
-  subscriptionPlanId: number;
+  subscriptionPlan: number;
 
   @ApiProperty({
     example: 1,
@@ -19,7 +19,7 @@ export class CreatePlanFeatureDto {
   })
   @IsNumber()
   @IsNotEmpty()
-  featureId: number;
+  feature: number;
 
   @ApiProperty({
     example: 10990,

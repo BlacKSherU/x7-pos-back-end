@@ -78,7 +78,8 @@ export class ModifiersController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() createModifierDto: CreateModifierDto,
   ) {
-    return this.modifiersService.create(user, createModifierDto);
+    const merchantId = user.merchant.id;
+    return this.modifiersService.create(merchantId, createModifierDto);
   }
 
   @Get()
@@ -305,7 +306,8 @@ export class ModifiersController {
     @Param('id', ParseIntPipe) id: number,
     @Body() updateModifierDto: UpdateModifierDto,
   ) {
-    return this.modifiersService.update(user, id, updateModifierDto);
+    const merchantId = user.merchant.id;
+    return this.modifiersService.update(id, merchantId, updateModifierDto);
   }
 
   @Delete(':id')
@@ -351,6 +353,7 @@ export class ModifiersController {
     @CurrentUser() user: AuthenticatedUser,
     @Param('id', ParseIntPipe) id: number,
   ) {
-    return this.modifiersService.remove(user, id);
+    const merchantId = user.merchant.id;
+    return this.modifiersService.remove(id, merchantId);
   }
 }

@@ -24,6 +24,7 @@ import {
   ApiResponse,
   ApiUnauthorizedResponse,
   ApiQuery,
+  ApiTags,
 } from '@nestjs/swagger';
 import { ItemsService } from './items.service';
 import { CreateItemDto } from './dto/create-item.dto';
@@ -44,6 +45,7 @@ import { OneItemResponse } from './dto/item-response.dto';
 
 @ApiExtraModels(ErrorResponse)
 @ApiBearerAuth()
+@ApiTags('Stock Items')
 @Controller('items')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ItemsController {
@@ -58,9 +60,9 @@ export class ItemsController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ summary: 'Create a new Item' })
+  @ApiOperation({ summary: 'Create a new Stock Item' })
   @ApiCreatedResponse({
-    description: 'Item created successfully',
+    description: 'Stock Item created successfully',
     type: Item,
   })
   @ApiResponse({
@@ -70,18 +72,21 @@ export class ItemsController {
     schema: {
       example: {
         statusCode: 400,
-        message: ['item name must be longer than or equal to 2 characters'],
+        message: [
+          'stock item name must be longer than or equal to 2 characters',
+        ],
         error: 'Bad Request',
       },
     },
   })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
-  @ApiConflictResponse({ description: 'Item already exists' })
+  @ApiConflictResponse({ description: 'Stock Item already exists' })
   create(
     @CurrentUser() user: AuthenticatedUser,
     @Body() createItemDto: CreateItemDto,
   ): Promise<OneItemResponse> {
-    return this.itemsService.create(user, createItemDto);
+    const merchantId = user.merchant.id;
+    return this.itemsService.create(merchantId, createItemDto);
   }
 
   @Get()
@@ -94,9 +99,9 @@ export class ItemsController {
     Scope.MERCHANT_CLOVER,
   )
   @ApiOperation({
-    summary: 'Get all items with pagination and filters',
+    summary: 'Get all stock items with pagination and filters',
     description:
-      'Retrieves a paginated list of items with optional filters. Users can only see items from their own merchant. Supports filtering by product name.',
+      'Retrieves a paginated list of stock items with optional filters. Users can only see stock items from their own merchant. Supports filtering by product name.',
   })
   @ApiQuery({
     name: 'page',
@@ -127,7 +132,7 @@ export class ItemsController {
     example: 'Laptop Pro 1',
   })
   @ApiOkResponse({
-    description: 'Paginated list of items retrieved successfully',
+    description: 'Paginated list of stock items retrieved successfully',
     type: AllPaginatedItems,
     schema: {
       example: {
@@ -167,11 +172,11 @@ export class ItemsController {
     },
   })
   @ApiNotFoundResponse({
-    description: 'Merchant not found',
+    description: 'Stock Item with ID 999 not found',
     schema: {
       example: {
         statusCode: 404,
-        message: 'Merchant with ID 999 not found',
+        message: 'Stock Item with ID 999 not found',
         error: 'Not Found',
       },
     },
@@ -228,19 +233,19 @@ export class ItemsController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ summary: 'Get an Item by ID' })
-  @ApiParam({ name: 'id', type: Number, description: 'Item ID' })
-  @ApiOkResponse({ description: 'Item found', type: Item })
+  @ApiOperation({ summary: 'Get a Stock Item by ID' })
+  @ApiParam({ name: 'id', type: Number, description: 'Stock Item ID' })
+  @ApiOkResponse({ description: 'Stock Item found', type: Item })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  @ApiNotFoundResponse({ description: 'Item not found' })
+  @ApiNotFoundResponse({ description: 'Stock Item not found' })
   @ApiResponse({
     status: 404,
-    description: 'Item not found',
+    description: 'Stock Item not found',
     type: ErrorResponse,
     schema: {
       example: {
         statusCode: 404,
-        message: 'Item not found',
+        message: 'Stock Item not found',
         error: 'Not Found',
       },
     },
@@ -274,24 +279,24 @@ export class ItemsController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ summary: 'Update an Item' })
-  @ApiParam({ name: 'id', type: Number, description: 'Item ID' })
+  @ApiOperation({ summary: 'Update a Stock Item' })
+  @ApiParam({ name: 'id', type: Number, description: 'Stock Item ID' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  @ApiNotFoundResponse({ description: 'Item not found' })
+  @ApiNotFoundResponse({ description: 'Stock Item not found' })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
   @ApiBody({ type: UpdateItemDto })
   @ApiOkResponse({
-    description: 'Item updated successfully',
+    description: 'Stock Item updated successfully',
     type: Item,
   })
   @ApiResponse({
     status: 404,
-    description: 'Item not found',
+    description: 'Stock Item not found',
     type: ErrorResponse,
     schema: {
       example: {
         statusCode: 404,
-        message: 'Item not found',
+        message: 'Stock Item not found',
         error: 'Not Found',
       },
     },
@@ -303,7 +308,7 @@ export class ItemsController {
     schema: {
       example: {
         statusCode: 400,
-        message: 'name must be longer than or equal to 2 characters',
+        message: 'stock item name must be longer than or equal to 2 characters',
         error: 'Bad Request',
       },
     },
@@ -313,7 +318,8 @@ export class ItemsController {
     @Param('id', ParseIntPipe) id: number,
     @Body() updateItemDto: UpdateItemDto,
   ): Promise<OneItemResponse> {
-    return this.itemsService.update(user, id, updateItemDto);
+    const merchantId = user.merchant.id;
+    return this.itemsService.update(id, merchantId, updateItemDto);
   }
 
   @Delete(':id')
@@ -325,20 +331,20 @@ export class ItemsController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ summary: 'Delete an Item' })
-  @ApiParam({ name: 'id', type: Number, description: 'Item ID' })
+  @ApiOperation({ summary: 'Delete a Stock Item' })
+  @ApiParam({ name: 'id', type: Number, description: 'Stock Item ID' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  @ApiNotFoundResponse({ description: 'Item not found' })
+  @ApiNotFoundResponse({ description: 'Stock Item not found' })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
-  @ApiOkResponse({ description: 'Item deleted' })
+  @ApiOkResponse({ description: 'Stock Item deleted' })
   @ApiResponse({
     status: 404,
-    description: 'Item not found',
+    description: 'Stock Item not found',
     type: ErrorResponse,
     schema: {
       example: {
         statusCode: 404,
-        message: 'Item not found',
+        message: 'Stock Item not found',
         error: 'Not Found',
       },
     },
@@ -359,6 +365,7 @@ export class ItemsController {
     @CurrentUser() user: AuthenticatedUser,
     @Param('id', ParseIntPipe) id: number,
   ): Promise<OneItemResponse> {
-    return this.itemsService.remove(user, id);
+    const merchantId = user.merchant.id;
+    return this.itemsService.remove(id, merchantId);
   }
 }

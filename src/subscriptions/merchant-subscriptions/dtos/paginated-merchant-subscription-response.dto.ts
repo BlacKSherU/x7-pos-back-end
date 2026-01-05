@@ -5,7 +5,7 @@ import { MerchantSubscriptionSummaryDto } from './merchant-subscription-summary.
 
 export class PaginatedMerchantSuscriptionResponseDto extends SuccessResponse {
   @ApiProperty({
-    description: 'List of subscription plans',
+    description: 'List of merchant subscriptions',
     type: [MerchantSubscriptionSummaryDto],
   })
   data: MerchantSubscriptionSummaryDto[];
