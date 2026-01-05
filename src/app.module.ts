@@ -62,6 +62,8 @@ import { OrderItemModule } from './order-item/order-item.module';
 import { OrderItem } from './order-item/entities/order-item.entity';
 import { KitchenStationModule } from './kitchen-display-system/kitchen-station/kitchen-station.module';
 import { KitchenStation } from './kitchen-display-system/kitchen-station/entities/kitchen-station.entity';
+import { KitchenDisplayDevice } from './kitchen-display-system/kitchen-display-device/entities/kitchen-display-device.entity';
+import { KitchenOrder } from './kitchen-display-system/kitchen-order/entities/kitchen-order.entity';
 import { OnlineStoresModule } from './online-ordering-system/online-stores/online-stores.module';
 import { OnlineStore } from './online-ordering-system/online-stores/entities/online-store.entity';
 import { PlanFeaturesModule } from './subscriptions/plan-features/plan-features.module';
@@ -89,6 +91,12 @@ import { OnlineOrderModule } from './online-ordering-system/online-order/online-
 import { OnlineOrder } from './online-ordering-system/online-order/entities/online-order.entity';
 import { OnlineOrderItemModule } from './online-ordering-system/online-order-item/online-order-item.module';
 import { OnlineOrderItem } from './online-ordering-system/online-order-item/entities/online-order-item.entity';
+import { OnlineDeliveryInfoModule } from './online-ordering-system/online-delivery-info/online-delivery-info.module';
+import { OnlineDeliveryInfo } from './online-ordering-system/online-delivery-info/entities/online-delivery-info.entity';
+import { OnlinePaymentModule } from './online-ordering-system/online-payment/online-payment.module';
+import { OnlinePayment } from './online-ordering-system/online-payment/entities/online-payment.entity';
+import { KitchenDisplayDeviceModule } from './kitchen-display-system/kitchen-display-device/kitchen-display-device.module';
+import { KitchenOrderModule } from './kitchen-display-system/kitchen-order/kitchen-order.module';
 import { QRMenuSection } from './qr-code/qr-menu-section/entity/qr-menu-section.entity';
 import { QrMenuSectionModule } from './qr-code/qr-menu-section/qr-menu-section.module';
 import { LoyaltyPointTransaction } from './loyalty/loyalty-points-transaction/entities/loyalty-points-transaction.entity';
@@ -155,6 +163,8 @@ import { QRLocationModule } from './qr-code/qr-location/qr-location.module';
           CashDrawerHistory,
           OrderItem,
           KitchenStation,
+          KitchenDisplayDevice,
+          KitchenOrder,
           OnlineStore,
           QRMenu,
           QRMenuSection,
@@ -169,6 +179,8 @@ import { QRLocationModule } from './qr-code/qr-location/qr-location.module';
           OnlineMenuItem,
           OnlineOrder,
           OnlineOrderItem,
+          OnlineDeliveryInfo,
+          OnlinePayment,
           QRLocation,
         ],
         synchronize: true,
@@ -221,6 +233,15 @@ import { QRLocationModule } from './qr-code/qr-location/qr-location.module';
     OnlineOrderModule,
 
     OnlineOrderItemModule,
+
+    OnlineDeliveryInfoModule,
+
+    OnlinePaymentModule,
+
+    KitchenDisplayDeviceModule,
+
+    KitchenOrderModule,
+    QrMenuSectionModule,
     QRMenuSectionModule,
     QRMenuItemModule,
     QRLocationModule,
