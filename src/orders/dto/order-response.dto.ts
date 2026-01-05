@@ -64,3 +64,10 @@ export class PaginatedOrdersResponseDto extends SuccessResponse {
   };
 }
 
+export class OrderLittleResponseDto {
+  @ApiProperty({ example: 1 })
+  id: number;
+
+  @ApiProperty({ example: OrderBusinessStatus.PENDING, enum: OrderBusinessStatus })
+  businessStatus: OrderBusinessStatus | null;
+}

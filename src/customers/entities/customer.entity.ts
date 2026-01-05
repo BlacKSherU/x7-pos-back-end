@@ -5,6 +5,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Company } from 'src/companies/entities/company.entity';
 import { OneToMany } from 'typeorm';
 import { Order } from '../../orders/entities/order.entity';
+import { LoyaltyCustomer } from 'src/loyalty/loyalty-customer/entities/loyalty-customer.entity';
 
 @Entity()
 export class Customer {
@@ -98,4 +99,9 @@ export class Customer {
   })
   @OneToMany(() => Order, (order) => order.customer)
   orders: Order[];
+  @OneToMany(
+    () => LoyaltyCustomer,
+    (loyaltyCustomer) => loyaltyCustomer.customer,
+  )
+  loyaltyCustomers: LoyaltyCustomer[];
 }

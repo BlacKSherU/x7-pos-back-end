@@ -13,12 +13,4 @@ export class CreateLocationDto {
   @IsNotEmpty()
   @MaxLength(255)
   address: string;
-
-  /* @ApiProperty({
-    example: 123,
-    description: 'Merchant ID associated to the location',
-  })
-  @IsNumber()
-  @IsNotEmpty()
-  merchantId: number; */
 }

@@ -34,7 +34,7 @@ export class QRMenuSection {
 
   @ApiProperty({
     example: 'active',
-    description: 'Status of the QR MENU',
+    description: 'Status of the QR MENU SECTION',
   })
   @Column({ type: 'varchar', length: 50 })
   status: string;

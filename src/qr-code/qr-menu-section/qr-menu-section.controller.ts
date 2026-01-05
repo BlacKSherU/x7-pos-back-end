@@ -83,7 +83,7 @@ export class QrMenuSectionController {
       example: {
         statusCode: 400,
         message: [
-          'QR Menu must be a number',
+          'QR Menu Section must be a number',
           'status must be one of the following values: active, inactive',
         ],
         error: 'Bad Request',
@@ -268,8 +268,8 @@ export class QrMenuSectionController {
     if (id <= 0) {
       throw new BadRequestException('Invalid ID. Must be a positive number.');
     }
-    const qrMenu = await this.qrMenuSectionService.findOne(id);
-    return qrMenu;
+    const qrMenuSection = await this.qrMenuSectionService.findOne(id);
+    return qrMenuSection;
   }
 
   @Patch(':id')

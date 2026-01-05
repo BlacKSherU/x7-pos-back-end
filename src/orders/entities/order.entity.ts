@@ -20,6 +20,7 @@ import { OrderBusinessStatus } from '../constants/order-business-status.enum';
 import { OrderType } from '../constants/order-type.enum';
 import { CashTransaction } from '../../cash-transactions/entities/cash-transaction.entity';
 import { Receipt } from '../../receipts/entities/receipt.entity';
+import { LoyaltyPointTransaction } from 'src/loyalty/loyalty-points-transaction/entities/loyalty-points-transaction.entity';
 
 @Entity('orders')
 @Index(['merchant_id', 'status', 'created_at'])
@@ -28,7 +29,10 @@ export class Order {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ApiProperty({ example: 1, description: 'Identifier of the Merchant owning the Order' })
+  @ApiProperty({
+    example: 1,
+    description: 'Identifier of the Merchant owning the Order',
+  })
   @Column({ name: 'merchant_id' })
   merchant_id: number;
 
@@ -38,7 +42,10 @@ export class Order {
   @JoinColumn({ name: 'merchant_id' })
   merchant: Merchant;
 
-  @ApiProperty({ example: 1, description: 'Identifier of the Table associated with the Order' })
+  @ApiProperty({
+    example: 1,
+    description: 'Identifier of the Table associated with the Order',
+  })
   @Column({ name: 'table_id' })
   table_id: number;
 
@@ -48,7 +55,10 @@ export class Order {
   @JoinColumn({ name: 'table_id' })
   table: Table;
 
-  @ApiProperty({ example: 1, description: 'Identifier of the Collaborator (waiter) who took the order' })
+  @ApiProperty({
+    example: 1,
+    description: 'Identifier of the Collaborator (waiter) who took the order',
+  })
   @Column({ name: 'collaborator_id' })
   collaborator_id: number;
 
@@ -58,33 +68,44 @@ export class Order {
   @JoinColumn({ name: 'collaborator_id' })
   collaborator: Collaborator;
 
-  @ApiProperty({ example: 1, description: 'Identifier of the Subscription associated with the Order' })
+  @ApiProperty({
+    example: 1,
+    description: 'Identifier of the Subscription associated with the Order',
+  })
   @Column({ name: 'subscription_id' })
   subscription_id: number;
 
-  @ManyToOne(() => MerchantSubscription, (subscription) => subscription.orders, {
-    onDelete: 'CASCADE',
-  })
+  @ManyToOne(
+    () => MerchantSubscription,
+    (subscription) => subscription.orders,
+    {
+      onDelete: 'CASCADE',
+    },
+  )
   @JoinColumn({ name: 'subscription_id' })
   subscription: MerchantSubscription;
 
-  @ApiProperty({ 
-    example: OrderType.DINE_IN, 
+  @ApiProperty({
+    example: OrderType.DINE_IN,
     enum: OrderType,
-    description: 'Type of the Order (dine_in, take_out, delivery)' 
+    description: 'Type of the Order (dine_in, take_out, delivery)',
   })
   @Column({ type: 'varchar', length: 50 })
   type: OrderType;
 
-  @ApiProperty({ 
-    example: OrderBusinessStatus.PENDING, 
+  @ApiProperty({
+    example: OrderBusinessStatus.PENDING,
     enum: OrderBusinessStatus,
-    description: 'Status of the Order (pending, in_progress, completed, cancelled)' 
+    description:
+      'Status of the Order (pending, in_progress, completed, cancelled)',
   })
   @Column({ type: 'varchar', length: 50 })
   status: OrderBusinessStatus;
 
-  @ApiProperty({ example: 1, description: 'Identifier of the Customer associated with the Order' })
+  @ApiProperty({
+    example: 1,
+    description: 'Identifier of the Customer associated with the Order',
+  })
   @Column({ name: 'customer_id' })
   customer_id: number;
 
@@ -94,23 +115,38 @@ export class Order {
   @JoinColumn({ name: 'customer_id' })
   customer: Customer;
 
-  @ApiProperty({ 
-    example: OrderStatus.ACTIVE, 
+  @ApiProperty({
+    example: OrderStatus.ACTIVE,
     enum: OrderStatus,
-    description: 'Logical status for deletion (active, deleted)' 
+    description: 'Logical status for deletion (active, deleted)',
   })
-  @Column({ type: 'enum', enum: OrderStatus, default: OrderStatus.ACTIVE, name: 'logical_status' })
+  @Column({
+    type: 'enum',
+    enum: OrderStatus,
+    default: OrderStatus.ACTIVE,
+    name: 'logical_status',
+  })
   logical_status: OrderStatus;
 
-  @ApiProperty({ example: '2024-01-15T08:00:00Z', description: 'Creation timestamp of the Order' })
+  @ApiProperty({
+    example: '2024-01-15T08:00:00Z',
+    description: 'Creation timestamp of the Order',
+  })
   @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
   created_at: Date;
 
-  @ApiProperty({ example: '2024-01-15T10:00:00Z', required: false, description: 'Closing timestamp of the Order' })
+  @ApiProperty({
+    example: '2024-01-15T10:00:00Z',
+    required: false,
+    description: 'Closing timestamp of the Order',
+  })
   @Column({ type: 'timestamp', name: 'closed_at', nullable: true })
   closed_at: Date | null;
 
-  @ApiProperty({ example: '2024-01-15T09:00:00Z', description: 'Last update timestamp of the Order' })
+  @ApiProperty({
+    example: '2024-01-15T09:00:00Z',
+    description: 'Last update timestamp of the Order',
+  })
   @UpdateDateColumn({ type: 'timestamp', name: 'updated_at' })
   updated_at: Date;
 
@@ -131,6 +167,12 @@ export class Order {
   })
   @OneToMany(() => Receipt, (receipt) => receipt.order)
   receipts: Receipt[];
+
+  @OneToMany(
+    () => LoyaltyPointTransaction,
+    (loyaltyPointTransaction) => loyaltyPointTransaction.order,
+  )
+  loyaltyPointTransactions: LoyaltyPointTransaction[];
 }
 
 /*

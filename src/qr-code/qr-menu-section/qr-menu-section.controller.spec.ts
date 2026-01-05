@@ -239,7 +239,7 @@ describe('QrMenuSectionController', () => {
   // ----------------------------------------------------------
   // DELETE /qr-menu-section/:id
   // ----------------------------------------------------------
-  describe('DELETE /qr-menus/:id', () => {
+  describe('DELETE /qr-menu-section/:id', () => {
     it('should delete a qr menu section successfully', async () => {
       const deleteResponse = {
         statusCode: 200,
