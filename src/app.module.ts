@@ -52,6 +52,7 @@ import { ApplicationEntity } from './subscriptions/applications/entity/applicati
 import { PlanApplication } from './subscriptions/plan-applications/entity/plan-applications.entity';
 import { CashTransactionsModule } from './cash-transactions/cash-transactions.module';
 import { ReceiptsModule } from './receipts/receipts.module';
+import { OrdersModule } from './orders/orders.module';
 import { SubscriptionApplication } from './subscriptions/subscription-application/entity/subscription-application.entity';
 import { Item } from './products-inventory/stocks/items/entities/item.entity';
 import { Movement } from './products-inventory/stocks/movements/entities/movement.entity';
@@ -95,6 +96,16 @@ import { KitchenDisplayDeviceModule } from './kitchen-display-system/kitchen-dis
 import { KitchenOrderModule } from './kitchen-display-system/kitchen-order/kitchen-order.module';
 import { QRMenuSection } from './qr-code/qr-menu-section/entity/qr-menu-section.entity';
 import { QrMenuSectionModule } from './qr-code/qr-menu-section/qr-menu-section.module';
+import { KitchenOrderItemModule } from './kitchen-display-system/kitchen-order-item/kitchen-order-item.module';
+import { KitchenOrderItem } from './kitchen-display-system/kitchen-order-item/entities/kitchen-order-item.entity';
+import { KitchenEventLogModule } from './kitchen-display-system/kitchen-event-log/kitchen-event-log.module';
+import { KitchenEventLog } from './kitchen-display-system/kitchen-event-log/entities/kitchen-event-log.entity';
+import { MarketingCampaignModule } from './marketing/marketing_campaing/marketing_campaing.module';
+import { MarketingCampaign } from './marketing/marketing_campaing/entities/marketing_campaing.entity';
+import { MarketingCampaingAudienceModule } from './marketing/marketing-campaing-audience/marketing-campaing-audience.module';
+import { MarketingCampaignAudience } from './marketing/marketing-campaing-audience/entities/marketing-campaing-audience.entity';
+import { MarketingSegmentsModule } from './marketing/marketing-segments/marketing-segments.module';
+import { MarketingSegment } from './marketing/marketing-segments/entities/marketing-segment.entity';
 
 @Module({
   imports: [
@@ -154,6 +165,8 @@ import { QrMenuSectionModule } from './qr-code/qr-menu-section/qr-menu-section.m
           KitchenStation,
           KitchenDisplayDevice,
           KitchenOrder,
+          KitchenOrderItem,
+          KitchenEventLog,
           OnlineStore,
           QRMenu,
           QRMenuSection,
@@ -164,6 +177,9 @@ import { QrMenuSectionModule } from './qr-code/qr-menu-section/qr-menu-section.m
           OnlineOrderItem,
           OnlineDeliveryInfo,
           OnlinePayment,
+          MarketingCampaign,
+          MarketingCampaignAudience,
+          MarketingSegment,
         ],
         synchronize: true,
       }),
@@ -193,6 +209,7 @@ import { QrMenuSectionModule } from './qr-code/qr-menu-section/qr-menu-section.m
     PlanApplicationsModule,
     CashTransactionsModule,
     ReceiptsModule,
+    OrdersModule,
     PurchaseOrderModule,
     PurchaseOrderItemModule,
     FeaturesModule,
@@ -226,6 +243,11 @@ import { QrMenuSectionModule } from './qr-code/qr-menu-section/qr-menu-section.m
 
     KitchenOrderModule,
     QrMenuSectionModule,
+    KitchenOrderItemModule,
+    KitchenEventLogModule,
+    MarketingCampaignModule,
+    MarketingCampaingAudienceModule,
+    MarketingSegmentsModule,
   ],
 })
 export class AppModule {}
