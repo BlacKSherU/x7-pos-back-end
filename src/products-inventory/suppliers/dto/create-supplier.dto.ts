@@ -15,12 +15,4 @@ export class CreateSupplierDto {
   @MaxLength(255)
   @IsNotEmpty()
   contactInfo: string;
-
-  /* @ApiProperty({
-    example: 1,
-    description: 'Merchant ID associated with the supplier',
-  })
-  @IsNotEmpty()
-  @IsNumber()
-  merchantId: number; */
 }

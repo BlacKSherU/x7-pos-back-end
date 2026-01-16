@@ -23,6 +23,7 @@ import { TableAssignment } from 'src/table-assignments/entities/table-assignment
 import { CashDrawer } from 'src/cash-drawers/entities/cash-drawer.entity';
 import { Order } from 'src/orders/entities/order.entity';
 import { Movement } from 'src/products-inventory/stocks/movements/entities/movement.entity';
+import { LoyaltyProgram } from 'src/loyalty/loyalty-programs/entities/loyalty-program.entity';
 
 @Entity()
 export class Merchant {
@@ -217,4 +218,7 @@ export class Merchant {
   })
   @OneToMany(() => Order, (order) => order.merchant)
   orders: Order[];
+
+  @OneToMany(() => LoyaltyProgram, (loyaltyProgram) => loyaltyProgram.merchant)
+  loyaltyPrograms: LoyaltyProgram[];
 }

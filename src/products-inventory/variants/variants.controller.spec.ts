@@ -4,10 +4,10 @@ import { VariantsService } from './variants.service';
 import { AuthenticatedUser } from '../../auth/interfaces/authenticated-user.interface';
 import { UserRole } from '../../../src/users/constants/role.enum';
 import { Scope } from '../../../src/users/constants/scope.enum';
-import { GetVariantsQueryDto } from './dto/get-variants-query.dto'; // Asumo la ruta y nombre del DTO
-import { AllPaginatedVariants } from './dto/all-paginated-variants.dto'; // Asumo la ruta y nombre del DTO
-import { CreateVariantDto } from './dto/create-variant.dto'; // Asumo la ruta y nombre del DTO
-import { UpdateVariantDto } from './dto/update-variant.dto'; // Asumo la ruta y nombre del DTO
+import { GetVariantsQueryDto } from './dto/get-variants-query.dto'; // Assuming the DTO path and name
+import { AllPaginatedVariants } from './dto/all-paginated-variants.dto'; // Assuming the DTO path and name
+import { CreateVariantDto } from './dto/create-variant.dto'; // Assuming the DTO path and name
+import { UpdateVariantDto } from './dto/update-variant.dto'; // Assuming the DTO path and name
 
 describe('VariantsController', () => {
   let controller: VariantsController;
@@ -198,7 +198,6 @@ describe('VariantsController', () => {
       const updateVariantDto: UpdateVariantDto = {
         name: 'Updated Variant',
         price: 12.0, // Added price
-        productId: 1, // Added productId
       };
       const expectedResult = {
         statusCode: 201,
@@ -229,7 +228,6 @@ describe('VariantsController', () => {
       const updateVariantDto: UpdateVariantDto = {
         name: 'Non Existent',
         price: 0,
-        productId: 1,
       };
       const errorMessage = 'Variant not found';
       mockVariantsService.update.mockRejectedValue(new Error(errorMessage));
@@ -298,7 +296,6 @@ describe('VariantsController', () => {
       const updateVariantDto: UpdateVariantDto = {
         name: 'Updated Integration Test Variant',
         price: 17.5,
-        productId: 2,
       };
       const variantId = 1;
       const query: GetVariantsQueryDto = { page: 1, limit: 10 };

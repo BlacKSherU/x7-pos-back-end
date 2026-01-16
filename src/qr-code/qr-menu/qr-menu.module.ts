@@ -11,4 +11,4 @@ import { Merchant } from 'src/merchants/entities/merchant.entity';
   controllers: [QrMenuController],
   providers: [QrMenuService],
 })
-export class QrMenuModule {}
+export class QRMenuModule {}

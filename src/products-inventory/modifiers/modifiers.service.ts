@@ -233,7 +233,7 @@ export class ModifiersService {
       ErrorHandler.invalidId('Modifier ID is incorrect');
     }
 
-    const { productId, ...modifierData } = updateModifierDto;
+    const modifierData = updateModifierDto;
 
     const modifier = await this.modifierRepository
       .createQueryBuilder('modifier')
@@ -246,10 +246,6 @@ export class ModifiersService {
 
     if (!modifier) {
       ErrorHandler.notFound(ErrorMessage.MODIFIER_NOT_FOUND);
-    }
-
-    if (productId && productId !== modifier.productId) {
-      ErrorHandler.forbidden(ErrorMessage.PRODUCT_ID_NOT_CHANGED);
     }
 
     if (modifierData.name && modifierData.name !== modifier.name) {

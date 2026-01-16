@@ -1,0 +1,6 @@
+export enum LoyaltyRewardType {
+  DISCOUNT = 'DISCOUNT',
+  CASHBACK = 'CASHBACK',
+  FREE_ITEM = 'FREE_ITEM',
+  STORE_CREDIT = 'STORE_CREDIT',
+}

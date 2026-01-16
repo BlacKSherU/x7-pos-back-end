@@ -3,14 +3,6 @@ import { IsEnum, IsNotEmpty, IsNumber, Min } from 'class-validator';
 import { PurchaseOrderStatus } from '../constants/purchase-order-status.enum';
 
 export class CreatePurchaseOrderDto {
-  /* @ApiProperty({
-    example: 1,
-    description: 'ID of the merchant creating the purchase order',
-  })
-  @IsNotEmpty()
-  @IsNumber()
-  merchantId: number;*/
-
   @ApiProperty({
     example: 1,
     description: 'ID of the supplier for this purchase order',

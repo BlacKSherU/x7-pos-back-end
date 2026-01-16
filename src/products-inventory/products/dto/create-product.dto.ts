@@ -17,10 +17,6 @@ export class CreateProductDto {
   @IsPositive()
   basePrice: number;
 
-  /* @ApiProperty({ example: 1, description: 'ID of the Merchant' })
-  @IsNumber()
-  merchantId: number; */
-
   @ApiProperty({
     example: 1,
     description: 'ID of the Category',

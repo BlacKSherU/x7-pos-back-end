@@ -59,3 +59,14 @@ export class CustomerSummaryDto {
   })
   merchant: number;
 }
+
+export class CustomerLittleResponseDto {
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the User',
+  })
+  id: number;
+
+  @ApiProperty({ example: 'johndoe', description: 'Name of the customer' })
+  name: string;
+}

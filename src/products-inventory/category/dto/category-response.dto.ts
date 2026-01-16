@@ -16,22 +16,6 @@ export class CategoryResponseDto {
   })
   merchant: MerchantLittleResponseDto | null;
 
-  /* @ApiProperty({
-    example: 123,
-    description: 'Parent ID',
-    required: false,
-    nullable: true,
-  })
-  parentId?: number;
-
-  @ApiProperty({
-    example: 'Food',
-    description: 'Parent category name',
-    required: false,
-    nullable: true,
-  })
-  parentName?: string; */
-
   @ApiProperty({
     example: [{ id: 1, parentName: 'Food' }],
     description: 'Parent categories',

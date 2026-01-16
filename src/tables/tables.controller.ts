@@ -53,8 +53,9 @@ export class TablesController {
   constructor(private readonly tableService: TablesService) { }
 
   @Post()
-  @Roles(UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
   @Scopes(
+    Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
     Scope.MERCHANT_ANDROID,
     Scope.MERCHANT_IOS,

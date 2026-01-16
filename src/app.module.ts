@@ -75,11 +75,15 @@ import { PurchaseOrderModule } from './products-inventory/purchase-order/purchas
 import { PurchaseOrderItemModule } from './products-inventory/purchase-order-item/purchase-order-item.module';
 import { PurchaseOrder } from './products-inventory/purchase-order/entities/purchase-order.entity';
 import { PurchaseOrderItem } from './products-inventory/purchase-order-item/entities/purchase-order-item.entity';
-import { QrCodeModule } from './qr-code/qr-code.module';
-import { QrMenuModule } from './qr-code/qr-menu/qr-menu.module';
+import { QRCodeModule } from './qr-code/qr-code.module';
+import { QRMenuModule } from './qr-code/qr-menu/qr-menu.module';
 import { QRMenu } from './qr-code/qr-menu/entity/qr-menu.entity';
 import { OnlineMenuModule } from './online-ordering-system/online-menu/online-menu.module';
 import { OnlineMenu } from './online-ordering-system/online-menu/entities/online-menu.entity';
+import { LoyaltyModule } from './loyalty/loyalty.module';
+import { LoyaltyProgram } from './loyalty/loyalty-programs/entities/loyalty-program.entity';
+import { LoyaltyTier } from './loyalty/loyalty-tier/entities/loyalty-tier.entity';
+import { LoyaltyCustomer } from './loyalty/loyalty-customer/entities/loyalty-customer.entity';
 import { OnlineMenuCategoryModule } from './online-ordering-system/online-menu-category/online-menu-category.module';
 import { OnlineMenuCategory } from './online-ordering-system/online-menu-category/entities/online-menu-category.entity';
 import { OnlineMenuItemModule } from './online-ordering-system/online-menu-item/online-menu-item.module';
@@ -96,6 +100,13 @@ import { KitchenDisplayDeviceModule } from './kitchen-display-system/kitchen-dis
 import { KitchenOrderModule } from './kitchen-display-system/kitchen-order/kitchen-order.module';
 import { QRMenuSection } from './qr-code/qr-menu-section/entity/qr-menu-section.entity';
 import { QrMenuSectionModule } from './qr-code/qr-menu-section/qr-menu-section.module';
+import { LoyaltyPointTransaction } from './loyalty/loyalty-points-transaction/entities/loyalty-points-transaction.entity';
+import { LoyaltyReward } from './loyalty/loyalty-reward/entities/loyalty-reward.entity';
+import { QRMenuSectionModule } from './qr-code/qr-menu-section/qr-menu-section.module';
+import { QRMenuItem } from './qr-code/qr-menu-item/entity/qr-menu-item.entity';
+import { QRMenuItemModule } from './qr-code/qr-menu-item/qr-menu-item.module';
+import { QRLocation } from './qr-code/qr-location/entity/qr-location.entity';
+import { QRLocationModule } from './qr-code/qr-location/qr-location.module';
 import { KitchenOrderItemModule } from './kitchen-display-system/kitchen-order-item/kitchen-order-item.module';
 import { KitchenOrderItem } from './kitchen-display-system/kitchen-order-item/entities/kitchen-order-item.entity';
 import { KitchenEventLogModule } from './kitchen-display-system/kitchen-event-log/kitchen-event-log.module';
@@ -171,12 +182,19 @@ import { MarketingSegment } from './marketing/marketing-segments/entities/market
           QRMenu,
           QRMenuSection,
           OnlineMenu,
+          QRMenuItem,
+          LoyaltyProgram,
+          LoyaltyTier,
+          LoyaltyCustomer,
+          LoyaltyPointTransaction,
+          LoyaltyReward,
           OnlineMenuCategory,
           OnlineMenuItem,
           OnlineOrder,
           OnlineOrderItem,
           OnlineDeliveryInfo,
           OnlinePayment,
+          QRLocation,
           MarketingCampaign,
           MarketingCampaignAudience,
           MarketingSegment,
@@ -217,15 +235,13 @@ import { MarketingSegment } from './marketing/marketing-segments/entities/market
     OrderItemModule,
     KitchenStationModule,
     OnlineStoresModule,
-
     PlanFeaturesModule,
-
     SubscriptionPaymentsModule,
+    QRCodeModule,
 
-    QrCodeModule,
-
-    QrMenuModule,
+    QRMenuModule,
     OnlineMenuModule,
+    LoyaltyModule,
 
     OnlineMenuCategoryModule,
 
@@ -243,6 +259,9 @@ import { MarketingSegment } from './marketing/marketing-segments/entities/market
 
     KitchenOrderModule,
     QrMenuSectionModule,
+    QRMenuSectionModule,
+    QRMenuItemModule,
+    QRLocationModule,
     KitchenOrderItemModule,
     KitchenEventLogModule,
     MarketingCampaignModule,
