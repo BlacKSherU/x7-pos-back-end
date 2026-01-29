@@ -117,6 +117,16 @@ import { MarketingCampaingAudienceModule } from './marketing/marketing-campaing-
 import { MarketingCampaignAudience } from './marketing/marketing-campaing-audience/entities/marketing-campaing-audience.entity';
 import { MarketingSegmentsModule } from './marketing/marketing-segments/marketing-segments.module';
 import { MarketingSegment } from './marketing/marketing-segments/entities/marketing-segment.entity';
+import { MarketingSegmentRulesModule } from './marketing/marketing-segment-rules/marketing-segment-rules.module';
+import { MarketingSegmentRule } from './marketing/marketing-segment-rules/entities/marketing-segment-rule.entity';
+import { MarketingCouponsModule } from './marketing/marketing-coupons/marketing-coupons.module';
+import { MarketingCoupon } from './marketing/marketing-coupons/entities/marketing-coupon.entity';
+import { MarketingCouponRedemptionsModule } from './marketing/marketing-coupon-redemptions/marketing-coupon-redemptions.module';
+import { MarketingCouponRedemption } from './marketing/marketing-coupon-redemptions/entities/marketing-coupon-redemption.entity';
+import { MarketingAutomationsModule } from './marketing/marketing-automations/marketing-automations.module';
+import { MarketingAutomation } from './marketing/marketing-automations/entities/marketing-automation.entity';
+import { MarketingAutomationActionsModule } from './marketing/marketing-automation-actions/marketing-automation-actions.module';
+import { MarketingAutomationAction } from './marketing/marketing-automation-actions/entities/marketing-automation-action.entity';
 
 @Module({
   imports: [
@@ -198,6 +208,11 @@ import { MarketingSegment } from './marketing/marketing-segments/entities/market
           MarketingCampaign,
           MarketingCampaignAudience,
           MarketingSegment,
+          MarketingSegmentRule,
+          MarketingCoupon,
+          MarketingCouponRedemption,
+          MarketingAutomation,
+          MarketingAutomationAction,
         ],
         synchronize: true,
       }),
@@ -266,6 +281,11 @@ import { MarketingSegment } from './marketing/marketing-segments/entities/market
     MarketingCampaignModule,
     MarketingCampaingAudienceModule,
     MarketingSegmentsModule,
+    MarketingSegmentRulesModule,
+    MarketingCouponsModule,
+    MarketingCouponRedemptionsModule,
+    MarketingAutomationsModule,
+    MarketingAutomationActionsModule,
   ],
 })
 export class AppModule {}
