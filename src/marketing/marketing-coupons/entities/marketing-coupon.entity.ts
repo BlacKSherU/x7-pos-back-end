@@ -40,9 +40,9 @@ export class MarketingCoupon {
 
   @ApiProperty({
     example: 'SUMMER2024',
-    description: 'Unique coupon code',
+    description: 'Coupon code (unique per merchant for active coupons)',
   })
-  @Column({ type: 'varchar', length: 100, unique: true })
+  @Column({ type: 'varchar', length: 100 })
   code: string;
 
   @ApiProperty({
