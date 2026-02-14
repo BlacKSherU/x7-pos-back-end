@@ -6,7 +6,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Not } from 'typeorm';
 import { TipPoolMember } from './entities/tip-pool-member.entity';
 import { TipPool } from '../tip-pools/entities/tip-pool.entity';
 import { Collaborator } from '../../collaborators/entities/collaborator.entity';
@@ -236,9 +236,10 @@ export class TipPoolMembersService {
         tip_pool_id: poolId,
         collaborator_id: collaboratorId,
         record_status: TipPoolMemberRecordStatus.ACTIVE,
+        id: Not(id),
       },
     });
-    if (duplicate && duplicate.id !== id) {
+    if (duplicate) {
       throw new ConflictException(
         'This collaborator is already a member of this tip pool. A collaborator can only be in the pool once.',
       );

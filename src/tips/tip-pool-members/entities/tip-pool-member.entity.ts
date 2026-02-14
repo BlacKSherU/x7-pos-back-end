@@ -14,7 +14,7 @@ import { Collaborator } from '../../../collaborators/entities/collaborator.entit
 import { TipPoolMemberRecordStatus } from '../constants/tip-pool-member-record-status.enum';
 
 @Entity('tip_pool_members')
-@Index(['tip_pool_id', 'collaborator_id'], { unique: true })
+@Index(['tip_pool_id', 'collaborator_id'])
 export class TipPoolMember {
   @ApiProperty({ example: 1, description: 'Unique identifier of the tip pool member' })
   @PrimaryGeneratedColumn({ type: 'bigint' })
