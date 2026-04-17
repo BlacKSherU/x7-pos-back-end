@@ -31,7 +31,8 @@ import {
   ApiQuery,
   ApiConflictResponse,
 } from '@nestjs/swagger';
-import { KitchenEventLogResponseDto, OneKitchenEventLogResponseDto } from './dto/kitchen-event-log-response.dto';
+import { AuthenticatedUser } from '../../../auth/interfaces/authenticated-user.interface';
+import { OneKitchenEventLogResponseDto } from './dto/kitchen-event-log-response.dto';
 import { GetKitchenEventLogQueryDto } from './dto/get-kitchen-event-log-query.dto';
 import { PaginatedKitchenEventLogResponseDto } from './dto/kitchen-event-log-response.dto';
 import { Roles } from 'src/auth/decorators/roles.decorator';
@@ -49,7 +50,9 @@ import { KitchenEventLogStatus } from './constants/kitchen-event-log-status.enum
 @Controller('kitchen-event-logs')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class KitchenEventLogController {
-  constructor(private readonly kitchenEventLogService: KitchenEventLogService) {}
+  constructor(
+    private readonly kitchenEventLogService: KitchenEventLogService,
+  ) {}
 
   @Post()
   @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
@@ -62,7 +65,8 @@ export class KitchenEventLogController {
   )
   @ApiOperation({
     summary: 'Create a new Kitchen Event Log',
-    description: 'Creates a new kitchen event log. The associated kitchen order, kitchen order item, or station must belong to the authenticated user\'s merchant. The event_time field is optional and will be automatically set to the current date and time if not provided. Only portal administrators and merchant administrators can create kitchen event logs.',
+    description:
+      "Creates a new kitchen event log. The associated kitchen order, kitchen order item, or station must belong to the authenticated user's merchant. The event_time field is optional and will be automatically set to the current date and time if not provided. Only portal administrators and merchant administrators can create kitchen event logs.",
   })
   @ApiCreatedResponse({
     description: 'Kitchen event log created successfully',
@@ -77,16 +81,19 @@ export class KitchenEventLogController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You must be associated with a merchant to create kitchen event logs',
+    description:
+      'Forbidden - You must be associated with a merchant to create kitchen event logs',
     type: ErrorResponse,
   })
   @ApiNotFoundResponse({
-    description: 'Kitchen order, kitchen order item, station, or user not found',
+    description:
+      'Kitchen order, kitchen order item, station, or user not found',
     type: ErrorResponse,
   })
   @ApiBody({
     type: CreateKitchenEventLogDto,
-    description: 'Kitchen event log creation data. Note: eventTime is optional and will be automatically set to the current date and time if not provided.',
+    description:
+      'Kitchen event log creation data. Note: eventTime is optional and will be automatically set to the current date and time if not provided.',
     examples: {
       example1: {
         summary: 'Create event log',
@@ -95,15 +102,21 @@ export class KitchenEventLogController {
           kitchenOrderItemId: 1,
           stationId: 1,
           userId: 1,
-          eventType: 'inicio',
+          eventType: 'start',
           message: 'Order started in kitchen',
         },
       },
     },
   })
-  async create(@Body() createKitchenEventLogDto: CreateKitchenEventLogDto, @Request() req: any) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.kitchenEventLogService.create(createKitchenEventLogDto, authenticatedUserMerchantId);
+  async create(
+    @Body() createKitchenEventLogDto: CreateKitchenEventLogDto,
+    @Request() req: AuthenticatedUser,
+  ) {
+    const authenticatedUserMerchantId = req.merchant?.id;
+    return this.kitchenEventLogService.create(
+      createKitchenEventLogDto,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Get()
@@ -117,7 +130,8 @@ export class KitchenEventLogController {
   )
   @ApiOperation({
     summary: 'Get all Kitchen Event Logs',
-    description: 'Retrieves a paginated list of kitchen event logs. Only returns logs that belong to kitchen orders of the authenticated user\'s merchant. Only portal administrators and merchant administrators can access kitchen event logs.',
+    description:
+      "Retrieves a paginated list of kitchen event logs. Only returns logs that belong to kitchen orders of the authenticated user's merchant. Only portal administrators and merchant administrators can access kitchen event logs.",
   })
   @ApiOkResponse({
     description: 'Kitchen event logs retrieved successfully',
@@ -128,7 +142,8 @@ export class KitchenEventLogController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You must be associated with a merchant to access kitchen event logs',
+    description:
+      'Forbidden - You must be associated with a merchant to access kitchen event logs',
     type: ErrorResponse,
   })
   @ApiQuery({
@@ -194,7 +209,17 @@ export class KitchenEventLogController {
   @ApiQuery({
     name: 'sortBy',
     required: false,
-    enum: ['id', 'kitchenOrderId', 'kitchenOrderItemId', 'stationId', 'userId', 'eventType', 'eventTime', 'createdAt', 'updatedAt'],
+    enum: [
+      'id',
+      'kitchenOrderId',
+      'kitchenOrderItemId',
+      'stationId',
+      'userId',
+      'eventType',
+      'eventTime',
+      'createdAt',
+      'updatedAt',
+    ],
     description: 'Field to sort by',
   })
   @ApiQuery({
@@ -203,9 +228,15 @@ export class KitchenEventLogController {
     enum: ['ASC', 'DESC'],
     description: 'Sort order (ASC or DESC)',
   })
-  async findAll(@Query() query: GetKitchenEventLogQueryDto, @Request() req: any) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.kitchenEventLogService.findAll(query, authenticatedUserMerchantId);
+  async findAll(
+    @Query() query: GetKitchenEventLogQueryDto,
+    @Request() req: AuthenticatedUser,
+  ) {
+    const authenticatedUserMerchantId = req.merchant?.id;
+    return this.kitchenEventLogService.findAll(
+      query,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Get(':id')
@@ -219,7 +250,8 @@ export class KitchenEventLogController {
   )
   @ApiOperation({
     summary: 'Get a single Kitchen Event Log by ID',
-    description: 'Retrieves a single kitchen event log by its ID. The log must belong to a kitchen order of the authenticated user\'s merchant. Only portal administrators and merchant administrators can access kitchen event logs.',
+    description:
+      "Retrieves a single kitchen event log by its ID. The log must belong to a kitchen order of the authenticated user's merchant. Only portal administrators and merchant administrators can access kitchen event logs.",
   })
   @ApiOkResponse({
     description: 'Kitchen event log retrieved successfully',
@@ -230,7 +262,8 @@ export class KitchenEventLogController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You must be associated with a merchant to access kitchen event logs',
+    description:
+      'Forbidden - You must be associated with a merchant to access kitchen event logs',
     type: ErrorResponse,
   })
   @ApiNotFoundResponse({
@@ -243,8 +276,11 @@ export class KitchenEventLogController {
     description: 'Kitchen event log ID',
     example: 1,
   })
-  async findOne(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+  async findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedUser,
+  ) {
+    const authenticatedUserMerchantId = req.merchant?.id;
     return this.kitchenEventLogService.findOne(id, authenticatedUserMerchantId);
   }
 
@@ -259,7 +295,8 @@ export class KitchenEventLogController {
   )
   @ApiOperation({
     summary: 'Update a Kitchen Event Log',
-    description: 'Updates an existing kitchen event log. The log must belong to a kitchen order of the authenticated user\'s merchant. Only portal administrators and merchant administrators can update kitchen event logs.',
+    description:
+      "Updates an existing kitchen event log. The log must belong to a kitchen order of the authenticated user's merchant. Only portal administrators and merchant administrators can update kitchen event logs.",
   })
   @ApiOkResponse({
     description: 'Kitchen event log updated successfully',
@@ -274,11 +311,13 @@ export class KitchenEventLogController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You must be associated with a merchant to update kitchen event logs',
+    description:
+      'Forbidden - You must be associated with a merchant to update kitchen event logs',
     type: ErrorResponse,
   })
   @ApiNotFoundResponse({
-    description: 'Kitchen event log, kitchen order, kitchen order item, station, or user not found',
+    description:
+      'Kitchen event log, kitchen order, kitchen order item, station, or user not found',
     type: ErrorResponse,
   })
   @ApiConflictResponse({
@@ -298,10 +337,14 @@ export class KitchenEventLogController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateKitchenEventLogDto: UpdateKitchenEventLogDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.kitchenEventLogService.update(id, updateKitchenEventLogDto, authenticatedUserMerchantId);
+    const authenticatedUserMerchantId = req.merchant?.id;
+    return this.kitchenEventLogService.update(
+      id,
+      updateKitchenEventLogDto,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Delete(':id')
@@ -316,7 +359,8 @@ export class KitchenEventLogController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Delete a Kitchen Event Log',
-    description: 'Performs a logical deletion of a kitchen event log. The log must belong to a kitchen order of the authenticated user\'s merchant. Only portal administrators and merchant administrators can delete kitchen event logs.',
+    description:
+      "Performs a logical deletion of a kitchen event log. The log must belong to a kitchen order of the authenticated user's merchant. Only portal administrators and merchant administrators can delete kitchen event logs.",
   })
   @ApiOkResponse({
     description: 'Kitchen event log deleted successfully',
@@ -327,7 +371,8 @@ export class KitchenEventLogController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You must be associated with a merchant to delete kitchen event logs',
+    description:
+      'Forbidden - You must be associated with a merchant to delete kitchen event logs',
     type: ErrorResponse,
   })
   @ApiNotFoundResponse({
@@ -344,8 +389,11 @@ export class KitchenEventLogController {
     description: 'Kitchen event log ID',
     example: 1,
   })
-  async remove(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+  async remove(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedUser,
+  ) {
+    const authenticatedUserMerchantId = req.merchant?.id;
     return this.kitchenEventLogService.remove(id, authenticatedUserMerchantId);
   }
 }

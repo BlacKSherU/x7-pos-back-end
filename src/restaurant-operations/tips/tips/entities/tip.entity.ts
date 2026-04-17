@@ -11,7 +11,7 @@ import {
 import { ApiProperty } from '@nestjs/swagger';
 import { Company } from '../../../../platform-saas/companies/entities/company.entity';
 import { Merchant } from '../../../../platform-saas/merchants/entities/merchant.entity';
-import { Order } from '../../../../orders/entities/order.entity';
+import { Order } from '../../../../restaurant-operations/pos/orders/entities/order.entity';
 import { TipMethod } from '../constants/tip-method.enum';
 import { TipStatus } from '../constants/tip-status.enum';
 import { TipRecordStatus } from '../constants/tip-record-status.enum';
@@ -71,14 +71,15 @@ export class Tip {
 
   @ApiProperty({
     example: 1,
-    description: 'Identifier of the payment transaction (reference to payment_transactions.id)',
+    description:
+      'Identifier of the payment transaction (reference to payment_transactions.id)',
     nullable: true,
   })
   @Column({ type: 'bigint', name: 'payment_id', nullable: true })
   payment_id: number | null;
 
   @ApiProperty({
-    example: 5.50,
+    example: 5.5,
     description: 'Tip amount',
   })
   @Column({ type: 'decimal', precision: 12, scale: 2 })

@@ -4,9 +4,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { QROrder } from './entity/qr-order.entity';
 import { Merchant } from 'src/platform-saas/merchants/entities/merchant.entity';
 import { QRLocation } from '../qr-location/entity/qr-location.entity';
-import { Customer } from 'src/core/business-partners/customers/entities/customer.entity';
-import { Order } from 'src/orders/entities/order.entity';
-import { Table } from 'src/restaurant-operations/dining-system/tables/entities/table.entity';
+import { Order } from '../../../restaurant-operations/pos/orders/entities/order.entity';
+import { Customer } from '../../../core/business-partners/customers/entities/customer.entity';
+import { Table } from '../../../restaurant-operations/dining-system/tables/entities/table.entity';
 import { QROrderController } from './qr-order.controller';
 import { QROrderService } from './qr-order.service';
 
@@ -25,4 +25,4 @@ import { QROrderService } from './qr-order.service';
   providers: [QROrderService],
   exports: [QROrderService],
 })
-export class QrOrderModule { }
+export class QrOrderModule {}

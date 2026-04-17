@@ -36,7 +36,7 @@ import { ErrorResponse } from 'src/common/dtos/error-response.dto';
 @Controller('customers')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class CustomersController {
-  constructor(private readonly customersService: CustomersService) { }
+  constructor(private readonly customersService: CustomersService) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new customer' })
@@ -60,11 +60,8 @@ export class CustomersController {
   // 'portal_admin', 'portal_user', 'merchant_admin', 'merchant_user'
   @ApiBody({ type: CreateCustomerDto })
   @Roles('portal_admin', 'merchant_admin', 'customer_admin')
-  create(
-    @Body() dto: CreateCustomerDto,
-    @Request() req: { user: AuthenticatedUser },
-  ) {
-    return this.customersService.create(dto, req.user);
+  create(@Body() dto: CreateCustomerDto, @Request() req: AuthenticatedUser) {
+    return this.customersService.create(dto, req);
   }
 
   @Get()
@@ -136,9 +133,9 @@ export class CustomersController {
   )
   findOne(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: { user: AuthenticatedUser },
+    @Request() req: AuthenticatedUser,
   ) {
-    return this.customersService.findOne(id, req.user);
+    return this.customersService.findOne(id, req);
   }
 
   @Patch(':id')
@@ -186,9 +183,9 @@ export class CustomersController {
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateCustomerDto,
-    @Request() req: { user: AuthenticatedUser },
+    @Request() req: AuthenticatedUser,
   ) {
-    return this.customersService.update(id, dto, req.user);
+    return this.customersService.update(id, dto, req);
   }
 
   @Delete(':id')
@@ -222,8 +219,8 @@ export class CustomersController {
   @Roles('portal_admin', 'merchant_admin', 'customer_admin')
   remove(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: { user: AuthenticatedUser },
+    @Request() req: AuthenticatedUser,
   ) {
-    return this.customersService.remove(id, req.user);
+    return this.customersService.remove(id, req);
   }
 }

@@ -31,7 +31,8 @@ import {
   ApiQuery,
   ApiConflictResponse,
 } from '@nestjs/swagger';
-import { KitchenOrderItemResponseDto, OneKitchenOrderItemResponseDto } from './dto/kitchen-order-item-response.dto';
+import { AuthenticatedUser } from '../../../auth/interfaces/authenticated-user.interface';
+import { OneKitchenOrderItemResponseDto } from './dto/kitchen-order-item-response.dto';
 import { GetKitchenOrderItemQueryDto } from './dto/get-kitchen-order-item-query.dto';
 import { PaginatedKitchenOrderItemResponseDto } from './dto/kitchen-order-item-response.dto';
 import { Roles } from 'src/auth/decorators/roles.decorator';
@@ -48,7 +49,9 @@ import { KitchenOrderItemStatus } from './constants/kitchen-order-item-status.en
 @Controller('kitchen-order-items')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class KitchenOrderItemController {
-  constructor(private readonly kitchenOrderItemService: KitchenOrderItemService) {}
+  constructor(
+    private readonly kitchenOrderItemService: KitchenOrderItemService,
+  ) {}
 
   @Post()
   @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
@@ -61,7 +64,8 @@ export class KitchenOrderItemController {
   )
   @ApiOperation({
     summary: 'Create a new Kitchen Order Item',
-    description: 'Creates a new kitchen order item. The kitchen order must belong to the authenticated user\'s merchant. Only portal administrators and merchant administrators can create kitchen order items.',
+    description:
+      "Creates a new kitchen order item. The kitchen order must belong to the authenticated user's merchant. Only portal administrators and merchant administrators can create kitchen order items.",
   })
   @ApiCreatedResponse({
     description: 'Kitchen order item created successfully',
@@ -76,7 +80,8 @@ export class KitchenOrderItemController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You must be associated with a merchant to create kitchen order items',
+    description:
+      'Forbidden - You must be associated with a merchant to create kitchen order items',
     type: ErrorResponse,
   })
   @ApiNotFoundResponse({
@@ -87,9 +92,15 @@ export class KitchenOrderItemController {
     type: CreateKitchenOrderItemDto,
     description: 'Kitchen order item creation data',
   })
-  async create(@Body() createKitchenOrderItemDto: CreateKitchenOrderItemDto, @Request() req: any) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.kitchenOrderItemService.create(createKitchenOrderItemDto, authenticatedUserMerchantId);
+  async create(
+    @Body() createKitchenOrderItemDto: CreateKitchenOrderItemDto,
+    @Request() req: AuthenticatedUser,
+  ) {
+    const authenticatedUserMerchantId = req.merchant?.id;
+    return this.kitchenOrderItemService.create(
+      createKitchenOrderItemDto,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Get()
@@ -103,7 +114,8 @@ export class KitchenOrderItemController {
   )
   @ApiOperation({
     summary: 'Get all Kitchen Order Items',
-    description: 'Retrieves a paginated list of kitchen order items. Only returns items that belong to kitchen orders of the authenticated user\'s merchant. Only portal administrators and merchant administrators can access kitchen order items.',
+    description:
+      "Retrieves a paginated list of kitchen order items. Only returns items that belong to kitchen orders of the authenticated user's merchant. Only portal administrators and merchant administrators can access kitchen order items.",
   })
   @ApiOkResponse({
     description: 'Kitchen order items retrieved successfully',
@@ -114,7 +126,8 @@ export class KitchenOrderItemController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You must be associated with a merchant to access kitchen order items',
+    description:
+      'Forbidden - You must be associated with a merchant to access kitchen order items',
     type: ErrorResponse,
   })
   @ApiQuery({
@@ -168,7 +181,19 @@ export class KitchenOrderItemController {
   @ApiQuery({
     name: 'sortBy',
     required: false,
-    enum: ['id', 'kitchenOrderId', 'orderItemId', 'productId', 'variantId', 'quantity', 'preparedQuantity', 'startedAt', 'completedAt', 'createdAt', 'updatedAt'],
+    enum: [
+      'id',
+      'kitchenOrderId',
+      'orderItemId',
+      'productId',
+      'variantId',
+      'quantity',
+      'preparedQuantity',
+      'startedAt',
+      'completedAt',
+      'createdAt',
+      'updatedAt',
+    ],
     description: 'Field to sort by',
   })
   @ApiQuery({
@@ -177,9 +202,15 @@ export class KitchenOrderItemController {
     enum: ['ASC', 'DESC'],
     description: 'Sort order (ASC or DESC)',
   })
-  async findAll(@Query() query: GetKitchenOrderItemQueryDto, @Request() req: any) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.kitchenOrderItemService.findAll(query, authenticatedUserMerchantId);
+  async findAll(
+    @Query() query: GetKitchenOrderItemQueryDto,
+    @Request() req: AuthenticatedUser,
+  ) {
+    const authenticatedUserMerchantId = req.merchant?.id;
+    return this.kitchenOrderItemService.findAll(
+      query,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Get(':id')
@@ -193,7 +224,8 @@ export class KitchenOrderItemController {
   )
   @ApiOperation({
     summary: 'Get a single Kitchen Order Item by ID',
-    description: 'Retrieves a single kitchen order item by its ID. The item must belong to a kitchen order of the authenticated user\'s merchant. Only portal administrators and merchant administrators can access kitchen order items.',
+    description:
+      "Retrieves a single kitchen order item by its ID. The item must belong to a kitchen order of the authenticated user's merchant. Only portal administrators and merchant administrators can access kitchen order items.",
   })
   @ApiOkResponse({
     description: 'Kitchen order item retrieved successfully',
@@ -204,7 +236,8 @@ export class KitchenOrderItemController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You must be associated with a merchant to access kitchen order items',
+    description:
+      'Forbidden - You must be associated with a merchant to access kitchen order items',
     type: ErrorResponse,
   })
   @ApiNotFoundResponse({
@@ -217,9 +250,15 @@ export class KitchenOrderItemController {
     description: 'Kitchen order item ID',
     example: 1,
   })
-  async findOne(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.kitchenOrderItemService.findOne(id, authenticatedUserMerchantId);
+  async findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedUser,
+  ) {
+    const authenticatedUserMerchantId = req.merchant?.id;
+    return this.kitchenOrderItemService.findOne(
+      id,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Put(':id')
@@ -233,7 +272,8 @@ export class KitchenOrderItemController {
   )
   @ApiOperation({
     summary: 'Update a Kitchen Order Item',
-    description: 'Updates an existing kitchen order item. The item must belong to a kitchen order of the authenticated user\'s merchant. Only portal administrators and merchant administrators can update kitchen order items.',
+    description:
+      "Updates an existing kitchen order item. The item must belong to a kitchen order of the authenticated user's merchant. Only portal administrators and merchant administrators can update kitchen order items.",
   })
   @ApiOkResponse({
     description: 'Kitchen order item updated successfully',
@@ -248,11 +288,13 @@ export class KitchenOrderItemController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You must be associated with a merchant to update kitchen order items',
+    description:
+      'Forbidden - You must be associated with a merchant to update kitchen order items',
     type: ErrorResponse,
   })
   @ApiNotFoundResponse({
-    description: 'Kitchen order item, kitchen order, order item, product, or variant not found',
+    description:
+      'Kitchen order item, kitchen order, order item, product, or variant not found',
     type: ErrorResponse,
   })
   @ApiConflictResponse({
@@ -272,10 +314,14 @@ export class KitchenOrderItemController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateKitchenOrderItemDto: UpdateKitchenOrderItemDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.kitchenOrderItemService.update(id, updateKitchenOrderItemDto, authenticatedUserMerchantId);
+    const authenticatedUserMerchantId = req.merchant?.id;
+    return this.kitchenOrderItemService.update(
+      id,
+      updateKitchenOrderItemDto,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Delete(':id')
@@ -290,7 +336,8 @@ export class KitchenOrderItemController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Delete a Kitchen Order Item',
-    description: 'Performs a logical deletion of a kitchen order item. The item must belong to a kitchen order of the authenticated user\'s merchant. Only portal administrators and merchant administrators can delete kitchen order items.',
+    description:
+      "Performs a logical deletion of a kitchen order item. The item must belong to a kitchen order of the authenticated user's merchant. Only portal administrators and merchant administrators can delete kitchen order items.",
   })
   @ApiOkResponse({
     description: 'Kitchen order item deleted successfully',
@@ -301,7 +348,8 @@ export class KitchenOrderItemController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You must be associated with a merchant to delete kitchen order items',
+    description:
+      'Forbidden - You must be associated with a merchant to delete kitchen order items',
     type: ErrorResponse,
   })
   @ApiNotFoundResponse({
@@ -318,8 +366,11 @@ export class KitchenOrderItemController {
     description: 'Kitchen order item ID',
     example: 1,
   })
-  async remove(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+  async remove(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedUser,
+  ) {
+    const authenticatedUserMerchantId = req.merchant?.id;
     return this.kitchenOrderItemService.remove(id, authenticatedUserMerchantId);
   }
 }

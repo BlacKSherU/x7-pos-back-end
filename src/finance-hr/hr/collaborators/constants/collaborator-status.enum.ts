@@ -1,8 +1,6 @@
 export enum CollaboratorStatus {
-  ACTIVO = 'activo',
-  INACTIVO = 'inactivo',
-  VACACIONES = 'vacaciones',
+  ACTIVE = 'active',
+  INACTIVE = 'inactive',
+  VACATION = 'vacation',
   DELETED = 'deleted',
 }
-
-

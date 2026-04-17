@@ -9,7 +9,12 @@ import { Collaborator } from '../collaborators/entities/collaborator.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([CollaboratorContract, Company, Merchant, Collaborator]),
+    TypeOrmModule.forFeature([
+      CollaboratorContract,
+      Company,
+      Merchant,
+      Collaborator,
+    ]),
   ],
   controllers: [CollaboratorContractsController],
   providers: [CollaboratorContractsService],

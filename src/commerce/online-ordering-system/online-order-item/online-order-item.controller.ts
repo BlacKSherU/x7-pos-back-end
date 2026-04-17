@@ -31,7 +31,8 @@ import {
   ApiQuery,
   ApiConflictResponse,
 } from '@nestjs/swagger';
-import { OnlineOrderItemResponseDto, OneOnlineOrderItemResponseDto } from './dto/online-order-item-response.dto';
+import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
+import { OneOnlineOrderItemResponseDto } from './dto/online-order-item-response.dto';
 import { GetOnlineOrderItemQueryDto } from './dto/get-online-order-item-query.dto';
 import { PaginatedOnlineOrderItemResponseDto } from './dto/paginated-online-order-item-response.dto';
 import { Roles } from 'src/auth/decorators/roles.decorator';
@@ -47,7 +48,9 @@ import { ErrorResponse } from 'src/common/dtos/error-response.dto';
 @Controller('online-order-items')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class OnlineOrderItemController {
-  constructor(private readonly onlineOrderItemService: OnlineOrderItemService) {}
+  constructor(
+    private readonly onlineOrderItemService: OnlineOrderItemService,
+  ) {}
 
   @Post()
   @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
@@ -60,7 +63,8 @@ export class OnlineOrderItemController {
   )
   @ApiOperation({
     summary: 'Create a new Online Order Item',
-    description: 'Creates a new online order item. The online order must belong to the authenticated user\'s merchant, and the product/variant must also belong to the same merchant. Only portal administrators and merchant administrators can create online order items.',
+    description:
+      "Creates a new online order item. The online order must belong to the authenticated user's merchant, and the product/variant must also belong to the same merchant. Only portal administrators and merchant administrators can create online order items.",
   })
   @ApiCreatedResponse({
     description: 'Online order item created successfully',
@@ -75,11 +79,13 @@ export class OnlineOrderItemController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You must be associated with a merchant to create online order items',
+    description:
+      'Forbidden - You must be associated with a merchant to create online order items',
     type: ErrorResponse,
   })
   @ApiNotFoundResponse({
-    description: 'Online order, product, or variant not found or you do not have access to it',
+    description:
+      'Online order, product, or variant not found or you do not have access to it',
     type: ErrorResponse,
   })
   @ApiBody({
@@ -110,9 +116,15 @@ export class OnlineOrderItemController {
       },
     },
   })
-  async create(@Body() createOnlineOrderItemDto: CreateOnlineOrderItemDto, @Request() req: any) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.onlineOrderItemService.create(createOnlineOrderItemDto, authenticatedUserMerchantId);
+  async create(
+    @Body() createOnlineOrderItemDto: CreateOnlineOrderItemDto,
+    @Request() req: AuthenticatedUser,
+  ) {
+    const authenticatedUserMerchantId = req.merchant?.id;
+    return this.onlineOrderItemService.create(
+      createOnlineOrderItemDto,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Get()
@@ -126,7 +138,8 @@ export class OnlineOrderItemController {
   )
   @ApiOperation({
     summary: 'Get all Online Order Items',
-    description: 'Retrieves a paginated list of online order items. Only returns items from online orders that belong to the authenticated user\'s merchant. Only portal administrators and merchant administrators can access online order items.',
+    description:
+      "Retrieves a paginated list of online order items. Only returns items from online orders that belong to the authenticated user's merchant. Only portal administrators and merchant administrators can access online order items.",
   })
   @ApiOkResponse({
     description: 'Online order items retrieved successfully',
@@ -137,7 +150,8 @@ export class OnlineOrderItemController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You must be associated with a merchant to access online order items',
+    description:
+      'Forbidden - You must be associated with a merchant to access online order items',
     type: ErrorResponse,
   })
   @ApiQuery({
@@ -179,7 +193,16 @@ export class OnlineOrderItemController {
   @ApiQuery({
     name: 'sortBy',
     required: false,
-    enum: ['id', 'onlineOrderId', 'productId', 'variantId', 'quantity', 'unitPrice', 'createdAt', 'updatedAt'],
+    enum: [
+      'id',
+      'onlineOrderId',
+      'productId',
+      'variantId',
+      'quantity',
+      'unitPrice',
+      'createdAt',
+      'updatedAt',
+    ],
     description: 'Field to sort by',
   })
   @ApiQuery({
@@ -188,9 +211,15 @@ export class OnlineOrderItemController {
     enum: ['ASC', 'DESC'],
     description: 'Sort order (ASC or DESC)',
   })
-  async findAll(@Query() query: GetOnlineOrderItemQueryDto, @Request() req: any) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.onlineOrderItemService.findAll(query, authenticatedUserMerchantId);
+  async findAll(
+    @Query() query: GetOnlineOrderItemQueryDto,
+    @Request() req: AuthenticatedUser,
+  ) {
+    const authenticatedUserMerchantId = req.merchant?.id;
+    return this.onlineOrderItemService.findAll(
+      query,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Get(':id')
@@ -204,7 +233,8 @@ export class OnlineOrderItemController {
   )
   @ApiOperation({
     summary: 'Get a single Online Order Item by ID',
-    description: 'Retrieves a single online order item by its ID. The item must belong to an online order that belongs to the authenticated user\'s merchant. Only portal administrators and merchant administrators can access online order items.',
+    description:
+      "Retrieves a single online order item by its ID. The item must belong to an online order that belongs to the authenticated user's merchant. Only portal administrators and merchant administrators can access online order items.",
   })
   @ApiOkResponse({
     description: 'Online order item retrieved successfully',
@@ -215,7 +245,8 @@ export class OnlineOrderItemController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You must be associated with a merchant to access online order items',
+    description:
+      'Forbidden - You must be associated with a merchant to access online order items',
     type: ErrorResponse,
   })
   @ApiNotFoundResponse({
@@ -228,8 +259,11 @@ export class OnlineOrderItemController {
     description: 'Online order item ID',
     example: 1,
   })
-  async findOne(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+  async findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedUser,
+  ) {
+    const authenticatedUserMerchantId = req.merchant?.id;
     return this.onlineOrderItemService.findOne(id, authenticatedUserMerchantId);
   }
 
@@ -244,7 +278,8 @@ export class OnlineOrderItemController {
   )
   @ApiOperation({
     summary: 'Update an Online Order Item',
-    description: 'Updates an existing online order item. The item must belong to an online order that belongs to the authenticated user\'s merchant. Only portal administrators and merchant administrators can update online order items.',
+    description:
+      "Updates an existing online order item. The item must belong to an online order that belongs to the authenticated user's merchant. Only portal administrators and merchant administrators can update online order items.",
   })
   @ApiOkResponse({
     description: 'Online order item updated successfully',
@@ -259,11 +294,13 @@ export class OnlineOrderItemController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You must be associated with a merchant to update online order items',
+    description:
+      'Forbidden - You must be associated with a merchant to update online order items',
     type: ErrorResponse,
   })
   @ApiNotFoundResponse({
-    description: 'Online order item, online order, product, or variant not found',
+    description:
+      'Online order item, online order, product, or variant not found',
     type: ErrorResponse,
   })
   @ApiConflictResponse({
@@ -299,10 +336,14 @@ export class OnlineOrderItemController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateOnlineOrderItemDto: UpdateOnlineOrderItemDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.onlineOrderItemService.update(id, updateOnlineOrderItemDto, authenticatedUserMerchantId);
+    const authenticatedUserMerchantId = req.merchant?.id;
+    return this.onlineOrderItemService.update(
+      id,
+      updateOnlineOrderItemDto,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Delete(':id')
@@ -317,7 +358,8 @@ export class OnlineOrderItemController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Delete an Online Order Item',
-    description: 'Performs a logical deletion of an online order item. The item must belong to an online order that belongs to the authenticated user\'s merchant. Only portal administrators and merchant administrators can delete online order items.',
+    description:
+      "Performs a logical deletion of an online order item. The item must belong to an online order that belongs to the authenticated user's merchant. Only portal administrators and merchant administrators can delete online order items.",
   })
   @ApiOkResponse({
     description: 'Online order item deleted successfully',
@@ -328,7 +370,8 @@ export class OnlineOrderItemController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You must be associated with a merchant to delete online order items',
+    description:
+      'Forbidden - You must be associated with a merchant to delete online order items',
     type: ErrorResponse,
   })
   @ApiNotFoundResponse({
@@ -345,8 +388,11 @@ export class OnlineOrderItemController {
     description: 'Online order item ID',
     example: 1,
   })
-  async remove(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+  async remove(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedUser,
+  ) {
+    const authenticatedUserMerchantId = req.merchant?.id;
     return this.onlineOrderItemService.remove(id, authenticatedUserMerchantId);
   }
 }

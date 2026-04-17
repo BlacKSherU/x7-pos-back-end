@@ -28,6 +28,7 @@ import {
   ApiForbiddenResponse,
   ApiQuery,
 } from '@nestjs/swagger';
+import { AuthenticatedUser } from '../../../auth/interfaces/authenticated-user.interface';
 import {
   OneTipSettlementResponseDto,
   PaginatedTipSettlementResponseDto,
@@ -99,8 +100,11 @@ export class TipSettlementsController {
       },
     },
   })
-  async create(@Body() dto: CreateTipSettlementDto, @Request() req: any) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+  async create(
+    @Body() dto: CreateTipSettlementDto,
+    @Request() req: AuthenticatedUser,
+  ) {
+    const authenticatedUserMerchantId = req.merchant?.id;
     return this.tipSettlementsService.create(dto, authenticatedUserMerchantId);
   }
 
@@ -149,8 +153,11 @@ export class TipSettlementsController {
     description: 'Invalid query parameters',
     type: ErrorResponse,
   })
-  async findAll(@Query() query: GetTipSettlementQueryDto, @Request() req: any) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+  async findAll(
+    @Query() query: GetTipSettlementQueryDto,
+    @Request() req: AuthenticatedUser,
+  ) {
+    const authenticatedUserMerchantId = req.merchant?.id;
     return this.tipSettlementsService.findAll(
       query,
       authenticatedUserMerchantId,
@@ -183,8 +190,11 @@ export class TipSettlementsController {
     type: ErrorResponse,
   })
   @ApiBadRequestResponse({ description: 'Invalid ID', type: ErrorResponse })
-  async findOne(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+  async findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedUser,
+  ) {
+    const authenticatedUserMerchantId = req.merchant?.id;
     return this.tipSettlementsService.findOne(id, authenticatedUserMerchantId);
   }
 
@@ -227,9 +237,9 @@ export class TipSettlementsController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateTipSettlementDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+    const authenticatedUserMerchantId = req.merchant?.id;
     return this.tipSettlementsService.update(
       id,
       dto,
@@ -266,8 +276,11 @@ export class TipSettlementsController {
     type: ErrorResponse,
   })
   @ApiBadRequestResponse({ description: 'Invalid ID', type: ErrorResponse })
-  async remove(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+  async remove(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedUser,
+  ) {
+    const authenticatedUserMerchantId = req.merchant?.id;
     return this.tipSettlementsService.remove(id, authenticatedUserMerchantId);
   }
 }

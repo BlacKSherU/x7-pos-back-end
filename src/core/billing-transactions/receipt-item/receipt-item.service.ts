@@ -19,7 +19,7 @@ import {
 import { AllPaginatedReceiptItems } from './dto/all-paginated-receipt-items.dto';
 import { ReceiptItem } from './entities/receipt-item.entity';
 import { Receipt } from '../receipts/entities/receipt.entity';
-import { Order } from 'src/orders/entities/order.entity';
+import { Order } from 'src/restaurant-operations/pos/orders/entities/order.entity';
 import { ReceiptsService } from '../receipts/receipts.service';
 
 @Injectable()

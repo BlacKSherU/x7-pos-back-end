@@ -1,17 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { TipsService } from './tips.service';
 import { Tip } from './entities/tip.entity';
 import { Company } from '../../../platform-saas/companies/entities/company.entity';
 import { Merchant } from '../../../platform-saas/merchants/entities/merchant.entity';
-import { Order } from '../../../orders/entities/order.entity';
+import { Order } from '../../../restaurant-operations/pos/orders/entities/order.entity';
 import { CreateTipDto } from './dto/create-tip.dto';
 import { UpdateTipDto } from './dto/update-tip.dto';
 import { TipRecordStatus } from './constants/tip-record-status.enum';
 import { TipMethod } from './constants/tip-method.enum';
 import { TipStatus } from './constants/tip-status.enum';
-import { NotFoundException, BadRequestException, ForbiddenException, ConflictException } from '@nestjs/common';
+import { NotFoundException, ForbiddenException } from '@nestjs/common';
 
 describe('TipsService', () => {
   let service: TipsService;
@@ -31,7 +30,12 @@ describe('TipsService', () => {
     configurations: [],
     suppliers: [],
   };
-  const mockMerchant = { id: 1, name: 'Main Store', companyId: 1, company: mockCompany };
+  const mockMerchant = {
+    id: 1,
+    name: 'Main Store',
+    companyId: 1,
+    company: mockCompany,
+  };
   const mockOrder = { id: 1, merchant_id: 1 };
 
   const mockTip = {
@@ -40,7 +44,7 @@ describe('TipsService', () => {
     merchant_id: 1,
     order_id: 1,
     payment_id: null,
-    amount: 5.50,
+    amount: 5.5,
     method: TipMethod.CARD,
     status: TipStatus.PENDING,
     record_status: TipRecordStatus.ACTIVE,
@@ -75,8 +79,14 @@ describe('TipsService', () => {
       providers: [
         TipsService,
         { provide: getRepositoryToken(Tip), useValue: mockTipRepository },
-        { provide: getRepositoryToken(Company), useValue: mockCompanyRepository },
-        { provide: getRepositoryToken(Merchant), useValue: mockMerchantRepository },
+        {
+          provide: getRepositoryToken(Company),
+          useValue: mockCompanyRepository,
+        },
+        {
+          provide: getRepositoryToken(Merchant),
+          useValue: mockMerchantRepository,
+        },
         { provide: getRepositoryToken(Order), useValue: mockOrderRepository },
       ],
     }).compile();
@@ -97,7 +107,7 @@ describe('TipsService', () => {
       companyId: 1,
       merchantId: 1,
       orderId: 1,
-      amount: 5.50,
+      amount: 5.5,
       method: TipMethod.CARD,
       status: TipStatus.PENDING,
     };
@@ -113,22 +123,28 @@ describe('TipsService', () => {
 
       expect(result.statusCode).toBe(201);
       expect(result.message).toBe('Tip created successfully');
-      expect(result.data.amount).toBe(5.50);
+      expect(result.data.amount).toBe(5.5);
       expect(mockTipRepository.save).toHaveBeenCalled();
     });
 
     it('should throw ForbiddenException when user has no merchant', async () => {
-      await expect(service.create(createDto, null)).rejects.toThrow(ForbiddenException);
+      await expect(service.create(createDto, null)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw ForbiddenException when merchantId does not match authenticated user', async () => {
-      await expect(service.create({ ...createDto, merchantId: 2 }, 1)).rejects.toThrow(ForbiddenException);
+      await expect(
+        service.create({ ...createDto, merchantId: 2 }, 1),
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw NotFoundException when company does not exist', async () => {
       mockCompanyRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.create(createDto, 1)).rejects.toThrow(NotFoundException);
+      await expect(service.create(createDto, 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw NotFoundException when order does not exist', async () => {
@@ -136,7 +152,9 @@ describe('TipsService', () => {
       mockMerchantRepository.findOne.mockResolvedValue(mockMerchant);
       mockOrderRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.create(createDto, 1)).rejects.toThrow(NotFoundException);
+      await expect(service.create(createDto, 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -151,7 +169,9 @@ describe('TipsService', () => {
     });
 
     it('should throw ForbiddenException when user has no merchant', async () => {
-      await expect(service.findAll({}, null)).rejects.toThrow(ForbiddenException);
+      await expect(service.findAll({}, null)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -193,7 +213,9 @@ describe('TipsService', () => {
     it('should throw NotFoundException when tip does not exist', async () => {
       mockTipRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.update(999, updateDto, 1)).rejects.toThrow(NotFoundException);
+      await expect(service.update(999, updateDto, 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

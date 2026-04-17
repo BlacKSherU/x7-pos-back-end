@@ -3,8 +3,13 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { OnlineOrder } from './entities/online-order.entity';
 import { OnlineStore } from '../online-stores/entities/online-store.entity';
+<<<<<<< ours
+import { Order } from '../../restaurant-operations/pos/orders/entities/order.entity';
+import { Customer } from 'src/business-partners/customers/entities/customer.entity';
+=======
 import { Order } from '../../../orders/entities/order.entity';
 import { Customer } from 'src/core/business-partners/customers/entities/customer.entity';
+>>>>>>> theirs
 import { CreateOnlineOrderDto } from './dto/create-online-order.dto';
 import { UpdateOnlineOrderDto } from './dto/update-online-order.dto';
 import { GetOnlineOrderQueryDto, OnlineOrderSortBy } from './dto/get-online-order-query.dto';

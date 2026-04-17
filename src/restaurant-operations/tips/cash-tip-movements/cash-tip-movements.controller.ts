@@ -28,6 +28,7 @@ import {
   ApiForbiddenResponse,
   ApiQuery,
 } from '@nestjs/swagger';
+import { AuthenticatedUser } from '../../../auth/interfaces/authenticated-user.interface';
 import {
   OneCashTipMovementResponseDto,
   PaginatedCashTipMovementResponseDto,
@@ -100,8 +101,11 @@ export class CashTipMovementsController {
       },
     },
   })
-  async create(@Body() dto: CreateCashTipMovementDto, @Request() req: any) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+  async create(
+    @Body() dto: CreateCashTipMovementDto,
+    @Request() req: AuthenticatedUser,
+  ) {
+    const authenticatedUserMerchantId = req.merchant?.id;
     return this.cashTipMovementsService.create(
       dto,
       authenticatedUserMerchantId,
@@ -126,7 +130,11 @@ export class CashTipMovementsController {
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
   @ApiQuery({ name: 'cashDrawerId', required: false, type: Number })
   @ApiQuery({ name: 'tipId', required: false, type: Number })
-  @ApiQuery({ name: 'movementType', required: false, enum: CashTipMovementType })
+  @ApiQuery({
+    name: 'movementType',
+    required: false,
+    enum: CashTipMovementType,
+  })
   @ApiQuery({
     name: 'createdDate',
     required: false,
@@ -151,9 +159,9 @@ export class CashTipMovementsController {
   })
   async findAll(
     @Query() query: GetCashTipMovementQueryDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+    const authenticatedUserMerchantId = req.merchant?.id;
     return this.cashTipMovementsService.findAll(
       query,
       authenticatedUserMerchantId,
@@ -188,9 +196,9 @@ export class CashTipMovementsController {
   @ApiBadRequestResponse({ description: 'Invalid ID', type: ErrorResponse })
   async findOne(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+    const authenticatedUserMerchantId = req.merchant?.id;
     return this.cashTipMovementsService.findOne(
       id,
       authenticatedUserMerchantId,
@@ -208,7 +216,8 @@ export class CashTipMovementsController {
   )
   @ApiOperation({
     summary: 'Update a Cash Tip Movement by ID',
-    description: 'Updates an existing cash tip movement. All fields are optional.',
+    description:
+      'Updates an existing cash tip movement. All fields are optional.',
   })
   @ApiParam({
     name: 'id',
@@ -236,9 +245,9 @@ export class CashTipMovementsController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateCashTipMovementDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+    const authenticatedUserMerchantId = req.merchant?.id;
     return this.cashTipMovementsService.update(
       id,
       dto,
@@ -275,11 +284,11 @@ export class CashTipMovementsController {
     type: ErrorResponse,
   })
   @ApiBadRequestResponse({ description: 'Invalid ID', type: ErrorResponse })
-  async remove(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.cashTipMovementsService.remove(
-      id,
-      authenticatedUserMerchantId,
-    );
+  async remove(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedUser,
+  ) {
+    const authenticatedUserMerchantId = req.merchant?.id;
+    return this.cashTipMovementsService.remove(id, authenticatedUserMerchantId);
   }
 }

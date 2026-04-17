@@ -6,7 +6,7 @@ import { ReceiptTaxService } from './receipt-tax.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ReceiptTax } from './entities/receipt-tax.entity';
 import { Receipt } from '../receipts/entities/receipt.entity';
-import { Order } from 'src/orders/entities/order.entity';
+import { Order } from 'src/restaurant-operations/pos/orders/entities/order.entity';
 import { ReceiptItem } from '../receipt-item/entities/receipt-item.entity';
 import { ReceiptsService } from '../receipts/receipts.service';
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';

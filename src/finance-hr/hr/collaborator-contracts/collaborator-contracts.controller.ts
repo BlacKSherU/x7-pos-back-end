@@ -29,6 +29,7 @@ import {
   ApiNotFoundResponse,
   ApiBadRequestResponse,
 } from '@nestjs/swagger';
+import { AuthenticatedUser } from '../../../auth/interfaces/authenticated-user.interface';
 import { OneCollaboratorContractResponseDto } from './dto/collaborator-contract-response.dto';
 import { PaginatedCollaboratorContractsResponseDto } from './dto/paginated-collaborator-contracts-response.dto';
 import { Roles } from 'src/auth/decorators/roles.decorator';
@@ -43,7 +44,9 @@ import { RolesGuard } from 'src/auth/guards/roles.guard';
 @Controller('collaborator-contracts')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class CollaboratorContractsController {
-  constructor(private readonly collaboratorContractsService: CollaboratorContractsService) {}
+  constructor(
+    private readonly collaboratorContractsService: CollaboratorContractsService,
+  ) {}
 
   @Post()
   @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
@@ -87,16 +90,21 @@ export class CollaboratorContractsController {
       },
     },
   })
-  @ApiCreatedResponse({ description: 'Contract created', type: OneCollaboratorContractResponseDto })
+  @ApiCreatedResponse({
+    description: 'Contract created',
+    type: OneCollaboratorContractResponseDto,
+  })
   @ApiBadRequestResponse({ description: 'Invalid input' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiForbiddenResponse({ description: 'Forbidden' })
-  @ApiNotFoundResponse({ description: 'Company, Merchant or Collaborator not found' })
+  @ApiNotFoundResponse({
+    description: 'Company, Merchant or Collaborator not found',
+  })
   async create(
     @Body() dto: CreateCollaboratorContractDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneCollaboratorContractResponseDto> {
-    const merchantId = req.user?.merchant?.id;
+    const merchantId = req.merchant?.id;
     return this.collaboratorContractsService.create(dto, merchantId);
   }
 
@@ -116,14 +124,17 @@ export class CollaboratorContractsController {
   @ApiQuery({ name: 'merchant_id', required: false })
   @ApiQuery({ name: 'collaborator_id', required: false })
   @ApiQuery({ name: 'active', required: false })
-  @ApiOkResponse({ description: 'Paginated contracts', type: PaginatedCollaboratorContractsResponseDto })
+  @ApiOkResponse({
+    description: 'Paginated contracts',
+    type: PaginatedCollaboratorContractsResponseDto,
+  })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiForbiddenResponse({ description: 'Forbidden' })
   async findAll(
     @Query() query: GetCollaboratorContractQueryDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<PaginatedCollaboratorContractsResponseDto> {
-    const merchantId = req.user?.merchant?.id;
+    const merchantId = req.merchant?.id;
     return this.collaboratorContractsService.findAll(query, merchantId);
   }
 
@@ -138,15 +149,18 @@ export class CollaboratorContractsController {
   )
   @ApiOperation({ summary: 'Get collaborator contract by ID' })
   @ApiParam({ name: 'id', type: Number })
-  @ApiOkResponse({ description: 'Contract found', type: OneCollaboratorContractResponseDto })
+  @ApiOkResponse({
+    description: 'Contract found',
+    type: OneCollaboratorContractResponseDto,
+  })
   @ApiNotFoundResponse({ description: 'Contract not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiForbiddenResponse({ description: 'Forbidden' })
   async findOne(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneCollaboratorContractResponseDto> {
-    const merchantId = req.user?.merchant?.id;
+    const merchantId = req.merchant?.id;
     return this.collaboratorContractsService.findOne(id, merchantId);
   }
 
@@ -161,7 +175,10 @@ export class CollaboratorContractsController {
   )
   @ApiOperation({ summary: 'Update collaborator contract' })
   @ApiParam({ name: 'id', type: Number })
-  @ApiOkResponse({ description: 'Contract updated', type: OneCollaboratorContractResponseDto })
+  @ApiOkResponse({
+    description: 'Contract updated',
+    type: OneCollaboratorContractResponseDto,
+  })
   @ApiBadRequestResponse({ description: 'Invalid input' })
   @ApiNotFoundResponse({ description: 'Contract not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -169,9 +186,9 @@ export class CollaboratorContractsController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateCollaboratorContractDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneCollaboratorContractResponseDto> {
-    const merchantId = req.user?.merchant?.id;
+    const merchantId = req.merchant?.id;
     return this.collaboratorContractsService.update(id, dto, merchantId);
   }
 
@@ -186,15 +203,18 @@ export class CollaboratorContractsController {
   )
   @ApiOperation({ summary: 'Delete collaborator contract' })
   @ApiParam({ name: 'id', type: Number })
-  @ApiOkResponse({ description: 'Contract deleted', type: OneCollaboratorContractResponseDto })
+  @ApiOkResponse({
+    description: 'Contract deleted',
+    type: OneCollaboratorContractResponseDto,
+  })
   @ApiNotFoundResponse({ description: 'Contract not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiForbiddenResponse({ description: 'Forbidden' })
   async remove(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneCollaboratorContractResponseDto> {
-    const merchantId = req.user?.merchant?.id;
+    const merchantId = req.merchant?.id;
     return this.collaboratorContractsService.remove(id, merchantId);
   }
 }

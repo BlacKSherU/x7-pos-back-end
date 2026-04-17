@@ -1,10 +1,10 @@
 //src//qr-code/qr-order/entity/qr-order.entity.ts
-import { Merchant } from 'src/platform-saas/merchants/entities/merchant.entity';
-import { QRLocation } from 'src/commerce/qr-code/qr-location/entity/qr-location.entity';
-import { Customer } from 'src/core/business-partners/customers/entities/customer.entity';
-import { Table } from 'src/restaurant-operations/dining-system/tables/entities/table.entity';
-import { Order } from 'src/orders/entities/order.entity';
-import { QROrderStatus } from 'src/commerce/qr-code/constants/qr-order-status.enum';
+import { Order } from '../../../../restaurant-operations/pos/orders/entities/order.entity';
+import { Merchant } from '../../../../platform-saas/merchants/entities/merchant.entity';
+import { QRLocation } from '../../../../commerce/qr-code/qr-location/entity/qr-location.entity';
+import { Customer } from '../../../../core/business-partners/customers/entities/customer.entity';
+import { Table } from '../../../../restaurant-operations/dining-system/tables/entities/table.entity';
+import { QROrderStatus } from '../../../../commerce/qr-code/constants/qr-order-status.enum';
 import {
   Column,
   Entity,

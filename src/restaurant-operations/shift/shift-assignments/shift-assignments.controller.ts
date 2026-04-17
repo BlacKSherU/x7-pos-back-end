@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   Controller,
   Get,
@@ -37,6 +34,7 @@ import {
   ApiExtraModels,
   ApiQuery,
 } from '@nestjs/swagger';
+import { AuthenticatedUser } from '../../../auth/interfaces/authenticated-user.interface';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { UserRole } from 'src/platform-saas/users/constants/role.enum';
 import { Scope } from 'src/platform-saas/users/constants/scope.enum';
@@ -204,12 +202,12 @@ export class ShiftAssignmentsController {
   })
   async create(
     @Body() dto: CreateShiftAssignmentDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneShiftAssignmentResponseDto> {
-    // Obtener el merchant_id del usuario autenticado
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+    // Get the merchant_id of the authenticated user
+    const authenticatedUserMerchantId = req.merchant?.id;
 
-    // Validar que el usuario tiene merchant_id
+    // Validate that the user has a merchant_id
     if (!authenticatedUserMerchantId) {
       throw new ForbiddenException(
         'User must be associated with a merchant to create shift assignments',
@@ -414,10 +412,10 @@ export class ShiftAssignmentsController {
   })
   async findAll(
     @Query() query: GetShiftAssignmentsQueryDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<PaginatedShiftAssignmentsResponseDto> {
     // Get the merchant_id from the authenticated user
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+    const authenticatedUserMerchantId = req.merchant?.id;
 
     // Validate that the user has merchant_id
     if (!authenticatedUserMerchantId) {
@@ -571,12 +569,12 @@ export class ShiftAssignmentsController {
   })
   async findOne(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneShiftAssignmentResponseDto> {
-    // Obtener el merchant_id del usuario autenticado
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+    // Get the merchant_id of the authenticated user
+    const authenticatedUserMerchantId = req.merchant?.id;
 
-    // Validar que el usuario tiene merchant_id
+    // Validate that the user has a merchant_id
     if (!authenticatedUserMerchantId) {
       throw new ForbiddenException(
         'User must be associated with a merchant to view shift assignments',
@@ -801,12 +799,12 @@ export class ShiftAssignmentsController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateShiftAssignmentDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneShiftAssignmentResponseDto> {
-    // Obtener el merchant_id del usuario autenticado
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+    // Get the merchant_id of the authenticated user
+    const authenticatedUserMerchantId = req.merchant?.id;
 
-    // Validar que el usuario tiene merchant_id
+    // Validate that the user has a merchant_id
     if (!authenticatedUserMerchantId) {
       throw new ForbiddenException(
         'User must be associated with a merchant to update shift assignments',
@@ -946,12 +944,12 @@ export class ShiftAssignmentsController {
   })
   async remove(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneShiftAssignmentResponseDto> {
-    // Obtener el merchant_id del usuario autenticado
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+    // Get the merchant_id of the authenticated user
+    const authenticatedUserMerchantId = req.merchant?.id;
 
-    // Validar que el usuario tiene merchant_id
+    // Validate that the user has a merchant_id
     if (!authenticatedUserMerchantId) {
       throw new ForbiddenException(
         'User must be associated with a merchant to delete shift assignments',

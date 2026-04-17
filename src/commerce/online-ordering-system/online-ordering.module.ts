@@ -9,25 +9,25 @@ import { OnlineOrderModule } from './online-order/online-order.module';
 import { OnlinePaymentModule } from './online-payment/online-payment.module';
 
 @Module({
-    imports: [
-        OnlineStoresModule,
-        OnlineDeliveryInfoModule,
-        OnlineMenuCategoryModule,
-        OnlineMenuItemModule,
-        OnlineOrderItemModule,
-        OnlineMenuModule,
-        OnlineOrderModule,
-        OnlinePaymentModule,
-    ],
-    exports: [
-        OnlineStoresModule,
-        OnlineDeliveryInfoModule,
-        OnlineMenuCategoryModule,
-        OnlineMenuItemModule,
-        OnlineOrderItemModule,
-        OnlineMenuModule,
-        OnlineOrderModule,
-        OnlinePaymentModule,
-    ],
+  imports: [
+    OnlineStoresModule,
+    OnlineDeliveryInfoModule,
+    OnlineMenuCategoryModule,
+    OnlineMenuItemModule,
+    OnlineOrderItemModule,
+    OnlineMenuModule,
+    OnlineOrderModule,
+    OnlinePaymentModule,
+  ],
+  exports: [
+    OnlineStoresModule,
+    OnlineDeliveryInfoModule,
+    OnlineMenuCategoryModule,
+    OnlineMenuItemModule,
+    OnlineOrderItemModule,
+    OnlineMenuModule,
+    OnlineOrderModule,
+    OnlinePaymentModule,
+  ],
 })
-export class OnlineOrderingModule { }
+export class OnlineOrderingModule {}

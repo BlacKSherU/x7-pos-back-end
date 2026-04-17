@@ -14,7 +14,10 @@ import {
 import { ReceiptItemService } from './receipt-item.service';
 import { CreateReceiptItemDto } from './dto/create-receipt-item.dto';
 import { UpdateReceiptItemDto } from './dto/update-receipt-item.dto';
-import { GetReceiptItemsQueryDto, ReceiptItemSortBy } from './dto/get-receipt-items-query.dto';
+import {
+  GetReceiptItemsQueryDto,
+  ReceiptItemSortBy,
+} from './dto/get-receipt-items-query.dto';
 import {
   ApiBearerAuth,
   ApiBadRequestResponse,
@@ -30,9 +33,8 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import {
-  OneReceiptItemResponseDto,
-} from './dto/receipt-item-response.dto';
+import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
+import { OneReceiptItemResponseDto } from './dto/receipt-item-response.dto';
 import { AllPaginatedReceiptItems } from './dto/all-paginated-receipt-items.dto';
 import { ErrorResponse } from 'src/common/dtos/error-response.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
@@ -48,7 +50,7 @@ import { Scope } from 'src/platform-saas/users/constants/scope.enum';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('receipt-items')
 export class ReceiptItemController {
-  constructor(private readonly receiptItemService: ReceiptItemService) { }
+  constructor(private readonly receiptItemService: ReceiptItemService) {}
 
   @Post()
   @Roles(UserRole.MERCHANT_ADMIN)
@@ -60,16 +62,22 @@ export class ReceiptItemController {
   )
   @ApiOperation({ summary: 'Create a new receipt item' })
   @ApiBody({ type: CreateReceiptItemDto })
-  @ApiCreatedResponse({ description: 'Receipt item created', type: OneReceiptItemResponseDto })
+  @ApiCreatedResponse({
+    description: 'Receipt item created',
+    type: OneReceiptItemResponseDto,
+  })
   @ApiBadRequestResponse({ description: 'Invalid data', type: ErrorResponse })
   @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
   @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorResponse })
-  @ApiNotFoundResponse({ description: 'Receipt not found', type: ErrorResponse })
+  @ApiNotFoundResponse({
+    description: 'Receipt not found',
+    type: ErrorResponse,
+  })
   async create(
     @Body() dto: CreateReceiptItemDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneReceiptItemResponseDto> {
-    const merchantId = req.user?.merchant?.id;
+    const merchantId = req.merchant?.id;
     return this.receiptItemService.create(dto, merchantId);
   }
 
@@ -86,17 +94,24 @@ export class ReceiptItemController {
   @ApiQuery({ name: 'name', required: false, type: String })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
-  @ApiQuery({ name: 'sortBy', required: false, enum: Object.values(ReceiptItemSortBy) })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    enum: Object.values(ReceiptItemSortBy),
+  })
   @ApiQuery({ name: 'sortOrder', required: false, enum: ['ASC', 'DESC'] })
-  @ApiOkResponse({ description: 'Receipt items retrieved', type: AllPaginatedReceiptItems })
+  @ApiOkResponse({
+    description: 'Receipt items retrieved',
+    type: AllPaginatedReceiptItems,
+  })
   @ApiBadRequestResponse({ description: 'Invalid query', type: ErrorResponse })
   @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
   @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorResponse })
   async findAll(
     @Query() query: GetReceiptItemsQueryDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<AllPaginatedReceiptItems> {
-    const merchantId = req.user?.merchant?.id;
+    const merchantId = req.merchant?.id;
     return this.receiptItemService.findAll(query, merchantId);
   }
 
@@ -110,16 +125,19 @@ export class ReceiptItemController {
   )
   @ApiOperation({ summary: 'Get a receipt item by id' })
   @ApiParam({ name: 'id', type: Number })
-  @ApiOkResponse({ description: 'Receipt item retrieved', type: OneReceiptItemResponseDto })
+  @ApiOkResponse({
+    description: 'Receipt item retrieved',
+    type: OneReceiptItemResponseDto,
+  })
   @ApiBadRequestResponse({ description: 'Invalid id', type: ErrorResponse })
   @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
   @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorResponse })
   @ApiNotFoundResponse({ description: 'Not found', type: ErrorResponse })
   async findOne(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneReceiptItemResponseDto> {
-    const merchantId = req.user?.merchant?.id;
+    const merchantId = req.merchant?.id;
     return this.receiptItemService.findOne(id, merchantId);
   }
 
@@ -134,7 +152,10 @@ export class ReceiptItemController {
   @ApiOperation({ summary: 'Update a receipt item (only metadata)' })
   @ApiParam({ name: 'id', type: Number })
   @ApiBody({ type: UpdateReceiptItemDto })
-  @ApiOkResponse({ description: 'Receipt item updated', type: OneReceiptItemResponseDto })
+  @ApiOkResponse({
+    description: 'Receipt item updated',
+    type: OneReceiptItemResponseDto,
+  })
   @ApiBadRequestResponse({ description: 'Invalid data', type: ErrorResponse })
   @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
   @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorResponse })
@@ -142,9 +163,9 @@ export class ReceiptItemController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateReceiptItemDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneReceiptItemResponseDto> {
-    const merchantId = req.user?.merchant?.id;
+    const merchantId = req.merchant?.id;
     return this.receiptItemService.update(id, dto, merchantId);
   }
 
@@ -158,16 +179,19 @@ export class ReceiptItemController {
   )
   @ApiOperation({ summary: 'Delete a receipt item' })
   @ApiParam({ name: 'id', type: Number })
-  @ApiOkResponse({ description: 'Receipt item deleted', type: OneReceiptItemResponseDto })
+  @ApiOkResponse({
+    description: 'Receipt item deleted',
+    type: OneReceiptItemResponseDto,
+  })
   @ApiBadRequestResponse({ description: 'Invalid id', type: ErrorResponse })
   @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
   @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorResponse })
   @ApiNotFoundResponse({ description: 'Not found', type: ErrorResponse })
   async remove(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneReceiptItemResponseDto> {
-    const merchantId = req.user?.merchant?.id;
+    const merchantId = req.merchant?.id;
     return this.receiptItemService.remove(id, merchantId);
   }
 }

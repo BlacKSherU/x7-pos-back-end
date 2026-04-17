@@ -1,25 +1,24 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { MarketingCouponRedemptionsService } from './marketing-coupon-redemptions.service';
 import { MarketingCouponRedemption } from './entities/marketing-coupon-redemption.entity';
 import { MarketingCoupon } from '../marketing-coupons/entities/marketing-coupon.entity';
-import { Order } from '../../../orders/entities/order.entity';
-import { Customer } from 'src/core/business-partners/customers/entities/customer.entity';
+import { Order } from '../../../restaurant-operations/pos/orders/entities/order.entity';
+import { Customer } from '../../../core/business-partners/customers/entities/customer.entity';
 import { CreateMarketingCouponRedemptionDto } from './dto/create-marketing-coupon-redemption.dto';
 import { UpdateMarketingCouponRedemptionDto } from './dto/update-marketing-coupon-redemption.dto';
 import { MarketingCouponRedemptionStatus } from './constants/marketing-coupon-redemption-status.enum';
-import { NotFoundException, BadRequestException, ForbiddenException, ConflictException } from '@nestjs/common';
+import {
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { MarketingCouponType } from '../marketing-coupons/constants/marketing-coupon-type.enum';
 import { MarketingCouponAppliesTo } from '../marketing-coupons/constants/marketing-coupon-applies-to.enum';
 import { MarketingCouponStatus } from '../marketing-coupons/constants/marketing-coupon-status.enum';
 
 describe('MarketingCouponRedemptionsService', () => {
   let service: MarketingCouponRedemptionsService;
-  let marketingCouponRedemptionRepository: Repository<MarketingCouponRedemption>;
-  let marketingCouponRepository: Repository<MarketingCoupon>;
-  let orderRepository: Repository<Order>;
-  let customerRepository: Repository<Customer>;
 
   const mockMerchant = {
     id: 1,
@@ -56,7 +55,7 @@ describe('MarketingCouponRedemptionsService', () => {
     order_id: 1,
     customer_id: 1,
     redeemed_at: new Date('2024-01-15T10:00:00Z'),
-    discount_applied: 10.50,
+    discount_applied: 10.5,
     status: MarketingCouponRedemptionStatus.ACTIVE,
     coupon: mockCoupon,
     order: mockOrder,
@@ -122,18 +121,8 @@ describe('MarketingCouponRedemptionsService', () => {
       ],
     }).compile();
 
-    service = module.get<MarketingCouponRedemptionsService>(MarketingCouponRedemptionsService);
-    marketingCouponRedemptionRepository = module.get<Repository<MarketingCouponRedemption>>(
-      getRepositoryToken(MarketingCouponRedemption),
-    );
-    marketingCouponRepository = module.get<Repository<MarketingCoupon>>(
-      getRepositoryToken(MarketingCoupon),
-    );
-    orderRepository = module.get<Repository<Order>>(
-      getRepositoryToken(Order),
-    );
-    customerRepository = module.get<Repository<Customer>>(
-      getRepositoryToken(Customer),
+    service = module.get<MarketingCouponRedemptionsService>(
+      MarketingCouponRedemptionsService,
     );
   });
 
@@ -150,7 +139,7 @@ describe('MarketingCouponRedemptionsService', () => {
       couponId: 1,
       orderId: 1,
       customerId: 1,
-      discountApplied: 10.50,
+      discountApplied: 10.5,
     };
 
     it('should create a marketing coupon redemption successfully', async () => {
@@ -163,19 +152,27 @@ describe('MarketingCouponRedemptionsService', () => {
         getOne: jest.fn().mockResolvedValue(mockOrder),
       });
       mockCustomerRepository.findOne.mockResolvedValue(mockCustomer);
-      mockMarketingCouponRedemptionRepository.save.mockResolvedValue(mockMarketingCouponRedemption);
-      mockMarketingCouponRedemptionRepository.findOne.mockResolvedValue(mockMarketingCouponRedemption);
+      mockMarketingCouponRedemptionRepository.save.mockResolvedValue(
+        mockMarketingCouponRedemption,
+      );
+      mockMarketingCouponRedemptionRepository.findOne.mockResolvedValue(
+        mockMarketingCouponRedemption,
+      );
 
       const result = await service.create(createDto, 1);
 
       expect(result.statusCode).toBe(201);
-      expect(result.message).toBe('Marketing coupon redemption created successfully');
-      expect(result.data.discountApplied).toBe(10.50);
+      expect(result.message).toBe(
+        'Marketing coupon redemption created successfully',
+      );
+      expect(result.data.discountApplied).toBe(10.5);
       expect(mockMarketingCouponRedemptionRepository.save).toHaveBeenCalled();
     });
 
     it('should throw ForbiddenException when user has no merchant', async () => {
-      await expect(service.create(createDto, null)).rejects.toThrow(ForbiddenException);
+      await expect(service.create(createDto, null)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw NotFoundException when coupon does not exist', async () => {
@@ -184,7 +181,9 @@ describe('MarketingCouponRedemptionsService', () => {
         getOne: jest.fn().mockResolvedValue(null),
       });
 
-      await expect(service.create(createDto, 1)).rejects.toThrow(NotFoundException);
+      await expect(service.create(createDto, 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw NotFoundException when order does not exist', async () => {
@@ -197,7 +196,9 @@ describe('MarketingCouponRedemptionsService', () => {
         getOne: jest.fn().mockResolvedValue(null),
       });
 
-      await expect(service.create(createDto, 1)).rejects.toThrow(NotFoundException);
+      await expect(service.create(createDto, 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw BadRequestException when discount applied is negative', async () => {
@@ -212,7 +213,9 @@ describe('MarketingCouponRedemptionsService', () => {
       });
       mockCustomerRepository.findOne.mockResolvedValue(mockCustomer);
 
-      await expect(service.create(invalidDto, 1)).rejects.toThrow(BadRequestException);
+      await expect(service.create(invalidDto, 1)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -220,44 +223,56 @@ describe('MarketingCouponRedemptionsService', () => {
     it('should return paginated marketing coupon redemptions', async () => {
       const query = { page: 1, limit: 10 };
       const mockRedemptions = [mockMarketingCouponRedemption];
-      
-      mockMarketingCouponRedemptionRepository.createQueryBuilder.mockReturnValue({
-        ...mockQueryBuilder,
-        getManyAndCount: jest.fn().mockResolvedValue([mockRedemptions, 1]),
-      });
+
+      mockMarketingCouponRedemptionRepository.createQueryBuilder.mockReturnValue(
+        {
+          ...mockQueryBuilder,
+          getManyAndCount: jest.fn().mockResolvedValue([mockRedemptions, 1]),
+        },
+      );
 
       const result = await service.findAll(query, 1);
 
       expect(result.statusCode).toBe(200);
-      expect(result.message).toBe('Marketing coupon redemptions retrieved successfully');
+      expect(result.message).toBe(
+        'Marketing coupon redemptions retrieved successfully',
+      );
       expect(result.data).toHaveLength(1);
       expect(result.paginationMeta).toBeDefined();
     });
 
     it('should throw ForbiddenException when user has no merchant', async () => {
-      await expect(service.findAll({}, null)).rejects.toThrow(ForbiddenException);
+      await expect(service.findAll({}, null)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
   describe('findOne', () => {
     it('should return a marketing coupon redemption by id', async () => {
-      mockMarketingCouponRedemptionRepository.createQueryBuilder.mockReturnValue({
-        ...mockQueryBuilder,
-        getOne: jest.fn().mockResolvedValue(mockMarketingCouponRedemption),
-      });
+      mockMarketingCouponRedemptionRepository.createQueryBuilder.mockReturnValue(
+        {
+          ...mockQueryBuilder,
+          getOne: jest.fn().mockResolvedValue(mockMarketingCouponRedemption),
+        },
+      );
 
       const result = await service.findOne(1, 1);
 
       expect(result.statusCode).toBe(200);
-      expect(result.message).toBe('Marketing coupon redemption retrieved successfully');
+      expect(result.message).toBe(
+        'Marketing coupon redemption retrieved successfully',
+      );
       expect(result.data.id).toBe(1);
     });
 
     it('should throw NotFoundException when redemption does not exist', async () => {
-      mockMarketingCouponRedemptionRepository.createQueryBuilder.mockReturnValue({
-        ...mockQueryBuilder,
-        getOne: jest.fn().mockResolvedValue(null),
-      });
+      mockMarketingCouponRedemptionRepository.createQueryBuilder.mockReturnValue(
+        {
+          ...mockQueryBuilder,
+          getOne: jest.fn().mockResolvedValue(null),
+        },
+      );
 
       await expect(service.findOne(999, 1)).rejects.toThrow(NotFoundException);
     });
@@ -265,36 +280,48 @@ describe('MarketingCouponRedemptionsService', () => {
 
   describe('update', () => {
     const updateDto: UpdateMarketingCouponRedemptionDto = {
-      discountApplied: 20.00,
+      discountApplied: 20.0,
     };
 
     it('should update a marketing coupon redemption successfully', async () => {
       const updatedRedemption = {
         ...mockMarketingCouponRedemption,
-        discount_applied: 20.00,
+        discount_applied: 20.0,
       };
 
-      mockMarketingCouponRedemptionRepository.createQueryBuilder.mockReturnValue({
-        ...mockQueryBuilder,
-        getOne: jest.fn().mockResolvedValue(mockMarketingCouponRedemption),
-      });
-      mockMarketingCouponRedemptionRepository.update.mockResolvedValue(undefined);
-      mockMarketingCouponRedemptionRepository.findOne.mockResolvedValue(updatedRedemption);
+      mockMarketingCouponRedemptionRepository.createQueryBuilder.mockReturnValue(
+        {
+          ...mockQueryBuilder,
+          getOne: jest.fn().mockResolvedValue(mockMarketingCouponRedemption),
+        },
+      );
+      mockMarketingCouponRedemptionRepository.update.mockResolvedValue(
+        undefined,
+      );
+      mockMarketingCouponRedemptionRepository.findOne.mockResolvedValue(
+        updatedRedemption,
+      );
 
       const result = await service.update(1, updateDto, 1);
 
       expect(result.statusCode).toBe(200);
-      expect(result.message).toBe('Marketing coupon redemption updated successfully');
+      expect(result.message).toBe(
+        'Marketing coupon redemption updated successfully',
+      );
       expect(mockMarketingCouponRedemptionRepository.update).toHaveBeenCalled();
     });
 
     it('should throw NotFoundException when redemption does not exist', async () => {
-      mockMarketingCouponRedemptionRepository.createQueryBuilder.mockReturnValue({
-        ...mockQueryBuilder,
-        getOne: jest.fn().mockResolvedValue(null),
-      });
+      mockMarketingCouponRedemptionRepository.createQueryBuilder.mockReturnValue(
+        {
+          ...mockQueryBuilder,
+          getOne: jest.fn().mockResolvedValue(null),
+        },
+      );
 
-      await expect(service.update(999, updateDto, 1)).rejects.toThrow(NotFoundException);
+      await expect(service.update(999, updateDto, 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -305,25 +332,33 @@ describe('MarketingCouponRedemptionsService', () => {
         status: MarketingCouponRedemptionStatus.DELETED,
       };
 
-      mockMarketingCouponRedemptionRepository.createQueryBuilder.mockReturnValue({
-        ...mockQueryBuilder,
-        getOne: jest.fn().mockResolvedValue(mockMarketingCouponRedemption),
-      });
-      mockMarketingCouponRedemptionRepository.save.mockResolvedValue(deletedRedemption);
+      mockMarketingCouponRedemptionRepository.createQueryBuilder.mockReturnValue(
+        {
+          ...mockQueryBuilder,
+          getOne: jest.fn().mockResolvedValue(mockMarketingCouponRedemption),
+        },
+      );
+      mockMarketingCouponRedemptionRepository.save.mockResolvedValue(
+        deletedRedemption,
+      );
 
       const result = await service.remove(1, 1);
 
       expect(result.statusCode).toBe(200);
-      expect(result.message).toBe('Marketing coupon redemption deleted successfully');
+      expect(result.message).toBe(
+        'Marketing coupon redemption deleted successfully',
+      );
       expect(result.data.status).toBe(MarketingCouponRedemptionStatus.DELETED);
       expect(mockMarketingCouponRedemptionRepository.save).toHaveBeenCalled();
     });
 
     it('should throw NotFoundException when redemption does not exist', async () => {
-      mockMarketingCouponRedemptionRepository.createQueryBuilder.mockReturnValue({
-        ...mockQueryBuilder,
-        getOne: jest.fn().mockResolvedValue(null),
-      });
+      mockMarketingCouponRedemptionRepository.createQueryBuilder.mockReturnValue(
+        {
+          ...mockQueryBuilder,
+          getOne: jest.fn().mockResolvedValue(null),
+        },
+      );
 
       await expect(service.remove(999, 1)).rejects.toThrow(NotFoundException);
     });

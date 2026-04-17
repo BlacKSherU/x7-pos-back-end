@@ -4,8 +4,8 @@ import { Merchant } from 'src/platform-saas/merchants/entities/merchant.entity';
 import { ApiProperty } from '@nestjs/swagger';
 import { Company } from 'src/platform-saas/companies/entities/company.entity';
 import { OneToMany } from 'typeorm';
-import { Order } from 'src/orders/entities/order.entity';
-import { LoyaltyCustomer } from 'src/growth/loyalty/loyalty-customer/entities/loyalty-customer.entity';
+import { Order } from '../../../../restaurant-operations/pos/orders/entities/order.entity';
+import { LoyaltyCustomer } from '../../../../growth/loyalty/loyalty-customer/entities/loyalty-customer.entity';
 
 @Entity()
 export class Customer {

@@ -16,7 +16,7 @@ import { CollaboratorStatus } from '../constants/collaborator-status.enum';
 import { ShiftAssignment } from 'src/restaurant-operations/shift/shift-assignments/entities/shift-assignment.entity';
 import { TableAssignment } from 'src/restaurant-operations/dining-system/table-assignments/entities/table-assignment.entity';
 import { CashDrawer } from 'src/restaurant-operations/cashdrawer/cash-drawers/entities/cash-drawer.entity';
-import { Order } from 'src/orders/entities/order.entity';
+import { Order } from '../../../../restaurant-operations/pos/orders/entities/order.entity';
 
 @Entity('collaborator')
 @Index(['user_id'], { unique: true })
@@ -53,7 +53,7 @@ export class Collaborator {
   merchant: Merchant;
 
   @ApiProperty({
-    example: 'Juan Pérez',
+    example: 'John Doe',
     description:
       'Name of the Collaborator (can be different from User name for customization)',
   })
@@ -63,13 +63,13 @@ export class Collaborator {
   @ApiProperty({
     example: ShiftRole.WAITER,
     enum: ShiftRole,
-    description: 'Role of the Collaborator (mesero, cajero, cocinero, etc.)',
+    description: 'Role of the Collaborator (waiter, cashier, cook, etc.)',
   })
   @Column({ type: 'enum', enum: ShiftRole })
   role: ShiftRole;
 
   @ApiProperty({
-    example: CollaboratorStatus.ACTIVO,
+    example: CollaboratorStatus.ACTIVE,
     enum: CollaboratorStatus,
     description: 'Current status of the Collaborator',
   })
@@ -141,19 +141,3 @@ export class Collaborator {
   @OneToMany(() => Order, (order) => order.collaborator)
   orders: Order[];
 }
-
-/*
-Table Collaborator {
-  id BIGSERIAL [pk]
-  user_id BIGINT [ref: > User.id]          // referencia al usuario del sistema
-  merchant_id BIGINT [ref: > Merchant.id]
-  name VARCHAR(150)                        // can be duplicated from User for customization
-  role ShiftRole                            // mesero, cajero, cocinero, etc.
-  status VARCHAR(50)
-  created_at TIMESTAMP
-  updated_at TIMESTAMP
-  Indexes {
-        (user_id)[unique]
-    }
-}
-*/

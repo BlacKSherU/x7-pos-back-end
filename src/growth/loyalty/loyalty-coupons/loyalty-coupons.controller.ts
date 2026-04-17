@@ -20,7 +20,6 @@ import {
   ApiResponse,
   ApiCreatedResponse,
   ApiOkResponse,
-  ApiQuery,
   ApiParam,
   ApiBadRequestResponse,
   ApiConflictResponse,
@@ -46,7 +45,7 @@ import { ErrorResponse } from '../../../common/dtos/error-response.dto';
 @Controller('loyalty-coupons')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class LoyaltyCouponsController {
-  constructor(private readonly loyaltyCouponsService: LoyaltyCouponsService) { }
+  constructor(private readonly loyaltyCouponsService: LoyaltyCouponsService) {}
 
   @Post()
   @Roles(UserRole.MERCHANT_ADMIN)
@@ -70,7 +69,10 @@ export class LoyaltyCouponsController {
     @Body() createLoyaltyCouponDto: CreateLoyaltyCouponDto,
   ) {
     const merchantId = user.merchant.id;
-    return this.loyaltyCouponsService.create(merchantId, createLoyaltyCouponDto);
+    return this.loyaltyCouponsService.create(
+      merchantId,
+      createLoyaltyCouponDto,
+    );
   }
 
   @Get()
@@ -108,7 +110,10 @@ export class LoyaltyCouponsController {
   )
   @ApiOperation({ summary: 'Get a Loyalty Coupon by ID' })
   @ApiParam({ name: 'id', type: Number, description: 'Loyalty Coupon ID' })
-  @ApiOkResponse({ description: 'Loyalty Coupon found', type: LoyaltyCouponResponseDto })
+  @ApiOkResponse({
+    description: 'Loyalty Coupon found',
+    type: LoyaltyCouponResponseDto,
+  })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiNotFoundResponse({ description: 'Loyalty Coupon not found' })
   findOne(
@@ -146,7 +151,11 @@ export class LoyaltyCouponsController {
     @Body() updateLoyaltyCouponDto: UpdateLoyaltyCouponDto,
   ) {
     const merchantId = user.merchant.id;
-    return this.loyaltyCouponsService.update(id, merchantId, updateLoyaltyCouponDto);
+    return this.loyaltyCouponsService.update(
+      id,
+      merchantId,
+      updateLoyaltyCouponDto,
+    );
   }
 
   @Delete(':id')

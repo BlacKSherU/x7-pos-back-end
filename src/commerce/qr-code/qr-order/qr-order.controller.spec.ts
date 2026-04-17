@@ -3,12 +3,12 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { QROrderController } from './qr-order.controller';
 import { QROrderService } from './qr-order.service';
 import { QROrder } from './entity/qr-order.entity';
-import { Merchant } from 'src/platform-saas/merchants/entities/merchant.entity';
-import { QRLocation } from 'src/commerce/qr-code/qr-location/entity/qr-location.entity';
-import { Customer } from 'src/core/business-partners/customers/entities/customer.entity';
-import { Order } from 'src/orders/entities/order.entity';
+import { Order } from '../../../restaurant-operations/pos/orders/entities/order.entity';
+import { Merchant } from '../../../platform-saas/merchants/entities/merchant.entity';
+import { QRLocation } from '../../../commerce/qr-code/qr-location/entity/qr-location.entity';
+import { Customer } from '../../../core/business-partners/customers/entities/customer.entity';
 import { QROrderStatus } from '../constants/qr-order-status.enum';
-import { Table } from 'src/restaurant-operations/dining-system/tables/entities/table.entity';
+import { Table } from '../../../restaurant-operations/dining-system/tables/entities/table.entity';
 
 describe('QROrderController', () => {
   let controller: QROrderController;

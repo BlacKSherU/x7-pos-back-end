@@ -33,6 +33,7 @@ import {
   OneMarketingMessageLogResponseDto,
   PaginatedMarketingMessageLogResponseDto,
 } from './dto/marketing-message-log-response.dto';
+import { AuthenticatedUser } from '../../../auth/interfaces/authenticated-user.interface';
 import { GetMarketingMessageLogQueryDto } from './dto/get-marketing-message-log-query.dto';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { UserRole } from 'src/platform-saas/users/constants/role.enum';
@@ -49,7 +50,9 @@ import { MarketingMessageLogStatus } from './constants/marketing-message-log-sta
 @Controller('marketing-message-logs')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class MarketingMessageLogsController {
-  constructor(private readonly marketingMessageLogsService: MarketingMessageLogsService) {}
+  constructor(
+    private readonly marketingMessageLogsService: MarketingMessageLogsService,
+  ) {}
 
   @Post()
   @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
@@ -69,10 +72,17 @@ export class MarketingMessageLogsController {
     description: 'Marketing message log created successfully',
     type: OneMarketingMessageLogResponseDto,
   })
-  @ApiBadRequestResponse({ description: 'Invalid input data or validation errors', type: ErrorResponse })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing authentication token', type: ErrorResponse })
+  @ApiBadRequestResponse({
+    description: 'Invalid input data or validation errors',
+    type: ErrorResponse,
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing authentication token',
+    type: ErrorResponse,
+  })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You must be associated with a merchant to create marketing message logs',
+    description:
+      'Forbidden - You must be associated with a merchant to create marketing message logs',
     type: ErrorResponse,
   })
   @ApiNotFoundResponse({
@@ -104,9 +114,15 @@ export class MarketingMessageLogsController {
       },
     },
   })
-  async create(@Body() dto: CreateMarketingMessageLogDto, @Request() req: any) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.marketingMessageLogsService.create(dto, authenticatedUserMerchantId);
+  async create(
+    @Body() dto: CreateMarketingMessageLogDto,
+    @Request() req: AuthenticatedUser,
+  ) {
+    const authenticatedUserMerchantId = req.merchant?.id;
+    return this.marketingMessageLogsService.create(
+      dto,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Get()
@@ -123,27 +139,91 @@ export class MarketingMessageLogsController {
     description:
       "Retrieves a paginated list of marketing message logs for the authenticated user's merchant.",
   })
-  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number (minimum 1)', example: 1 })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items per page (1-100)', example: 10 })
-  @ApiQuery({ name: 'campaignId', required: false, type: Number, description: 'Filter by campaign ID' })
-  @ApiQuery({ name: 'automationId', required: false, type: Number, description: 'Filter by automation ID' })
-  @ApiQuery({ name: 'customerId', required: false, type: Number, description: 'Filter by customer ID' })
-  @ApiQuery({ name: 'channel', required: false, enum: MarketingMessageLogChannel, description: 'Filter by channel' })
-  @ApiQuery({ name: 'status', required: false, enum: MarketingMessageLogStatus, description: 'Filter by status' })
-  @ApiQuery({ name: 'sentDate', required: false, type: String, description: 'Filter by sent date (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'createdDate', required: false, type: String, description: 'Filter by creation date (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'sortBy', required: false, enum: ['sentAt', 'status', 'createdAt', 'updatedAt'] })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number (minimum 1)',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page (1-100)',
+    example: 10,
+  })
+  @ApiQuery({
+    name: 'campaignId',
+    required: false,
+    type: Number,
+    description: 'Filter by campaign ID',
+  })
+  @ApiQuery({
+    name: 'automationId',
+    required: false,
+    type: Number,
+    description: 'Filter by automation ID',
+  })
+  @ApiQuery({
+    name: 'customerId',
+    required: false,
+    type: Number,
+    description: 'Filter by customer ID',
+  })
+  @ApiQuery({
+    name: 'channel',
+    required: false,
+    enum: MarketingMessageLogChannel,
+    description: 'Filter by channel',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: MarketingMessageLogStatus,
+    description: 'Filter by status',
+  })
+  @ApiQuery({
+    name: 'sentDate',
+    required: false,
+    type: String,
+    description: 'Filter by sent date (YYYY-MM-DD)',
+  })
+  @ApiQuery({
+    name: 'createdDate',
+    required: false,
+    type: String,
+    description: 'Filter by creation date (YYYY-MM-DD)',
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    enum: ['sentAt', 'status', 'createdAt', 'updatedAt'],
+  })
   @ApiQuery({ name: 'sortOrder', required: false, enum: ['ASC', 'DESC'] })
   @ApiOkResponse({
-    description: 'Paginated list of marketing message logs retrieved successfully',
+    description:
+      'Paginated list of marketing message logs retrieved successfully',
     type: PaginatedMarketingMessageLogResponseDto,
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
-  @ApiForbiddenResponse({ description: 'Forbidden - User must be associated with a merchant', type: ErrorResponse })
-  @ApiBadRequestResponse({ description: 'Invalid query parameters', type: ErrorResponse })
-  async findAll(@Query() query: GetMarketingMessageLogQueryDto, @Request() req: any) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.marketingMessageLogsService.findAll(query, authenticatedUserMerchantId);
+  @ApiForbiddenResponse({
+    description: 'Forbidden - User must be associated with a merchant',
+    type: ErrorResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid query parameters',
+    type: ErrorResponse,
+  })
+  async findAll(
+    @Query() query: GetMarketingMessageLogQueryDto,
+    @Request() req: AuthenticatedUser,
+  ) {
+    const authenticatedUserMerchantId = req.merchant?.id;
+    return this.marketingMessageLogsService.findAll(
+      query,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Get(':id')
@@ -157,20 +237,34 @@ export class MarketingMessageLogsController {
   )
   @ApiOperation({
     summary: 'Get a Marketing Message Log by ID',
-    description: 'Retrieves a specific marketing message log by its ID. Users can only access logs from their own merchant.',
+    description:
+      'Retrieves a specific marketing message log by its ID. Users can only access logs from their own merchant.',
   })
-  @ApiParam({ name: 'id', type: Number, description: 'Marketing message log ID' })
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'Marketing message log ID',
+  })
   @ApiOkResponse({
     description: 'Marketing message log found successfully',
     type: OneMarketingMessageLogResponseDto,
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
   @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorResponse })
-  @ApiNotFoundResponse({ description: 'Marketing message log not found', type: ErrorResponse })
+  @ApiNotFoundResponse({
+    description: 'Marketing message log not found',
+    type: ErrorResponse,
+  })
   @ApiBadRequestResponse({ description: 'Invalid ID', type: ErrorResponse })
-  async findOne(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.marketingMessageLogsService.findOne(id, authenticatedUserMerchantId);
+  async findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedUser,
+  ) {
+    const authenticatedUserMerchantId = req.merchant?.id;
+    return this.marketingMessageLogsService.findOne(
+      id,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Put(':id')
@@ -184,17 +278,28 @@ export class MarketingMessageLogsController {
   )
   @ApiOperation({
     summary: 'Update a Marketing Message Log by ID',
-    description: 'Updates an existing marketing message log. All fields are optional.',
+    description:
+      'Updates an existing marketing message log. All fields are optional.',
   })
-  @ApiParam({ name: 'id', type: Number, description: 'Marketing message log ID to update' })
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'Marketing message log ID to update',
+  })
   @ApiOkResponse({
     description: 'Marketing message log updated successfully',
     type: OneMarketingMessageLogResponseDto,
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
   @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorResponse })
-  @ApiNotFoundResponse({ description: 'Marketing message log not found', type: ErrorResponse })
-  @ApiBadRequestResponse({ description: 'Invalid input or ID', type: ErrorResponse })
+  @ApiNotFoundResponse({
+    description: 'Marketing message log not found',
+    type: ErrorResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid input or ID',
+    type: ErrorResponse,
+  })
   @ApiBody({
     type: UpdateMarketingMessageLogDto,
     description: 'Marketing message log update data (all fields optional)',
@@ -202,10 +307,14 @@ export class MarketingMessageLogsController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateMarketingMessageLogDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.marketingMessageLogsService.update(id, dto, authenticatedUserMerchantId);
+    const authenticatedUserMerchantId = req.merchant?.id;
+    return this.marketingMessageLogsService.update(
+      id,
+      dto,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Delete(':id')
@@ -219,20 +328,37 @@ export class MarketingMessageLogsController {
   )
   @ApiOperation({
     summary: 'Soft delete a Marketing Message Log by ID',
-    description: 'Performs a soft delete by setting the record status to deleted.',
+    description:
+      'Performs a soft delete by setting the record status to deleted.',
   })
-  @ApiParam({ name: 'id', type: Number, description: 'Marketing message log ID to delete' })
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'Marketing message log ID to delete',
+  })
   @ApiOkResponse({
     description: 'Marketing message log soft deleted successfully',
     type: OneMarketingMessageLogResponseDto,
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
   @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorResponse })
-  @ApiNotFoundResponse({ description: 'Marketing message log not found', type: ErrorResponse })
+  @ApiNotFoundResponse({
+    description: 'Marketing message log not found',
+    type: ErrorResponse,
+  })
   @ApiBadRequestResponse({ description: 'Invalid ID', type: ErrorResponse })
-  @ApiConflictResponse({ description: 'Marketing message log is already deleted', type: ErrorResponse })
-  async remove(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.marketingMessageLogsService.remove(id, authenticatedUserMerchantId);
+  @ApiConflictResponse({
+    description: 'Marketing message log is already deleted',
+    type: ErrorResponse,
+  })
+  async remove(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedUser,
+  ) {
+    const authenticatedUserMerchantId = req.merchant?.id;
+    return this.marketingMessageLogsService.remove(
+      id,
+      authenticatedUserMerchantId,
+    );
   }
 }

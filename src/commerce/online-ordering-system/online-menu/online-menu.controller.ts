@@ -7,8 +7,6 @@ import {
   Put,
   Delete,
   ParseIntPipe,
-  HttpCode,
-  HttpStatus,
   UseGuards,
   Request,
   Query,
@@ -30,7 +28,8 @@ import {
   ApiForbiddenResponse,
   ApiQuery,
 } from '@nestjs/swagger';
-import { OnlineMenuResponseDto, OneOnlineMenuResponseDto } from './dto/online-menu-response.dto';
+import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
+import { OneOnlineMenuResponseDto } from './dto/online-menu-response.dto';
 import { GetOnlineMenuQueryDto } from './dto/get-online-menu-query.dto';
 import { PaginatedOnlineMenuResponseDto } from './dto/paginated-online-menu-response.dto';
 import { Roles } from 'src/auth/decorators/roles.decorator';
@@ -57,31 +56,33 @@ export class OnlineMenuController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Create a new Online Menu',
-    description: 'Creates a new online menu for an online store. The online store must belong to the authenticated user\'s merchant. Only portal administrators and merchant administrators can create online menus.'
+    description:
+      "Creates a new online menu for an online store. The online store must belong to the authenticated user's merchant. Only portal administrators and merchant administrators can create online menus.",
   })
   @ApiCreatedResponse({
     description: 'Online menu created successfully',
     type: OneOnlineMenuResponseDto,
   })
-  @ApiBadRequestResponse({ 
+  @ApiBadRequestResponse({
     description: 'Invalid input data or validation errors',
     type: ErrorResponse,
   })
-  @ApiUnauthorizedResponse({ 
+  @ApiUnauthorizedResponse({
     description: 'Unauthorized - Invalid or missing authentication token',
     type: ErrorResponse,
   })
-  @ApiForbiddenResponse({ 
-    description: 'Forbidden - You must be associated with a merchant to create online menus',
+  @ApiForbiddenResponse({
+    description:
+      'Forbidden - You must be associated with a merchant to create online menus',
     type: ErrorResponse,
   })
-  @ApiNotFoundResponse({ 
+  @ApiNotFoundResponse({
     description: 'Online store not found or you do not have access to it',
     type: ErrorResponse,
   })
-  @ApiBody({ 
+  @ApiBody({
     type: CreateOnlineMenuDto,
     description: 'Online menu creation data',
     examples: {
@@ -91,22 +92,22 @@ export class OnlineMenuController {
           storeId: 1,
           name: 'Main Menu',
           description: 'This is the main menu for our restaurant',
-        }
+        },
       },
       example2: {
         summary: 'Create online menu without description',
         value: {
           storeId: 1,
           name: 'Dessert Menu',
-        }
-      }
-    }
+        },
+      },
+    },
   })
   async create(
     @Body() dto: CreateOnlineMenuDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneOnlineMenuResponseDto> {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+    const authenticatedUserMerchantId = req.merchant?.id;
     return this.onlineMenuService.create(dto, authenticatedUserMerchantId);
   }
 
@@ -119,87 +120,89 @@ export class OnlineMenuController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Get all Online Menus with pagination and filters',
-    description: 'Retrieves a paginated list of online menus for online stores belonging to the authenticated user\'s merchant. Supports filtering by store ID, name, active status, and creation date.'
+    description:
+      "Retrieves a paginated list of online menus for online stores belonging to the authenticated user's merchant. Supports filtering by store ID, name, active status, and creation date.",
   })
   @ApiQuery({
     name: 'page',
     required: false,
     type: Number,
     description: 'Page number for pagination (minimum 1)',
-    example: 1
+    example: 1,
   })
   @ApiQuery({
     name: 'limit',
     required: false,
     type: Number,
     description: 'Number of items per page (1-100)',
-    example: 10
+    example: 10,
   })
   @ApiQuery({
     name: 'storeId',
     required: false,
     type: Number,
     description: 'Filter by store ID',
-    example: 1
+    example: 1,
   })
   @ApiQuery({
     name: 'name',
     required: false,
     type: String,
     description: 'Filter by name (partial match)',
-    example: 'Main Menu'
+    example: 'Main Menu',
   })
   @ApiQuery({
     name: 'isActive',
     required: false,
     type: Boolean,
     description: 'Filter by active status',
-    example: true
+    example: true,
   })
   @ApiQuery({
     name: 'createdDate',
     required: false,
     type: String,
     description: 'Filter by creation date (YYYY-MM-DD format)',
-    example: '2024-01-15'
+    example: '2024-01-15',
   })
   @ApiQuery({
     name: 'sortBy',
     required: false,
     enum: ['id', 'name', 'isActive', 'createdAt', 'updatedAt'],
     description: 'Field to sort by',
-    example: 'createdAt'
+    example: 'createdAt',
   })
   @ApiQuery({
     name: 'sortOrder',
     required: false,
     enum: ['ASC', 'DESC'],
     description: 'Sort order',
-    example: 'DESC'
+    example: 'DESC',
   })
-  @ApiOkResponse({ 
+  @ApiOkResponse({
     description: 'Paginated list of online menus retrieved successfully',
     type: PaginatedOnlineMenuResponseDto,
   })
-  @ApiUnauthorizedResponse({ 
+  @ApiUnauthorizedResponse({
     description: 'Unauthorized - Invalid or missing authentication token',
     type: ErrorResponse,
   })
-  @ApiForbiddenResponse({ 
-    description: 'Forbidden - User must be associated with a merchant to view online menus',
+  @ApiForbiddenResponse({
+    description:
+      'Forbidden - User must be associated with a merchant to view online menus',
     type: ErrorResponse,
   })
-  @ApiBadRequestResponse({ 
+  @ApiBadRequestResponse({
     description: 'Invalid query parameters',
     type: ErrorResponse,
   })
   async findAll(
     @Query() query: GetOnlineMenuQueryDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<PaginatedOnlineMenuResponseDto> {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+    const authenticatedUserMerchantId = req.merchant?.id;
     return this.onlineMenuService.findAll(query, authenticatedUserMerchantId);
   }
 
@@ -212,24 +215,35 @@ export class OnlineMenuController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Get an Online Menu by ID',
-    description: 'Retrieves a specific online menu by its ID. Users can only access online menus from online stores belonging to their own merchant.'
+    description:
+      'Retrieves a specific online menu by its ID. Users can only access online menus from online stores belonging to their own merchant.',
   })
   @ApiParam({ name: 'id', type: Number, description: 'Online menu ID' })
-  @ApiOkResponse({ 
+  @ApiOkResponse({
     description: 'Online menu found successfully',
-    type: OneOnlineMenuResponseDto
+    type: OneOnlineMenuResponseDto,
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
-  @ApiForbiddenResponse({ description: 'Forbidden - You can only view online menus from your own merchant', type: ErrorResponse })
-  @ApiNotFoundResponse({ description: 'Online menu not found', type: ErrorResponse })
-  @ApiBadRequestResponse({ description: 'Invalid online menu ID', type: ErrorResponse })
+  @ApiForbiddenResponse({
+    description:
+      'Forbidden - You can only view online menus from your own merchant',
+    type: ErrorResponse,
+  })
+  @ApiNotFoundResponse({
+    description: 'Online menu not found',
+    type: ErrorResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid online menu ID',
+    type: ErrorResponse,
+  })
   async findOne(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneOnlineMenuResponseDto> {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+    const authenticatedUserMerchantId = req.merchant?.id;
     return this.onlineMenuService.findOne(id, authenticatedUserMerchantId);
   }
 
@@ -242,37 +256,39 @@ export class OnlineMenuController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Update an Online Menu by ID',
-    description: 'Updates an existing online menu. Users can only update online menus from online stores belonging to their own merchant. All fields are optional.'
+    description:
+      'Updates an existing online menu. Users can only update online menus from online stores belonging to their own merchant. All fields are optional.',
   })
-  @ApiParam({ 
-    name: 'id', 
-    type: Number, 
+  @ApiParam({
+    name: 'id',
+    type: Number,
     description: 'Online menu ID to update',
-    example: 1
+    example: 1,
   })
-  @ApiOkResponse({ 
-    description: 'Online menu updated successfully', 
+  @ApiOkResponse({
+    description: 'Online menu updated successfully',
     type: OneOnlineMenuResponseDto,
   })
-  @ApiUnauthorizedResponse({ 
+  @ApiUnauthorizedResponse({
     description: 'Unauthorized - Invalid or missing authentication token',
     type: ErrorResponse,
   })
-  @ApiForbiddenResponse({ 
-    description: 'Forbidden - You can only update online menus from your own merchant',
+  @ApiForbiddenResponse({
+    description:
+      'Forbidden - You can only update online menus from your own merchant',
     type: ErrorResponse,
   })
-  @ApiNotFoundResponse({ 
+  @ApiNotFoundResponse({
     description: 'Online menu not found',
     type: ErrorResponse,
   })
-  @ApiBadRequestResponse({ 
+  @ApiBadRequestResponse({
     description: 'Invalid input data or ID',
     type: ErrorResponse,
   })
-  @ApiBody({ 
+  @ApiBody({
     type: UpdateOnlineMenuDto,
     description: 'Online menu update data (all fields optional)',
     examples: {
@@ -281,22 +297,22 @@ export class OnlineMenuController {
         value: {
           name: 'Main Menu Updated',
           description: 'Updated description',
-        }
+        },
       },
       example2: {
         summary: 'Update active status',
         value: {
           isActive: false,
-        }
-      }
-    }
+        },
+      },
+    },
   })
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateOnlineMenuDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneOnlineMenuResponseDto> {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+    const authenticatedUserMerchantId = req.merchant?.id;
     return this.onlineMenuService.update(id, dto, authenticatedUserMerchantId);
   }
 
@@ -309,24 +325,42 @@ export class OnlineMenuController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Delete an Online Menu by ID',
-    description: 'Permanently deletes an online menu. Users can only delete online menus from online stores belonging to their own merchant.'
+    description:
+      'Permanently deletes an online menu. Users can only delete online menus from online stores belonging to their own merchant.',
   })
-  @ApiParam({ name: 'id', type: Number, description: 'Online menu ID to delete' })
-  @ApiOkResponse({ 
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'Online menu ID to delete',
+  })
+  @ApiOkResponse({
     description: 'Online menu deleted successfully',
-    type: OneOnlineMenuResponseDto
+    type: OneOnlineMenuResponseDto,
   })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
-  @ApiForbiddenResponse({ description: 'Forbidden - You can only delete online menus from your own merchant', type: ErrorResponse })
-  @ApiNotFoundResponse({ description: 'Online menu not found', type: ErrorResponse })
-  @ApiBadRequestResponse({ description: 'Invalid online menu ID', type: ErrorResponse })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing authentication token',
+    type: ErrorResponse,
+  })
+  @ApiForbiddenResponse({
+    description:
+      'Forbidden - You can only delete online menus from your own merchant',
+    type: ErrorResponse,
+  })
+  @ApiNotFoundResponse({
+    description: 'Online menu not found',
+    type: ErrorResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid online menu ID',
+    type: ErrorResponse,
+  })
   async remove(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneOnlineMenuResponseDto> {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+    const authenticatedUserMerchantId = req.merchant?.id;
     return this.onlineMenuService.remove(id, authenticatedUserMerchantId);
   }
 }

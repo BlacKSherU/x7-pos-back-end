@@ -5,12 +5,10 @@ import { TipsController } from './tips.controller';
 import { Tip } from './entities/tip.entity';
 import { Company } from '../../../platform-saas/companies/entities/company.entity';
 import { Merchant } from '../../../platform-saas/merchants/entities/merchant.entity';
-import { Order } from '../../../orders/entities/order.entity';
+import { Order } from '../../../restaurant-operations/pos/orders/entities/order.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Tip, Company, Merchant, Order]),
-  ],
+  imports: [TypeOrmModule.forFeature([Tip, Company, Merchant, Order])],
   controllers: [TipsController],
   providers: [TipsService],
   exports: [TipsService],

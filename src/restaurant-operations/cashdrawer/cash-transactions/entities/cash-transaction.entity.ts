@@ -10,8 +10,8 @@ import {
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { CashDrawer } from '../../cash-drawers/entities/cash-drawer.entity';
-import { Collaborator } from 'src/finance-hr/hr/collaborators/entities/collaborator.entity';
-import { Order } from '../../../../orders/entities/order.entity';
+import { Collaborator } from '../../../../finance-hr/hr/collaborators/entities/collaborator.entity';
+import { Order } from '../../../../restaurant-operations/pos/orders/entities/order.entity';
 import { CashTransactionType } from '../constants/cash-transaction-type.enum';
 import { CashTransactionStatus } from '../constants/cash-transaction-status.enum';
 import { LoyaltyPointTransaction } from 'src/growth/loyalty/loyalty-points-transaction/entities/loyalty-points-transaction.entity';

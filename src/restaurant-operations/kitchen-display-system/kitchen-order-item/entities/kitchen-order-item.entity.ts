@@ -10,7 +10,7 @@ import {
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { KitchenOrder } from '../../kitchen-order/entities/kitchen-order.entity';
-import { OrderItem } from '../../../../order-item/entities/order-item.entity';
+import { OrderItem } from '../../../../restaurant-operations/pos/order-item/entities/order-item.entity';
 import { Product } from '../../../../inventory/products-inventory/products/entities/product.entity';
 import { Variant } from '../../../../inventory/products-inventory/variants/entities/variant.entity';
 import { KitchenOrderItemStatus } from '../constants/kitchen-order-item-status.enum';
@@ -22,7 +22,10 @@ import { KitchenOrderItemStatus } from '../constants/kitchen-order-item-status.e
 @Index(['variant_id'])
 @Index(['status'])
 export class KitchenOrderItem {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Kitchen Order Item' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Kitchen Order Item',
+  })
   @PrimaryGeneratedColumn()
   id: number;
 

@@ -33,6 +33,7 @@ import {
   ApiForbiddenResponse,
   ApiQuery,
 } from '@nestjs/swagger';
+import { AuthenticatedUser } from '../../../auth/interfaces/authenticated-user.interface';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { UserRole } from 'src/platform-saas/users/constants/role.enum';
 import { Scope } from 'src/platform-saas/users/constants/scope.enum';
@@ -157,12 +158,12 @@ export class TablesController {
   })
   async create(
     @Body() dto: CreateTableDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneTableResponseDto> {
-    // Obtener el merchant_id del usuario autenticado
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+    // Get the merchant_id of the authenticated user
+    const authenticatedUserMerchantId = req.merchant?.id;
 
-    // Validar que el usuario tiene merchant_id
+    // Validate that the user has a merchant_id
     if (!authenticatedUserMerchantId) {
       throw new ForbiddenException(
         'User must be associated with a merchant to create tables',
@@ -322,12 +323,12 @@ export class TablesController {
   })
   async findAll(
     @Query() query: GetTablesQueryDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<PaginatedTablesResponseDto> {
-    // Obtener el merchant_id del usuario autenticado
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+    // Get the merchant_id of the authenticated user
+    const authenticatedUserMerchantId = req.merchant?.id;
 
-    // Validar que el usuario tiene merchant_id
+    // Validate that the user has a merchant_id
     if (!authenticatedUserMerchantId) {
       throw new ForbiddenException(
         'User must be associated with a merchant to view tables',
@@ -428,12 +429,12 @@ export class TablesController {
   })
   async findOne(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneTableResponseDto> {
-    // Obtener el merchant_id del usuario autenticado
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+    // Get the merchant_id of the authenticated user
+    const authenticatedUserMerchantId = req.merchant?.id;
 
-    // Validar que el usuario tiene merchant_id
+    // Validate that the user has a merchant_id
     if (!authenticatedUserMerchantId) {
       throw new ForbiddenException(
         'User must be associated with a merchant to view tables',
@@ -584,12 +585,12 @@ export class TablesController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateTableDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneTableResponseDto> {
-    // Obtener el merchant_id del usuario autenticado
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+    // Get the merchant_id of the authenticated user
+    const authenticatedUserMerchantId = req.merchant?.id;
 
-    // Validar que el usuario tiene merchant_id
+    // Validate that the user has a merchant_id
     if (!authenticatedUserMerchantId) {
       throw new ForbiddenException(
         'User must be associated with a merchant to update tables',
@@ -713,12 +714,12 @@ export class TablesController {
   })
   async remove(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneTableResponseDto> {
-    // Obtener el merchant_id del usuario autenticado
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+    // Get the merchant_id of the authenticated user
+    const authenticatedUserMerchantId = req.merchant?.id;
 
-    // Validar que el usuario tiene merchant_id
+    // Validate that the user has a merchant_id
     if (!authenticatedUserMerchantId) {
       throw new ForbiddenException(
         'User must be associated with a merchant to delete tables',

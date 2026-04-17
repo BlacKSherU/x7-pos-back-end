@@ -3,7 +3,7 @@ import { ReceiptItemService } from './receipt-item.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ReceiptItem } from './entities/receipt-item.entity';
 import { Receipt } from '../receipts/entities/receipt.entity';
-import { Order } from 'src/orders/entities/order.entity';
+import { Order } from 'src/restaurant-operations/pos/orders/entities/order.entity';
 import { ReceiptsService } from '../receipts/receipts.service';
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { CreateReceiptItemDto } from './dto/create-receipt-item.dto';

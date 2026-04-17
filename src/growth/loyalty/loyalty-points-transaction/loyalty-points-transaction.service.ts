@@ -13,10 +13,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { LoyaltyCustomer } from '../loyalty-customer/entities/loyalty-customer.entity';
 import { DataSource, Repository } from 'typeorm';
 import { ErrorMessage } from 'src/common/constants/error-messages';
-import { Order } from 'src/orders/entities/order.entity';
-import { CashTransaction } from 'src/restaurant-operations/cashdrawer/cash-transactions/entities/cash-transaction.entity';
-import { CashTransactionStatus } from 'src/restaurant-operations/cashdrawer/cash-transactions/constants/cash-transaction-status.enum';
-import { OrderBusinessStatus } from 'src/orders/constants/order-business-status.enum';
+import { Order } from '../../../restaurant-operations/pos/orders/entities/order.entity';
+import { OrderBusinessStatus } from '../../../restaurant-operations/pos/orders/constants/order-business-status.enum';
+import { CashTransaction } from '../../../restaurant-operations/cashdrawer/cash-transactions/entities/cash-transaction.entity';
+import { CashTransactionStatus } from '../../../restaurant-operations/cashdrawer/cash-transactions/constants/cash-transaction-status.enum';
 import { LoyaltyTier } from '../loyalty-tier/entities/loyalty-tier.entity';
 import { evaluateTierUpgrade } from '../loyalty-tier/loyalty-tier.helpers';
 
@@ -34,7 +34,7 @@ export class LoyaltyPointsTransactionService {
     @InjectRepository(LoyaltyTier)
     private readonly loyaltyTierRepository: Repository<LoyaltyTier>,
     private readonly dataSource: DataSource,
-  ) { }
+  ) {}
 
   async create(
     merchant_id: number,
@@ -83,7 +83,7 @@ export class LoyaltyPointsTransactionService {
         loyaltyCustomer.lifetimePoints += points;
       }
 
-      // Evaluar upgrade de tier automático
+      // Evaluate automatic tier upgrade
       const upgradedTier = await evaluateTierUpgrade(
         loyaltyCustomer,
         this.loyaltyTierRepository,
@@ -182,24 +182,24 @@ export class LoyaltyPointsTransactionService {
           source: lpt.source,
           order: lpt.order
             ? {
-              id: lpt.order.id,
-              businessStatus: lpt.order
-                .status as unknown as OrderBusinessStatus,
-            }
+                id: lpt.order.id,
+                businessStatus: lpt.order
+                  .status as unknown as OrderBusinessStatus,
+              }
             : null,
           payment: lpt.payment
             ? {
-              id: lpt.payment.id,
-              amount: lpt.payment.amount,
-              type: lpt.payment.type,
-            }
+                id: lpt.payment.id,
+                amount: lpt.payment.amount,
+                type: lpt.payment.type,
+              }
             : null,
           loyaltyCustomer: lpt.loyaltyCustomer
             ? {
-              id: lpt.loyaltyCustomer.id,
-              current_points: lpt.loyaltyCustomer.currentPoints,
-              lifetime_points: lpt.loyaltyCustomer.lifetimePoints,
-            }
+                id: lpt.loyaltyCustomer.id,
+                current_points: lpt.loyaltyCustomer.currentPoints,
+                lifetime_points: lpt.loyaltyCustomer.lifetimePoints,
+              }
             : null,
           createdAt: lpt.createdAt,
         }));
@@ -254,26 +254,26 @@ export class LoyaltyPointsTransactionService {
       source: loyaltyPointsTransaction.source,
       order: loyaltyPointsTransaction.order
         ? {
-          id: loyaltyPointsTransaction.order.id,
-          businessStatus: loyaltyPointsTransaction.order
-            .status as unknown as OrderBusinessStatus,
-        }
+            id: loyaltyPointsTransaction.order.id,
+            businessStatus: loyaltyPointsTransaction.order
+              .status as unknown as OrderBusinessStatus,
+          }
         : null,
       payment: loyaltyPointsTransaction.payment
         ? {
-          id: loyaltyPointsTransaction.payment.id,
-          amount: loyaltyPointsTransaction.payment.amount,
-          type: loyaltyPointsTransaction.payment.type,
-        }
+            id: loyaltyPointsTransaction.payment.id,
+            amount: loyaltyPointsTransaction.payment.amount,
+            type: loyaltyPointsTransaction.payment.type,
+          }
         : null,
       loyaltyCustomer: loyaltyPointsTransaction.loyaltyCustomer
         ? {
-          id: loyaltyPointsTransaction.loyaltyCustomer.id,
-          current_points:
-            loyaltyPointsTransaction.loyaltyCustomer.currentPoints,
-          lifetime_points:
-            loyaltyPointsTransaction.loyaltyCustomer.lifetimePoints,
-        }
+            id: loyaltyPointsTransaction.loyaltyCustomer.id,
+            current_points:
+              loyaltyPointsTransaction.loyaltyCustomer.currentPoints,
+            lifetime_points:
+              loyaltyPointsTransaction.loyaltyCustomer.lifetimePoints,
+          }
         : null,
       createdAt: loyaltyPointsTransaction.createdAt,
     };
@@ -358,7 +358,7 @@ export class LoyaltyPointsTransactionService {
             customer.lifetimePoints += points;
           }
 
-          // Evaluar upgrade de tier automático
+          // Evaluate automatic tier upgrade
           const upgradedTier = await evaluateTierUpgrade(
             customer,
             this.loyaltyTierRepository,

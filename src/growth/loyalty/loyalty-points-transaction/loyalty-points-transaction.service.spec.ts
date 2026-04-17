@@ -6,11 +6,11 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { LoyaltyCustomer } from '../loyalty-customer/entities/loyalty-customer.entity';
 import { LoyaltyPointTransaction } from './entities/loyalty-points-transaction.entity';
 import { LoyaltyTier } from '../loyalty-tier/entities/loyalty-tier.entity';
-import { Order } from 'src/orders/entities/order.entity';
-import { CashTransaction } from 'src/restaurant-operations/cashdrawer/cash-transactions/entities/cash-transaction.entity';
+import { Order } from '../../../restaurant-operations/pos/orders/entities/order.entity';
 import { DataSource, Repository } from 'typeorm';
-import { OrderBusinessStatus } from 'src/orders/constants/order-business-status.enum';
-import { CashTransactionStatus } from 'src/restaurant-operations/cashdrawer/cash-transactions/constants/cash-transaction-status.enum';
+import { OrderBusinessStatus } from '../../../restaurant-operations/pos/orders/constants/order-business-status.enum';
+import { CashTransaction } from '../../../restaurant-operations/cashdrawer/cash-transactions/entities/cash-transaction.entity';
+import { CashTransactionStatus } from '../../../restaurant-operations/cashdrawer/cash-transactions/constants/cash-transaction-status.enum';
 import { LoyaltyPointsSource } from './constants/loyalty-points-source.enum';
 import { NotFoundException } from '@nestjs/common';
 

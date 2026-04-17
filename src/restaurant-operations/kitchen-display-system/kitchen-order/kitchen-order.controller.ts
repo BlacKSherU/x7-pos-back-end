@@ -31,7 +31,8 @@ import {
   ApiQuery,
   ApiConflictResponse,
 } from '@nestjs/swagger';
-import { KitchenOrderResponseDto, OneKitchenOrderResponseDto } from './dto/kitchen-order-response.dto';
+import { AuthenticatedUser } from '../../../auth/interfaces/authenticated-user.interface';
+import { OneKitchenOrderResponseDto } from './dto/kitchen-order-response.dto';
 import { GetKitchenOrderQueryDto } from './dto/get-kitchen-order-query.dto';
 import { PaginatedKitchenOrderResponseDto } from './dto/paginated-kitchen-order-response.dto';
 import { Roles } from 'src/auth/decorators/roles.decorator';
@@ -61,7 +62,8 @@ export class KitchenOrderController {
   )
   @ApiOperation({
     summary: 'Create a new Kitchen Order',
-    description: 'Creates a new kitchen order. Either orderId or onlineOrderId must be provided. The order must belong to the authenticated user\'s merchant. Only portal administrators and merchant administrators can create kitchen orders.',
+    description:
+      "Creates a new kitchen order. Either orderId or onlineOrderId must be provided. The order must belong to the authenticated user's merchant. Only portal administrators and merchant administrators can create kitchen orders.",
   })
   @ApiCreatedResponse({
     description: 'Kitchen order created successfully',
@@ -76,7 +78,8 @@ export class KitchenOrderController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You must be associated with a merchant to create kitchen orders',
+    description:
+      'Forbidden - You must be associated with a merchant to create kitchen orders',
     type: ErrorResponse,
   })
   @ApiNotFoundResponse({
@@ -106,9 +109,15 @@ export class KitchenOrderController {
       },
     },
   })
-  async create(@Body() createKitchenOrderDto: CreateKitchenOrderDto, @Request() req: any) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.kitchenOrderService.create(createKitchenOrderDto, authenticatedUserMerchantId);
+  async create(
+    @Body() createKitchenOrderDto: CreateKitchenOrderDto,
+    @Request() req: AuthenticatedUser,
+  ) {
+    const authenticatedUserMerchantId = req.merchant?.id;
+    return this.kitchenOrderService.create(
+      createKitchenOrderDto,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Get()
@@ -122,7 +131,8 @@ export class KitchenOrderController {
   )
   @ApiOperation({
     summary: 'Get all Kitchen Orders',
-    description: 'Retrieves a paginated list of kitchen orders. Only returns orders that belong to the authenticated user\'s merchant. Only portal administrators and merchant administrators can access kitchen orders.',
+    description:
+      "Retrieves a paginated list of kitchen orders. Only returns orders that belong to the authenticated user's merchant. Only portal administrators and merchant administrators can access kitchen orders.",
   })
   @ApiOkResponse({
     description: 'Kitchen orders retrieved successfully',
@@ -133,7 +143,8 @@ export class KitchenOrderController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You must be associated with a merchant to access kitchen orders',
+    description:
+      'Forbidden - You must be associated with a merchant to access kitchen orders',
     type: ErrorResponse,
   })
   @ApiQuery({
@@ -187,7 +198,18 @@ export class KitchenOrderController {
   @ApiQuery({
     name: 'sortBy',
     required: false,
-    enum: ['id', 'orderId', 'onlineOrderId', 'stationId', 'priority', 'businessStatus', 'startedAt', 'completedAt', 'createdAt', 'updatedAt'],
+    enum: [
+      'id',
+      'orderId',
+      'onlineOrderId',
+      'stationId',
+      'priority',
+      'businessStatus',
+      'startedAt',
+      'completedAt',
+      'createdAt',
+      'updatedAt',
+    ],
     description: 'Field to sort by',
   })
   @ApiQuery({
@@ -196,8 +218,11 @@ export class KitchenOrderController {
     enum: ['ASC', 'DESC'],
     description: 'Sort order (ASC or DESC)',
   })
-  async findAll(@Query() query: GetKitchenOrderQueryDto, @Request() req: any) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+  async findAll(
+    @Query() query: GetKitchenOrderQueryDto,
+    @Request() req: AuthenticatedUser,
+  ) {
+    const authenticatedUserMerchantId = req.merchant?.id;
     return this.kitchenOrderService.findAll(query, authenticatedUserMerchantId);
   }
 
@@ -212,7 +237,8 @@ export class KitchenOrderController {
   )
   @ApiOperation({
     summary: 'Get a single Kitchen Order by ID',
-    description: 'Retrieves a single kitchen order by its ID. The order must belong to the authenticated user\'s merchant. Only portal administrators and merchant administrators can access kitchen orders.',
+    description:
+      "Retrieves a single kitchen order by its ID. The order must belong to the authenticated user's merchant. Only portal administrators and merchant administrators can access kitchen orders.",
   })
   @ApiOkResponse({
     description: 'Kitchen order retrieved successfully',
@@ -223,7 +249,8 @@ export class KitchenOrderController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You must be associated with a merchant to access kitchen orders',
+    description:
+      'Forbidden - You must be associated with a merchant to access kitchen orders',
     type: ErrorResponse,
   })
   @ApiNotFoundResponse({
@@ -236,8 +263,11 @@ export class KitchenOrderController {
     description: 'Kitchen order ID',
     example: 1,
   })
-  async findOne(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+  async findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedUser,
+  ) {
+    const authenticatedUserMerchantId = req.merchant?.id;
     return this.kitchenOrderService.findOne(id, authenticatedUserMerchantId);
   }
 
@@ -252,7 +282,8 @@ export class KitchenOrderController {
   )
   @ApiOperation({
     summary: 'Update a Kitchen Order',
-    description: 'Updates an existing kitchen order. The order must belong to the authenticated user\'s merchant. Only portal administrators and merchant administrators can update kitchen orders.',
+    description:
+      "Updates an existing kitchen order. The order must belong to the authenticated user's merchant. Only portal administrators and merchant administrators can update kitchen orders.",
   })
   @ApiOkResponse({
     description: 'Kitchen order updated successfully',
@@ -267,11 +298,13 @@ export class KitchenOrderController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You must be associated with a merchant to update kitchen orders',
+    description:
+      'Forbidden - You must be associated with a merchant to update kitchen orders',
     type: ErrorResponse,
   })
   @ApiNotFoundResponse({
-    description: 'Kitchen order, order, online order, or kitchen station not found',
+    description:
+      'Kitchen order, order, online order, or kitchen station not found',
     type: ErrorResponse,
   })
   @ApiConflictResponse({
@@ -306,10 +339,14 @@ export class KitchenOrderController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateKitchenOrderDto: UpdateKitchenOrderDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.kitchenOrderService.update(id, updateKitchenOrderDto, authenticatedUserMerchantId);
+    const authenticatedUserMerchantId = req.merchant?.id;
+    return this.kitchenOrderService.update(
+      id,
+      updateKitchenOrderDto,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Delete(':id')
@@ -324,7 +361,8 @@ export class KitchenOrderController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Delete a Kitchen Order',
-    description: 'Performs a logical deletion of a kitchen order. The order must belong to the authenticated user\'s merchant. Only portal administrators and merchant administrators can delete kitchen orders.',
+    description:
+      "Performs a logical deletion of a kitchen order. The order must belong to the authenticated user's merchant. Only portal administrators and merchant administrators can delete kitchen orders.",
   })
   @ApiOkResponse({
     description: 'Kitchen order deleted successfully',
@@ -335,7 +373,8 @@ export class KitchenOrderController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You must be associated with a merchant to delete kitchen orders',
+    description:
+      'Forbidden - You must be associated with a merchant to delete kitchen orders',
     type: ErrorResponse,
   })
   @ApiNotFoundResponse({
@@ -352,8 +391,11 @@ export class KitchenOrderController {
     description: 'Kitchen order ID',
     example: 1,
   })
-  async remove(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+  async remove(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedUser,
+  ) {
+    const authenticatedUserMerchantId = req.merchant?.id;
     return this.kitchenOrderService.remove(id, authenticatedUserMerchantId);
   }
 }

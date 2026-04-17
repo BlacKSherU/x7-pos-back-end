@@ -12,7 +12,7 @@ import {
 import { ApiProperty } from '@nestjs/swagger';
 import { Merchant } from 'src/platform-saas/merchants/entities/merchant.entity';
 import { SubscriptionPlan } from '../../subscription-plan/entity/subscription-plan.entity';
-import { Order } from 'src/orders/entities/order.entity';
+import { Order } from 'src/restaurant-operations/pos/orders/entities/order.entity';
 
 @Entity({ name: 'merchant_subscription' })
 export class MerchantSubscription {

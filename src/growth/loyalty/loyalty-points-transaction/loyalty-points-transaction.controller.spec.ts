@@ -7,14 +7,11 @@ import { Scope } from 'src/platform-saas/users/constants/scope.enum';
 import { CreateLoyaltyPointsTransactionDto } from './dto/create-loyalty-points-transaction.dto';
 import { UpdateLoyaltyPointsTransactionDto } from './dto/update-loyalty-points-transaction.dto';
 import { GetLoyaltyPointsTransactionQueryDto } from './dto/get-loyalty-points-transaction-query.dto';
-import {
-  OneLoyaltyPointsTransactionResponse,
-  LoyaltyPointsTransactionResponseDto,
-} from './dto/loyalty-points-transaction-response.dto';
+import { LoyaltyPointsTransactionResponseDto } from './dto/loyalty-points-transaction-response.dto';
 import { AllPaginatedLoyaltyPointsTransactionDto } from './dto/all-paginated-loyalty-points-transaction.dto';
 import { LoyaltyPointsSource } from './constants/loyalty-points-source.enum';
-import { OrderBusinessStatus } from 'src/orders/constants/order-business-status.enum';
-import { CashTransactionType } from 'src/restaurant-operations/cashdrawer/cash-transactions/constants/cash-transaction-type.enum';
+import { OrderBusinessStatus } from '../../../restaurant-operations/pos/orders/constants/order-business-status.enum';
+import { CashTransactionType } from '../../../restaurant-operations/cashdrawer/cash-transactions/constants/cash-transaction-type.enum';
 
 describe('LoyaltyPointsTransactionController', () => {
   let controller: LoyaltyPointsTransactionController;
@@ -82,7 +79,7 @@ describe('LoyaltyPointsTransactionController', () => {
         source: LoyaltyPointsSource.ORDER,
         description: 'New Transaction',
       };
-      const expectedResult: OneLoyaltyPointsTransactionResponse = {
+      const expectedResult = {
         statusCode: 201,
         message: 'Loyalty Points Transaction created successfully',
         data: mockLoyaltyPointsTransaction,
@@ -160,7 +157,7 @@ describe('LoyaltyPointsTransactionController', () => {
   describe('FindOne', () => {
     it('should return a single transaction', async () => {
       const transactionId = 1;
-      const expectedResult: OneLoyaltyPointsTransactionResponse = {
+      const expectedResult = {
         statusCode: 200,
         message: 'Loyalty Points Transaction retrieved successfully',
         data: mockLoyaltyPointsTransaction,
@@ -195,7 +192,7 @@ describe('LoyaltyPointsTransactionController', () => {
     it('should update a transaction', async () => {
       const transactionId = 1;
       const dto: UpdateLoyaltyPointsTransactionDto = { points: 200 };
-      const expectedResult: OneLoyaltyPointsTransactionResponse = {
+      const expectedResult = {
         statusCode: 200,
         message: 'Loyalty Points Transaction updated successfully',
         data: { ...mockLoyaltyPointsTransaction, points: 200 },
@@ -231,7 +228,7 @@ describe('LoyaltyPointsTransactionController', () => {
   describe('Remove', () => {
     it('should remove a transaction', async () => {
       const transactionId = 1;
-      const expectedResult: OneLoyaltyPointsTransactionResponse = {
+      const expectedResult = {
         statusCode: 200,
         message: 'Loyalty Points Transaction deleted successfully',
         data: mockLoyaltyPointsTransaction,

@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, Brackets } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { CreateLoyaltyCouponDto } from './dto/create-loyalty-coupon.dto';
 import { UpdateLoyaltyCouponDto } from './dto/update-loyalty-coupon.dto';
 import { LoyaltyCoupon } from './entities/loyalty-coupon.entity';
 import { LoyaltyCustomer } from '../loyalty-customer/entities/loyalty-customer.entity';
 import { LoyaltyReward } from '../loyalty-reward/entities/loyalty-reward.entity';
-import { Order } from '../../../orders/entities/order.entity';
+import { Order } from '../../../restaurant-operations/pos/orders/entities/order.entity';
 import { GetLoyaltyCouponsQueryDto } from './dto/get-loyalty-coupons-query.dto';
 import {
   LoyaltyCouponResponseDto,
@@ -27,17 +27,14 @@ export class LoyaltyCouponsService {
     @InjectRepository(LoyaltyReward)
     private readonly loyaltyRewardRepo: Repository<LoyaltyReward>,
     private readonly dataSource: DataSource,
-  ) { }
+  ) {}
 
   async create(
     merchantId: number,
     createLoyaltyCouponDto: CreateLoyaltyCouponDto,
   ): Promise<OneLoyaltyCouponResponse> {
-    const {
-      loyalty_customer_id,
-      reward_id,
-      ...couponData
-    } = createLoyaltyCouponDto;
+    const { loyalty_customer_id, reward_id, ...couponData } =
+      createLoyaltyCouponDto;
 
     const loyaltyCustomer = await this.loyaltyCustomerRepo.findOne({
       where: { id: loyalty_customer_id },
@@ -48,7 +45,9 @@ export class LoyaltyCouponsService {
       ErrorHandler.notFound(ErrorMessage.LOYALTY_CUSTOMER_NOT_FOUND);
     }
 
-    if (Number(loyaltyCustomer.loyaltyProgram.merchantId) !== Number(merchantId)) {
+    if (
+      Number(loyaltyCustomer.loyaltyProgram.merchantId) !== Number(merchantId)
+    ) {
       ErrorHandler.notFound(ErrorMessage.LOYALTY_CUSTOMER_NOT_FOUND);
     }
 
@@ -67,10 +66,12 @@ export class LoyaltyCouponsService {
 
     // Verify customer and reward belong to the same program
     if (loyaltyCustomer.loyaltyProgramId !== reward.loyaltyProgramId) {
-      ErrorHandler.badRequest('Customer and Reward must belong to the same Loyalty Program');
+      ErrorHandler.badRequest(
+        'Customer and Reward must belong to the same Loyalty Program',
+      );
     }
 
-    // discount_value: usa el del DTO si viene, sino deriva del reward
+    // discount_value: usa el del DTO if it comes, else derives from the reward
     const resolvedDiscountValue: number =
       couponData.discount_value != null
         ? couponData.discount_value
@@ -96,7 +97,8 @@ export class LoyaltyCouponsService {
     try {
       if (existingInactive) {
         existingInactive.is_active = true;
-        existingInactive.status = couponData.status ?? LoyaltyCouponStatus.ACTIVE;
+        existingInactive.status =
+          couponData.status ?? LoyaltyCouponStatus.ACTIVE;
         existingInactive.loyaltyCustomerId = loyalty_customer_id;
         existingInactive.rewardId = reward_id;
         existingInactive.discountValue = resolvedDiscountValue;
@@ -129,9 +131,6 @@ export class LoyaltyCouponsService {
       await queryRunner.release();
     }
   }
-
-
-
 
   async findAll(
     query: GetLoyaltyCouponsQueryDto,
@@ -201,19 +200,19 @@ export class LoyaltyCouponsService {
       id: coupon.id,
       loyaltyCustomer: coupon.loyaltyCustomer
         ? {
-          id: coupon.loyaltyCustomer.id,
-          current_points: coupon.loyaltyCustomer.currentPoints,
-          lifetime_points: coupon.loyaltyCustomer.lifetimePoints,
-        }
+            id: coupon.loyaltyCustomer.id,
+            current_points: coupon.loyaltyCustomer.currentPoints,
+            lifetime_points: coupon.loyaltyCustomer.lifetimePoints,
+          }
         : null,
       code: coupon.code,
       reward: coupon.reward
         ? {
-          id: coupon.reward.id,
-          name: coupon.reward.name,
-          description: coupon.reward.description,
-          cost_points: coupon.reward.costPoints,
-        }
+            id: coupon.reward.id,
+            name: coupon.reward.name,
+            description: coupon.reward.description,
+            cost_points: coupon.reward.costPoints,
+          }
         : null,
       status: coupon.status,
       discount_value: Number(coupon.discountValue),
@@ -263,19 +262,19 @@ export class LoyaltyCouponsService {
       id: coupon.id,
       loyaltyCustomer: coupon.loyaltyCustomer
         ? {
-          id: coupon.loyaltyCustomer.id,
-          current_points: coupon.loyaltyCustomer.currentPoints,
-          lifetime_points: coupon.loyaltyCustomer.lifetimePoints,
-        }
+            id: coupon.loyaltyCustomer.id,
+            current_points: coupon.loyaltyCustomer.currentPoints,
+            lifetime_points: coupon.loyaltyCustomer.lifetimePoints,
+          }
         : null,
       code: coupon.code,
       reward: coupon.reward
         ? {
-          id: coupon.reward.id,
-          name: coupon.reward.name,
-          description: coupon.reward.description,
-          cost_points: coupon.reward.costPoints,
-        }
+            id: coupon.reward.id,
+            name: coupon.reward.name,
+            description: coupon.reward.description,
+            cost_points: coupon.reward.costPoints,
+          }
         : null,
       status: coupon.status,
       discount_value: Number(coupon.discountValue),
@@ -342,14 +341,23 @@ export class LoyaltyCouponsService {
       ErrorHandler.notFound(ErrorMessage.RESOURCE_NOT_FOUND);
     }
 
-    const { loyalty_customer_id, reward_id, order_id, status, expires_at, code, discount_value } = updateLoyaltyCouponDto;
+    const {
+      loyalty_customer_id,
+      reward_id,
+      order_id,
+      status,
+      expires_at,
+      code,
+      discount_value,
+    } = updateLoyaltyCouponDto;
 
     if (loyalty_customer_id) {
       const customer = await this.loyaltyCustomerRepo.findOne({
         where: { id: loyalty_customer_id },
         relations: ['loyaltyProgram'],
       });
-      if (!customer) ErrorHandler.notFound(ErrorMessage.LOYALTY_CUSTOMER_NOT_FOUND);
+      if (!customer)
+        ErrorHandler.notFound(ErrorMessage.LOYALTY_CUSTOMER_NOT_FOUND);
       if (Number(customer.loyaltyProgram.merchantId) !== Number(merchantId)) {
         ErrorHandler.notFound(ErrorMessage.LOYALTY_CUSTOMER_NOT_FOUND);
       }
@@ -373,7 +381,9 @@ export class LoyaltyCouponsService {
     // Handle REDEEMED: require order_id and set redeemed_at
     if (status === LoyaltyCouponStatus.REDEEMED) {
       if (!order_id) {
-        ErrorHandler.badRequest('order_id is required when marking a coupon as REDEEMED');
+        ErrorHandler.badRequest(
+          'order_id is required when marking a coupon as REDEEMED',
+        );
       }
       const orderRepo = this.dataSource.getRepository(Order);
       const order = await orderRepo.findOne({ where: { id: order_id } });
@@ -398,7 +408,10 @@ export class LoyaltyCouponsService {
     }
   }
 
-  async remove(id: number, merchantId: number): Promise<OneLoyaltyCouponResponse> {
+  async remove(
+    id: number,
+    merchantId: number,
+  ): Promise<OneLoyaltyCouponResponse> {
     if (!id || id <= 0) {
       ErrorHandler.invalidId('Coupon ID is incorrect');
     }
@@ -426,19 +439,19 @@ export class LoyaltyCouponsService {
         id: coupon.id,
         loyaltyCustomer: coupon.loyaltyCustomer
           ? {
-            id: coupon.loyaltyCustomer.id,
-            current_points: coupon.loyaltyCustomer.currentPoints,
-            lifetime_points: coupon.loyaltyCustomer.lifetimePoints,
-          }
+              id: coupon.loyaltyCustomer.id,
+              current_points: coupon.loyaltyCustomer.currentPoints,
+              lifetime_points: coupon.loyaltyCustomer.lifetimePoints,
+            }
           : null,
         code: coupon.code,
         reward: coupon.reward
           ? {
-            id: coupon.reward.id,
-            name: coupon.reward.name,
-            description: coupon.reward.description,
-            cost_points: coupon.reward.costPoints,
-          }
+              id: coupon.reward.id,
+              name: coupon.reward.name,
+              description: coupon.reward.description,
+              cost_points: coupon.reward.costPoints,
+            }
           : null,
         status: coupon.status,
         discount_value: Number(coupon.discountValue),
