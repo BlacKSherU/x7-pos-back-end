@@ -3,6 +3,7 @@ import {
   PrimaryGeneratedColumn,
   Column,
   ManyToOne,
+  OneToMany,
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
@@ -16,6 +17,9 @@ import { Customer } from '../../../../core/business-partners/customers/entities/
 import { OnlineOrderStatus } from '../constants/online-order-status.enum';
 import { OnlineOrderType } from '../constants/online-order-type.enum';
 import { OnlineOrderPaymentStatus } from '../constants/online-order-payment-status.enum';
+import { OnlineOrderFulfillmentStatus } from '../constants/online-order-fulfillment-status.enum';
+import { OnlineOrderItem } from '../../online-order-item/entities/online-order-item.entity';
+import { KitchenOrder } from '../../../../restaurant-operations/kitchen-display-system/kitchen-order/entities/kitchen-order.entity';
 
 @Entity('online_order')
 @Index(['merchant_id', 'status'])
@@ -61,7 +65,7 @@ export class OnlineOrder {
   @Column({ name: 'order_id', nullable: true })
   order_id: number | null;
 
-  @ManyToOne(() => Order, {
+  @ManyToOne(() => Order, (o) => o.onlineOrders, {
     onDelete: 'SET NULL',
     nullable: true,
   })
@@ -138,10 +142,6 @@ export class OnlineOrder {
   @UpdateDateColumn({ type: 'timestamp', name: 'updated_at' })
   updated_at: Date;
 
-  @ApiProperty({ example: 125.99, description: 'Total amount of the order' })
-  @Column({ type: 'decimal', precision: 12, scale: 2, name: 'total_amount' })
-  total_amount: number;
-
   @ApiProperty({
     example: 'Please deliver to the back door',
     description: 'Additional notes for the order',
@@ -149,4 +149,34 @@ export class OnlineOrder {
   })
   @Column({ type: 'text', nullable: true })
   notes: string | null;
+
+  @ApiProperty({
+    enum: OnlineOrderFulfillmentStatus,
+    description: 'Fulfillment lifecycle for customer-facing status',
+  })
+  @Column({
+    type: 'varchar',
+    length: 32,
+    name: 'fulfillment_status',
+    default: OnlineOrderFulfillmentStatus.RECEIVED,
+  })
+  fulfillment_status: OnlineOrderFulfillmentStatus;
+
+  @ApiProperty({ nullable: true })
+  @Column({ type: 'timestamp', name: 'accepted_at', nullable: true })
+  accepted_at: Date | null;
+
+  @ApiProperty({ nullable: true })
+  @Column({ type: 'timestamp', name: 'ready_at', nullable: true })
+  ready_at: Date | null;
+
+  @ApiProperty({ nullable: true })
+  @Column({ type: 'timestamp', name: 'completed_at', nullable: true })
+  completed_at: Date | null;
+
+  @OneToMany(() => OnlineOrderItem, (item) => item.onlineOrder)
+  onlineOrderItems: OnlineOrderItem[];
+
+  @OneToMany(() => KitchenOrder, (ko) => ko.onlineOrder)
+  kitchenOrders: KitchenOrder[];
 }

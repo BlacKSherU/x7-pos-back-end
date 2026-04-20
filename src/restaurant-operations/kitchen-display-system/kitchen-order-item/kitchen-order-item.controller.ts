@@ -13,6 +13,7 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { Request as ExpressRequest } from 'express';
 import { KitchenOrderItemService } from './kitchen-order-item.service';
 import { CreateKitchenOrderItemDto } from './dto/create-kitchen-order-item.dto';
 import { UpdateKitchenOrderItemDto } from './dto/update-kitchen-order-item.dto';
@@ -43,6 +44,8 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { ErrorResponse } from 'src/common/dtos/error-response.dto';
 import { KitchenOrderItemStatus } from './constants/kitchen-order-item-status.enum';
+
+type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
 
 @ApiTags('Kitchen Order Items')
 @ApiBearerAuth()
@@ -94,9 +97,9 @@ export class KitchenOrderItemController {
   })
   async create(
     @Body() createKitchenOrderItemDto: CreateKitchenOrderItemDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ) {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.kitchenOrderItemService.create(
       createKitchenOrderItemDto,
       authenticatedUserMerchantId,
@@ -204,11 +207,119 @@ export class KitchenOrderItemController {
   })
   async findAll(
     @Query() query: GetKitchenOrderItemQueryDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ) {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.kitchenOrderItemService.findAll(
       query,
+      authenticatedUserMerchantId,
+    );
+  }
+
+  @Post(':id/preparation/next')
+  @HttpCode(HttpStatus.OK)
+  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Scopes(
+    Scope.ADMIN_PORTAL,
+    Scope.MERCHANT_WEB,
+    Scope.MERCHANT_ANDROID,
+    Scope.MERCHANT_IOS,
+    Scope.MERCHANT_CLOVER,
+  )
+  @ApiOperation({
+    summary: 'Advance kitchen order item preparation status',
+    description:
+      "Moves preparation to the next step (pending → in preparation → ready). Cannot advance from the final status. Same access rules as updating a kitchen order item.",
+  })
+  @ApiOkResponse({
+    description: 'Preparation status advanced successfully',
+    type: OneKitchenOrderItemResponseDto,
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing authentication token',
+    type: ErrorResponse,
+  })
+  @ApiForbiddenResponse({
+    description:
+      'Forbidden - You must be associated with a merchant to update kitchen order items',
+    type: ErrorResponse,
+  })
+  @ApiNotFoundResponse({
+    description: 'Kitchen order item not found',
+    type: ErrorResponse,
+  })
+  @ApiConflictResponse({
+    description:
+      'Conflict - Already at final preparation status, or item is deleted',
+    type: ErrorResponse,
+  })
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'Kitchen order item ID',
+    example: 1,
+  })
+  async advancePreparationStatus(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
+    return this.kitchenOrderItemService.advancePreparationStatus(
+      id,
+      authenticatedUserMerchantId,
+    );
+  }
+
+  @Post(':id/preparation/previous')
+  @HttpCode(HttpStatus.OK)
+  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Scopes(
+    Scope.ADMIN_PORTAL,
+    Scope.MERCHANT_WEB,
+    Scope.MERCHANT_ANDROID,
+    Scope.MERCHANT_IOS,
+    Scope.MERCHANT_CLOVER,
+  )
+  @ApiOperation({
+    summary: 'Revert kitchen order item preparation status',
+    description:
+      "Moves preparation to the previous step (ready → in preparation → pending). Cannot revert from the initial status. Same access rules as updating a kitchen order item.",
+  })
+  @ApiOkResponse({
+    description: 'Preparation status reverted successfully',
+    type: OneKitchenOrderItemResponseDto,
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing authentication token',
+    type: ErrorResponse,
+  })
+  @ApiForbiddenResponse({
+    description:
+      'Forbidden - You must be associated with a merchant to update kitchen order items',
+    type: ErrorResponse,
+  })
+  @ApiNotFoundResponse({
+    description: 'Kitchen order item not found',
+    type: ErrorResponse,
+  })
+  @ApiConflictResponse({
+    description:
+      'Conflict - Already at initial preparation status, or item is deleted',
+    type: ErrorResponse,
+  })
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'Kitchen order item ID',
+    example: 1,
+  })
+  async revertPreparationStatus(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
+    return this.kitchenOrderItemService.revertPreparationStatus(
+      id,
       authenticatedUserMerchantId,
     );
   }
@@ -252,9 +363,9 @@ export class KitchenOrderItemController {
   })
   async findOne(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ) {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.kitchenOrderItemService.findOne(
       id,
       authenticatedUserMerchantId,
@@ -314,9 +425,9 @@ export class KitchenOrderItemController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateKitchenOrderItemDto: UpdateKitchenOrderItemDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ) {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.kitchenOrderItemService.update(
       id,
       updateKitchenOrderItemDto,
@@ -368,9 +479,9 @@ export class KitchenOrderItemController {
   })
   async remove(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ) {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.kitchenOrderItemService.remove(id, authenticatedUserMerchantId);
   }
 }

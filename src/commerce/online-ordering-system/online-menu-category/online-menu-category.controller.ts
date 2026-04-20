@@ -11,6 +11,7 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { Request as ExpressRequest } from 'express';
 import { OnlineMenuCategoryService } from './online-menu-category.service';
 import { CreateOnlineMenuCategoryDto } from './dto/create-online-menu-category.dto';
 import { UpdateOnlineMenuCategoryDto } from './dto/update-online-menu-category.dto';
@@ -39,6 +40,8 @@ import { Scopes } from 'src/auth/decorators/scopes.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { ErrorResponse } from 'src/common/dtos/error-response.dto';
+
+type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
 
 @ApiTags('Online Menu Categories')
 @ApiBearerAuth()
@@ -109,9 +112,9 @@ export class OnlineMenuCategoryController {
   })
   async create(
     @Body() dto: CreateOnlineMenuCategoryDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOnlineMenuCategoryResponseDto> {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlineMenuCategoryService.create(
       dto,
       authenticatedUserMerchantId,
@@ -208,9 +211,9 @@ export class OnlineMenuCategoryController {
   })
   async findAll(
     @Query() query: GetOnlineMenuCategoryQueryDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<PaginatedOnlineMenuCategoryResponseDto> {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlineMenuCategoryService.findAll(
       query,
       authenticatedUserMerchantId,
@@ -256,9 +259,9 @@ export class OnlineMenuCategoryController {
   })
   async findOne(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOnlineMenuCategoryResponseDto> {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlineMenuCategoryService.findOne(
       id,
       authenticatedUserMerchantId,
@@ -329,9 +332,9 @@ export class OnlineMenuCategoryController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateOnlineMenuCategoryDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOnlineMenuCategoryResponseDto> {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlineMenuCategoryService.update(
       id,
       dto,
@@ -378,9 +381,9 @@ export class OnlineMenuCategoryController {
   })
   async remove(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOnlineMenuCategoryResponseDto> {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlineMenuCategoryService.remove(
       id,
       authenticatedUserMerchantId,

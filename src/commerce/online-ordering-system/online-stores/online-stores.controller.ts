@@ -11,6 +11,7 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { Request as ExpressRequest } from 'express';
 import { OnlineStoresService } from './online-stores.service';
 import { CreateOnlineStoreDto } from './dto/create-online-store.dto';
 import { UpdateOnlineStoreDto } from './dto/update-online-store.dto';
@@ -31,6 +32,8 @@ import {
 } from '@nestjs/swagger';
 import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
 import { OneOnlineStoreResponseDto } from './dto/online-store-response.dto';
+
+type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
 import { GetOnlineStoreQueryDto } from './dto/get-online-store-query.dto';
 import { PaginatedOnlineStoreResponseDto } from './dto/paginated-online-store-response.dto';
 import { Roles } from 'src/auth/decorators/roles.decorator';
@@ -115,9 +118,9 @@ export class OnlineStoresController {
   })
   async create(
     @Body() dto: CreateOnlineStoreDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOnlineStoreResponseDto> {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlineStoresService.create(dto, authenticatedUserMerchantId);
   }
 
@@ -224,9 +227,9 @@ export class OnlineStoresController {
   })
   async findAll(
     @Query() query: GetOnlineStoreQueryDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<PaginatedOnlineStoreResponseDto> {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlineStoresService.findAll(query, authenticatedUserMerchantId);
   }
 
@@ -265,9 +268,9 @@ export class OnlineStoresController {
   })
   async findOne(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOnlineStoreResponseDto> {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlineStoresService.findOne(id, authenticatedUserMerchantId);
   }
 
@@ -339,9 +342,9 @@ export class OnlineStoresController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateOnlineStoreDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOnlineStoreResponseDto> {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlineStoresService.update(
       id,
       dto,
@@ -392,9 +395,9 @@ export class OnlineStoresController {
   })
   async remove(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOnlineStoreResponseDto> {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlineStoresService.remove(id, authenticatedUserMerchantId);
   }
 }

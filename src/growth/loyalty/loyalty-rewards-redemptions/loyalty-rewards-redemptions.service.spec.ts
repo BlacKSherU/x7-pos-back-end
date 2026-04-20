@@ -7,11 +7,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { LoyaltyRewardsRedemtion } from './entities/loyalty-rewards-redemption.entity';
 import { LoyaltyCustomer } from '../loyalty-customer/entities/loyalty-customer.entity';
 import { LoyaltyReward } from '../loyalty-reward/entities/loyalty-reward.entity';
-<<<<<<< HEAD:src/loyalty/loyalty-rewards-redemtions/loyalty-rewards-redemtions.service.spec.ts
-import { Order } from '../../restaurant-operations/pos/orders/entities/order.entity';
-=======
-import { Order } from '../../../orders/entities/order.entity';
->>>>>>> blacksheru-main:src/growth/loyalty/loyalty-rewards-redemptions/loyalty-rewards-redemtions.service.spec.ts
+import { Order } from '../../../restaurant-operations/pos/orders/entities/order.entity';
 import { DataSource, Repository } from 'typeorm';
 import { CreateLoyaltyRewardsRedemtionDto } from './dto/create-loyalty-rewards-redemption.dto';
 import { ErrorMessage } from '../../../common/constants/error-messages';

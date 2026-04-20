@@ -1,8 +1,11 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { SuccessResponse } from '../../../../common/dtos/success-response.dto';
 import { OnlineOrderStatus } from '../constants/online-order-status.enum';
 import { OnlineOrderType } from '../constants/online-order-type.enum';
 import { OnlineOrderPaymentStatus } from '../constants/online-order-payment-status.enum';
+import { OnlineOrderFulfillmentStatus } from '../constants/online-order-fulfillment-status.enum';
+import { KitchenOrderNestedInOnlineOrderDto } from '../../../../restaurant-operations/kitchen-display-system/kitchen-order/dto/kitchen-order-response.dto';
+import { OnlineOrderItemNestedInOnlineOrderDto } from '../../online-order-item/dto/online-order-item-response.dto';
 
 export class BasicMerchantInfoDto {
   @ApiProperty({ example: 1, description: 'Merchant ID' })
@@ -82,11 +85,27 @@ export class OnlineOrderResponseDto {
   @ApiProperty({ example: '2024-01-15T09:00:00Z', description: 'Last update timestamp' })
   updatedAt: Date;
 
-  @ApiProperty({ example: 125.99, description: 'Total amount of the order' })
+  @ApiProperty({
+    example: 125.99,
+    description:
+      'Total amount: from POS order when linked; otherwise sum of catalog unit prices × quantity (modifiers JSON not included in sum).',
+  })
   totalAmount: number;
 
   @ApiProperty({ example: 'Please deliver to the back door', description: 'Additional notes for the order', nullable: true })
   notes: string | null;
+
+  @ApiProperty({ enum: OnlineOrderFulfillmentStatus })
+  fulfillmentStatus: OnlineOrderFulfillmentStatus;
+
+  @ApiProperty({ nullable: true })
+  acceptedAt: Date | null;
+
+  @ApiProperty({ nullable: true })
+  readyAt: Date | null;
+
+  @ApiProperty({ nullable: true })
+  completedAt: Date | null;
 
   @ApiProperty({ type: () => BasicMerchantInfoDto, description: 'Merchant information' })
   merchant: BasicMerchantInfoDto;
@@ -99,6 +118,18 @@ export class OnlineOrderResponseDto {
 
   @ApiProperty({ type: () => BasicCustomerInfoDto, description: 'Customer information' })
   customer: BasicCustomerInfoDto;
+
+  @ApiPropertyOptional({
+    type: () => [OnlineOrderItemNestedInOnlineOrderDto],
+    description: 'Online line items (included when relations are loaded)',
+  })
+  items?: OnlineOrderItemNestedInOnlineOrderDto[];
+
+  @ApiPropertyOptional({
+    type: () => [KitchenOrderNestedInOnlineOrderDto],
+    description: 'Kitchen tickets linked to this online order (included when relations are loaded)',
+  })
+  kitchenOrders?: KitchenOrderNestedInOnlineOrderDto[];
 }
 
 export class OneOnlineOrderResponseDto extends SuccessResponse {

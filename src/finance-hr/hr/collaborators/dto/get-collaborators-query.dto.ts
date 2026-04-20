@@ -30,7 +30,7 @@ export class GetCollaboratorsQueryDto {
   limit?: number;
 
   @ApiPropertyOptional({ 
-    example: CollaboratorStatus.ACTIVO, 
+    example: CollaboratorStatus.ACTIVE, 
     enum: CollaboratorStatus,
     description: 'Filter collaborators by status'
   })

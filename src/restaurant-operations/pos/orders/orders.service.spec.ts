@@ -31,8 +31,13 @@ import { OrderItemStatus } from '../order-item/constants/order-item-status.enum'
 import { OrderSource } from './constants/order-source.enum';
 import { DeliveryStatus } from './constants/delivery-status.enum';
 import { KitchenStatus } from './constants/kitchen-status.enum';
+import { OnlineOrderSyncService } from '../../../commerce/online-ordering-system/online-order/online-order-sync.service';
 
 describe('OrdersService', () => {
+  const mockOnlineOrderSyncService = {
+    syncFromPosOrder: jest.fn().mockResolvedValue(undefined),
+  };
+
   let service: OrdersService;
   let orderRepository: Repository<Order>;
   let merchantRepository: Repository<Merchant>;
@@ -45,12 +50,23 @@ describe('OrdersService', () => {
   let orderTaxRepository: Repository<OrderTax>;
   let orderItemModifierRepository: Repository<OrderItemModifier>;
 
+  const mockOrderQbForOrderNumber = {
+    select: jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(),
+    getRawOne: jest.fn().mockResolvedValue({ maxn: null }),
+  };
+
   const mockOrderRepository = {
     create: jest.fn(),
     save: jest.fn(),
     findOne: jest.fn(),
     findAndCount: jest.fn(),
     update: jest.fn(),
+    manager: {
+      getRepository: jest.fn().mockReturnValue({
+        createQueryBuilder: jest.fn(() => mockOrderQbForOrderNumber),
+      }),
+    },
     createQueryBuilder: jest.fn(() => ({
       select: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
@@ -201,6 +217,10 @@ describe('OrdersService', () => {
         {
           provide: getRepositoryToken(OrderItemModifier),
           useValue: mockOrderItemModifierRepository,
+        },
+        {
+          provide: OnlineOrderSyncService,
+          useValue: mockOnlineOrderSyncService,
         },
       ],
     }).compile();
@@ -1011,9 +1031,11 @@ describe('OrdersService', () => {
 
       const result = await service.findOne(1, 1);
 
-      expect(orderRepository.findOne).toHaveBeenCalledWith({
-        where: { id: 1, logical_status: OrderStatus.ACTIVE },
-      });
+      expect(orderRepository.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 1, logical_status: OrderStatus.ACTIVE },
+        }),
+      );
       expect(result.statusCode).toBe(200);
       expect(result.message).toBe('Order retrieved successfully');
       expect(result.data.id).toBe(1);
@@ -1071,7 +1093,8 @@ describe('OrdersService', () => {
       jest
         .spyOn(orderRepository, 'save')
         .mockImplementation(
-          async (o: Order) => ({ ...mockOrder, ...o }) as Order,
+          async (o: Parameters<Repository<Order>['save']>[0]) =>
+            ({ ...mockOrder, ...o }) as Order,
         );
       jest.spyOn(orderItemRepository, 'find').mockResolvedValue([]);
     });
@@ -1566,6 +1589,7 @@ describe('OrdersService', () => {
 
       await service.syncOrderAggregates(1);
 
+      expect(mockOnlineOrderSyncService.syncFromPosOrder).toHaveBeenCalledWith(1);
       expect(saveSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           subtotal: 50, // (2*20-5) + (1*15-0)

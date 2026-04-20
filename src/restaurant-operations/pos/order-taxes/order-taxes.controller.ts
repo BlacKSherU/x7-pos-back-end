@@ -13,6 +13,7 @@ import {
   Query,
   Request,
 } from '@nestjs/common';
+import { Request as ExpressRequest } from 'express';
 import { OrderTaxesService } from './order-taxes.service';
 import { CreateOrderTaxDto } from './dto/create-order-tax.dto';
 import { UpdateOrderTaxDto } from './dto/update-order-tax.dto';
@@ -45,6 +46,8 @@ import { OneOrderTaxResponseDto } from './dto/order-tax-response.dto';
 import { PaginatedOrderTaxResponseDto } from './dto/paginated-order-tax-response.dto';
 import { ErrorResponse } from 'src/common/dtos/error-response.dto';
 
+type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
+
 @ApiTags('Order taxes')
 @ApiBearerAuth()
 @Controller('order-taxes')
@@ -70,9 +73,9 @@ export class OrderTaxesController {
   @ApiNotFoundResponse({ type: ErrorResponse })
   async create(
     @Body() dto: CreateOrderTaxDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOrderTaxResponseDto> {
-    return this.orderTaxesService.create(dto, req.merchant?.id);
+    return this.orderTaxesService.create(dto, req.user?.merchant?.id);
   }
 
   @Get()
@@ -95,9 +98,9 @@ export class OrderTaxesController {
   @ApiOkResponse({ type: PaginatedOrderTaxResponseDto })
   async findAll(
     @Query() query: GetOrderTaxQueryDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<PaginatedOrderTaxResponseDto> {
-    return this.orderTaxesService.findAll(query, req.merchant?.id);
+    return this.orderTaxesService.findAll(query, req.user?.merchant?.id);
   }
 
   @Get(':id')
@@ -114,9 +117,9 @@ export class OrderTaxesController {
   @ApiOkResponse({ type: OneOrderTaxResponseDto })
   async findOne(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOrderTaxResponseDto> {
-    return this.orderTaxesService.findOne(id, req.merchant?.id);
+    return this.orderTaxesService.findOne(id, req.user?.merchant?.id);
   }
 
   @Put(':id')
@@ -135,9 +138,9 @@ export class OrderTaxesController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateOrderTaxDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOrderTaxResponseDto> {
-    return this.orderTaxesService.update(id, dto, req.merchant?.id);
+    return this.orderTaxesService.update(id, dto, req.user?.merchant?.id);
   }
 
   @Delete(':id')
@@ -155,8 +158,8 @@ export class OrderTaxesController {
   @ApiOkResponse({ type: OneOrderTaxResponseDto })
   async remove(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOrderTaxResponseDto> {
-    return this.orderTaxesService.remove(id, req.merchant?.id);
+    return this.orderTaxesService.remove(id, req.user?.merchant?.id);
   }
 }

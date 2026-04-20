@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNumber, IsNotEmpty, IsOptional, IsInt, Min, MaxLength } from 'class-validator';
+import { IsNumber, IsNotEmpty, IsOptional, IsInt, Min, MaxLength, IsEnum } from 'class-validator';
+import { KitchenOrderItemPreparationStatus } from '../constants/kitchen-order-item-preparation-status.enum';
 
 export class CreateKitchenOrderItemDto {
   @ApiProperty({
@@ -47,6 +48,15 @@ export class CreateKitchenOrderItemDto {
   @IsInt({ message: 'Quantity must be an integer' })
   @Min(1, { message: 'Quantity must be greater than 0' })
   quantity: number;
+
+  @ApiPropertyOptional({
+    example: KitchenOrderItemPreparationStatus.PENDING,
+    enum: KitchenOrderItemPreparationStatus,
+    description: 'Preparation step in kitchen',
+  })
+  @IsOptional()
+  @IsEnum(KitchenOrderItemPreparationStatus)
+  preparationStatus?: KitchenOrderItemPreparationStatus;
 
   @ApiPropertyOptional({
     example: 0,

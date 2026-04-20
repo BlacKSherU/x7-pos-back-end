@@ -76,7 +76,6 @@ describe('OnlineOrderItemService', () => {
     scheduled_at: null,
     placed_at: new Date('2024-01-15T08:00:00Z'),
     updated_at: new Date('2024-01-15T09:00:00Z'),
-    total_amount: 125.99,
     notes: null,
     store: mockOnlineStore,
   };
@@ -110,7 +109,6 @@ describe('OnlineOrderItemService', () => {
     product_id: 5,
     variant_id: 3,
     quantity: 2,
-    unit_price: 15.99,
     modifiers: { extraSauce: true, size: 'large' },
     notes: 'Extra sauce on the side',
     status: OnlineOrderItemStatus.ACTIVE,
@@ -119,6 +117,7 @@ describe('OnlineOrderItemService', () => {
     onlineOrder: mockOnlineOrder,
     product: mockProduct,
     variant: mockVariant,
+    orderItem: null,
   };
 
   const mockQueryBuilder = {
@@ -188,7 +187,6 @@ describe('OnlineOrderItemService', () => {
       productId: 5,
       variantId: 3,
       quantity: 2,
-      unitPrice: 15.99,
       modifiers: { extraSauce: true, size: 'large' },
       notes: 'Extra sauce on the side',
     };
@@ -216,7 +214,7 @@ describe('OnlineOrderItemService', () => {
       expect(onlineOrderItemRepository.save).toHaveBeenCalled();
       expect(onlineOrderItemRepository.findOne).toHaveBeenCalledWith({
         where: { id: savedItem.id },
-        relations: ['onlineOrder', 'product', 'variant'],
+        relations: ['onlineOrder', 'product', 'variant', 'orderItem'],
       });
       expect(result.statusCode).toBe(201);
       expect(result.message).toBe('Online order item created successfully');
@@ -335,21 +333,6 @@ describe('OnlineOrderItemService', () => {
       );
     });
 
-    it('should throw BadRequestException if unit price is negative', async () => {
-      const dtoWithInvalidPrice = { ...createOnlineOrderItemDto, unitPrice: -1 };
-      jest.spyOn(onlineOrderRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(mockOnlineOrder as any);
-      jest.spyOn(productRepository, 'findOne').mockResolvedValue(mockProduct as any);
-      jest.spyOn(variantRepository, 'findOne').mockResolvedValue(mockVariant as any);
-
-      await expect(service.create(dtoWithInvalidPrice, 1)).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.create(dtoWithInvalidPrice, 1)).rejects.toThrow(
-        'Unit price must be greater than or equal to 0',
-      );
-    });
-
     it('should throw BadRequestException if modifiers is not a valid object', async () => {
       const dtoWithInvalidModifiers = { ...createOnlineOrderItemDto, modifiers: [] as any };
       jest.spyOn(onlineOrderRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
@@ -452,7 +435,6 @@ describe('OnlineOrderItemService', () => {
   describe('update', () => {
     const updateOnlineOrderItemDto: UpdateOnlineOrderItemDto = {
       quantity: 3,
-      unitPrice: 18.99,
     };
 
     it('should update an online order item successfully', async () => {
@@ -461,7 +443,7 @@ describe('OnlineOrderItemService', () => {
         .mockResolvedValueOnce(mockOnlineOrderItem as any);
       jest.spyOn(onlineOrderItemRepository, 'save').mockResolvedValue(mockOnlineOrderItem as any);
       jest.spyOn(onlineOrderItemRepository, 'findOne')
-        .mockResolvedValueOnce({ ...mockOnlineOrderItem, quantity: 3, unit_price: 18.99 } as any);
+        .mockResolvedValueOnce({ ...mockOnlineOrderItem, quantity: 3, orderItem: null } as any);
 
       const result = await service.update(1, updateOnlineOrderItemDto, 1);
 

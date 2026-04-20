@@ -13,6 +13,7 @@ import { PaginatedOnlineOrderItemResponseDto } from './dto/paginated-online-orde
 import { OnlineStoreStatus } from '../online-stores/constants/online-store-status.enum';
 import { OnlineOrderStatus } from '../online-order/constants/online-order-status.enum';
 import { OnlineOrderItemStatus } from './constants/online-order-item-status.enum';
+import { resolveUnitPriceForOnlineOrderItem } from '../online-order/online-order-pricing.util';
 
 @Injectable()
 export class OnlineOrderItemService {
@@ -82,10 +83,6 @@ export class OnlineOrderItemService {
       throw new BadRequestException('Quantity must be greater than 0');
     }
 
-    if (createOnlineOrderItemDto.unitPrice < 0) {
-      throw new BadRequestException('Unit price must be greater than or equal to 0');
-    }
-
     if (createOnlineOrderItemDto.modifiers !== undefined && createOnlineOrderItemDto.modifiers !== null) {
       if (typeof createOnlineOrderItemDto.modifiers !== 'object' || Array.isArray(createOnlineOrderItemDto.modifiers)) {
         throw new BadRequestException('Modifiers must be a valid JSON object');
@@ -97,7 +94,6 @@ export class OnlineOrderItemService {
     onlineOrderItem.product_id = createOnlineOrderItemDto.productId;
     onlineOrderItem.variant_id = createOnlineOrderItemDto.variantId || null;
     onlineOrderItem.quantity = createOnlineOrderItemDto.quantity;
-    onlineOrderItem.unit_price = createOnlineOrderItemDto.unitPrice;
     onlineOrderItem.modifiers = createOnlineOrderItemDto.modifiers || null;
     onlineOrderItem.notes = createOnlineOrderItemDto.notes || null;
 
@@ -105,7 +101,7 @@ export class OnlineOrderItemService {
 
     const completeOnlineOrderItem = await this.onlineOrderItemRepository.findOne({
       where: { id: savedOnlineOrderItem.id },
-      relations: ['onlineOrder', 'product', 'variant'],
+      relations: ['onlineOrder', 'product', 'variant', 'orderItem'],
     });
 
     if (!completeOnlineOrderItem) {
@@ -148,6 +144,7 @@ export class OnlineOrderItemService {
       .leftJoinAndSelect('onlineOrderItem.onlineOrder', 'onlineOrder')
       .leftJoinAndSelect('onlineOrderItem.product', 'product')
       .leftJoinAndSelect('onlineOrderItem.variant', 'variant')
+      .leftJoinAndSelect('onlineOrderItem.orderItem', 'orderItem')
       .leftJoin('onlineOrder.store', 'store')
       .leftJoin('store.merchant', 'merchant')
       .where('merchant.id = :merchantId', { merchantId: authenticatedUserMerchantId })
@@ -179,7 +176,6 @@ export class OnlineOrderItemService {
                      query.sortBy === OnlineOrderItemSortBy.PRODUCT_ID ? 'onlineOrderItem.product_id' :
                      query.sortBy === OnlineOrderItemSortBy.VARIANT_ID ? 'onlineOrderItem.variant_id' :
                      query.sortBy === OnlineOrderItemSortBy.QUANTITY ? 'onlineOrderItem.quantity' :
-                     query.sortBy === OnlineOrderItemSortBy.UNIT_PRICE ? 'onlineOrderItem.unit_price' :
                      query.sortBy === OnlineOrderItemSortBy.UPDATED_AT ? 'onlineOrderItem.updated_at' :
                      query.sortBy === OnlineOrderItemSortBy.ID ? 'onlineOrderItem.id' :
                      'onlineOrderItem.created_at';
@@ -225,6 +221,7 @@ export class OnlineOrderItemService {
       .leftJoinAndSelect('onlineOrderItem.onlineOrder', 'onlineOrder')
       .leftJoinAndSelect('onlineOrderItem.product', 'product')
       .leftJoinAndSelect('onlineOrderItem.variant', 'variant')
+      .leftJoinAndSelect('onlineOrderItem.orderItem', 'orderItem')
       .leftJoin('onlineOrder.store', 'store')
       .leftJoin('store.merchant', 'merchant')
       .where('onlineOrderItem.id = :id', { id })
@@ -259,6 +256,7 @@ export class OnlineOrderItemService {
       .leftJoinAndSelect('onlineOrderItem.onlineOrder', 'onlineOrder')
       .leftJoinAndSelect('onlineOrderItem.product', 'product')
       .leftJoinAndSelect('onlineOrderItem.variant', 'variant')
+      .leftJoinAndSelect('onlineOrderItem.orderItem', 'orderItem')
       .leftJoin('onlineOrder.store', 'store')
       .leftJoin('store.merchant', 'merchant')
       .where('onlineOrderItem.id = :id', { id })
@@ -274,6 +272,12 @@ export class OnlineOrderItemService {
 
     if (existingOnlineOrderItem.status === OnlineOrderItemStatus.DELETED) {
       throw new ConflictException('Cannot update a deleted online order item');
+    }
+
+    if (existingOnlineOrderItem.order_item_id) {
+      throw new BadRequestException(
+        'Cannot update line items linked to a POS order; change the order in the POS',
+      );
     }
 
     if (updateOnlineOrderItemDto.onlineOrderId !== undefined) {
@@ -344,13 +348,6 @@ export class OnlineOrderItemService {
       existingOnlineOrderItem.quantity = updateOnlineOrderItemDto.quantity;
     }
 
-    if (updateOnlineOrderItemDto.unitPrice !== undefined) {
-      if (updateOnlineOrderItemDto.unitPrice < 0) {
-        throw new BadRequestException('Unit price must be greater than or equal to 0');
-      }
-      existingOnlineOrderItem.unit_price = updateOnlineOrderItemDto.unitPrice;
-    }
-
     if (updateOnlineOrderItemDto.modifiers !== undefined) {
       if (updateOnlineOrderItemDto.modifiers === null) {
         existingOnlineOrderItem.modifiers = null;
@@ -370,7 +367,7 @@ export class OnlineOrderItemService {
 
     const completeOnlineOrderItem = await this.onlineOrderItemRepository.findOne({
       where: { id: updatedOnlineOrderItem.id },
-      relations: ['onlineOrder', 'product', 'variant'],
+      relations: ['onlineOrder', 'product', 'variant', 'orderItem'],
     });
 
     if (!completeOnlineOrderItem) {
@@ -398,6 +395,7 @@ export class OnlineOrderItemService {
       .leftJoinAndSelect('onlineOrderItem.onlineOrder', 'onlineOrder')
       .leftJoinAndSelect('onlineOrderItem.product', 'product')
       .leftJoinAndSelect('onlineOrderItem.variant', 'variant')
+      .leftJoinAndSelect('onlineOrderItem.orderItem', 'orderItem')
       .leftJoin('onlineOrder.store', 'store')
       .leftJoin('store.merchant', 'merchant')
       .where('onlineOrderItem.id = :id', { id })
@@ -432,10 +430,12 @@ export class OnlineOrderItemService {
       productId: onlineOrderItem.product_id,
       variantId: onlineOrderItem.variant_id,
       quantity: onlineOrderItem.quantity,
-      unitPrice: onlineOrderItem.unit_price ? parseFloat(onlineOrderItem.unit_price.toString()) : 0,
+      unitPrice: resolveUnitPriceForOnlineOrderItem(onlineOrderItem),
       modifiers: onlineOrderItem.modifiers,
       notes: onlineOrderItem.notes,
       status: onlineOrderItem.status,
+      orderItemId: onlineOrderItem.order_item_id,
+      kitchenLineStatus: onlineOrderItem.kitchen_line_status,
       createdAt: onlineOrderItem.created_at,
       updatedAt: onlineOrderItem.updated_at,
       onlineOrder: {

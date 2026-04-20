@@ -13,6 +13,7 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { Request as ExpressRequest } from 'express';
 import { KitchenEventLogService } from './kitchen-event-log.service';
 import { CreateKitchenEventLogDto } from './dto/create-kitchen-event-log.dto';
 import { UpdateKitchenEventLogDto } from './dto/update-kitchen-event-log.dto';
@@ -44,6 +45,8 @@ import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { ErrorResponse } from 'src/common/dtos/error-response.dto';
 import { KitchenEventLogEventType } from './constants/kitchen-event-log-event-type.enum';
 import { KitchenEventLogStatus } from './constants/kitchen-event-log-status.enum';
+
+type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
 
 @ApiTags('Kitchen Event Logs')
 @ApiBearerAuth()
@@ -110,9 +113,9 @@ export class KitchenEventLogController {
   })
   async create(
     @Body() createKitchenEventLogDto: CreateKitchenEventLogDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ) {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.kitchenEventLogService.create(
       createKitchenEventLogDto,
       authenticatedUserMerchantId,
@@ -230,9 +233,9 @@ export class KitchenEventLogController {
   })
   async findAll(
     @Query() query: GetKitchenEventLogQueryDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ) {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.kitchenEventLogService.findAll(
       query,
       authenticatedUserMerchantId,
@@ -278,9 +281,9 @@ export class KitchenEventLogController {
   })
   async findOne(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ) {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.kitchenEventLogService.findOne(id, authenticatedUserMerchantId);
   }
 
@@ -337,9 +340,9 @@ export class KitchenEventLogController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateKitchenEventLogDto: UpdateKitchenEventLogDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ) {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.kitchenEventLogService.update(
       id,
       updateKitchenEventLogDto,
@@ -391,9 +394,9 @@ export class KitchenEventLogController {
   })
   async remove(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ) {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.kitchenEventLogService.remove(id, authenticatedUserMerchantId);
   }
 }

@@ -11,6 +11,10 @@ import { GetOnlineMenuCategoryQueryDto } from './dto/get-online-menu-category-qu
 import { OneOnlineMenuCategoryResponseDto } from './dto/online-menu-category-response.dto';
 import { PaginatedOnlineMenuCategoryResponseDto } from './dto/paginated-online-menu-category-response.dto';
 import { OnlineMenuCategoryStatus } from './constants/online-menu-category-status.enum';
+import { AuthenticatedUser } from '../../../auth/interfaces/authenticated-user.interface';
+import { Request as ExpressRequest } from 'express';
+
+type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
 
 describe('OnlineMenuCategoryController', () => {
   let controller: OnlineMenuCategoryController;
@@ -34,7 +38,7 @@ describe('OnlineMenuCategoryController', () => {
 
   const mockRequest = {
     user: mockUser,
-  };
+  } as AuthenticatedRequest;
 
   const mockOnlineMenuCategoryResponse: OneOnlineMenuCategoryResponseDto = {
     statusCode: 201,

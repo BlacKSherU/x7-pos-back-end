@@ -6,8 +6,14 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { KitchenOrder } from './entities/kitchen-order.entity';
+import { KitchenOrderItem } from '../kitchen-order-item/entities/kitchen-order-item.entity';
+import { KitchenOrderItemStatus } from '../kitchen-order-item/constants/kitchen-order-item-status.enum';
+import { KitchenOrderItemPreparationStatus } from '../kitchen-order-item/constants/kitchen-order-item-preparation-status.enum';
+import { OrderItem } from '../../pos/order-item/entities/order-item.entity';
+import { OrderItemStatus } from '../../pos/order-item/constants/order-item-status.enum';
+import { KitchenOrderSyncService } from './kitchen-order-sync.service';
 import { Merchant } from '../../../platform-saas/merchants/entities/merchant.entity';
 import { Order } from '../../../restaurant-operations/pos/orders/entities/order.entity';
 import { OnlineOrder } from '../../../commerce/online-ordering-system/online-order/entities/online-order.entity';
@@ -22,12 +28,25 @@ import {
   KitchenOrderResponseDto,
   OneKitchenOrderResponseDto,
 } from './dto/kitchen-order-response.dto';
+import { KitchenOrderItemResponseDto } from '../kitchen-order-item/dto/kitchen-order-item-response.dto';
 import { PaginatedKitchenOrderResponseDto } from './dto/paginated-kitchen-order-response.dto';
 import { KitchenOrderStatus } from './constants/kitchen-order-status.enum';
 import { KitchenOrderBusinessStatus } from './constants/kitchen-order-business-status.enum';
 import { KitchenStationStatus } from '../kitchen-station/constants/kitchen-station-status.enum';
 import { OnlineOrderStatus } from '../../../commerce/online-ordering-system/online-order/constants/online-order-status.enum';
 import { OrderStatus } from '../../../restaurant-operations/pos/orders/constants/order-status.enum';
+
+const KITCHEN_ORDER_DETAIL_RELATIONS = {
+  merchant: true,
+  order: true,
+  onlineOrder: true,
+  station: true,
+  kitchenOrderItems: {
+    product: true,
+    variant: true,
+    orderItem: true,
+  },
+} as const;
 
 @Injectable()
 export class KitchenOrderService {
@@ -42,6 +61,8 @@ export class KitchenOrderService {
     private readonly onlineOrderRepository: Repository<OnlineOrder>,
     @InjectRepository(KitchenStation)
     private readonly kitchenStationRepository: Repository<KitchenStation>,
+    private readonly dataSource: DataSource,
+    private readonly kitchenOrderSyncService: KitchenOrderSyncService,
   ) {}
 
   async create(
@@ -89,6 +110,19 @@ export class KitchenOrderService {
       if (!order) {
         throw new NotFoundException(
           'Order not found or you do not have access to it',
+        );
+      }
+
+      const existingKo = await this.kitchenOrderRepository.findOne({
+        where: {
+          order_id: createKitchenOrderDto.orderId,
+          merchant_id: authenticatedUserMerchantId,
+          status: KitchenOrderStatus.ACTIVE,
+        },
+      });
+      if (existingKo) {
+        throw new ConflictException(
+          'An active kitchen order already exists for this POS order',
         );
       }
     }
@@ -154,12 +188,54 @@ export class KitchenOrderService {
     kitchenOrder.completed_at = createKitchenOrderDto.completedAt || null;
     kitchenOrder.notes = createKitchenOrderDto.notes || null;
 
-    const savedKitchenOrder =
-      await this.kitchenOrderRepository.save(kitchenOrder);
+    const savedKitchenOrder = await this.dataSource.transaction(
+      async (manager) => {
+        const saved = await manager.save(kitchenOrder);
+
+        const skipAuto =
+          createKitchenOrderDto.skipAutoKitchenItems === true;
+        if (
+          createKitchenOrderDto.orderId &&
+          !skipAuto
+        ) {
+          const orderItems = await manager.find(OrderItem, {
+            where: {
+              order_id: createKitchenOrderDto.orderId,
+              status: OrderItemStatus.ACTIVE,
+            },
+          });
+          for (const oi of orderItems) {
+            const koi = manager.create(KitchenOrderItem, {
+              kitchen_order_id: saved.id,
+              order_item_id: oi.id,
+              product_id: oi.product_id,
+              variant_id: oi.variant_id,
+              quantity: oi.quantity,
+              prepared_quantity: 0,
+              preparation_status: KitchenOrderItemPreparationStatus.PENDING,
+              status: KitchenOrderItemStatus.ACTIVE,
+              started_at: null,
+              completed_at: null,
+              notes: null,
+            });
+            await manager.save(koi);
+          }
+        }
+
+        return saved;
+      },
+    );
+
+    if (createKitchenOrderDto.orderId) {
+      await this.kitchenOrderSyncService.syncPosOrderFromKitchenOrders(
+        createKitchenOrderDto.orderId,
+      );
+    }
 
     const completeKitchenOrder = await this.kitchenOrderRepository.findOne({
       where: { id: savedKitchenOrder.id },
-      relations: ['merchant', 'order', 'onlineOrder', 'station'],
+      relations: KITCHEN_ORDER_DETAIL_RELATIONS,
+      relationLoadStrategy: 'query',
     });
 
     if (!completeKitchenOrder) {
@@ -210,6 +286,10 @@ export class KitchenOrderService {
       .leftJoinAndSelect('kitchenOrder.order', 'order')
       .leftJoinAndSelect('kitchenOrder.onlineOrder', 'onlineOrder')
       .leftJoinAndSelect('kitchenOrder.station', 'station')
+      .leftJoinAndSelect('kitchenOrder.kitchenOrderItems', 'kitchenOrderItem')
+      .leftJoinAndSelect('kitchenOrderItem.product', 'koiProduct')
+      .leftJoinAndSelect('kitchenOrderItem.variant', 'koiVariant')
+      .leftJoinAndSelect('kitchenOrderItem.orderItem', 'koiOrderItem')
       .where('kitchenOrder.merchant_id = :merchantId', {
         merchantId: authenticatedUserMerchantId,
       })
@@ -326,7 +406,8 @@ export class KitchenOrderService {
         merchant_id: authenticatedUserMerchantId,
         status: KitchenOrderStatus.ACTIVE,
       },
-      relations: ['merchant', 'order', 'onlineOrder', 'station'],
+      relations: KITCHEN_ORDER_DETAIL_RELATIONS,
+      relationLoadStrategy: 'query',
     });
 
     if (!kitchenOrder) {
@@ -496,7 +577,8 @@ export class KitchenOrderService {
 
     const completeKitchenOrder = await this.kitchenOrderRepository.findOne({
       where: { id: updatedKitchenOrder.id },
-      relations: ['merchant', 'order', 'onlineOrder', 'station'],
+      relations: KITCHEN_ORDER_DETAIL_RELATIONS,
+      relationLoadStrategy: 'query',
     });
 
     if (!completeKitchenOrder) {
@@ -547,7 +629,8 @@ export class KitchenOrderService {
 
     const completeKitchenOrder = await this.kitchenOrderRepository.findOne({
       where: { id: existingKitchenOrder.id },
-      relations: ['merchant', 'order', 'onlineOrder', 'station'],
+      relations: KITCHEN_ORDER_DETAIL_RELATIONS,
+      relationLoadStrategy: 'query',
     });
 
     if (!completeKitchenOrder) {
@@ -568,7 +651,7 @@ export class KitchenOrderService {
       throw new Error('Merchant relation is not loaded for kitchen order');
     }
 
-    return {
+    const base: KitchenOrderResponseDto = {
       id: kitchenOrder.id,
       merchantId: kitchenOrder.merchant_id,
       orderId: kitchenOrder.order_id,
@@ -602,6 +685,57 @@ export class KitchenOrderService {
         ? {
             id: kitchenOrder.station.id,
             name: kitchenOrder.station.name,
+          }
+        : null,
+    };
+
+    if (kitchenOrder.kitchenOrderItems?.length) {
+      base.kitchenOrderItems = kitchenOrder.kitchenOrderItems
+        .filter((i) => i.status !== KitchenOrderItemStatus.DELETED)
+        .map((i) => this.formatKitchenOrderItemLine(kitchenOrder, i));
+    }
+
+    return base;
+  }
+
+  private formatKitchenOrderItemLine(
+    kitchenOrder: KitchenOrder,
+    kitchenOrderItem: KitchenOrderItem,
+  ): KitchenOrderItemResponseDto {
+    if (!kitchenOrderItem.product) {
+      throw new Error('Product relation is not loaded for kitchen order item');
+    }
+    return {
+      id: kitchenOrderItem.id,
+      kitchenOrderId: kitchenOrderItem.kitchen_order_id,
+      orderItemId: kitchenOrderItem.order_item_id,
+      productId: kitchenOrderItem.product_id,
+      variantId: kitchenOrderItem.variant_id,
+      quantity: kitchenOrderItem.quantity,
+      preparedQuantity: kitchenOrderItem.prepared_quantity,
+      preparationStatus: kitchenOrderItem.preparation_status,
+      status: kitchenOrderItem.status,
+      startedAt: kitchenOrderItem.started_at,
+      completedAt: kitchenOrderItem.completed_at,
+      notes: kitchenOrderItem.notes,
+      createdAt: kitchenOrderItem.created_at,
+      updatedAt: kitchenOrderItem.updated_at,
+      kitchenOrder: {
+        id: kitchenOrder.id,
+      },
+      orderItem: kitchenOrderItem.orderItem
+        ? {
+            id: kitchenOrderItem.orderItem.id,
+          }
+        : null,
+      product: {
+        id: kitchenOrderItem.product.id,
+        name: kitchenOrderItem.product.name || '',
+      },
+      variant: kitchenOrderItem.variant
+        ? {
+            id: kitchenOrderItem.variant.id,
+            name: kitchenOrderItem.variant.name || '',
           }
         : null,
     };

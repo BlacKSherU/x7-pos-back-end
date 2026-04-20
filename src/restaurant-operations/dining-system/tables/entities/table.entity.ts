@@ -12,7 +12,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Merchant } from 'src/platform-saas/merchants/entities/merchant.entity';
 import { CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { TableAssignment } from '../../table-assignments/entities/table-assignment.entity';
-import { Order } from 'src/orders/entities/order.entity';
+import { Order } from '../../../pos/orders/entities/order.entity';
 import { FloorZone } from 'src/restaurant-operations/dining-system/floor-zone/entity/floor-zone.entity';
 import { FloorPlan } from 'src/restaurant-operations/dining-system/floor-plan/entity/floor-plan.entity';
 import { TableStatus } from 'src/restaurant-operations/dining-system/constants/table-status.enum';

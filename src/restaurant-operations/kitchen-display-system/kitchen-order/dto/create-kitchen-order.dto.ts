@@ -1,5 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNumber, IsNotEmpty, IsOptional, IsEnum, IsString, Min, MaxLength } from 'class-validator';
+import {
+  IsNumber,
+  IsNotEmpty,
+  IsOptional,
+  IsEnum,
+  IsString,
+  Min,
+  MaxLength,
+  IsBoolean,
+} from 'class-validator';
 import { KitchenOrderBusinessStatus } from '../constants/kitchen-order-business-status.enum';
 
 export class CreateKitchenOrderDto {
@@ -83,4 +92,13 @@ export class CreateKitchenOrderDto {
   @IsString({ message: 'Notes must be a string' })
   @MaxLength(5000, { message: 'Notes must not exceed 5000 characters' })
   notes?: string | null;
+
+  @ApiPropertyOptional({
+    description:
+      'Si es true, no se generan kitchen order items desde las líneas POS (compatibilidad). Por defecto false.',
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  skipAutoKitchenItems?: boolean;
 }

@@ -11,6 +11,10 @@ import { GetOnlineOrderItemQueryDto } from './dto/get-online-order-item-query.dt
 import { OneOnlineOrderItemResponseDto } from './dto/online-order-item-response.dto';
 import { PaginatedOnlineOrderItemResponseDto } from './dto/paginated-online-order-item-response.dto';
 import { OnlineOrderItemStatus } from './constants/online-order-item-status.enum';
+import { AuthenticatedUser } from '../../../auth/interfaces/authenticated-user.interface';
+import { Request as ExpressRequest } from 'express';
+
+type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
 
 describe('OnlineOrderItemController', () => {
   let controller: OnlineOrderItemController;
@@ -34,7 +38,7 @@ describe('OnlineOrderItemController', () => {
 
   const mockRequest = {
     user: mockUser,
-  };
+  } as AuthenticatedRequest;
 
   const mockOnlineOrderItemResponse: OneOnlineOrderItemResponseDto = {
     statusCode: 201,
@@ -49,6 +53,8 @@ describe('OnlineOrderItemController', () => {
       modifiers: { extraSauce: true, size: 'large' },
       notes: 'Extra sauce on the side',
       status: OnlineOrderItemStatus.ACTIVE,
+      orderItemId: null,
+      kitchenLineStatus: null,
       createdAt: new Date('2024-01-15T08:00:00Z'),
       updatedAt: new Date('2024-01-15T09:00:00Z'),
       onlineOrder: {
@@ -113,7 +119,6 @@ describe('OnlineOrderItemController', () => {
       productId: 5,
       variantId: 3,
       quantity: 2,
-      unitPrice: 15.99,
       modifiers: { extraSauce: true, size: 'large' },
       notes: 'Extra sauce on the side',
     };
@@ -215,7 +220,6 @@ describe('OnlineOrderItemController', () => {
   describe('PUT /online-order-items/:id (update)', () => {
     const updateDto: UpdateOnlineOrderItemDto = {
       quantity: 3,
-      unitPrice: 18.99,
     };
 
     it('should update an online order item successfully', async () => {
@@ -227,7 +231,6 @@ describe('OnlineOrderItemController', () => {
         data: {
           ...mockOnlineOrderItemResponse.data,
           quantity: 3,
-          unitPrice: 18.99,
         },
       };
       updateSpy.mockResolvedValue(updatedResponse);

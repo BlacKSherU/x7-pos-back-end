@@ -11,6 +11,10 @@ import { GetOnlineDeliveryInfoQueryDto } from './dto/get-online-delivery-info-qu
 import { OneOnlineDeliveryInfoResponseDto } from './dto/online-delivery-info-response.dto';
 import { PaginatedOnlineDeliveryInfoResponseDto } from './dto/paginated-online-delivery-info-response.dto';
 import { OnlineDeliveryInfoStatus } from './constants/online-delivery-info-status.enum';
+import { AuthenticatedUser } from '../../../auth/interfaces/authenticated-user.interface';
+import { Request as ExpressRequest } from 'express';
+
+type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
 
 describe('OnlineDeliveryInfoController', () => {
   let controller: OnlineDeliveryInfoController;
@@ -34,7 +38,7 @@ describe('OnlineDeliveryInfoController', () => {
 
   const mockRequest = {
     user: mockUser,
-  };
+  } as AuthenticatedRequest;
 
   const mockOnlineDeliveryInfoResponse: OneOnlineDeliveryInfoResponseDto = {
     statusCode: 201,

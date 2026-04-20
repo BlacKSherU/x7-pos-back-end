@@ -11,6 +11,11 @@ import { GetKitchenOrderItemQueryDto } from './dto/get-kitchen-order-item-query.
 import { OneKitchenOrderItemResponseDto } from './dto/kitchen-order-item-response.dto';
 import { PaginatedKitchenOrderItemResponseDto } from './dto/kitchen-order-item-response.dto';
 import { KitchenOrderItemStatus } from './constants/kitchen-order-item-status.enum';
+import { KitchenOrderItemPreparationStatus } from './constants/kitchen-order-item-preparation-status.enum';
+import { AuthenticatedUser } from '../../../auth/interfaces/authenticated-user.interface';
+import { Request as ExpressRequest } from 'express';
+
+type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
 
 describe('KitchenOrderItemController', () => {
   let controller: KitchenOrderItemController;
@@ -22,6 +27,8 @@ describe('KitchenOrderItemController', () => {
     findOne: jest.fn(),
     update: jest.fn(),
     remove: jest.fn(),
+    advancePreparationStatus: jest.fn(),
+    revertPreparationStatus: jest.fn(),
   };
 
   const mockUser = {
@@ -34,7 +41,7 @@ describe('KitchenOrderItemController', () => {
 
   const mockRequest = {
     user: mockUser,
-  };
+  } as AuthenticatedRequest;
 
   const mockKitchenOrderItemResponse: OneKitchenOrderItemResponseDto = {
     statusCode: 201,
@@ -47,6 +54,7 @@ describe('KitchenOrderItemController', () => {
       variantId: null,
       quantity: 2,
       preparedQuantity: 0,
+      preparationStatus: KitchenOrderItemPreparationStatus.PENDING,
       status: KitchenOrderItemStatus.ACTIVE,
       startedAt: null,
       completedAt: null,
@@ -155,6 +163,45 @@ describe('KitchenOrderItemController', () => {
       expect(result).toEqual(mockKitchenOrderItemResponse);
       expect(result.statusCode).toBe(201);
       expect(result.data.id).toBe(1);
+    });
+  });
+
+  describe('POST /kitchen-order-items/:id/preparation/next', () => {
+    it('should delegate to advancePreparationStatus', async () => {
+      const advanceSpy = jest.spyOn(service, 'advancePreparationStatus');
+      const response: OneKitchenOrderItemResponseDto = {
+        ...mockKitchenOrderItemResponse,
+        statusCode: 200,
+        message: 'Kitchen order item preparation status advanced successfully',
+        data: {
+          ...mockKitchenOrderItemResponse.data,
+          preparationStatus:
+            KitchenOrderItemPreparationStatus.IN_PREPARATION,
+        },
+      };
+      advanceSpy.mockResolvedValue(response);
+
+      const result = await controller.advancePreparationStatus(1, mockRequest);
+
+      expect(advanceSpy).toHaveBeenCalledWith(1, mockUser.merchant.id);
+      expect(result).toEqual(response);
+    });
+  });
+
+  describe('POST /kitchen-order-items/:id/preparation/previous', () => {
+    it('should delegate to revertPreparationStatus', async () => {
+      const revertSpy = jest.spyOn(service, 'revertPreparationStatus');
+      const response: OneKitchenOrderItemResponseDto = {
+        ...mockKitchenOrderItemResponse,
+        statusCode: 200,
+        message: 'Kitchen order item preparation status reverted successfully',
+      };
+      revertSpy.mockResolvedValue(response);
+
+      const result = await controller.revertPreparationStatus(1, mockRequest);
+
+      expect(revertSpy).toHaveBeenCalledWith(1, mockUser.merchant.id);
+      expect(result).toEqual(response);
     });
   });
 

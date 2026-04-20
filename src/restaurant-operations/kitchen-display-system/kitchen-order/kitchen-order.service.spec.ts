@@ -24,6 +24,8 @@ import { KitchenOrderBusinessStatus } from './constants/kitchen-order-business-s
 import { KitchenStationStatus } from '../kitchen-station/constants/kitchen-station-status.enum';
 import { OnlineOrderStatus } from '../../../commerce/online-ordering-system/online-order/constants/online-order-status.enum';
 import { OrderStatus } from '../../../restaurant-operations/pos/orders/constants/order-status.enum';
+import { DataSource } from 'typeorm';
+import { KitchenOrderSyncService } from './kitchen-order-sync.service';
 
 describe('KitchenOrderService', () => {
   let service: KitchenOrderService;
@@ -54,6 +56,30 @@ describe('KitchenOrderService', () => {
 
   const mockKitchenStationRepository = {
     findOne: jest.fn(),
+  };
+
+  const mockKitchenOrderSyncService = {
+    syncPosOrderFromKitchenOrders: jest.fn().mockResolvedValue(undefined),
+  };
+
+  const mockDataSource = {
+    transaction: jest.fn(async (fn: (m: unknown) => Promise<unknown>) => {
+      const manager = {
+        save: jest.fn(async (entity: unknown) => {
+          if (
+            entity &&
+            typeof entity === 'object' &&
+            'kitchen_order_id' in (entity as object)
+          ) {
+            return { id: 1, ...(entity as object) };
+          }
+          return { id: 1, ...(entity as object) };
+        }),
+        find: jest.fn().mockResolvedValue([]),
+        create: jest.fn((_Entity: unknown, plain: object) => ({ ...plain })),
+      };
+      return fn(manager);
+    }),
   };
 
   const mockMerchant = {
@@ -136,6 +162,11 @@ describe('KitchenOrderService', () => {
           provide: getRepositoryToken(KitchenStation),
           useValue: mockKitchenStationRepository,
         },
+        { provide: DataSource, useValue: mockDataSource },
+        {
+          provide: KitchenOrderSyncService,
+          useValue: mockKitchenOrderSyncService,
+        },
       ],
     }).compile();
 
@@ -182,22 +213,22 @@ describe('KitchenOrderService', () => {
         .spyOn(orderRepository, 'findOne')
         .mockResolvedValue(mockOrder as any);
       jest
+        .spyOn(kitchenOrderRepository, 'findOne')
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(mockKitchenOrder as any);
+      jest
         .spyOn(kitchenStationRepository, 'findOne')
         .mockResolvedValue(mockKitchenStation as any);
-      const savedItem = { ...mockKitchenOrder, id: 1 };
-      jest
-        .spyOn(kitchenOrderRepository, 'save')
-        .mockResolvedValue(savedItem as any);
-      jest
-        .spyOn(kitchenOrderRepository, 'findOne')
-        .mockResolvedValue(mockKitchenOrder as any);
 
       const result = await service.create(createKitchenOrderDto, 1);
 
       expect(merchantRepository.findOne).toHaveBeenCalled();
       expect(orderRepository.findOne).toHaveBeenCalled();
       expect(kitchenStationRepository.findOne).toHaveBeenCalled();
-      expect(kitchenOrderRepository.save).toHaveBeenCalled();
+      expect(mockDataSource.transaction).toHaveBeenCalled();
+      expect(
+        mockKitchenOrderSyncService.syncPosOrderFromKitchenOrders,
+      ).toHaveBeenCalledWith(1);
       expect(result.statusCode).toBe(201);
       expect(result.message).toBe('Kitchen order created successfully');
       expect(result.data.orderId).toBe(1);
@@ -211,6 +242,25 @@ describe('KitchenOrderService', () => {
         service.create(createKitchenOrderDto, undefined as any),
       ).rejects.toThrow(
         'You must be associated with a merchant to create kitchen orders',
+      );
+    });
+
+    it('should throw ConflictException when an active kitchen order already exists for the POS order', async () => {
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(orderRepository, 'findOne')
+        .mockResolvedValue(mockOrder as any);
+      jest
+        .spyOn(kitchenOrderRepository, 'findOne')
+        .mockResolvedValue(mockKitchenOrder as any);
+
+      await expect(service.create(createKitchenOrderDto, 1)).rejects.toThrow(
+        ConflictException,
+      );
+      await expect(service.create(createKitchenOrderDto, 1)).rejects.toThrow(
+        'An active kitchen order already exists for this POS order',
       );
     });
 

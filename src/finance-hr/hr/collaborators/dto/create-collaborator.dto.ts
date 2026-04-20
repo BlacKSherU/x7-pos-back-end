@@ -30,7 +30,7 @@ export class CreateCollaboratorDto {
     role: ShiftRole;
 
     @ApiProperty({ 
-        example: CollaboratorStatus.ACTIVO, 
+        example: CollaboratorStatus.ACTIVE, 
         enum: CollaboratorStatus,
         description: 'Status of the Collaborator' 
     })

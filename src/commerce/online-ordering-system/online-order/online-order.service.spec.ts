@@ -5,17 +5,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException, ForbiddenException, BadRequestException, ConflictException } from '@nestjs/common';
+import { NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
 import { OnlineOrderService } from './online-order.service';
 import { OnlineOrder } from './entities/online-order.entity';
 import { OnlineStore } from '../online-stores/entities/online-store.entity';
-<<<<<<< ours
-import { Order } from '../../restaurant-operations/pos/orders/entities/order.entity';
-import { Customer } from 'src/business-partners/customers/entities/customer.entity';
-=======
-import { Order } from '../../../orders/entities/order.entity';
-import { Customer } from 'src/core/business-partners/customers/entities/customer.entity';
->>>>>>> theirs
+import { Order } from '../../../restaurant-operations/pos/orders/entities/order.entity';
+import { Customer } from '../../../core/business-partners/customers/entities/customer.entity';
 import { CreateOnlineOrderDto } from './dto/create-online-order.dto';
 import { UpdateOnlineOrderDto } from './dto/update-online-order.dto';
 import { GetOnlineOrderQueryDto, OnlineOrderSortBy } from './dto/get-online-order-query.dto';
@@ -23,6 +18,7 @@ import { OnlineStoreStatus } from '../online-stores/constants/online-store-statu
 import { OnlineOrderStatus } from './constants/online-order-status.enum';
 import { OnlineOrderType } from './constants/online-order-type.enum';
 import { OnlineOrderPaymentStatus } from './constants/online-order-payment-status.enum';
+import { OnlineOrderItem } from '../online-order-item/entities/online-order-item.entity';
 
 describe('OnlineOrderService', () => {
   let service: OnlineOrderService;
@@ -30,6 +26,10 @@ describe('OnlineOrderService', () => {
   let onlineStoreRepository: Repository<OnlineStore>;
   let orderRepository: Repository<Order>;
   let customerRepository: Repository<Customer>;
+
+  const mockOnlineOrderItemRepository = {
+    find: jest.fn().mockResolvedValue([]),
+  };
 
   const mockOnlineOrderRepository = {
     create: jest.fn(),
@@ -77,6 +77,7 @@ describe('OnlineOrderService', () => {
     merchant_id: 1,
     type: 'dine_in',
     status: 'pending',
+    total: 125.99,
     merchant: mockMerchant,
   };
 
@@ -100,7 +101,6 @@ describe('OnlineOrderService', () => {
     scheduled_at: null,
     placed_at: new Date('2024-01-15T08:00:00Z'),
     updated_at: new Date('2024-01-15T09:00:00Z'),
-    total_amount: 125.99,
     notes: 'Please deliver to the back door',
     merchant: mockMerchant,
     store: mockOnlineStore,
@@ -140,6 +140,10 @@ describe('OnlineOrderService', () => {
           provide: getRepositoryToken(Customer),
           useValue: mockCustomerRepository,
         },
+        {
+          provide: getRepositoryToken(OnlineOrderItem),
+          useValue: mockOnlineOrderItemRepository,
+        },
       ],
     }).compile();
 
@@ -176,7 +180,6 @@ describe('OnlineOrderService', () => {
       customerId: 5,
       type: OnlineOrderType.DELIVERY,
       paymentStatus: OnlineOrderPaymentStatus.PENDING,
-      totalAmount: 125.99,
       notes: 'Please deliver to the back door',
     };
 
@@ -280,23 +283,6 @@ describe('OnlineOrderService', () => {
       );
     });
 
-    it('should throw BadRequestException if total amount is negative', async () => {
-      const dtoWithNegativeAmount = {
-        ...createOnlineOrderDto,
-        totalAmount: -10,
-      };
-      jest.spyOn(onlineStoreRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(mockOnlineStore as any);
-      jest.spyOn(orderRepository, 'findOne').mockResolvedValue(mockOrder as any);
-      jest.spyOn(customerRepository, 'findOne').mockResolvedValue(mockCustomer as any);
-
-      await expect(service.create(dtoWithNegativeAmount, 1)).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.create(dtoWithNegativeAmount, 1)).rejects.toThrow(
-        'Total amount must be greater than or equal to 0',
-      );
-    });
   });
 
   describe('findAll', () => {
@@ -351,7 +337,6 @@ describe('OnlineOrderService', () => {
   describe('update', () => {
     const updateOnlineOrderDto: UpdateOnlineOrderDto = {
       paymentStatus: OnlineOrderPaymentStatus.PAID,
-      totalAmount: 150.99,
     };
 
     it('should update an online order successfully', async () => {
@@ -391,7 +376,9 @@ describe('OnlineOrderService', () => {
     it('should remove an online order successfully', async () => {
       const deletedOrder = { ...mockOnlineOrder, status: OnlineOrderStatus.DELETED };
       jest.spyOn(onlineOrderRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(mockOnlineOrder as any);
+      mockQueryBuilder.getOne
+        .mockResolvedValueOnce(mockOnlineOrder as any)
+        .mockResolvedValueOnce(deletedOrder as any);
       jest.spyOn(onlineOrderRepository, 'save').mockResolvedValue(deletedOrder as any);
 
       const result = await service.remove(1, 1);

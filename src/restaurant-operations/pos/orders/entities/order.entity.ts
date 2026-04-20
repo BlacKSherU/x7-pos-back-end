@@ -9,6 +9,8 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { KitchenOrder } from '../../../kitchen-display-system/kitchen-order/entities/kitchen-order.entity';
+import { OnlineOrder } from '../../../../commerce/online-ordering-system/online-order/entities/online-order.entity';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 // import { ApiProperty } from '@nestjs/swagger';
 import { Merchant } from '../../../../platform-saas/merchants/entities/merchant.entity';
@@ -241,6 +243,12 @@ export class Order {
 
   @OneToMany(() => OrderItem, (item) => item.order)
   orderItems: OrderItem[];
+
+  @OneToMany(() => KitchenOrder, (ko) => ko.order)
+  kitchenOrders: KitchenOrder[];
+
+  @OneToMany(() => OnlineOrder, (oo) => oo.order)
+  onlineOrders: OnlineOrder[];
 
   @OneToMany(() => OrderPayment, (payment) => payment.order)
   orderPayments: OrderPayment[];

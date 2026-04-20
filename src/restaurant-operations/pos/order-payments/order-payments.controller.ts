@@ -13,6 +13,7 @@ import {
   Query,
   Request,
 } from '@nestjs/common';
+import { Request as ExpressRequest } from 'express';
 import { OrderPaymentsService } from './order-payments.service';
 import { CreateOrderPaymentDto } from './dto/create-order-payment.dto';
 import { UpdateOrderPaymentDto } from './dto/update-order-payment.dto';
@@ -45,6 +46,8 @@ import { OneOrderPaymentResponseDto } from './dto/order-payment-response.dto';
 import { PaginatedOrderPaymentResponseDto } from './dto/paginated-order-payment-response.dto';
 import { ErrorResponse } from 'src/common/dtos/error-response.dto';
 
+type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
+
 @ApiTags('Order payments')
 @ApiBearerAuth()
 @Controller('order-payments')
@@ -70,9 +73,9 @@ export class OrderPaymentsController {
   @ApiNotFoundResponse({ type: ErrorResponse })
   async create(
     @Body() dto: CreateOrderPaymentDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOrderPaymentResponseDto> {
-    return this.orderPaymentsService.create(dto, req.merchant?.id);
+    return this.orderPaymentsService.create(dto, req.user?.merchant?.id);
   }
 
   @Get()
@@ -96,9 +99,9 @@ export class OrderPaymentsController {
   @ApiOkResponse({ type: PaginatedOrderPaymentResponseDto })
   async findAll(
     @Query() query: GetOrderPaymentQueryDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<PaginatedOrderPaymentResponseDto> {
-    return this.orderPaymentsService.findAll(query, req.merchant?.id);
+    return this.orderPaymentsService.findAll(query, req.user?.merchant?.id);
   }
 
   @Get(':id')
@@ -115,9 +118,9 @@ export class OrderPaymentsController {
   @ApiOkResponse({ type: OneOrderPaymentResponseDto })
   async findOne(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOrderPaymentResponseDto> {
-    return this.orderPaymentsService.findOne(id, req.merchant?.id);
+    return this.orderPaymentsService.findOne(id, req.user?.merchant?.id);
   }
 
   @Put(':id')
@@ -136,9 +139,9 @@ export class OrderPaymentsController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateOrderPaymentDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOrderPaymentResponseDto> {
-    return this.orderPaymentsService.update(id, dto, req.merchant?.id);
+    return this.orderPaymentsService.update(id, dto, req.user?.merchant?.id);
   }
 
   @Delete(':id')
@@ -156,8 +159,8 @@ export class OrderPaymentsController {
   @ApiOkResponse({ type: OneOrderPaymentResponseDto })
   async remove(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOrderPaymentResponseDto> {
-    return this.orderPaymentsService.remove(id, req.merchant?.id);
+    return this.orderPaymentsService.remove(id, req.user?.merchant?.id);
   }
 }

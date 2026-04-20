@@ -22,6 +22,8 @@ import { GetKitchenOrderItemQueryDto } from './dto/get-kitchen-order-item-query.
 import { KitchenOrderItemStatus } from './constants/kitchen-order-item-status.enum';
 import { KitchenOrderStatus } from '../kitchen-order/constants/kitchen-order-status.enum';
 import { OrderItemStatus } from '../../../restaurant-operations/pos/order-item/constants/order-item-status.enum';
+import { KitchenOrderSyncService } from '../kitchen-order/kitchen-order-sync.service';
+import { KitchenOrderItemPreparationStatus } from './constants/kitchen-order-item-preparation-status.enum';
 
 describe('KitchenOrderItemService', () => {
   let service: KitchenOrderItemService;
@@ -53,9 +55,15 @@ describe('KitchenOrderItemService', () => {
     findOne: jest.fn(),
   };
 
+  const mockKitchenOrderSyncService = {
+    syncPosOrderFromKitchenOrders: jest.fn().mockResolvedValue(undefined),
+    resetOrderLineIfNoActiveKoi: jest.fn().mockResolvedValue(undefined),
+  };
+
   const mockKitchenOrder = {
     id: 1,
     merchant_id: 1,
+    order_id: 1,
     status: KitchenOrderStatus.ACTIVE,
   };
 
@@ -82,6 +90,7 @@ describe('KitchenOrderItemService', () => {
     variant_id: null,
     quantity: 2,
     prepared_quantity: 0,
+    preparation_status: KitchenOrderItemPreparationStatus.PENDING,
     status: KitchenOrderItemStatus.ACTIVE,
     started_at: null,
     completed_at: null,
@@ -130,6 +139,10 @@ describe('KitchenOrderItemService', () => {
           provide: getRepositoryToken(Variant),
           useValue: mockVariantRepository,
         },
+        {
+          provide: KitchenOrderSyncService,
+          useValue: mockKitchenOrderSyncService,
+        },
       ],
     }).compile();
 
@@ -155,6 +168,12 @@ describe('KitchenOrderItemService', () => {
     jest.clearAllMocks();
     mockQueryBuilder.getOne.mockReset();
     mockQueryBuilder.getManyAndCount.mockReset();
+    mockKitchenOrderItem.preparation_status =
+      KitchenOrderItemPreparationStatus.PENDING;
+    mockKitchenOrderItem.kitchen_order_id = 1;
+    mockKitchenOrderItem.prepared_quantity = 0;
+    mockKitchenOrderItem.started_at = null;
+    mockKitchenOrderItem.completed_at = null;
   });
 
   it('should be defined', () => {
@@ -203,6 +222,9 @@ describe('KitchenOrderItemService', () => {
       expect(orderItemRepository.findOne).toHaveBeenCalled();
       expect(productRepository.findOne).toHaveBeenCalled();
       expect(kitchenOrderItemRepository.save).toHaveBeenCalled();
+      expect(
+        mockKitchenOrderSyncService.syncPosOrderFromKitchenOrders,
+      ).toHaveBeenCalledWith(1);
       expect(result.statusCode).toBe(201);
       expect(result.message).toBe('Kitchen order item created successfully');
       expect(result.data.kitchenOrderId).toBe(1);
@@ -535,19 +557,26 @@ describe('KitchenOrderItemService', () => {
       jest
         .spyOn(kitchenOrderItemRepository, 'createQueryBuilder')
         .mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne
-        .mockResolvedValueOnce(mockKitchenOrderItem as any)
-        .mockResolvedValueOnce({
+      mockQueryBuilder.getOne.mockResolvedValueOnce(mockKitchenOrderItem as any);
+      jest
+        .spyOn(kitchenOrderItemRepository, 'save')
+        .mockResolvedValue(mockKitchenOrderItem as any);
+      jest
+        .spyOn(kitchenOrderItemRepository, 'findOne')
+        .mockResolvedValue({
           ...mockKitchenOrderItem,
           prepared_quantity: 1,
         } as any);
       jest
-        .spyOn(kitchenOrderItemRepository, 'save')
-        .mockResolvedValue(mockKitchenOrderItem as any);
+        .spyOn(kitchenOrderRepository, 'findOne')
+        .mockResolvedValue(mockKitchenOrder as any);
 
       const result = await service.update(1, updateDto, 1);
 
       expect(kitchenOrderItemRepository.save).toHaveBeenCalled();
+      expect(
+        mockKitchenOrderSyncService.syncPosOrderFromKitchenOrders,
+      ).toHaveBeenCalledWith(1);
       expect(result.statusCode).toBe(200);
       expect(result.message).toBe('Kitchen order item updated successfully');
     });
@@ -607,22 +636,164 @@ describe('KitchenOrderItemService', () => {
       jest
         .spyOn(kitchenOrderItemRepository, 'createQueryBuilder')
         .mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne
-        .mockResolvedValueOnce(mockKitchenOrderItem as any)
-        .mockResolvedValueOnce({
+      mockQueryBuilder.getOne.mockResolvedValueOnce(mockKitchenOrderItem as any);
+      jest
+        .spyOn(kitchenOrderRepository, 'findOne')
+        .mockResolvedValue({ ...mockKitchenOrder, id: 2, order_id: 1 } as any);
+      jest
+        .spyOn(kitchenOrderItemRepository, 'save')
+        .mockResolvedValue({
           ...mockKitchenOrderItem,
           kitchen_order_id: 2,
         } as any);
       jest
-        .spyOn(kitchenOrderRepository, 'findOne')
-        .mockResolvedValue({ ...mockKitchenOrder, id: 2 } as any);
-      jest
-        .spyOn(kitchenOrderItemRepository, 'save')
-        .mockResolvedValue(mockKitchenOrderItem as any);
+        .spyOn(kitchenOrderItemRepository, 'findOne')
+        .mockResolvedValue({
+          ...mockKitchenOrderItem,
+          kitchen_order_id: 2,
+        } as any);
 
       await service.update(1, updateWithKitchenOrder, 1);
 
       expect(kitchenOrderRepository.findOne).toHaveBeenCalled();
+    });
+  });
+
+  describe('advancePreparationStatus', () => {
+    it('should advance from PENDING to IN_PREPARATION', async () => {
+      jest
+        .spyOn(kitchenOrderItemRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder as any);
+      mockQueryBuilder.getOne.mockResolvedValue({
+        ...mockKitchenOrderItem,
+      } as any);
+      jest
+        .spyOn(kitchenOrderItemRepository, 'save')
+        .mockImplementation((entity: any) => Promise.resolve(entity));
+      jest
+        .spyOn(kitchenOrderItemRepository, 'findOne')
+        .mockImplementation(async () => ({
+          ...mockKitchenOrderItem,
+          preparation_status:
+            KitchenOrderItemPreparationStatus.IN_PREPARATION,
+          started_at: new Date('2024-01-15T10:00:00Z'),
+        } as any));
+      jest
+        .spyOn(kitchenOrderRepository, 'findOne')
+        .mockResolvedValue(mockKitchenOrder as any);
+
+      const result = await service.advancePreparationStatus(1, 1);
+
+      expect(kitchenOrderItemRepository.save).toHaveBeenCalled();
+      const saved = (kitchenOrderItemRepository.save as jest.Mock).mock
+        .calls[0][0];
+      expect(saved.preparation_status).toBe(
+        KitchenOrderItemPreparationStatus.IN_PREPARATION,
+      );
+      expect(result.statusCode).toBe(200);
+      expect(result.message).toBe(
+        'Kitchen order item preparation status advanced successfully',
+      );
+      expect(
+        mockKitchenOrderSyncService.syncPosOrderFromKitchenOrders,
+      ).toHaveBeenCalledWith(1);
+    });
+
+    it('should throw ConflictException when already READY', async () => {
+      const readyItem = {
+        ...mockKitchenOrderItem,
+        preparation_status: KitchenOrderItemPreparationStatus.READY,
+      };
+      jest
+        .spyOn(kitchenOrderItemRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder as any);
+      mockQueryBuilder.getOne.mockResolvedValue(readyItem as any);
+
+      await expect(service.advancePreparationStatus(1, 1)).rejects.toThrow(
+        ConflictException,
+      );
+      await expect(service.advancePreparationStatus(1, 1)).rejects.toThrow(
+        'Kitchen order item is already at the final preparation status',
+      );
+    });
+
+    it('should throw BadRequestException when id is invalid', async () => {
+      await expect(service.advancePreparationStatus(0, 1)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw ForbiddenException when user has no merchant', async () => {
+      await expect(
+        service.advancePreparationStatus(1, undefined as any),
+      ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('revertPreparationStatus', () => {
+    it('should revert from READY clearing completed_at and prepared_quantity', async () => {
+      const readyItem = {
+        ...mockKitchenOrderItem,
+        preparation_status: KitchenOrderItemPreparationStatus.READY,
+        prepared_quantity: 2,
+        completed_at: new Date('2024-01-15T11:00:00Z'),
+        started_at: new Date('2024-01-15T10:00:00Z'),
+      };
+      jest
+        .spyOn(kitchenOrderItemRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder as any);
+      mockQueryBuilder.getOne.mockResolvedValue(readyItem as any);
+      jest
+        .spyOn(kitchenOrderItemRepository, 'save')
+        .mockImplementation((entity: any) => Promise.resolve(entity));
+      jest
+        .spyOn(kitchenOrderItemRepository, 'findOne')
+        .mockResolvedValue({
+          ...readyItem,
+          preparation_status: KitchenOrderItemPreparationStatus.IN_PREPARATION,
+          completed_at: null,
+          prepared_quantity: 0,
+        } as any);
+      jest
+        .spyOn(kitchenOrderRepository, 'findOne')
+        .mockResolvedValue(mockKitchenOrder as any);
+
+      const result = await service.revertPreparationStatus(1, 1);
+
+      const saved = (kitchenOrderItemRepository.save as jest.Mock).mock
+        .calls[0][0];
+      expect(saved.preparation_status).toBe(
+        KitchenOrderItemPreparationStatus.IN_PREPARATION,
+      );
+      expect(saved.completed_at).toBeNull();
+      expect(saved.prepared_quantity).toBe(0);
+      expect(result.statusCode).toBe(200);
+      expect(result.message).toBe(
+        'Kitchen order item preparation status reverted successfully',
+      );
+      expect(
+        mockKitchenOrderSyncService.syncPosOrderFromKitchenOrders,
+      ).toHaveBeenCalledWith(1);
+    });
+
+    it('should throw ConflictException when already PENDING', async () => {
+      jest
+        .spyOn(kitchenOrderItemRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder as any);
+      mockQueryBuilder.getOne.mockResolvedValue(mockKitchenOrderItem as any);
+
+      await expect(service.revertPreparationStatus(1, 1)).rejects.toThrow(
+        ConflictException,
+      );
+      await expect(service.revertPreparationStatus(1, 1)).rejects.toThrow(
+        'Kitchen order item is already at the initial preparation status',
+      );
+    });
+
+    it('should throw BadRequestException when id is invalid', async () => {
+      await expect(service.revertPreparationStatus(0, 1)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -644,6 +815,12 @@ describe('KitchenOrderItemService', () => {
       const result = await service.remove(1, 1);
 
       expect(kitchenOrderItemRepository.save).toHaveBeenCalled();
+      expect(
+        mockKitchenOrderSyncService.resetOrderLineIfNoActiveKoi,
+      ).toHaveBeenCalledWith(1);
+      expect(
+        mockKitchenOrderSyncService.syncPosOrderFromKitchenOrders,
+      ).toHaveBeenCalledWith(1);
       expect(result.statusCode).toBe(200);
       expect(result.message).toBe('Kitchen order item deleted successfully');
     });

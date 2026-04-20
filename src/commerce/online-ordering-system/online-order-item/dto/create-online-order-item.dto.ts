@@ -28,12 +28,6 @@ export class CreateOnlineOrderItemDto {
   @Min(1, { message: 'Quantity must be greater than 0' })
   quantity: number;
 
-  @ApiProperty({ example: 15.99, description: 'Unit price of the item' })
-  @IsNumber({}, { message: 'Unit price must be a number' })
-  @IsNotEmpty({ message: 'Unit price is required' })
-  @Min(0, { message: 'Unit price must be greater than or equal to 0' })
-  unitPrice: number;
-
   @ApiPropertyOptional({
     example: { extraSauce: true, size: 'large' },
     description: 'Modifiers applied to the item in JSON format',

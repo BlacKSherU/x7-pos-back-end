@@ -8,7 +8,6 @@ export enum OnlineOrderItemSortBy {
   PRODUCT_ID = 'productId',
   VARIANT_ID = 'variantId',
   QUANTITY = 'quantity',
-  UNIT_PRICE = 'unitPrice',
   CREATED_AT = 'createdAt',
   UPDATED_AT = 'updatedAt',
 }

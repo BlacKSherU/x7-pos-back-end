@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNumber, IsNotEmpty, IsOptional, IsEnum, IsString, Min, MaxLength } from 'class-validator';
+import { IsNumber, IsNotEmpty, IsOptional, IsEnum, IsString, MaxLength } from 'class-validator';
 import { OnlineOrderType } from '../constants/online-order-type.enum';
 import { OnlineOrderPaymentStatus } from '../constants/online-order-payment-status.enum';
 
@@ -46,12 +46,6 @@ export class CreateOnlineOrderDto {
   @IsOptional()
   @IsString({ message: 'Placed at must be a valid date string' })
   placedAt?: string | null;
-
-  @ApiProperty({ example: 125.99, description: 'Total amount of the order' })
-  @IsNumber({}, { message: 'Total amount must be a number' })
-  @IsNotEmpty({ message: 'Total amount is required' })
-  @Min(0, { message: 'Total amount must be greater than or equal to 0' })
-  totalAmount: number;
 
   @ApiPropertyOptional({ example: 'Please deliver to the back door', description: 'Additional notes for the order', nullable: true })
   @IsOptional()

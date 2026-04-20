@@ -12,7 +12,6 @@ export enum OnlineOrderSortBy {
   CUSTOMER_ID = 'customerId',
   TYPE = 'type',
   PAYMENT_STATUS = 'paymentStatus',
-  TOTAL_AMOUNT = 'totalAmount',
   PLACED_AT = 'placedAt',
   SCHEDULED_AT = 'scheduledAt',
   UPDATED_AT = 'updatedAt',

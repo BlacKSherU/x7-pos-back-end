@@ -27,7 +27,7 @@ export class UpdateCollaboratorDto {
     role?: ShiftRole;
 
     @ApiPropertyOptional({ 
-        example: CollaboratorStatus.ACTIVO, 
+        example: CollaboratorStatus.ACTIVE, 
         enum: CollaboratorStatus,
         description: 'Status of the Collaborator' 
     })

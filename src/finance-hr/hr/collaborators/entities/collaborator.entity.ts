@@ -73,7 +73,11 @@ export class Collaborator {
     enum: CollaboratorStatus,
     description: 'Current status of the Collaborator',
   })
-  @Column({ type: 'enum', enum: CollaboratorStatus })
+  @Column({
+    type: 'enum',
+    enum: CollaboratorStatus,
+    default: CollaboratorStatus.ACTIVE,
+  })
   status: CollaboratorStatus;
 
   @ApiProperty({

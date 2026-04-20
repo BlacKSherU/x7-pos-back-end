@@ -12,6 +12,10 @@ import { OneOnlinePaymentResponseDto } from './dto/online-payment-response.dto';
 import { PaginatedOnlinePaymentResponseDto } from './dto/paginated-online-payment-response.dto';
 import { OnlineOrderPaymentStatus } from '../online-order/constants/online-order-payment-status.enum';
 import { OnlinePaymentStatus } from './constants/online-payment-status.enum';
+import { AuthenticatedUser } from '../../../auth/interfaces/authenticated-user.interface';
+import { Request as ExpressRequest } from 'express';
+
+type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
 
 describe('OnlinePaymentController', () => {
   let controller: OnlinePaymentController;
@@ -35,7 +39,7 @@ describe('OnlinePaymentController', () => {
 
   const mockRequest = {
     user: mockUser,
-  };
+  } as AuthenticatedRequest;
 
   const mockOnlinePaymentResponse: OneOnlinePaymentResponseDto = {
     statusCode: 201,

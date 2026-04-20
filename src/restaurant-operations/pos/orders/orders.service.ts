@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, In } from 'typeorm';
+import { EntityManager, Repository, Between, In } from 'typeorm';
 import { OrderItem } from '../order-item/entities/order-item.entity';
 import { OrderPayment } from '../order-payments/entities/order-payment.entity';
 import { OrderTax } from '../order-taxes/entities/order-tax.entity';
@@ -39,6 +39,15 @@ import {
   PaginatedOrdersResponseDto,
   OrderResponseDto,
 } from './dto/order-response.dto';
+import { OrderItemResponseDto } from '../order-item/dto/order-item-response.dto';
+import { KitchenOrder } from '../../kitchen-display-system/kitchen-order/entities/kitchen-order.entity';
+import { KitchenOrderStatus } from '../../kitchen-display-system/kitchen-order/constants/kitchen-order-status.enum';
+import { KitchenOrderNestedInOrderDto } from '../../kitchen-display-system/kitchen-order/dto/kitchen-order-response.dto';
+import { OnlineOrderStatus } from '../../../commerce/online-ordering-system/online-order/constants/online-order-status.enum';
+import { formatOnlineOrderToDto } from '../../../commerce/online-ordering-system/online-order/online-order.mapper';
+import { OrderType } from './constants/order-type.enum';
+import { OrderBusinessStatus } from './constants/order-business-status.enum';
+import { OnlineOrderSyncService } from '../../../commerce/online-ordering-system/online-order/online-order-sync.service';
 
 @Injectable()
 export class OrdersService {
@@ -63,6 +72,7 @@ export class OrdersService {
     private readonly orderTaxRepo: Repository<OrderTax>,
     @InjectRepository(OrderItemModifier)
     private readonly orderItemModifierRepo: Repository<OrderItemModifier>,
+    private readonly onlineOrderSyncService: OnlineOrderSyncService,
   ) {}
 
   async create(
@@ -330,6 +340,12 @@ export class OrdersService {
       order,
       skip: (page - 1) * limit,
       take: limit,
+      relations: {
+        orderItems: { product: true, variant: true },
+        kitchenOrders: { merchant: true, onlineOrder: true, station: true },
+        onlineOrders: { merchant: true, store: true, customer: true, order: true },
+      },
+      relationLoadStrategy: 'query',
     });
 
     return {
@@ -360,6 +376,12 @@ export class OrdersService {
 
     const row = await this.orderRepo.findOne({
       where: { id, logical_status: OrderStatus.ACTIVE },
+      relations: {
+        orderItems: { product: true, variant: true },
+        kitchenOrders: { merchant: true, onlineOrder: true, station: true },
+        onlineOrders: { merchant: true, store: true, customer: true, order: true },
+      },
+      relationLoadStrategy: 'query',
     });
 
     if (!row) {
@@ -630,6 +652,174 @@ export class OrdersService {
 
     applyPaidDerivedFields(order);
     await this.orderRepo.save(order);
+    await this.onlineOrderSyncService.syncFromPosOrder(orderId);
+  }
+
+  /**
+   * Orden POS creada al aceptar un pedido online (mesa/colaborador/suscripción mínimos del comercio).
+   */
+  async createOrderForOnlineAcceptance(params: {
+    merchantId: number;
+    customerId: number;
+    orderType: OrderType;
+    deliveryAddress: string | null;
+    deliveryFee: number;
+  }): Promise<Order> {
+    const table = await this.tableRepo.findOne({
+      where: { merchant_id: params.merchantId },
+      order: { id: 'ASC' },
+    });
+    if (!table) {
+      throw new BadRequestException(
+        'No table found for merchant; create at least one table to accept online orders',
+      );
+    }
+    const collaborator = await this.collaboratorRepo.findOne({
+      where: { merchant_id: params.merchantId },
+      order: { id: 'ASC' },
+    });
+    if (!collaborator) {
+      throw new BadRequestException(
+        'No collaborator found for merchant; create at least one collaborator to accept online orders',
+      );
+    }
+    const subscription = await this.subscriptionRepo
+      .createQueryBuilder('sub')
+      .leftJoin('sub.merchant', 'm')
+      .where('m.id = :mid', { mid: params.merchantId })
+      .orderBy('sub.id', 'ASC')
+      .getOne();
+    if (!subscription) {
+      throw new BadRequestException(
+        'No merchant subscription found; cannot create POS order for online acceptance',
+      );
+    }
+
+    const order = new Order();
+    order.merchant_id = params.merchantId;
+    order.table_id = table.id;
+    order.collaborator_id = collaborator.id;
+    order.subscription_id = subscription.id;
+    order.status = OrderBusinessStatus.PENDING;
+    order.type = params.orderType;
+    order.customer_id = params.customerId;
+    order.closed_at = null;
+    order.logical_status = OrderStatus.ACTIVE;
+    order.order_number = await this.nextOrderNumberWithManager(
+      this.orderRepo.manager,
+      params.merchantId,
+    );
+    order.source = OrderSource.ONLINE;
+    order.guest_count = 1;
+    order.delivery_address = params.deliveryAddress;
+    order.delivery_zone_id = null;
+    order.delivery_fee = roundMoney(params.deliveryFee);
+    order.delivery_status = DeliveryStatus.UNASSIGNED;
+    order.tax_total = 0;
+    order.discount_total = 0;
+    order.manual_tip_total = 0;
+    order.tip_total = 0;
+    order.paid_total = 0;
+    order.subtotal = 0;
+    order.total = computeOrderTotal(
+      0,
+      0,
+      0,
+      0,
+      order.delivery_fee,
+    );
+    applyPaidDerivedFields(order);
+    order.kitchen_status = KitchenStatus.PENDING;
+    order.ready_at = null;
+    order.preparing_at = null;
+
+    return this.orderRepo.save(order);
+  }
+
+  /**
+   * Misma lógica que {@link createOrderForOnlineAcceptance} pero dentro de una transacción
+   * (p. ej. aceptación de pedido online con líneas POS y FKs en una sola unidad).
+   */
+  async createOrderForOnlineAcceptanceWithManager(
+    manager: EntityManager,
+    params: {
+      merchantId: number;
+      customerId: number;
+      orderType: OrderType;
+      deliveryAddress: string | null;
+      deliveryFee: number;
+    },
+  ): Promise<Order> {
+    const table = await manager.getRepository(Table).findOne({
+      where: { merchant_id: params.merchantId },
+      order: { id: 'ASC' },
+    });
+    if (!table) {
+      throw new BadRequestException(
+        'No table found for merchant; create at least one table to accept online orders',
+      );
+    }
+    const collaborator = await manager.getRepository(Collaborator).findOne({
+      where: { merchant_id: params.merchantId },
+      order: { id: 'ASC' },
+    });
+    if (!collaborator) {
+      throw new BadRequestException(
+        'No collaborator found for merchant; create at least one collaborator to accept online orders',
+      );
+    }
+    const subscription = await manager
+      .getRepository(MerchantSubscription)
+      .createQueryBuilder('sub')
+      .leftJoin('sub.merchant', 'm')
+      .where('m.id = :mid', { mid: params.merchantId })
+      .orderBy('sub.id', 'ASC')
+      .getOne();
+    if (!subscription) {
+      throw new BadRequestException(
+        'No merchant subscription found; cannot create POS order for online acceptance',
+      );
+    }
+
+    const order = new Order();
+    order.merchant_id = params.merchantId;
+    order.table_id = table.id;
+    order.collaborator_id = collaborator.id;
+    order.subscription_id = subscription.id;
+    order.status = OrderBusinessStatus.PENDING;
+    order.type = params.orderType;
+    order.customer_id = params.customerId;
+    order.closed_at = null;
+    order.logical_status = OrderStatus.ACTIVE;
+    order.order_number = await this.nextOrderNumberWithManager(
+      manager,
+      params.merchantId,
+    );
+    order.source = OrderSource.ONLINE;
+    order.guest_count = 1;
+    order.delivery_address = params.deliveryAddress;
+    order.delivery_zone_id = null;
+    order.delivery_fee = roundMoney(params.deliveryFee);
+    order.delivery_status = DeliveryStatus.UNASSIGNED;
+    order.tax_total = 0;
+    order.discount_total = 0;
+    order.manual_tip_total = 0;
+    order.tip_total = 0;
+    order.paid_total = 0;
+    order.subtotal = 0;
+    order.total = computeOrderTotal(
+      0,
+      0,
+      0,
+      0,
+      order.delivery_fee,
+    );
+    applyPaidDerivedFields(order);
+    order.kitchen_status = KitchenStatus.PENDING;
+    order.ready_at = null;
+    order.preparing_at = null;
+
+    return manager.getRepository(Order).save(order);
   }
 
   /** Per active order item: sum(modifier.price × item.quantity). */
@@ -661,7 +851,15 @@ export class OrdersService {
   }
 
   private async nextOrderNumber(merchantId: number): Promise<string> {
-    const raw = await this.orderRepo
+    return this.nextOrderNumberWithManager(this.orderRepo.manager, merchantId);
+  }
+
+  private async nextOrderNumberWithManager(
+    manager: EntityManager,
+    merchantId: number,
+  ): Promise<string> {
+    const raw = await manager
+      .getRepository(Order)
       .createQueryBuilder('o')
       .select('MAX(CAST(o.order_number AS INTEGER))', 'maxn')
       .where('o.merchant_id = :mid', { mid: merchantId })
@@ -674,7 +872,7 @@ export class OrdersService {
   }
 
   private format(row: Order): OrderResponseDto {
-    return {
+    const base: OrderResponseDto = {
       id: row.id,
       merchantId: row.merchant_id,
       tableId: row.table_id,
@@ -705,6 +903,110 @@ export class OrdersService {
       createdAt: row.created_at,
       closedAt: row.closed_at,
       updatedAt: row.updated_at,
+    };
+
+    if (row.orderItems?.length) {
+      base.orderItems = row.orderItems
+        .filter((i) => i.status === OrderItemStatus.ACTIVE)
+        .map((i) => this.formatNestedOrderItem(row, i));
+    }
+
+    if (row.kitchenOrders?.length) {
+      base.kitchenOrders = row.kitchenOrders
+        .filter((ko) => ko.status !== KitchenOrderStatus.DELETED)
+        .map((ko) => this.formatKitchenOrderNestedInOrder(ko));
+    }
+
+    if (row.onlineOrders?.length) {
+      base.onlineOrders = row.onlineOrders
+        .filter((oo) => oo.status !== OnlineOrderStatus.DELETED)
+        .map((oo) =>
+          formatOnlineOrderToDto(oo, Number(row.total)),
+        );
+    }
+
+    return base;
+  }
+
+  private formatNestedOrderItem(
+    parent: Order,
+    orderItem: OrderItem,
+  ): OrderItemResponseDto {
+    if (!orderItem.product) {
+      throw new Error('Product relation is not loaded for order item');
+    }
+    return {
+      id: orderItem.id,
+      orderId: orderItem.order_id,
+      order: {
+        id: parent.id,
+        businessStatus: parent.status,
+        type: parent.type,
+      },
+      productId: orderItem.product_id,
+      product: {
+        id: orderItem.product.id,
+        name: orderItem.product.name,
+        sku: orderItem.product.sku,
+        basePrice: Number(orderItem.product.basePrice),
+      },
+      variantId: orderItem.variant_id,
+      variant: orderItem.variant
+        ? {
+            id: orderItem.variant.id,
+            name: orderItem.variant.name,
+            price: Number(orderItem.variant.price),
+            sku: orderItem.variant.sku,
+          }
+        : null,
+      quantity: orderItem.quantity,
+      price: Number(orderItem.price),
+      discount: Number(orderItem.discount),
+      totalPrice: Number(orderItem.total_price),
+      notes: orderItem.notes,
+      status: orderItem.status,
+      kitchenStatus: orderItem.kitchen_status,
+      createdAt: orderItem.created_at,
+      updatedAt: orderItem.updated_at,
+    };
+  }
+
+  private formatKitchenOrderNestedInOrder(
+    kitchenOrder: KitchenOrder,
+  ): KitchenOrderNestedInOrderDto {
+    if (!kitchenOrder.merchant) {
+      throw new Error('Merchant relation is not loaded for kitchen order');
+    }
+    return {
+      id: kitchenOrder.id,
+      merchantId: kitchenOrder.merchant_id,
+      orderId: kitchenOrder.order_id,
+      onlineOrderId: kitchenOrder.online_order_id,
+      stationId: kitchenOrder.station_id,
+      priority: kitchenOrder.priority,
+      businessStatus: kitchenOrder.business_status,
+      startedAt: kitchenOrder.started_at,
+      completedAt: kitchenOrder.completed_at,
+      notes: kitchenOrder.notes,
+      status: kitchenOrder.status,
+      createdAt: kitchenOrder.created_at,
+      updatedAt: kitchenOrder.updated_at,
+      merchant: {
+        id: kitchenOrder.merchant.id,
+        name: kitchenOrder.merchant.name,
+      },
+      onlineOrder: kitchenOrder.onlineOrder
+        ? {
+            id: kitchenOrder.onlineOrder.id,
+            status: kitchenOrder.onlineOrder.status,
+          }
+        : null,
+      station: kitchenOrder.station
+        ? {
+            id: kitchenOrder.station.id,
+            name: kitchenOrder.station.name,
+          }
+        : null,
     };
   }
 }

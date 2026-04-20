@@ -11,6 +11,10 @@ import { GetOnlineMenuItemQueryDto } from './dto/get-online-menu-item-query.dto'
 import { OneOnlineMenuItemResponseDto } from './dto/online-menu-item-response.dto';
 import { PaginatedOnlineMenuItemResponseDto } from './dto/paginated-online-menu-item-response.dto';
 import { OnlineMenuItemStatus } from './constants/online-menu-item-status.enum';
+import { AuthenticatedUser } from '../../../auth/interfaces/authenticated-user.interface';
+import { Request as ExpressRequest } from 'express';
+
+type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
 
 describe('OnlineMenuItemController', () => {
   let controller: OnlineMenuItemController;
@@ -34,7 +38,7 @@ describe('OnlineMenuItemController', () => {
 
   const mockRequest = {
     user: mockUser,
-  };
+  } as AuthenticatedRequest;
 
   const mockOnlineMenuItemResponse: OneOnlineMenuItemResponseDto = {
     statusCode: 201,

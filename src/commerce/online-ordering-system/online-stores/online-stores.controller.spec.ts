@@ -11,6 +11,10 @@ import { GetOnlineStoreQueryDto } from './dto/get-online-store-query.dto';
 import { OneOnlineStoreResponseDto } from './dto/online-store-response.dto';
 import { PaginatedOnlineStoreResponseDto } from './dto/paginated-online-store-response.dto';
 import { OnlineStoreStatus } from './constants/online-store-status.enum';
+import { AuthenticatedUser } from '../../../auth/interfaces/authenticated-user.interface';
+import { Request as ExpressRequest } from 'express';
+
+type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
 
 describe('OnlineStoresController', () => {
   let controller: OnlineStoresController;
@@ -34,7 +38,7 @@ describe('OnlineStoresController', () => {
 
   const mockRequest = {
     user: mockUser,
-  };
+  } as AuthenticatedRequest;
 
   const mockOnlineStoreResponse: OneOnlineStoreResponseDto = {
     statusCode: 201,

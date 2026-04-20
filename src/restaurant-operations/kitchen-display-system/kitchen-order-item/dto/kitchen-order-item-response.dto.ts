@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { SuccessResponse } from '../../../../common/dtos/success-response.dto';
 import { KitchenOrderItemStatus } from '../constants/kitchen-order-item-status.enum';
+import { KitchenOrderItemPreparationStatus } from '../constants/kitchen-order-item-preparation-status.enum';
 
 export class BasicKitchenOrderInfoDto {
   @ApiProperty({ example: 1, description: 'Kitchen Order ID' })
@@ -49,6 +50,13 @@ export class KitchenOrderItemResponseDto {
 
   @ApiProperty({ example: 1, description: 'Quantity that has been prepared' })
   preparedQuantity: number;
+
+  @ApiProperty({
+    example: KitchenOrderItemPreparationStatus.PENDING,
+    enum: KitchenOrderItemPreparationStatus,
+    description: 'Preparation step in kitchen',
+  })
+  preparationStatus: KitchenOrderItemPreparationStatus;
 
   @ApiProperty({
     example: KitchenOrderItemStatus.ACTIVE,

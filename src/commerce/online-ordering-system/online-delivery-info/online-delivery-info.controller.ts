@@ -13,6 +13,7 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { Request as ExpressRequest } from 'express';
 import { OnlineDeliveryInfoService } from './online-delivery-info.service';
 import { CreateOnlineDeliveryInfoDto } from './dto/create-online-delivery-info.dto';
 import { UpdateOnlineDeliveryInfoDto } from './dto/update-online-delivery-info.dto';
@@ -33,6 +34,8 @@ import {
 } from '@nestjs/swagger';
 import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
 import { OneOnlineDeliveryInfoResponseDto } from './dto/online-delivery-info-response.dto';
+
+type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
 import { GetOnlineDeliveryInfoQueryDto } from './dto/get-online-delivery-info-query.dto';
 import { PaginatedOnlineDeliveryInfoResponseDto } from './dto/paginated-online-delivery-info-response.dto';
 import { Roles } from 'src/auth/decorators/roles.decorator';
@@ -106,9 +109,9 @@ export class OnlineDeliveryInfoController {
   })
   async create(
     @Body() createOnlineDeliveryInfoDto: CreateOnlineDeliveryInfoDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ) {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlineDeliveryInfoService.create(
       createOnlineDeliveryInfoDto,
       authenticatedUserMerchantId,
@@ -199,9 +202,9 @@ export class OnlineDeliveryInfoController {
   })
   async findAll(
     @Query() query: GetOnlineDeliveryInfoQueryDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ) {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlineDeliveryInfoService.findAll(
       query,
       authenticatedUserMerchantId,
@@ -247,9 +250,9 @@ export class OnlineDeliveryInfoController {
   })
   async findOne(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ) {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlineDeliveryInfoService.findOne(
       id,
       authenticatedUserMerchantId,
@@ -323,9 +326,9 @@ export class OnlineDeliveryInfoController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateOnlineDeliveryInfoDto: UpdateOnlineDeliveryInfoDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ) {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlineDeliveryInfoService.update(
       id,
       updateOnlineDeliveryInfoDto,
@@ -377,9 +380,9 @@ export class OnlineDeliveryInfoController {
   })
   async remove(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ) {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlineDeliveryInfoService.remove(
       id,
       authenticatedUserMerchantId,
