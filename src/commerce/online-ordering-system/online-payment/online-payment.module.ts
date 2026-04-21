@@ -6,9 +6,7 @@ import { OnlinePayment } from './entities/online-payment.entity';
 import { OnlineOrder } from '../online-order/entities/online-order.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([OnlinePayment, OnlineOrder]),
-  ],
+  imports: [TypeOrmModule.forFeature([OnlinePayment, OnlineOrder])],
   controllers: [OnlinePaymentController],
   providers: [OnlinePaymentService],
   exports: [OnlinePaymentService],

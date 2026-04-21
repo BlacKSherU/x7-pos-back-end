@@ -31,7 +31,7 @@ export class PurchaseOrderItemService {
     private readonly variantRepository: Repository<Variant>,
     private readonly productsService: ProductsService,
     private readonly variantsService: VariantsService,
-  ) { }
+  ) {}
 
   async create(
     merchant_id: number,
@@ -48,11 +48,11 @@ export class PurchaseOrderItemService {
       }),
       variantId
         ? this.variantRepository.findOneBy({
-          id: variantId,
-          productId,
-          product: { merchantId: merchant_id },
-          isActive: true,
-        })
+            id: variantId,
+            productId,
+            product: { merchantId: merchant_id },
+            isActive: true,
+          })
         : Promise.resolve(null),
       this.purchaseOrderRepository.findOneBy({
         id: purchaseOrderId,
@@ -139,22 +139,22 @@ export class PurchaseOrderItemService {
           totalPrice: purchaseOrderItem.totalPrice,
           product: purchaseOrderItem.product
             ? {
-              id: purchaseOrderItem.product.id,
-              name: purchaseOrderItem.product.name,
-            }
+                id: purchaseOrderItem.product.id,
+                name: purchaseOrderItem.product.name,
+              }
             : null,
           variant: purchaseOrderItem.variant
             ? {
-              id: purchaseOrderItem.variant.id,
-              name: purchaseOrderItem.variant.name,
-            }
+                id: purchaseOrderItem.variant.id,
+                name: purchaseOrderItem.variant.name,
+              }
             : null,
           purchaseOrder: purchaseOrderItem.purchaseOrder
             ? {
-              id: purchaseOrderItem.purchaseOrder.id,
-              orderDate: purchaseOrderItem.purchaseOrder.orderDate,
-              status: purchaseOrderItem.purchaseOrder.status,
-            }
+                id: purchaseOrderItem.purchaseOrder.id,
+                orderDate: purchaseOrderItem.purchaseOrder.orderDate,
+                status: purchaseOrderItem.purchaseOrder.status,
+              }
             : null,
         };
         return result;
@@ -216,22 +216,22 @@ export class PurchaseOrderItemService {
       totalPrice: purchaseOrderItem.totalPrice,
       product: purchaseOrderItem.product
         ? {
-          id: purchaseOrderItem.product.id,
-          name: purchaseOrderItem.product.name,
-        }
+            id: purchaseOrderItem.product.id,
+            name: purchaseOrderItem.product.name,
+          }
         : null,
       variant: purchaseOrderItem.variant
         ? {
-          id: purchaseOrderItem.variant.id,
-          name: purchaseOrderItem.variant.name,
-        }
+            id: purchaseOrderItem.variant.id,
+            name: purchaseOrderItem.variant.name,
+          }
         : null,
       purchaseOrder: purchaseOrderItem.purchaseOrder
         ? {
-          id: purchaseOrderItem.purchaseOrder.id,
-          orderDate: purchaseOrderItem.purchaseOrder.orderDate,
-          status: purchaseOrderItem.purchaseOrder.status,
-        }
+            id: purchaseOrderItem.purchaseOrder.id,
+            orderDate: purchaseOrderItem.purchaseOrder.orderDate,
+            status: purchaseOrderItem.purchaseOrder.status,
+          }
         : null,
     };
 
@@ -296,11 +296,11 @@ export class PurchaseOrderItemService {
       }),
       updateData.variantId
         ? this.variantRepository.findOneBy({
-          id: updateData.variantId,
-          productId: updateData.productId,
-          product: { merchantId: merchant_id },
-          isActive: true,
-        })
+            id: updateData.variantId,
+            productId: updateData.productId,
+            product: { merchantId: merchant_id },
+            isActive: true,
+          })
         : Promise.resolve(null),
       this.purchaseOrderRepository.findOneBy({
         id: updateData.purchaseOrderId,

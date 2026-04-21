@@ -26,7 +26,10 @@ export class OrderResponseDto {
   @ApiProperty({ example: 1 })
   subscriptionId: number;
 
-  @ApiProperty({ example: OrderBusinessStatus.PENDING, enum: OrderBusinessStatus })
+  @ApiProperty({
+    example: OrderBusinessStatus.PENDING,
+    enum: OrderBusinessStatus,
+  })
   businessStatus: OrderBusinessStatus;
 
   @ApiProperty({ example: OrderType.DINE_IN, enum: OrderType })
@@ -109,13 +112,15 @@ export class OrderResponseDto {
 
   @ApiPropertyOptional({
     type: () => [KitchenOrderNestedInOrderDto],
-    description: 'Kitchen tickets linked to this order (included when relations are loaded)',
+    description:
+      'Kitchen tickets linked to this order (included when relations are loaded)',
   })
   kitchenOrders?: KitchenOrderNestedInOrderDto[];
 
   @ApiPropertyOptional({
     type: () => [OnlineOrderResponseDto],
-    description: 'Online orders linked to this POS order (included when relations are loaded)',
+    description:
+      'Online orders linked to this POS order (included when relations are loaded)',
   })
   onlineOrders?: OnlineOrderResponseDto[];
 }
@@ -130,7 +135,14 @@ export class PaginatedOrdersResponseDto extends SuccessResponse {
   data: OrderResponseDto[];
 
   @ApiProperty({
-    example: { page: 1, limit: 10, total: 1, totalPages: 1, hasNext: false, hasPrev: false },
+    example: {
+      page: 1,
+      limit: 10,
+      total: 1,
+      totalPages: 1,
+      hasNext: false,
+      hasPrev: false,
+    },
   })
   paginationMeta: {
     page: number;
@@ -146,6 +158,9 @@ export class OrderLittleResponseDto {
   @ApiProperty({ example: 1 })
   id: number;
 
-  @ApiProperty({ example: OrderBusinessStatus.PENDING, enum: OrderBusinessStatus })
+  @ApiProperty({
+    example: OrderBusinessStatus.PENDING,
+    enum: OrderBusinessStatus,
+  })
   businessStatus: OrderBusinessStatus | null;
 }

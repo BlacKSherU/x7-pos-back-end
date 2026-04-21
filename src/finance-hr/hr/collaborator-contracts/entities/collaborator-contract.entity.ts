@@ -50,23 +50,53 @@ export class CollaboratorContract {
   @Column({ type: 'varchar', length: 50, name: 'contract_type' })
   contract_type: ContractType;
 
-  @ApiProperty({ example: 500000, description: 'Base salary (for salary/mixed)' })
-  @Column({ type: 'decimal', precision: 12, scale: 2, name: 'base_salary', default: 0 })
+  @ApiProperty({
+    example: 500000,
+    description: 'Base salary (for salary/mixed)',
+  })
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    name: 'base_salary',
+    default: 0,
+  })
   base_salary: number;
 
   @ApiProperty({ example: 5000, description: 'Hourly rate (for hourly/mixed)' })
-  @Column({ type: 'decimal', precision: 12, scale: 2, name: 'hourly_rate', default: 0 })
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    name: 'hourly_rate',
+    default: 0,
+  })
   hourly_rate: number;
 
   @ApiProperty({ example: 1.5, description: 'Overtime multiplier (e.g. 1.5)' })
-  @Column({ type: 'decimal', precision: 5, scale: 2, name: 'overtime_multiplier', default: 1.5 })
+  @Column({
+    type: 'decimal',
+    precision: 5,
+    scale: 2,
+    name: 'overtime_multiplier',
+    default: 1.5,
+  })
   overtime_multiplier: number;
 
   @ApiProperty({ example: 2.0, description: 'Double overtime multiplier' })
-  @Column({ type: 'decimal', precision: 5, scale: 2, name: 'double_overtime_multiplier', default: 2.0 })
+  @Column({
+    type: 'decimal',
+    precision: 5,
+    scale: 2,
+    name: 'double_overtime_multiplier',
+    default: 2.0,
+  })
   double_overtime_multiplier: number;
 
-  @ApiProperty({ example: true, description: 'Whether tips are included in payroll' })
+  @ApiProperty({
+    example: true,
+    description: 'Whether tips are included in payroll',
+  })
   @Column({ type: 'boolean', name: 'tips_included_in_payroll', default: false })
   tips_included_in_payroll: boolean;
 
@@ -78,7 +108,11 @@ export class CollaboratorContract {
   @Column({ type: 'date', name: 'start_date' })
   start_date: Date;
 
-  @ApiProperty({ example: '2025-12-31', description: 'Contract end date (optional)', nullable: true })
+  @ApiProperty({
+    example: '2025-12-31',
+    description: 'Contract end date (optional)',
+    nullable: true,
+  })
   @Column({ type: 'date', name: 'end_date', nullable: true })
   end_date: Date | null;
 

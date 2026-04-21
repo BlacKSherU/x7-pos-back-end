@@ -10,7 +10,12 @@ import { UpdateTipAllocationDto } from './dto/update-tip-allocation.dto';
 import { TipAllocationRecordStatus } from './constants/tip-allocation-record-status.enum';
 import { TipAllocationRole } from './constants/tip-allocation-role.enum';
 import { TipRecordStatus } from '../tips/constants/tip-record-status.enum';
-import { NotFoundException, BadRequestException, ForbiddenException, ConflictException } from '@nestjs/common';
+import {
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+  ConflictException,
+} from '@nestjs/common';
 
 describe('TipAllocationsService', () => {
   let service: TipAllocationsService;
@@ -18,7 +23,7 @@ describe('TipAllocationsService', () => {
   const mockTip = {
     id: 1,
     merchant_id: 1,
-    amount: 5.50,
+    amount: 5.5,
     record_status: TipRecordStatus.ACTIVE,
   };
   const mockCollaborator = { id: 1, name: 'Juan Pérez', merchant_id: 1 };
@@ -66,9 +71,15 @@ describe('TipAllocationsService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TipAllocationsService,
-        { provide: getRepositoryToken(TipAllocation), useValue: mockTipAllocationRepository },
+        {
+          provide: getRepositoryToken(TipAllocation),
+          useValue: mockTipAllocationRepository,
+        },
         { provide: getRepositoryToken(Tip), useValue: mockTipRepository },
-        { provide: getRepositoryToken(Collaborator), useValue: mockCollaboratorRepository },
+        {
+          provide: getRepositoryToken(Collaborator),
+          useValue: mockCollaboratorRepository,
+        },
         { provide: getRepositoryToken(Shift), useValue: mockShiftRepository },
       ],
     }).compile();
@@ -110,19 +121,28 @@ describe('TipAllocationsService', () => {
     });
 
     it('should throw ForbiddenException when user has no merchant', async () => {
-      await expect(service.create(createDto, null)).rejects.toThrow(ForbiddenException);
+      await expect(service.create(createDto, null)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw NotFoundException when tip does not exist', async () => {
       mockTipRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.create(createDto, 1)).rejects.toThrow(NotFoundException);
+      await expect(service.create(createDto, 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw BadRequestException when tip is deleted', async () => {
-      mockTipRepository.findOne.mockResolvedValue({ ...mockTip, record_status: TipRecordStatus.DELETED });
+      mockTipRepository.findOne.mockResolvedValue({
+        ...mockTip,
+        record_status: TipRecordStatus.DELETED,
+      });
 
-      await expect(service.create(createDto, 1)).rejects.toThrow(BadRequestException);
+      await expect(service.create(createDto, 1)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -137,7 +157,9 @@ describe('TipAllocationsService', () => {
     });
 
     it('should throw ForbiddenException when user has no merchant', async () => {
-      await expect(service.findAll({}, null)).rejects.toThrow(ForbiddenException);
+      await expect(service.findAll({}, null)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -166,7 +188,7 @@ describe('TipAllocationsService', () => {
   });
 
   describe('update', () => {
-    const updateDto: UpdateTipAllocationDto = { amount: 3.00 };
+    const updateDto: UpdateTipAllocationDto = { amount: 3.0 };
 
     it('should update a tip allocation successfully', async () => {
       const updatedAllocation = { ...mockTipAllocation, amount: 3 };
@@ -190,13 +212,18 @@ describe('TipAllocationsService', () => {
         getOne: jest.fn().mockResolvedValue(null),
       });
 
-      await expect(service.update(999, updateDto, 1)).rejects.toThrow(NotFoundException);
+      await expect(service.update(999, updateDto, 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
   describe('remove', () => {
     it('should soft delete a tip allocation successfully', async () => {
-      const deletedAllocation = { ...mockTipAllocation, record_status: TipAllocationRecordStatus.DELETED };
+      const deletedAllocation = {
+        ...mockTipAllocation,
+        record_status: TipAllocationRecordStatus.DELETED,
+      };
       mockTipAllocationRepository.createQueryBuilder.mockReturnValue({
         ...mockQueryBuilder,
         getOne: jest.fn().mockResolvedValue(mockTipAllocation),

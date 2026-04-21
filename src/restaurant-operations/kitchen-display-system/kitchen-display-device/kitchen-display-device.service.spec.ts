@@ -1,18 +1,24 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/unbound-method */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { Repository } from 'typeorm';
+import { Repository, type SelectQueryBuilder } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException, ForbiddenException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { KitchenDisplayDeviceService } from './kitchen-display-device.service';
 import { KitchenDisplayDevice } from './entities/kitchen-display-device.entity';
 import { Merchant } from '../../../platform-saas/merchants/entities/merchant.entity';
 import { KitchenStation } from '../kitchen-station/entities/kitchen-station.entity';
 import { CreateKitchenDisplayDeviceDto } from './dto/create-kitchen-display-device.dto';
 import { UpdateKitchenDisplayDeviceDto } from './dto/update-kitchen-display-device.dto';
-import { GetKitchenDisplayDeviceQueryDto, KitchenDisplayDeviceSortBy } from './dto/get-kitchen-display-device-query.dto';
+import {
+  GetKitchenDisplayDeviceQueryDto,
+  KitchenDisplayDeviceSortBy,
+} from './dto/get-kitchen-display-device-query.dto';
 import { KitchenDisplayDeviceStatus } from './constants/kitchen-display-device-status.enum';
 import { KitchenStationStatus } from '../kitchen-station/constants/kitchen-station-status.enum';
 
@@ -95,10 +101,12 @@ describe('KitchenDisplayDeviceService', () => {
       ],
     }).compile();
 
-    service = module.get<KitchenDisplayDeviceService>(KitchenDisplayDeviceService);
-    kitchenDisplayDeviceRepository = module.get<Repository<KitchenDisplayDevice>>(
-      getRepositoryToken(KitchenDisplayDevice),
+    service = module.get<KitchenDisplayDeviceService>(
+      KitchenDisplayDeviceService,
     );
+    kitchenDisplayDeviceRepository = module.get<
+      Repository<KitchenDisplayDevice>
+    >(getRepositoryToken(KitchenDisplayDevice));
     merchantRepository = module.get<Repository<Merchant>>(
       getRepositoryToken(Merchant),
     );
@@ -128,13 +136,22 @@ describe('KitchenDisplayDeviceService', () => {
     };
 
     it('should create a kitchen display device successfully', async () => {
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(kitchenStationRepository, 'findOne').mockResolvedValue(mockKitchenStation as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as unknown as Merchant);
+      jest
+        .spyOn(kitchenStationRepository, 'findOne')
+        .mockResolvedValue(mockKitchenStation as unknown as KitchenStation);
       const savedItem = { ...mockKitchenDisplayDevice, id: 1 };
-      jest.spyOn(kitchenDisplayDeviceRepository, 'save').mockResolvedValue(savedItem as any);
-      kitchenDisplayDeviceRepository.findOne = jest.fn()
+      jest
+        .spyOn(kitchenDisplayDeviceRepository, 'save')
+        .mockResolvedValue(savedItem as unknown as KitchenDisplayDevice);
+      kitchenDisplayDeviceRepository.findOne = jest
+        .fn()
         .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(mockKitchenDisplayDevice as any);
+        .mockResolvedValueOnce(
+          mockKitchenDisplayDevice as unknown as KitchenDisplayDevice,
+        );
 
       const result = await service.create(createKitchenDisplayDeviceDto, 1);
 
@@ -146,15 +163,19 @@ describe('KitchenDisplayDeviceService', () => {
         relations: ['merchant', 'station'],
       });
       expect(result.statusCode).toBe(201);
-      expect(result.message).toBe('Kitchen display device created successfully');
+      expect(result.message).toBe(
+        'Kitchen display device created successfully',
+      );
       expect(result.data.name).toBe('Kitchen Display 1');
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.create(createKitchenDisplayDeviceDto, undefined as any)).rejects.toThrow(
-        ForbiddenException,
-      );
-      await expect(service.create(createKitchenDisplayDeviceDto, undefined as any)).rejects.toThrow(
+      await expect(
+        service.create(createKitchenDisplayDeviceDto, 0),
+      ).rejects.toThrow(ForbiddenException);
+      await expect(
+        service.create(createKitchenDisplayDeviceDto, 0),
+      ).rejects.toThrow(
         'You must be associated with a merchant to create kitchen display devices',
       );
     });
@@ -162,23 +183,33 @@ describe('KitchenDisplayDeviceService', () => {
     it('should throw NotFoundException if merchant not found', async () => {
       jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.create(createKitchenDisplayDeviceDto, 1)).rejects.toThrow(
-        NotFoundException,
-      );
-      await expect(service.create(createKitchenDisplayDeviceDto, 1)).rejects.toThrow(
-        'Merchant not found',
-      );
+      await expect(
+        service.create(createKitchenDisplayDeviceDto, 1),
+      ).rejects.toThrow(NotFoundException);
+      await expect(
+        service.create(createKitchenDisplayDeviceDto, 1),
+      ).rejects.toThrow('Merchant not found');
     });
 
     it('should throw BadRequestException if device identifier already exists', async () => {
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(kitchenStationRepository, 'findOne').mockResolvedValue(mockKitchenStation as any);
-      jest.spyOn(kitchenDisplayDeviceRepository, 'findOne').mockResolvedValue(mockKitchenDisplayDevice as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as unknown as Merchant);
+      jest
+        .spyOn(kitchenStationRepository, 'findOne')
+        .mockResolvedValue(mockKitchenStation as unknown as KitchenStation);
+      jest
+        .spyOn(kitchenDisplayDeviceRepository, 'findOne')
+        .mockResolvedValue(
+          mockKitchenDisplayDevice as unknown as KitchenDisplayDevice,
+        );
 
-      await expect(service.create(createKitchenDisplayDeviceDto, 1)).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.create(createKitchenDisplayDeviceDto, 1)).rejects.toThrow(
+      await expect(
+        service.create(createKitchenDisplayDeviceDto, 1),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.create(createKitchenDisplayDeviceDto, 1),
+      ).rejects.toThrow(
         'A device with this identifier already exists for your merchant',
       );
     });
@@ -191,14 +222,25 @@ describe('KitchenDisplayDeviceService', () => {
     };
 
     it('should return paginated list of kitchen display devices', async () => {
-      jest.spyOn(kitchenDisplayDeviceRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockKitchenDisplayDevice] as any, 1]);
+      jest
+        .spyOn(kitchenDisplayDeviceRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<KitchenDisplayDevice>,
+        );
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([
+        [mockKitchenDisplayDevice] as unknown as KitchenDisplayDevice[],
+        1,
+      ]);
 
       const result = await service.findAll(query, 1);
 
-      expect(kitchenDisplayDeviceRepository.createQueryBuilder).toHaveBeenCalled();
+      expect(
+        kitchenDisplayDeviceRepository.createQueryBuilder,
+      ).toHaveBeenCalled();
       expect(result.statusCode).toBe(200);
-      expect(result.message).toBe('Kitchen display devices retrieved successfully');
+      expect(result.message).toBe(
+        'Kitchen display devices retrieved successfully',
+      );
       expect(result.data).toHaveLength(1);
       expect(result.paginationMeta.page).toBe(1);
       expect(result.paginationMeta.limit).toBe(10);
@@ -206,10 +248,10 @@ describe('KitchenDisplayDeviceService', () => {
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.findAll(query, undefined as any)).rejects.toThrow(
+      await expect(service.findAll(query, 0)).rejects.toThrow(
         ForbiddenException,
       );
-      await expect(service.findAll(query, undefined as any)).rejects.toThrow(
+      await expect(service.findAll(query, 0)).rejects.toThrow(
         'You must be associated with a merchant to access kitchen display devices',
       );
     });
@@ -217,31 +259,35 @@ describe('KitchenDisplayDeviceService', () => {
 
   describe('findOne', () => {
     it('should return a kitchen display device successfully', async () => {
-      jest.spyOn(kitchenDisplayDeviceRepository, 'findOne').mockResolvedValue(mockKitchenDisplayDevice as any);
+      jest
+        .spyOn(kitchenDisplayDeviceRepository, 'findOne')
+        .mockResolvedValue(
+          mockKitchenDisplayDevice as unknown as KitchenDisplayDevice,
+        );
 
       const result = await service.findOne(1, 1);
 
       expect(kitchenDisplayDeviceRepository.findOne).toHaveBeenCalled();
       expect(result.statusCode).toBe(200);
-      expect(result.message).toBe('Kitchen display device retrieved successfully');
+      expect(result.message).toBe(
+        'Kitchen display device retrieved successfully',
+      );
       expect(result.data.id).toBe(1);
     });
 
     it('should throw BadRequestException if id is invalid', async () => {
-      await expect(service.findOne(0, 1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.findOne(0, 1)).rejects.toThrow(BadRequestException);
       await expect(service.findOne(0, 1)).rejects.toThrow(
         'Kitchen display device ID must be a valid positive number',
       );
     });
 
     it('should throw NotFoundException if kitchen display device not found', async () => {
-      jest.spyOn(kitchenDisplayDeviceRepository, 'findOne').mockResolvedValue(null);
+      jest
+        .spyOn(kitchenDisplayDeviceRepository, 'findOne')
+        .mockResolvedValue(null);
 
-      await expect(service.findOne(1, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.findOne(1, 1)).rejects.toThrow(NotFoundException);
       await expect(service.findOne(1, 1)).rejects.toThrow(
         'Kitchen display device not found',
       );
@@ -255,69 +301,103 @@ describe('KitchenDisplayDeviceService', () => {
     };
 
     it('should update a kitchen display device successfully', async () => {
-      jest.spyOn(kitchenDisplayDeviceRepository, 'findOne')
-        .mockResolvedValueOnce(mockKitchenDisplayDevice as any)
-        .mockResolvedValueOnce({ ...mockKitchenDisplayDevice, is_online: true, ip_address: '192.168.1.101' } as any);
-      jest.spyOn(kitchenDisplayDeviceRepository, 'save').mockResolvedValue(mockKitchenDisplayDevice as any);
+      jest
+        .spyOn(kitchenDisplayDeviceRepository, 'findOne')
+        .mockResolvedValueOnce(
+          mockKitchenDisplayDevice as unknown as KitchenDisplayDevice,
+        )
+        .mockResolvedValueOnce({
+          ...mockKitchenDisplayDevice,
+          is_online: true,
+          ip_address: '192.168.1.101',
+        } as unknown as KitchenDisplayDevice);
+      jest
+        .spyOn(kitchenDisplayDeviceRepository, 'save')
+        .mockResolvedValue(
+          mockKitchenDisplayDevice as unknown as KitchenDisplayDevice,
+        );
 
       const result = await service.update(1, updateKitchenDisplayDeviceDto, 1);
 
       expect(kitchenDisplayDeviceRepository.findOne).toHaveBeenCalled();
       expect(kitchenDisplayDeviceRepository.save).toHaveBeenCalled();
       expect(result.statusCode).toBe(200);
-      expect(result.message).toBe('Kitchen display device updated successfully');
+      expect(result.message).toBe(
+        'Kitchen display device updated successfully',
+      );
     });
 
     it('should throw NotFoundException if kitchen display device not found', async () => {
-      jest.spyOn(kitchenDisplayDeviceRepository, 'findOne').mockResolvedValue(null);
+      jest
+        .spyOn(kitchenDisplayDeviceRepository, 'findOne')
+        .mockResolvedValue(null);
 
-      await expect(service.update(1, updateKitchenDisplayDeviceDto, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.update(1, updateKitchenDisplayDeviceDto, 1),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ConflictException if kitchen display device is already deleted', async () => {
-      const deletedItem = { ...mockKitchenDisplayDevice, status: KitchenDisplayDeviceStatus.DELETED };
-      jest.spyOn(kitchenDisplayDeviceRepository, 'findOne').mockResolvedValue(deletedItem as any);
+      const deletedItem = {
+        ...mockKitchenDisplayDevice,
+        status: KitchenDisplayDeviceStatus.DELETED,
+      };
+      jest
+        .spyOn(kitchenDisplayDeviceRepository, 'findOne')
+        .mockResolvedValue(deletedItem as unknown as KitchenDisplayDevice);
 
-      await expect(service.update(1, updateKitchenDisplayDeviceDto, 1)).rejects.toThrow(
-        ConflictException,
-      );
-      await expect(service.update(1, updateKitchenDisplayDeviceDto, 1)).rejects.toThrow(
-        'Cannot update a deleted kitchen display device',
-      );
+      await expect(
+        service.update(1, updateKitchenDisplayDeviceDto, 1),
+      ).rejects.toThrow(ConflictException);
+      await expect(
+        service.update(1, updateKitchenDisplayDeviceDto, 1),
+      ).rejects.toThrow('Cannot update a deleted kitchen display device');
     });
   });
 
   describe('remove', () => {
     it('should remove a kitchen display device successfully', async () => {
-      const deletedItem = { ...mockKitchenDisplayDevice, status: KitchenDisplayDeviceStatus.DELETED };
-      jest.spyOn(kitchenDisplayDeviceRepository, 'findOne').mockResolvedValue(mockKitchenDisplayDevice as any);
-      jest.spyOn(kitchenDisplayDeviceRepository, 'save').mockResolvedValue(deletedItem as any);
+      const deletedItem = {
+        ...mockKitchenDisplayDevice,
+        status: KitchenDisplayDeviceStatus.DELETED,
+      };
+      jest
+        .spyOn(kitchenDisplayDeviceRepository, 'findOne')
+        .mockResolvedValue(
+          mockKitchenDisplayDevice as unknown as KitchenDisplayDevice,
+        );
+      jest
+        .spyOn(kitchenDisplayDeviceRepository, 'save')
+        .mockResolvedValue(deletedItem as unknown as KitchenDisplayDevice);
 
       const result = await service.remove(1, 1);
 
       expect(kitchenDisplayDeviceRepository.findOne).toHaveBeenCalled();
       expect(kitchenDisplayDeviceRepository.save).toHaveBeenCalled();
       expect(result.statusCode).toBe(200);
-      expect(result.message).toBe('Kitchen display device deleted successfully');
+      expect(result.message).toBe(
+        'Kitchen display device deleted successfully',
+      );
     });
 
     it('should throw NotFoundException if kitchen display device not found', async () => {
-      jest.spyOn(kitchenDisplayDeviceRepository, 'findOne').mockResolvedValue(null);
+      jest
+        .spyOn(kitchenDisplayDeviceRepository, 'findOne')
+        .mockResolvedValue(null);
 
-      await expect(service.remove(1, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.remove(1, 1)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ConflictException if kitchen display device is already deleted', async () => {
-      const deletedItem = { ...mockKitchenDisplayDevice, status: KitchenDisplayDeviceStatus.DELETED };
-      jest.spyOn(kitchenDisplayDeviceRepository, 'findOne').mockResolvedValue(deletedItem as any);
+      const deletedItem = {
+        ...mockKitchenDisplayDevice,
+        status: KitchenDisplayDeviceStatus.DELETED,
+      };
+      jest
+        .spyOn(kitchenDisplayDeviceRepository, 'findOne')
+        .mockResolvedValue(deletedItem as unknown as KitchenDisplayDevice);
 
-      await expect(service.remove(1, 1)).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.remove(1, 1)).rejects.toThrow(ConflictException);
       await expect(service.remove(1, 1)).rejects.toThrow(
         'Kitchen display device is already deleted',
       );

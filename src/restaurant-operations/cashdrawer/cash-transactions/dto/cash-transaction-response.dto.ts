@@ -45,7 +45,14 @@ export class PaginatedCashTransactionsResponseDto extends SuccessResponse {
   data: CashTransactionResponseDto[];
 
   @ApiProperty({
-    example: { page: 1, limit: 10, total: 1, totalPages: 1, hasNext: false, hasPrev: false },
+    example: {
+      page: 1,
+      limit: 10,
+      total: 1,
+      totalPages: 1,
+      hasNext: false,
+      hasPrev: false,
+    },
   })
   paginationMeta: {
     page: number;

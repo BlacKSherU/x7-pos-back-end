@@ -6,4 +6,4 @@ import { MarketingModule } from './marketing/marketing.module';
   imports: [LoyaltyModule, MarketingModule],
   exports: [LoyaltyModule, MarketingModule],
 })
-export class GrowthModule { }
+export class GrowthModule {}

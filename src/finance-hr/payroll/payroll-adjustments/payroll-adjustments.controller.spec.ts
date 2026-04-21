@@ -25,7 +25,9 @@ describe('PayrollAdjustmentsController', () => {
       ],
     }).compile();
 
-    controller = module.get<PayrollAdjustmentsController>(PayrollAdjustmentsController);
+    controller = module.get<PayrollAdjustmentsController>(
+      PayrollAdjustmentsController,
+    );
     jest.clearAllMocks();
   });
 

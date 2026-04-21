@@ -20,5 +20,4 @@ import { PurchaseOrderItem } from '../purchase-order-item/entities/purchase-orde
   providers: [PurchaseOrderService],
   exports: [PurchaseOrderService],
 })
-export class PurchaseOrderModule { }
-
+export class PurchaseOrderModule {}

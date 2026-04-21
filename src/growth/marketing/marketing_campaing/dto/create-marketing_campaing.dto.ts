@@ -1,5 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsEnum, IsOptional, MaxLength, IsDateString } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsEnum,
+  IsOptional,
+  MaxLength,
+  IsDateString,
+} from 'class-validator';
 import { MarketingCampaignChannel } from '../constants/marketing-campaign-channel.enum';
 
 export class CreateMarketingCampaignDto {

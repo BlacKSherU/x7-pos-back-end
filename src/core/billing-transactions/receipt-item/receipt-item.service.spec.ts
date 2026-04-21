@@ -5,11 +5,14 @@ import { ReceiptItem } from './entities/receipt-item.entity';
 import { Receipt } from '../receipts/entities/receipt.entity';
 import { Order } from 'src/restaurant-operations/pos/orders/entities/order.entity';
 import { ReceiptsService } from '../receipts/receipts.service';
-import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateReceiptItemDto } from './dto/create-receipt-item.dto';
 import { UpdateReceiptItemDto } from './dto/update-receipt-item.dto';
 import { GetReceiptItemsQueryDto } from './dto/get-receipt-items-query.dto';
-
 
 const MERCHANT_ID = 1;
 
@@ -64,7 +67,10 @@ describe('ReceiptItemService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ReceiptItemService,
-        { provide: getRepositoryToken(ReceiptItem), useValue: mockReceiptItemRepo },
+        {
+          provide: getRepositoryToken(ReceiptItem),
+          useValue: mockReceiptItemRepo,
+        },
         { provide: getRepositoryToken(Receipt), useValue: mockReceiptRepo },
         { provide: getRepositoryToken(Order), useValue: mockOrderRepo },
         { provide: ReceiptsService, useValue: mockReceiptsService },
@@ -106,35 +112,53 @@ describe('ReceiptItemService', () => {
     });
 
     it('should throw ForbiddenException when merchantId is missing', async () => {
-      await expect(service.create(dto, null as any)).rejects.toThrow(ForbiddenException);
+      await expect(service.create(dto, null as any)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw BadRequestException when receiptId is invalid', async () => {
-      await expect(service.create({ ...dto, receiptId: 0 }, MERCHANT_ID)).rejects.toThrow(BadRequestException);
+      await expect(
+        service.create({ ...dto, receiptId: 0 }, MERCHANT_ID),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException when quantity is 0', async () => {
-      await expect(service.create({ ...dto, quantity: 0 }, MERCHANT_ID)).rejects.toThrow(BadRequestException);
+      await expect(
+        service.create({ ...dto, quantity: 0 }, MERCHANT_ID),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException when unitPrice is negative', async () => {
-      await expect(service.create({ ...dto, unitPrice: -1 }, MERCHANT_ID)).rejects.toThrow(BadRequestException);
+      await expect(
+        service.create({ ...dto, unitPrice: -1 }, MERCHANT_ID),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException when discount > subtotal', async () => {
       await expect(
-        service.create({ ...dto, quantity: 1, unitPrice: 5, discountAmount: 10 }, MERCHANT_ID),
+        service.create(
+          { ...dto, quantity: 1, unitPrice: 5, discountAmount: 10 },
+          MERCHANT_ID,
+        ),
       ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw NotFoundException when receipt does not exist', async () => {
       mockReceiptRepo.findOne.mockResolvedValue(null);
-      await expect(service.create(dto, MERCHANT_ID)).rejects.toThrow(NotFoundException);
+      await expect(service.create(dto, MERCHANT_ID)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw ForbiddenException when receipt belongs to another merchant', async () => {
-      mockOrderRepo.findOne.mockResolvedValue({ ...mockOrder, merchant_id: 999 });
-      await expect(service.create(dto, MERCHANT_ID)).rejects.toThrow(ForbiddenException);
+      mockOrderRepo.findOne.mockResolvedValue({
+        ...mockOrder,
+        merchant_id: 999,
+      });
+      await expect(service.create(dto, MERCHANT_ID)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw BadRequestException when metadata is invalid JSON', async () => {
@@ -150,7 +174,12 @@ describe('ReceiptItemService', () => {
         quantity: 2,
         unitPrice: 10,
       };
-      const savedItem = { ...mockItem, discount_amount: 0, subtotal: 20, total: 20 };
+      const savedItem = {
+        ...mockItem,
+        discount_amount: 0,
+        subtotal: 20,
+        total: 20,
+      };
       mockReceiptItemRepo.create.mockReturnValue(savedItem);
       mockReceiptItemRepo.save.mockResolvedValue(savedItem);
       mockReceiptItemRepo.findOne.mockResolvedValue(savedItem);
@@ -187,31 +216,46 @@ describe('ReceiptItemService', () => {
     });
 
     it('should throw ForbiddenException when merchantId is missing', async () => {
-      await expect(service.findAll({}, null as any)).rejects.toThrow(ForbiddenException);
+      await expect(service.findAll({}, null as any)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw BadRequestException when page < 1', async () => {
-      await expect(service.findAll({ page: 0 }, MERCHANT_ID)).rejects.toThrow(BadRequestException);
+      await expect(service.findAll({ page: 0 }, MERCHANT_ID)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException when limit > 100', async () => {
-      await expect(service.findAll({ limit: 101 }, MERCHANT_ID)).rejects.toThrow(BadRequestException);
+      await expect(
+        service.findAll({ limit: 101 }, MERCHANT_ID),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should filter by receiptId and validate ownership', async () => {
       const mockQb = buildMockQb([mockItem], 1);
       mockReceiptItemRepo.createQueryBuilder.mockReturnValue(mockQb);
 
-      const query: GetReceiptItemsQueryDto = { receiptId: 10, page: 1, limit: 10 };
+      const query: GetReceiptItemsQueryDto = {
+        receiptId: 10,
+        page: 1,
+        limit: 10,
+      };
       const result = await service.findAll(query, MERCHANT_ID);
 
-      expect(mockQb.andWhere).toHaveBeenCalledWith('ri.receipt_id = :receiptId', { receiptId: 10 });
+      expect(mockQb.andWhere).toHaveBeenCalledWith(
+        'ri.receipt_id = :receiptId',
+        { receiptId: 10 },
+      );
       expect(result.total).toBe(1);
     });
 
     it('should throw NotFoundException when receiptId does not exist', async () => {
       mockReceiptRepo.findOne.mockResolvedValue(null);
-      await expect(service.findAll({ receiptId: 99 }, MERCHANT_ID)).rejects.toThrow(NotFoundException);
+      await expect(
+        service.findAll({ receiptId: 99 }, MERCHANT_ID),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should return empty paginated result when no items', async () => {
@@ -235,21 +279,32 @@ describe('ReceiptItemService', () => {
     });
 
     it('should throw BadRequestException for invalid id', async () => {
-      await expect(service.findOne(0, MERCHANT_ID)).rejects.toThrow(BadRequestException);
+      await expect(service.findOne(0, MERCHANT_ID)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw ForbiddenException when merchantId is missing', async () => {
-      await expect(service.findOne(1, null as any)).rejects.toThrow(ForbiddenException);
+      await expect(service.findOne(1, null as any)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw NotFoundException when item does not exist', async () => {
       mockReceiptItemRepo.findOne.mockResolvedValue(null);
-      await expect(service.findOne(99, MERCHANT_ID)).rejects.toThrow(NotFoundException);
+      await expect(service.findOne(99, MERCHANT_ID)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw ForbiddenException when item belongs to another merchant', async () => {
-      mockOrderRepo.findOne.mockResolvedValue({ ...mockOrder, merchant_id: 999 });
-      await expect(service.findOne(1, MERCHANT_ID)).rejects.toThrow(ForbiddenException);
+      mockOrderRepo.findOne.mockResolvedValue({
+        ...mockOrder,
+        merchant_id: 999,
+      });
+      await expect(service.findOne(1, MERCHANT_ID)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -269,25 +324,38 @@ describe('ReceiptItemService', () => {
     });
 
     it('should throw BadRequestException for invalid id', async () => {
-      await expect(service.update(0, dto, MERCHANT_ID)).rejects.toThrow(BadRequestException);
+      await expect(service.update(0, dto, MERCHANT_ID)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw ForbiddenException when merchantId is missing', async () => {
-      await expect(service.update(1, dto, null as any)).rejects.toThrow(ForbiddenException);
+      await expect(service.update(1, dto, null as any)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw NotFoundException when item does not exist', async () => {
       mockReceiptItemRepo.findOne.mockResolvedValue(null);
-      await expect(service.update(99, dto, MERCHANT_ID)).rejects.toThrow(NotFoundException);
+      await expect(service.update(99, dto, MERCHANT_ID)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw ForbiddenException when item belongs to another merchant', async () => {
-      mockOrderRepo.findOne.mockResolvedValue({ ...mockOrder, merchant_id: 999 });
-      await expect(service.update(1, dto, MERCHANT_ID)).rejects.toThrow(ForbiddenException);
+      mockOrderRepo.findOne.mockResolvedValue({
+        ...mockOrder,
+        merchant_id: 999,
+      });
+      await expect(service.update(1, dto, MERCHANT_ID)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw BadRequestException when metadata is invalid JSON', async () => {
-      await expect(service.update(1, { metadata: 'invalid' }, MERCHANT_ID)).rejects.toThrow(BadRequestException);
+      await expect(
+        service.update(1, { metadata: 'invalid' }, MERCHANT_ID),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -301,25 +369,39 @@ describe('ReceiptItemService', () => {
 
       expect(result.statusCode).toBe(200);
       expect(result.message).toContain('deleted');
-      expect(mockReceiptItemRepo.update).toHaveBeenCalledWith(1, expect.any(Object));
+      expect(mockReceiptItemRepo.update).toHaveBeenCalledWith(
+        1,
+        expect.any(Object),
+      );
     });
 
     it('should throw BadRequestException for invalid id', async () => {
-      await expect(service.remove(0, MERCHANT_ID)).rejects.toThrow(BadRequestException);
+      await expect(service.remove(0, MERCHANT_ID)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw ForbiddenException when merchantId is missing', async () => {
-      await expect(service.remove(1, null as any)).rejects.toThrow(ForbiddenException);
+      await expect(service.remove(1, null as any)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw NotFoundException when item does not exist', async () => {
       mockReceiptItemRepo.findOne.mockResolvedValue(null);
-      await expect(service.remove(99, MERCHANT_ID)).rejects.toThrow(NotFoundException);
+      await expect(service.remove(99, MERCHANT_ID)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw ForbiddenException when item belongs to another merchant', async () => {
-      mockOrderRepo.findOne.mockResolvedValue({ ...mockOrder, merchant_id: 999 });
-      await expect(service.remove(1, MERCHANT_ID)).rejects.toThrow(ForbiddenException);
+      mockOrderRepo.findOne.mockResolvedValue({
+        ...mockOrder,
+        merchant_id: 999,
+      });
+      await expect(service.remove(1, MERCHANT_ID)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 });

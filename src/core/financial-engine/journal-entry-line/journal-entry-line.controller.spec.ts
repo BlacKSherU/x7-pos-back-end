@@ -49,7 +49,9 @@ describe('JournalEntryLineController', () => {
       providers: [{ provide: JournalEntryLineService, useValue: mockService }],
     }).compile();
 
-    controller = module.get<JournalEntryLineController>(JournalEntryLineController);
+    controller = module.get<JournalEntryLineController>(
+      JournalEntryLineController,
+    );
     service = module.get(JournalEntryLineService);
 
     jest.clearAllMocks();
@@ -59,8 +61,16 @@ describe('JournalEntryLineController', () => {
 
   describe('create', () => {
     it('should call service.create with merchantId, entryId and dto', async () => {
-      const dto: CreateJournalEntryLineDto = { account_id: 1, debit: 1000, credit: 0 };
-      const created = { ...mockResponse, statusCode: 201, message: 'Journal Entry Line Created successfully' };
+      const dto: CreateJournalEntryLineDto = {
+        account_id: 1,
+        debit: 1000,
+        credit: 0,
+      };
+      const created = {
+        ...mockResponse,
+        statusCode: 201,
+        message: 'Journal Entry Line Created successfully',
+      };
       service.create.mockResolvedValueOnce(created as any);
 
       const result = await controller.create(mockUser, 1, dto);
@@ -87,7 +97,11 @@ describe('JournalEntryLineController', () => {
 
       const result = await controller.findAll(mockUser, 1, mockQuery as any);
 
-      expect(service.findAllByEntry).toHaveBeenCalledWith(mockQuery, mockUser.merchant.id, 1);
+      expect(service.findAllByEntry).toHaveBeenCalledWith(
+        mockQuery,
+        mockUser.merchant.id,
+        1,
+      );
       expect(result.data).toHaveLength(1);
     });
   });
@@ -106,7 +120,11 @@ describe('JournalEntryLineController', () => {
   describe('update', () => {
     it('should call service.update with merchantId, id and dto', async () => {
       const dto: UpdateJournalEntryLineDto = { description: 'Updated' };
-      const updated = { ...mockResponse, statusCode: 201, message: 'Journal Entry Line Updated successfully' };
+      const updated = {
+        ...mockResponse,
+        statusCode: 201,
+        message: 'Journal Entry Line Updated successfully',
+      };
       service.update.mockResolvedValueOnce(updated as any);
 
       const result = await controller.update(mockUser, 1, dto);
@@ -118,7 +136,11 @@ describe('JournalEntryLineController', () => {
 
   describe('remove', () => {
     it('should call service.remove with merchantId and id', async () => {
-      const deleted = { ...mockResponse, statusCode: 201, message: 'Journal Entry Line Deleted successfully' };
+      const deleted = {
+        ...mockResponse,
+        statusCode: 201,
+        message: 'Journal Entry Line Deleted successfully',
+      };
       service.remove.mockResolvedValueOnce(deleted as any);
 
       const result = await controller.remove(mockUser, 1);

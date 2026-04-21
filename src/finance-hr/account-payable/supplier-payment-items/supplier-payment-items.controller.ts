@@ -32,9 +32,7 @@ import {
   GetSupplierPaymentItemsQueryDto,
   SupplierPaymentItemSortBy,
 } from './dto/get-supplier-payment-items-query.dto';
-import {
-  OneSupplierPaymentItemResponseDto,
-} from './dto/supplier-payment-item-response.dto';
+import { OneSupplierPaymentItemResponseDto } from './dto/supplier-payment-item-response.dto';
 import { PaginatedSupplierPaymentItemsResponseDto } from './dto/paginated-supplier-payment-items-response.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
@@ -95,7 +93,11 @@ export class SupplierPaymentItemsController {
   @ApiQuery({ name: 'limit', required: false })
   @ApiQuery({ name: 'payment_id', required: false })
   @ApiQuery({ name: 'document_type', required: false })
-  @ApiQuery({ name: 'sortBy', required: false, enum: SupplierPaymentItemSortBy })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    enum: SupplierPaymentItemSortBy,
+  })
   @ApiQuery({ name: 'sortOrder', required: false, enum: ['ASC', 'DESC'] })
   @ApiOkResponse({
     description: 'Supplier payment items retrieved successfully',

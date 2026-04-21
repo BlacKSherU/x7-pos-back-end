@@ -1,4 +1,11 @@
-import { IsOptional, IsNumber, IsBoolean, IsPositive, Min, Max } from 'class-validator';
+import {
+  IsOptional,
+  IsNumber,
+  IsBoolean,
+  IsPositive,
+  Min,
+  Max,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
@@ -10,7 +17,12 @@ export class GetCollaboratorContractQueryDto {
   @Min(1)
   page?: number;
 
-  @ApiPropertyOptional({ example: 10, description: 'Items per page', minimum: 1, maximum: 100 })
+  @ApiPropertyOptional({
+    example: 10,
+    description: 'Items per page',
+    minimum: 1,
+    maximum: 100,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
@@ -39,7 +51,10 @@ export class GetCollaboratorContractQueryDto {
   @IsPositive()
   collaborator_id?: number;
 
-  @ApiPropertyOptional({ example: true, description: 'Filter by active status' })
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Filter by active status',
+  })
   @IsOptional()
   @Type(() => Boolean)
   @IsBoolean()

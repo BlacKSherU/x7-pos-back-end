@@ -4,7 +4,6 @@ import { Repository } from 'typeorm';
 import { JournalEntry } from './entities/journal-entry.entity';
 import { JournalEntryLine } from 'src/core/financial-engine/journal-entry-line/entities/journal-entry-line.entity';
 
-
 import { LedgerAccount } from '../ledger-accounts/entities/ledger-account.entity';
 import { Company } from 'src/platform-saas/companies/entities/company.entity';
 import { Merchant } from 'src/platform-saas/merchants/entities/merchant.entity';
@@ -36,7 +35,7 @@ export class JournalEntryService {
     private readonly companyRepository: Repository<Company>,
     @InjectRepository(Merchant)
     private readonly merchantRepository: Repository<Merchant>,
-  ) { }
+  ) {}
 
   // ─── Helpers privados ──────────────────────────────────────────────────────
 
@@ -49,11 +48,17 @@ export class JournalEntryService {
     return merchant.companyId;
   }
 
-  private toLineResponseDto(line: JournalEntryLine): JournalEntryLineResponseDto {
+  private toLineResponseDto(
+    line: JournalEntryLine,
+  ): JournalEntryLineResponseDto {
     return {
       id: line.id,
       account: line.account
-        ? { id: line.account.id, code: line.account.code, name: line.account.name }
+        ? {
+            id: line.account.id,
+            code: line.account.code,
+            name: line.account.name,
+          }
         : null,
       debit: Number(line.debit),
       credit: Number(line.credit),
@@ -70,7 +75,9 @@ export class JournalEntryService {
       status: entry.status,
       total_debit: Number(entry.total_debit),
       total_credit: Number(entry.total_credit),
-      is_balanced: Math.abs(Number(entry.total_debit) - Number(entry.total_credit)) < 0.001,
+      is_balanced:
+        Math.abs(Number(entry.total_debit) - Number(entry.total_credit)) <
+        0.001,
       reference_type: entry.reference_type ?? null,
       reference_id: entry.reference_id ?? null,
       created_at: entry.created_at,
@@ -78,7 +85,9 @@ export class JournalEntryService {
       company: entry.company
         ? { id: entry.company.id, name: entry.company.name }
         : null,
-      lines: entry.lines ? entry.lines.map((l) => this.toLineResponseDto(l)) : [],
+      lines: entry.lines
+        ? entry.lines.map((l) => this.toLineResponseDto(l))
+        : [],
     };
   }
 
@@ -89,15 +98,35 @@ export class JournalEntryService {
     const data = this.toResponseDto(entry);
     switch (createdUpdateDelete) {
       case 'Created':
-        return { statusCode: 201, message: 'Journal Entry Created successfully', data };
+        return {
+          statusCode: 201,
+          message: 'Journal Entry Created successfully',
+          data,
+        };
       case 'Updated':
-        return { statusCode: 200, message: 'Journal Entry Updated successfully', data };
+        return {
+          statusCode: 200,
+          message: 'Journal Entry Updated successfully',
+          data,
+        };
       case 'Deleted':
-        return { statusCode: 200, message: 'Journal Entry Deleted successfully', data };
+        return {
+          statusCode: 200,
+          message: 'Journal Entry Deleted successfully',
+          data,
+        };
       case 'Voided':
-        return { statusCode: 200, message: 'Journal Entry Voided successfully', data };
+        return {
+          statusCode: 200,
+          message: 'Journal Entry Voided successfully',
+          data,
+        };
       default:
-        return { statusCode: 200, message: 'Journal Entry retrieved successfully', data };
+        return {
+          statusCode: 200,
+          message: 'Journal Entry retrieved successfully',
+          data,
+        };
     }
   }
 
@@ -130,7 +159,9 @@ export class JournalEntryService {
       where: { entry_number: dto.entry_number, company_id, is_active: true },
     });
     if (existing)
-      ErrorHandler.exists(`Journal entry with number '${dto.entry_number}' already exists`);
+      ErrorHandler.exists(
+        `Journal entry with number '${dto.entry_number}' already exists`,
+      );
 
     // Validar que las líneas estén balanceadas (debit === credit)
     if (!dto.lines || dto.lines.length === 0)
@@ -152,7 +183,9 @@ export class JournalEntryService {
         is_active: true,
       });
       if (!account)
-        ErrorHandler.notFound(`Ledger account with ID ${line.account_id} not found or inactive`);
+        ErrorHandler.notFound(
+          `Ledger account with ID ${line.account_id} not found or inactive`,
+        );
     }
 
     try {
@@ -234,7 +267,10 @@ export class JournalEntryService {
     };
   }
 
-  async findOne(id: number, merchantId: number): Promise<OneJournalEntryResponse> {
+  async findOne(
+    id: number,
+    merchantId: number,
+  ): Promise<OneJournalEntryResponse> {
     if (!id || id <= 0) ErrorHandler.invalidId('Journal Entry ID is incorrect');
     const company_id = await this.getCompanyId(merchantId);
     return this.fetchOne(id, company_id);
@@ -264,7 +300,9 @@ export class JournalEntryService {
         where: { entry_number: dto.entry_number, company_id, is_active: true },
       });
       if (existing && existing.id !== id)
-        ErrorHandler.exists(`Journal entry with number '${dto.entry_number}' already exists`);
+        ErrorHandler.exists(
+          `Journal entry with number '${dto.entry_number}' already exists`,
+        );
     }
 
     // Si se actualizan las líneas, re-validar balance y cuentas
@@ -287,7 +325,9 @@ export class JournalEntryService {
           is_active: true,
         });
         if (!account)
-          ErrorHandler.notFound(`Ledger account with ID ${line.account_id} not found or inactive`);
+          ErrorHandler.notFound(
+            `Ledger account with ID ${line.account_id} not found or inactive`,
+          );
       }
 
       // Marcar líneas anteriores como inactivas (borrado lógico)
@@ -309,7 +349,9 @@ export class JournalEntryService {
 
     Object.assign(entry, {
       entry_number: dto.entry_number ?? entry.entry_number,
-      entry_date: dto.entry_date ? (dto.entry_date as unknown as Date) : entry.entry_date,
+      entry_date: dto.entry_date
+        ? (dto.entry_date as unknown as Date)
+        : entry.entry_date,
       description: dto.description ?? entry.description,
       status: dto.status ?? entry.status,
       total_debit: totalDebit,
@@ -375,7 +417,10 @@ export class JournalEntryService {
 
     // Re-validar balanceo antes de postear (defensa en profundidad)
     const totalDebit = entry.lines.reduce((sum, l) => sum + Number(l.debit), 0);
-    const totalCredit = entry.lines.reduce((sum, l) => sum + Number(l.credit), 0);
+    const totalCredit = entry.lines.reduce(
+      (sum, l) => sum + Number(l.credit),
+      0,
+    );
 
     if (Math.abs(totalDebit - totalCredit) > 0.001) {
       ErrorHandler.badRequest(

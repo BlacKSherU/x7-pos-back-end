@@ -1,10 +1,8 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/unbound-method */
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, type DeleteResult } from 'typeorm';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { OrderPaymentsService } from './order-payments.service';
 import { OrderPayment } from './entities/order-payment.entity';
@@ -98,11 +96,15 @@ describe('OrderPaymentsService', () => {
     };
 
     it('should create and sync order aggregates', async () => {
-      jest.spyOn(orderRepository, 'findOne').mockResolvedValue(mockOrder as any);
-      jest.spyOn(orderPaymentRepository, 'save').mockResolvedValue({ id: 1 } as any);
+      jest
+        .spyOn(orderRepository, 'findOne')
+        .mockResolvedValue(mockOrder as unknown as Order);
+      jest
+        .spyOn(orderPaymentRepository, 'save')
+        .mockResolvedValue({ id: 1 } as unknown as OrderPayment);
       jest
         .spyOn(orderPaymentRepository, 'findOne')
-        .mockResolvedValue(mockPaymentRow as any);
+        .mockResolvedValue(mockPaymentRow as unknown as OrderPayment);
 
       const result = await service.create(dto, 1);
 
@@ -111,9 +113,7 @@ describe('OrderPaymentsService', () => {
     });
 
     it('should throw if no merchant', async () => {
-      await expect(service.create(dto, undefined as any)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.create(dto, 0)).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw if order not found', async () => {
@@ -126,8 +126,10 @@ describe('OrderPaymentsService', () => {
     it('should delete and sync', async () => {
       jest
         .spyOn(orderPaymentRepository, 'findOne')
-        .mockResolvedValue(mockPaymentRow as any);
-      jest.spyOn(orderPaymentRepository, 'delete').mockResolvedValue(undefined as any);
+        .mockResolvedValue(mockPaymentRow as unknown as OrderPayment);
+      jest
+        .spyOn(orderPaymentRepository, 'delete')
+        .mockResolvedValue({ raw: [], affected: 1 } as DeleteResult);
 
       const result = await service.remove(1, 1);
 

@@ -5,7 +5,12 @@ import { CreateMarketingCampaignAudienceDto } from './dto/create-marketing-campa
 import { UpdateMarketingCampaignAudienceDto } from './dto/update-marketing-campaing-audience.dto';
 import { GetMarketingCampaignAudienceQueryDto } from './dto/get-marketing-campaign-audience-query.dto';
 import { MarketingCampaignAudienceStatus } from './constants/marketing-campaign-audience-status.enum';
-import { NotFoundException, ForbiddenException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 
 describe('MarketingCampaingAudienceController', () => {
   let controller: MarketingCampaingAudienceController;
@@ -33,7 +38,11 @@ describe('MarketingCampaingAudienceController', () => {
     data: {
       id: 1,
       marketingCampaignId: 1,
-      marketingCampaign: { id: 1, name: 'Summer Sale Campaign', channel: 'email' },
+      marketingCampaign: {
+        id: 1,
+        name: 'Summer Sale Campaign',
+        channel: 'email',
+      },
       customerId: 1,
       customer: { id: 1, name: 'John Doe', email: 'john@example.com' },
       status: MarketingCampaignAudienceStatus.PENDING,
@@ -58,8 +67,12 @@ describe('MarketingCampaingAudienceController', () => {
       ],
     }).compile();
 
-    controller = module.get<MarketingCampaingAudienceController>(MarketingCampaingAudienceController);
-    service = module.get<MarketingCampaingAudienceService>(MarketingCampaingAudienceService);
+    controller = module.get<MarketingCampaingAudienceController>(
+      MarketingCampaingAudienceController,
+    );
+    service = module.get<MarketingCampaingAudienceService>(
+      MarketingCampaingAudienceService,
+    );
   });
 
   afterEach(() => {
@@ -94,9 +107,15 @@ describe('MarketingCampaingAudienceController', () => {
     });
 
     it('should handle service errors', async () => {
-      jest.spyOn(service, 'create').mockRejectedValue(new NotFoundException('Marketing campaign not found'));
+      jest
+        .spyOn(service, 'create')
+        .mockRejectedValue(
+          new NotFoundException('Marketing campaign not found'),
+        );
 
-      await expect(controller.create(createDto, mockRequest as any)).rejects.toThrow(NotFoundException);
+      await expect(
+        controller.create(createDto, mockRequest as any),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -153,15 +172,21 @@ describe('MarketingCampaingAudienceController', () => {
     });
 
     it('should handle service errors', async () => {
-      jest.spyOn(service, 'findAll').mockRejectedValue(new ForbiddenException('Forbidden'));
+      jest
+        .spyOn(service, 'findAll')
+        .mockRejectedValue(new ForbiddenException('Forbidden'));
 
-      await expect(controller.findAll(query, mockRequest as any)).rejects.toThrow(ForbiddenException);
+      await expect(
+        controller.findAll(query, mockRequest as any),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 
   describe('findOne', () => {
     it('should return a single audience entry', async () => {
-      jest.spyOn(service, 'findOne').mockResolvedValue(mockAudienceResponse as any);
+      jest
+        .spyOn(service, 'findOne')
+        .mockResolvedValue(mockAudienceResponse as any);
 
       const result = await controller.findOne(1, mockRequest as any);
 
@@ -171,9 +196,13 @@ describe('MarketingCampaingAudienceController', () => {
     });
 
     it('should handle service errors', async () => {
-      jest.spyOn(service, 'findOne').mockRejectedValue(new NotFoundException('Audience entry not found'));
+      jest
+        .spyOn(service, 'findOne')
+        .mockRejectedValue(new NotFoundException('Audience entry not found'));
 
-      await expect(controller.findOne(999, mockRequest as any)).rejects.toThrow(NotFoundException);
+      await expect(controller.findOne(999, mockRequest as any)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -216,16 +245,24 @@ describe('MarketingCampaingAudienceController', () => {
 
       jest.spyOn(service, 'update').mockResolvedValue(expectedResult as any);
 
-      const result = await controller.update(1, partialUpdate, mockRequest as any);
+      const result = await controller.update(
+        1,
+        partialUpdate,
+        mockRequest as any,
+      );
 
       expect(result).toEqual(expectedResult);
       expect(service.update).toHaveBeenCalledWith(1, partialUpdate, 1);
     });
 
     it('should handle service errors', async () => {
-      jest.spyOn(service, 'update').mockRejectedValue(new NotFoundException('Audience entry not found'));
+      jest
+        .spyOn(service, 'update')
+        .mockRejectedValue(new NotFoundException('Audience entry not found'));
 
-      await expect(controller.update(999, updateDto, mockRequest as any)).rejects.toThrow(NotFoundException);
+      await expect(
+        controller.update(999, updateDto, mockRequest as any),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -250,15 +287,23 @@ describe('MarketingCampaingAudienceController', () => {
     });
 
     it('should handle service errors', async () => {
-      jest.spyOn(service, 'remove').mockRejectedValue(new NotFoundException('Audience entry not found'));
+      jest
+        .spyOn(service, 'remove')
+        .mockRejectedValue(new NotFoundException('Audience entry not found'));
 
-      await expect(controller.remove(999, mockRequest as any)).rejects.toThrow(NotFoundException);
+      await expect(controller.remove(999, mockRequest as any)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should handle conflict when already deleted', async () => {
-      jest.spyOn(service, 'remove').mockRejectedValue(new ConflictException('Already deleted'));
+      jest
+        .spyOn(service, 'remove')
+        .mockRejectedValue(new ConflictException('Already deleted'));
 
-      await expect(controller.remove(1, mockRequest as any)).rejects.toThrow(ConflictException);
+      await expect(controller.remove(1, mockRequest as any)).rejects.toThrow(
+        ConflictException,
+      );
     });
   });
 });

@@ -23,7 +23,7 @@ export class CategoryService {
     @InjectRepository(Merchant)
     private readonly merchantRepo: Repository<Merchant>,
     private readonly productsInventoryService: ProductsInventoryService,
-  ) { }
+  ) {}
 
   async create(
     merchant_id: number,
@@ -39,10 +39,10 @@ export class CategoryService {
       }),
       parentId
         ? this.categoryRepo.findOneBy({
-          id: parentId,
-          merchantId: merchant_id,
-          isActive: true,
-        })
+            id: parentId,
+            merchantId: merchant_id,
+            isActive: true,
+          })
         : Promise.resolve(null),
     ]);
 
@@ -122,9 +122,9 @@ export class CategoryService {
           name: category.name,
           merchant: category.merchant
             ? {
-              id: category.merchant.id,
-              name: category.merchant.name,
-            }
+                id: category.merchant.id,
+                name: category.merchant.name,
+              }
             : null,
         };
         result.parents =
@@ -176,9 +176,9 @@ export class CategoryService {
       name: category.name,
       merchant: category.merchant
         ? {
-          id: category.merchant.id,
-          name: category.merchant.name,
-        }
+            id: category.merchant.id,
+            name: category.merchant.name,
+          }
         : null,
     };
     dataForResponse.parents =

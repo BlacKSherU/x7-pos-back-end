@@ -1,10 +1,19 @@
 import { PartialType } from '@nestjs/swagger';
 import { CreateMarketingSegmentRuleDto } from './create-marketing-segment-rule.dto';
-import { IsOptional, IsString, IsEnum, MaxLength, IsNumber, Min } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsEnum,
+  MaxLength,
+  IsNumber,
+  Min,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { MarketingSegmentRuleOperator } from '../constants/marketing-segment-rule-operator.enum';
 
-export class UpdateMarketingSegmentRuleDto extends PartialType(CreateMarketingSegmentRuleDto) {
+export class UpdateMarketingSegmentRuleDto extends PartialType(
+  CreateMarketingSegmentRuleDto,
+) {
   @ApiPropertyOptional({
     example: 1,
     description: 'Identifier of the Marketing Segment this rule belongs to',

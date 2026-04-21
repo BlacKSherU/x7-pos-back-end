@@ -192,12 +192,8 @@ export class KitchenOrderService {
       async (manager) => {
         const saved = await manager.save(kitchenOrder);
 
-        const skipAuto =
-          createKitchenOrderDto.skipAutoKitchenItems === true;
-        if (
-          createKitchenOrderDto.orderId &&
-          !skipAuto
-        ) {
+        const skipAuto = createKitchenOrderDto.skipAutoKitchenItems === true;
+        if (createKitchenOrderDto.orderId && !skipAuto) {
           const orderItems = await manager.find(OrderItem, {
             where: {
               order_id: createKitchenOrderDto.orderId,

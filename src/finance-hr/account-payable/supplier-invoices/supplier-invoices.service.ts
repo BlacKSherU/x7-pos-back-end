@@ -30,7 +30,7 @@ export class SupplierInvoicesService {
     private readonly companyRepo: Repository<Company>,
     @InjectRepository(Supplier)
     private readonly supplierRepo: Repository<Supplier>,
-  ) { }
+  ) {}
 
   private toResponseDto(inv: SupplierInvoice): SupplierInvoiceResponseDto {
     return {
@@ -81,8 +81,7 @@ export class SupplierInvoicesService {
 
     const taxTotal = dto.tax_total ?? 0;
     const paidAmount = dto.paid_amount ?? 0;
-    const balanceDue =
-      dto.balance_due ?? Number(dto.total_amount) - paidAmount;
+    const balanceDue = dto.balance_due ?? Number(dto.total_amount) - paidAmount;
     if (balanceDue < 0) {
       throw new BadRequestException(
         'balance_due cannot be negative (paid_amount cannot exceed total_amount)',
@@ -179,9 +178,7 @@ export class SupplierInvoicesService {
       where: { id, deleted_at: IsNull() },
     });
     if (!invoice) {
-      throw new NotFoundException(
-        `Supplier invoice with ID ${id} not found`,
-      );
+      throw new NotFoundException(`Supplier invoice with ID ${id} not found`);
     }
 
     return {
@@ -203,9 +200,7 @@ export class SupplierInvoicesService {
       where: { id, deleted_at: IsNull() },
     });
     if (!invoice) {
-      throw new NotFoundException(
-        `Supplier invoice with ID ${id} not found`,
-      );
+      throw new NotFoundException(`Supplier invoice with ID ${id} not found`);
     }
 
     if (dto.company_id != null) {
@@ -260,9 +255,7 @@ export class SupplierInvoicesService {
       where: { id, deleted_at: IsNull() },
     });
     if (!invoice) {
-      throw new NotFoundException(
-        `Supplier invoice with ID ${id} not found`,
-      );
+      throw new NotFoundException(`Supplier invoice with ID ${id} not found`);
     }
 
     invoice.deleted_at = new Date();

@@ -67,8 +67,12 @@ describe('MarketingAutomationsController', () => {
       ],
     }).compile();
 
-    controller = module.get<MarketingAutomationsController>(MarketingAutomationsController);
-    service = module.get<MarketingAutomationsService>(MarketingAutomationsService);
+    controller = module.get<MarketingAutomationsController>(
+      MarketingAutomationsController,
+    );
+    service = module.get<MarketingAutomationsService>(
+      MarketingAutomationsService,
+    );
   });
 
   afterEach(() => {

@@ -7,9 +7,7 @@ import { PayrollRun } from '../payroll-runs/entities/payroll-run.entity';
 import { Collaborator } from '../../hr/collaborators/entities/collaborator.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([PayrollEntry, PayrollRun, Collaborator]),
-  ],
+  imports: [TypeOrmModule.forFeature([PayrollEntry, PayrollRun, Collaborator])],
   controllers: [PayrollEntriesController],
   providers: [PayrollEntriesService],
   exports: [PayrollEntriesService],

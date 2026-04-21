@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, type QueryDeepPartialEntity } from 'typeorm';
 import { OrderItemModifier } from './entities/order-item-modifier.entity';
 import { OrderItem } from '../order-item/entities/order-item.entity';
 import { Modifier } from '../../../inventory/products-inventory/modifiers/entities/modifier.entity';
@@ -92,7 +92,9 @@ export class OrderItemModifiersService {
       relations: [...RELATIONS],
     });
     if (!complete) {
-      throw new NotFoundException('Order item modifier not found after creation');
+      throw new NotFoundException(
+        'Order item modifier not found after creation',
+      );
     }
 
     await this.ordersService.syncOrderAggregates(orderItem.order_id);
@@ -138,7 +140,9 @@ export class OrderItemModifiersService {
         );
       }
       if (item.order.merchant_id !== merchantId) {
-        throw new ForbiddenException('Order item does not belong to your merchant');
+        throw new ForbiddenException(
+          'Order item does not belong to your merchant',
+        );
       }
       where.order_item_id = query.orderItemId;
     } else {
@@ -220,7 +224,10 @@ export class OrderItemModifiersService {
     };
   }
 
-  async findOne(id: number, merchantId: number): Promise<OneOrderItemModifierResponseDto> {
+  async findOne(
+    id: number,
+    merchantId: number,
+  ): Promise<OneOrderItemModifierResponseDto> {
     if (!id || id <= 0) {
       throw new BadRequestException('ID must be a valid positive number');
     }
@@ -291,7 +298,9 @@ export class OrderItemModifiersService {
         throw new NotFoundException('Order item not found');
       }
       if (item.order.merchant_id !== merchantId) {
-        throw new ForbiddenException('You can only assign order items from your merchant');
+        throw new ForbiddenException(
+          'You can only assign order items from your merchant',
+        );
       }
     }
 
@@ -316,7 +325,7 @@ export class OrderItemModifiersService {
       }
     }
 
-    const patch: Partial<OrderItemModifier> = {};
+    const patch: QueryDeepPartialEntity<OrderItemModifier> = {};
     if (dto.orderItemId !== undefined) patch.order_item_id = dto.orderItemId;
     if (dto.modifierId !== undefined) patch.modifier_id = dto.modifierId;
     if (dto.price !== undefined) {
@@ -348,7 +357,10 @@ export class OrderItemModifiersService {
     };
   }
 
-  async remove(id: number, merchantId: number): Promise<OneOrderItemModifierResponseDto> {
+  async remove(
+    id: number,
+    merchantId: number,
+  ): Promise<OneOrderItemModifierResponseDto> {
     if (!id || id <= 0) {
       throw new BadRequestException('ID must be a valid positive number');
     }

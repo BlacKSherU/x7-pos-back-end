@@ -1,4 +1,12 @@
-import { IsNotEmpty, IsString, IsEnum, IsOptional, MaxLength, IsBoolean, IsJSON } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsEnum,
+  IsOptional,
+  MaxLength,
+  IsBoolean,
+  IsJSON,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { MarketingAutomationTrigger } from '../constants/marketing-automation-trigger.enum';
 import { MarketingAutomationAction } from '../constants/marketing-automation-action.enum';
@@ -20,7 +28,8 @@ export class CreateMarketingAutomationDto {
   })
   @IsNotEmpty({ message: 'Trigger is required' })
   @IsEnum(MarketingAutomationTrigger, {
-    message: 'Trigger must be a valid trigger (on_order_paid, on_new_customer, inactivity, birthday)',
+    message:
+      'Trigger must be a valid trigger (on_order_paid, on_new_customer, inactivity, birthday)',
   })
   trigger: MarketingAutomationTrigger;
 
@@ -31,7 +40,8 @@ export class CreateMarketingAutomationDto {
   })
   @IsNotEmpty({ message: 'Action is required' })
   @IsEnum(MarketingAutomationAction, {
-    message: 'Action must be a valid action (send_email, send_sms, assign_coupon, move_segment)',
+    message:
+      'Action must be a valid action (send_email, send_sms, assign_coupon, move_segment)',
   })
   action: MarketingAutomationAction;
 

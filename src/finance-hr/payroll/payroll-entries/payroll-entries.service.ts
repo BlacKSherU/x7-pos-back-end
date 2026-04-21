@@ -10,7 +10,10 @@ import { PayrollRun } from '../payroll-runs/entities/payroll-run.entity';
 import { Collaborator } from '../../hr/collaborators/entities/collaborator.entity';
 import { CreatePayrollEntryDto } from './dto/create-payroll-entry.dto';
 import { UpdatePayrollEntryDto } from './dto/update-payroll-entry.dto';
-import { GetPayrollEntriesQueryDto, PayrollEntrySortBy } from './dto/get-payroll-entries-query.dto';
+import {
+  GetPayrollEntriesQueryDto,
+  PayrollEntrySortBy,
+} from './dto/get-payroll-entries-query.dto';
 import {
   PayrollEntryResponseDto,
   OnePayrollEntryResponseDto,
@@ -151,9 +154,7 @@ export class PayrollEntriesService {
       where: { id, deleted_at: IsNull() },
     });
     if (!entry) {
-      throw new NotFoundException(
-        `Payroll entry with ID ${id} not found`,
-      );
+      throw new NotFoundException(`Payroll entry with ID ${id} not found`);
     }
 
     return {
@@ -175,9 +176,7 @@ export class PayrollEntriesService {
       where: { id, deleted_at: IsNull() },
     });
     if (!entry) {
-      throw new NotFoundException(
-        `Payroll entry with ID ${id} not found`,
-      );
+      throw new NotFoundException(`Payroll entry with ID ${id} not found`);
     }
 
     if (dto.payroll_run_id != null) {
@@ -204,7 +203,8 @@ export class PayrollEntriesService {
     }
     if (dto.base_pay != null) entry.base_pay = dto.base_pay as any;
     if (dto.overtime_pay != null) entry.overtime_pay = dto.overtime_pay as any;
-    if (dto.double_overtime_pay != null) entry.double_overtime_pay = dto.double_overtime_pay as any;
+    if (dto.double_overtime_pay != null)
+      entry.double_overtime_pay = dto.double_overtime_pay as any;
     if (dto.tips_amount != null) entry.tips_amount = dto.tips_amount as any;
     if (dto.bonuses != null) entry.bonuses = dto.bonuses as any;
     if (dto.deductions != null) entry.deductions = dto.deductions as any;
@@ -229,9 +229,7 @@ export class PayrollEntriesService {
       where: { id, deleted_at: IsNull() },
     });
     if (!entry) {
-      throw new NotFoundException(
-        `Payroll entry with ID ${id} not found`,
-      );
+      throw new NotFoundException(`Payroll entry with ID ${id} not found`);
     }
 
     entry.deleted_at = new Date();

@@ -10,7 +10,10 @@ import { Company } from 'src/platform-saas/companies/entities/company.entity';
 import { Merchant } from 'src/platform-saas/merchants/entities/merchant.entity';
 import { CreatePayrollRunDto } from './dto/create-payroll-run.dto';
 import { UpdatePayrollRunDto } from './dto/update-payroll-run.dto';
-import { GetPayrollRunsQueryDto, PayrollRunSortBy } from './dto/get-payroll-runs-query.dto';
+import {
+  GetPayrollRunsQueryDto,
+  PayrollRunSortBy,
+} from './dto/get-payroll-runs-query.dto';
 import {
   PayrollRunResponseDto,
   OnePayrollRunResponseDto,
@@ -70,7 +73,9 @@ export class PayrollRunsService {
     const periodStart = new Date(dto.period_start);
     const periodEnd = new Date(dto.period_end);
     if (periodEnd < periodStart) {
-      throw new BadRequestException('period_end must be on or after period_start');
+      throw new BadRequestException(
+        'period_end must be on or after period_start',
+      );
     }
 
     const run = this.runRepo.create({
@@ -205,13 +210,18 @@ export class PayrollRunsService {
     if (dto.period_end != null) run.period_end = new Date(dto.period_end);
     if (dto.status != null) {
       run.status = dto.status;
-      if (dto.status === PayrollRunStatus.APPROVED || dto.status === PayrollRunStatus.PAID) {
+      if (
+        dto.status === PayrollRunStatus.APPROVED ||
+        dto.status === PayrollRunStatus.PAID
+      ) {
         if (!run.approved_at) run.approved_at = new Date();
       }
     }
 
     if (run.period_end < run.period_start) {
-      throw new BadRequestException('period_end must be on or after period_start');
+      throw new BadRequestException(
+        'period_end must be on or after period_start',
+      );
     }
 
     const saved = await this.runRepo.save(run);

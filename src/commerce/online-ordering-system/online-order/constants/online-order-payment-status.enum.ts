@@ -4,6 +4,3 @@ export enum OnlineOrderPaymentStatus {
   FAILED = 'failed',
   REFUNDED = 'refunded',
 }
-
-
-

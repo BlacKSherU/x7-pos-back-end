@@ -4,7 +4,10 @@ import { MarketingSegmentType } from '../constants/marketing-segment-type.enum';
 import { MarketingSegmentStatus } from '../constants/marketing-segment-status.enum';
 
 export class MarketingSegmentResponseDto {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Marketing Segment' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Marketing Segment',
+  })
   id: number;
 
   @ApiProperty({

@@ -1,7 +1,14 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Repository } from 'typeorm';
-import { SupplierCreditNote, SupplierCreditNoteStatus } from './entities/supplier-credit-note.entity';
+import {
+  SupplierCreditNote,
+  SupplierCreditNoteStatus,
+} from './entities/supplier-credit-note.entity';
 import { Company } from 'src/platform-saas/companies/entities/company.entity';
 import { Supplier } from 'src/core/business-partners/suppliers/entities/supplier.entity';
 import { CreateSupplierCreditNoteDto } from './dto/create-supplier-credit-note.dto';
@@ -45,16 +52,30 @@ export class SupplierCreditNotesService {
     };
   }
 
-  async create(dto: CreateSupplierCreditNoteDto): Promise<OneSupplierCreditNoteResponseDto> {
-    const company = await this.companyRepo.findOne({ where: { id: dto.company_id } });
-    if (!company) throw new NotFoundException(`Company with ID ${dto.company_id} not found`);
+  async create(
+    dto: CreateSupplierCreditNoteDto,
+  ): Promise<OneSupplierCreditNoteResponseDto> {
+    const company = await this.companyRepo.findOne({
+      where: { id: dto.company_id },
+    });
+    if (!company)
+      throw new NotFoundException(
+        `Company with ID ${dto.company_id} not found`,
+      );
 
-    const supplier = await this.supplierRepo.findOne({ where: { id: dto.supplier_id } });
-    if (!supplier) throw new NotFoundException(`Supplier with ID ${dto.supplier_id} not found`);
+    const supplier = await this.supplierRepo.findOne({
+      where: { id: dto.supplier_id },
+    });
+    if (!supplier)
+      throw new NotFoundException(
+        `Supplier with ID ${dto.supplier_id} not found`,
+      );
 
     const appliedAmount = dto.applied_amount ?? 0;
     if (appliedAmount > dto.total_amount) {
-      throw new BadRequestException('applied_amount cannot be greater than total_amount');
+      throw new BadRequestException(
+        'applied_amount cannot be greater than total_amount',
+      );
     }
 
     const cn = this.creditNoteRepo.create({
@@ -88,9 +109,16 @@ export class SupplierCreditNotesService {
       .createQueryBuilder('cn')
       .where('cn.deleted_at IS NULL');
 
-    if (query.company_id != null) qb.andWhere('cn.company_id = :companyId', { companyId: query.company_id });
-    if (query.supplier_id != null) qb.andWhere('cn.supplier_id = :supplierId', { supplierId: query.supplier_id });
-    if (query.status != null) qb.andWhere('cn.status = :status', { status: query.status });
+    if (query.company_id != null)
+      qb.andWhere('cn.company_id = :companyId', {
+        companyId: query.company_id,
+      });
+    if (query.supplier_id != null)
+      qb.andWhere('cn.supplier_id = :supplierId', {
+        supplierId: query.supplier_id,
+      });
+    if (query.status != null)
+      qb.andWhere('cn.status = :status', { status: query.status });
 
     const orderColumn =
       sortBy === SupplierCreditNoteSortBy.ISSUE_DATE
@@ -126,10 +154,16 @@ export class SupplierCreditNotesService {
   }
 
   async findOne(id: number): Promise<OneSupplierCreditNoteResponseDto> {
-    if (!id || id <= 0) throw new BadRequestException('Invalid supplier credit note ID');
+    if (!id || id <= 0)
+      throw new BadRequestException('Invalid supplier credit note ID');
 
-    const cn = await this.creditNoteRepo.findOne({ where: { id, deleted_at: IsNull() } });
-    if (!cn) throw new NotFoundException(`Supplier credit note with ID ${id} not found`);
+    const cn = await this.creditNoteRepo.findOne({
+      where: { id, deleted_at: IsNull() },
+    });
+    if (!cn)
+      throw new NotFoundException(
+        `Supplier credit note with ID ${id} not found`,
+      );
 
     return {
       statusCode: 200,
@@ -142,29 +176,49 @@ export class SupplierCreditNotesService {
     id: number,
     dto: UpdateSupplierCreditNoteDto,
   ): Promise<OneSupplierCreditNoteResponseDto> {
-    if (!id || id <= 0) throw new BadRequestException('Invalid supplier credit note ID');
+    if (!id || id <= 0)
+      throw new BadRequestException('Invalid supplier credit note ID');
 
-    const cn = await this.creditNoteRepo.findOne({ where: { id, deleted_at: IsNull() } });
-    if (!cn) throw new NotFoundException(`Supplier credit note with ID ${id} not found`);
+    const cn = await this.creditNoteRepo.findOne({
+      where: { id, deleted_at: IsNull() },
+    });
+    if (!cn)
+      throw new NotFoundException(
+        `Supplier credit note with ID ${id} not found`,
+      );
 
     if (dto.company_id != null) {
-      const company = await this.companyRepo.findOne({ where: { id: dto.company_id } });
-      if (!company) throw new NotFoundException(`Company with ID ${dto.company_id} not found`);
+      const company = await this.companyRepo.findOne({
+        where: { id: dto.company_id },
+      });
+      if (!company)
+        throw new NotFoundException(
+          `Company with ID ${dto.company_id} not found`,
+        );
       cn.company_id = dto.company_id;
     }
     if (dto.supplier_id != null) {
-      const supplier = await this.supplierRepo.findOne({ where: { id: dto.supplier_id } });
-      if (!supplier) throw new NotFoundException(`Supplier with ID ${dto.supplier_id} not found`);
+      const supplier = await this.supplierRepo.findOne({
+        where: { id: dto.supplier_id },
+      });
+      if (!supplier)
+        throw new NotFoundException(
+          `Supplier with ID ${dto.supplier_id} not found`,
+        );
       cn.supplier_id = dto.supplier_id;
     }
-    if (dto.credit_note_number != null) cn.credit_note_number = dto.credit_note_number;
+    if (dto.credit_note_number != null)
+      cn.credit_note_number = dto.credit_note_number;
     if (dto.issue_date != null) cn.issue_date = new Date(dto.issue_date);
     if (dto.total_amount != null) cn.total_amount = dto.total_amount as any;
-    if (dto.applied_amount != null) cn.applied_amount = dto.applied_amount as any;
+    if (dto.applied_amount != null)
+      cn.applied_amount = dto.applied_amount as any;
     if (dto.status != null) cn.status = dto.status;
 
     if (Number(cn.applied_amount) > Number(cn.total_amount)) {
-      throw new BadRequestException('applied_amount cannot be greater than total_amount');
+      throw new BadRequestException(
+        'applied_amount cannot be greater than total_amount',
+      );
     }
 
     const saved = await this.creditNoteRepo.save(cn);
@@ -176,10 +230,16 @@ export class SupplierCreditNotesService {
   }
 
   async remove(id: number): Promise<OneSupplierCreditNoteResponseDto> {
-    if (!id || id <= 0) throw new BadRequestException('Invalid supplier credit note ID');
+    if (!id || id <= 0)
+      throw new BadRequestException('Invalid supplier credit note ID');
 
-    const cn = await this.creditNoteRepo.findOne({ where: { id, deleted_at: IsNull() } });
-    if (!cn) throw new NotFoundException(`Supplier credit note with ID ${id} not found`);
+    const cn = await this.creditNoteRepo.findOne({
+      where: { id, deleted_at: IsNull() },
+    });
+    if (!cn)
+      throw new NotFoundException(
+        `Supplier credit note with ID ${id} not found`,
+      );
 
     cn.deleted_at = new Date();
     await this.creditNoteRepo.save(cn);

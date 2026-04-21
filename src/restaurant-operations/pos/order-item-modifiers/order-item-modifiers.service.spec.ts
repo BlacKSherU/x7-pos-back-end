@@ -1,9 +1,6 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/unbound-method */
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { type DeleteResult } from 'typeorm';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { OrderItemModifiersService } from './order-item-modifiers.service';
 import { OrderItemModifier } from './entities/order-item-modifier.entity';
@@ -64,8 +61,14 @@ describe('OrderItemModifiersService', () => {
       providers: [
         OrderItemModifiersService,
         { provide: getRepositoryToken(OrderItemModifier), useValue: mockRepo },
-        { provide: getRepositoryToken(OrderItem), useValue: mockOrderItemRepository },
-        { provide: getRepositoryToken(Modifier), useValue: mockModifierRepository },
+        {
+          provide: getRepositoryToken(OrderItem),
+          useValue: mockOrderItemRepository,
+        },
+        {
+          provide: getRepositoryToken(Modifier),
+          useValue: mockModifierRepository,
+        },
         { provide: getRepositoryToken(Order), useValue: mockOrderRepository },
         { provide: OrdersService, useValue: mockOrdersService },
       ],
@@ -92,10 +95,16 @@ describe('OrderItemModifiersService', () => {
     it('should create and sync order', async () => {
       jest
         .spyOn(mockOrderItemRepository, 'findOne')
-        .mockResolvedValue(mockOrderItem as any);
-      jest.spyOn(mockModifierRepository, 'findOne').mockResolvedValue(mockModifier as any);
-      jest.spyOn(mockRepo, 'save').mockResolvedValue({ id: 1 } as any);
-      jest.spyOn(mockRepo, 'findOne').mockResolvedValue(mockRow as any);
+        .mockResolvedValue(mockOrderItem as unknown as OrderItem);
+      jest
+        .spyOn(mockModifierRepository, 'findOne')
+        .mockResolvedValue(mockModifier as unknown as Modifier);
+      jest
+        .spyOn(mockRepo, 'save')
+        .mockResolvedValue({ id: 1 } as unknown as OrderItemModifier);
+      jest
+        .spyOn(mockRepo, 'findOne')
+        .mockResolvedValue(mockRow as unknown as OrderItemModifier);
 
       const result = await service.create(dto, 1);
 
@@ -104,9 +113,7 @@ describe('OrderItemModifiersService', () => {
     });
 
     it('should throw without merchant', async () => {
-      await expect(service.create(dto, undefined as any)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.create(dto, 0)).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw if order item missing', async () => {
@@ -117,8 +124,12 @@ describe('OrderItemModifiersService', () => {
 
   describe('remove', () => {
     it('should delete and sync', async () => {
-      jest.spyOn(mockRepo, 'findOne').mockResolvedValue(mockRow as any);
-      jest.spyOn(mockRepo, 'delete').mockResolvedValue(undefined as any);
+      jest
+        .spyOn(mockRepo, 'findOne')
+        .mockResolvedValue(mockRow as unknown as OrderItemModifier);
+      jest
+        .spyOn(mockRepo, 'delete')
+        .mockResolvedValue({ raw: [], affected: 1 } as DeleteResult);
 
       const result = await service.remove(1, 1);
 

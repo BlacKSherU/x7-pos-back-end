@@ -1,8 +1,19 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsBoolean, IsOptional, IsNumber, MaxLength, MinLength } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsBoolean,
+  IsOptional,
+  IsNumber,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 export class CreateOnlineMenuDto {
-  @ApiProperty({ example: 1, description: 'Identifier of the Online Store owning the Menu' })
+  @ApiProperty({
+    example: 1,
+    description: 'Identifier of the Online Store owning the Menu',
+  })
   @IsNumber({}, { message: 'Store ID must be a number' })
   @IsNotEmpty({ message: 'Store ID is required' })
   storeId: number;
@@ -14,7 +25,10 @@ export class CreateOnlineMenuDto {
   @MaxLength(100, { message: 'Name cannot exceed 100 characters' })
   name: string;
 
-  @ApiPropertyOptional({ example: 'This is the main menu for our restaurant', description: 'Description of the online menu' })
+  @ApiPropertyOptional({
+    example: 'This is the main menu for our restaurant',
+    description: 'Description of the online menu',
+  })
   @IsOptional()
   @IsString({ message: 'Description must be a string' })
   description?: string;

@@ -10,27 +10,27 @@ import { MarketingSegmentRulesModule } from './marketing-segment-rules/marketing
 import { MarketingSegmentsModule } from './marketing-segments/marketing-segments.module';
 
 @Module({
-    imports: [
-        MarketingAutomationActionsModule,
-        MarketingAutomationsModule,
-        MarketingCampaignModule,
-        MarketingCampaingAudienceModule,
-        MarketingCouponRedemptionsModule,
-        MarketingCouponsModule,
-        MarketingMessageLogsModule,
-        MarketingSegmentRulesModule,
-        MarketingSegmentsModule,
-    ],
-    exports: [
-        MarketingAutomationActionsModule,
-        MarketingAutomationsModule,
-        MarketingCampaignModule,
-        MarketingCampaingAudienceModule,
-        MarketingCouponRedemptionsModule,
-        MarketingCouponsModule,
-        MarketingMessageLogsModule,
-        MarketingSegmentRulesModule,
-        MarketingSegmentsModule,
-    ],
+  imports: [
+    MarketingAutomationActionsModule,
+    MarketingAutomationsModule,
+    MarketingCampaignModule,
+    MarketingCampaingAudienceModule,
+    MarketingCouponRedemptionsModule,
+    MarketingCouponsModule,
+    MarketingMessageLogsModule,
+    MarketingSegmentRulesModule,
+    MarketingSegmentsModule,
+  ],
+  exports: [
+    MarketingAutomationActionsModule,
+    MarketingAutomationsModule,
+    MarketingCampaignModule,
+    MarketingCampaingAudienceModule,
+    MarketingCouponRedemptionsModule,
+    MarketingCouponsModule,
+    MarketingMessageLogsModule,
+    MarketingSegmentRulesModule,
+    MarketingSegmentsModule,
+  ],
 })
-export class MarketingModule { }
+export class MarketingModule {}

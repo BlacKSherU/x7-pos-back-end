@@ -1,4 +1,12 @@
-import { IsNotEmpty, IsNumber, IsOptional, IsEnum, IsString, IsDateString, Min } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsEnum,
+  IsString,
+  IsDateString,
+  Min,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { MarketingMessageLogChannel } from '../constants/marketing-message-log-channel.enum';
@@ -7,7 +15,8 @@ import { MarketingMessageLogStatus } from '../constants/marketing-message-log-st
 export class CreateMarketingMessageLogDto {
   @ApiPropertyOptional({
     example: 1,
-    description: 'Identifier of the Marketing Campaign (optional, null if from automation)',
+    description:
+      'Identifier of the Marketing Campaign (optional, null if from automation)',
   })
   @IsOptional()
   @Type(() => Number)
@@ -17,7 +26,8 @@ export class CreateMarketingMessageLogDto {
 
   @ApiPropertyOptional({
     example: 1,
-    description: 'Identifier of the Marketing Automation (optional, null if from campaign)',
+    description:
+      'Identifier of the Marketing Automation (optional, null if from campaign)',
   })
   @IsOptional()
   @Type(() => Number)
@@ -41,16 +51,21 @@ export class CreateMarketingMessageLogDto {
     description: 'Channel used for the message (email, sms, push, inapp)',
   })
   @IsNotEmpty({ message: 'Channel is required' })
-  @IsEnum(MarketingMessageLogChannel, { message: 'Channel must be one of: email, sms, push, inapp' })
+  @IsEnum(MarketingMessageLogChannel, {
+    message: 'Channel must be one of: email, sms, push, inapp',
+  })
   channel: MarketingMessageLogChannel;
 
   @ApiProperty({
     example: MarketingMessageLogStatus.SENT,
     enum: MarketingMessageLogStatus,
-    description: 'Delivery status of the message (sent, delivered, opened, clicked, bounced)',
+    description:
+      'Delivery status of the message (sent, delivered, opened, clicked, bounced)',
   })
   @IsNotEmpty({ message: 'Status is required' })
-  @IsEnum(MarketingMessageLogStatus, { message: 'Status must be one of: sent, delivered, opened, clicked, bounced' })
+  @IsEnum(MarketingMessageLogStatus, {
+    message: 'Status must be one of: sent, delivered, opened, clicked, bounced',
+  })
   status: MarketingMessageLogStatus;
 
   @ApiPropertyOptional({

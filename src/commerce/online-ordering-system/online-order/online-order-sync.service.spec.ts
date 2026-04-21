@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/unbound-method */
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { OnlineOrderSyncService } from './online-order-sync.service';
@@ -49,7 +47,10 @@ describe('OnlineOrderSyncService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OnlineOrderSyncService,
-        { provide: getRepositoryToken(OnlineOrder), useValue: mockOnlineOrderRepo },
+        {
+          provide: getRepositoryToken(OnlineOrder),
+          useValue: mockOnlineOrderRepo,
+        },
         {
           provide: getRepositoryToken(OnlineOrderItem),
           useValue: mockOnlineOrderItemRepo,
@@ -121,7 +122,9 @@ describe('OnlineOrderSyncService', () => {
       fulfillment_status: OnlineOrderFulfillmentStatus.READY_FOR_PICKUP,
       order: { id: 100, total: 42.5 },
     };
-    mockOnlineOrderRepo.createQueryBuilder().getOne.mockResolvedValue(refreshed);
+    mockOnlineOrderRepo
+      .createQueryBuilder()
+      .getOne.mockResolvedValue(refreshed);
 
     await service.syncFromPosOrder(100);
 
@@ -131,7 +134,9 @@ describe('OnlineOrderSyncService', () => {
       expect.objectContaining({
         onlineOrderId: 10,
         orderId: 100,
-        data: expect.objectContaining({ fulfillmentStatus: OnlineOrderFulfillmentStatus.READY_FOR_PICKUP }),
+        data: expect.objectContaining({
+          fulfillmentStatus: OnlineOrderFulfillmentStatus.READY_FOR_PICKUP,
+        }),
       }),
     );
   });

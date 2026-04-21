@@ -5,7 +5,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, Repository, Between, In } from 'typeorm';
+import {
+  EntityManager,
+  Repository,
+  Between,
+  In,
+  type FindOptionsOrder,
+  type FindOptionsWhere,
+  type QueryDeepPartialEntity,
+} from 'typeorm';
 import { OrderItem } from '../order-item/entities/order-item.entity';
 import { OrderPayment } from '../order-payments/entities/order-payment.entity';
 import { OrderTax } from '../order-taxes/entities/order-tax.entity';
@@ -239,7 +247,7 @@ export class OrdersService {
     }
 
     // Build where clause
-    const where: any = {
+    const where: FindOptionsWhere<Order> = {
       merchant_id: authenticatedUserMerchantId,
       logical_status: OrderStatus.ACTIVE,
     };
@@ -321,18 +329,30 @@ export class OrdersService {
     }
 
     // Build order clause
-    const order: any = {};
+    const sortDir = query.sortOrder || 'DESC';
+    let order: FindOptionsOrder<Order>;
     if (query.sortBy) {
-      const map: Record<OrderSortBy, string> = {
-        [OrderSortBy.CREATED_AT]: 'created_at',
-        [OrderSortBy.CLOSED_AT]: 'closed_at',
-        [OrderSortBy.BUSINESS_STATUS]: 'status',
-        [OrderSortBy.TYPE]: 'type',
-        [OrderSortBy.STATUS]: 'logical_status',
-      };
-      order[map[query.sortBy]] = query.sortOrder || 'DESC';
+      switch (query.sortBy) {
+        case OrderSortBy.CREATED_AT:
+          order = { created_at: sortDir };
+          break;
+        case OrderSortBy.CLOSED_AT:
+          order = { closed_at: sortDir };
+          break;
+        case OrderSortBy.BUSINESS_STATUS:
+          order = { status: sortDir };
+          break;
+        case OrderSortBy.TYPE:
+          order = { type: sortDir };
+          break;
+        case OrderSortBy.STATUS:
+          order = { logical_status: sortDir };
+          break;
+        default:
+          order = { created_at: 'DESC' };
+      }
     } else {
-      order.created_at = 'DESC';
+      order = { created_at: 'DESC' };
     }
 
     const [rows, total] = await this.orderRepo.findAndCount({
@@ -343,7 +363,12 @@ export class OrdersService {
       relations: {
         orderItems: { product: true, variant: true },
         kitchenOrders: { merchant: true, onlineOrder: true, station: true },
-        onlineOrders: { merchant: true, store: true, customer: true, order: true },
+        onlineOrders: {
+          merchant: true,
+          store: true,
+          customer: true,
+          order: true,
+        },
       },
       relationLoadStrategy: 'query',
     });
@@ -379,7 +404,12 @@ export class OrdersService {
       relations: {
         orderItems: { product: true, variant: true },
         kitchenOrders: { merchant: true, onlineOrder: true, station: true },
-        onlineOrders: { merchant: true, store: true, customer: true, order: true },
+        onlineOrders: {
+          merchant: true,
+          store: true,
+          customer: true,
+          order: true,
+        },
       },
       relationLoadStrategy: 'query',
     });
@@ -429,7 +459,7 @@ export class OrdersService {
       );
     }
 
-    const updateData: any = {};
+    const updateData: QueryDeepPartialEntity<Order> = {};
 
     if (dto.tableId !== undefined) {
       // Validate table exists and belongs to user merchant
@@ -721,13 +751,7 @@ export class OrdersService {
     order.tip_total = 0;
     order.paid_total = 0;
     order.subtotal = 0;
-    order.total = computeOrderTotal(
-      0,
-      0,
-      0,
-      0,
-      order.delivery_fee,
-    );
+    order.total = computeOrderTotal(0, 0, 0, 0, order.delivery_fee);
     applyPaidDerivedFields(order);
     order.kitchen_status = KitchenStatus.PENDING;
     order.ready_at = null;
@@ -807,13 +831,7 @@ export class OrdersService {
     order.tip_total = 0;
     order.paid_total = 0;
     order.subtotal = 0;
-    order.total = computeOrderTotal(
-      0,
-      0,
-      0,
-      0,
-      order.delivery_fee,
-    );
+    order.total = computeOrderTotal(0, 0, 0, 0, order.delivery_fee);
     applyPaidDerivedFields(order);
     order.kitchen_status = KitchenStatus.PENDING;
     order.ready_at = null;
@@ -920,9 +938,7 @@ export class OrdersService {
     if (row.onlineOrders?.length) {
       base.onlineOrders = row.onlineOrders
         .filter((oo) => oo.status !== OnlineOrderStatus.DELETED)
-        .map((oo) =>
-          formatOnlineOrderToDto(oo, Number(row.total)),
-        );
+        .map((oo) => formatOnlineOrderToDto(oo, Number(row.total)));
     }
 
     return base;

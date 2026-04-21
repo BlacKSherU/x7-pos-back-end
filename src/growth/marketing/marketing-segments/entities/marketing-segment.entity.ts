@@ -16,7 +16,10 @@ import { MarketingSegmentStatus } from '../constants/marketing-segment-status.en
 @Entity('marketing_segments')
 @Index(['merchant_id', 'status', 'created_at'])
 export class MarketingSegment {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the marketing segment' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the marketing segment',
+  })
   @PrimaryGeneratedColumn({ type: 'bigint' })
   id: number;
 

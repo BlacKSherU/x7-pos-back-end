@@ -30,7 +30,7 @@ export class ItemsService {
     @InjectRepository(Variant)
     private readonly variantRepository: Repository<Variant>,
     private readonly movementsService: MovementsService,
-  ) { }
+  ) {}
 
   async create(
     merchant_id: number,
@@ -151,21 +151,21 @@ export class ItemsService {
           currentQty: item.currentQty,
           product: item.product
             ? ({
-              id: item.product.id,
-              name: item.product.name,
-            } as ProductLittleResponseDto)
+                id: item.product.id,
+                name: item.product.name,
+              } as ProductLittleResponseDto)
             : null,
           variant: item.variant
             ? ({
-              id: item.variant.id,
-              name: item.variant.name,
-            } as VariantLittleResponseDto)
+                id: item.variant.id,
+                name: item.variant.name,
+              } as VariantLittleResponseDto)
             : null,
           location: item.location
             ? ({
-              id: item.location.id,
-              name: item.location.name,
-            } as LocationLittleResponseDto)
+                id: item.location.id,
+                name: item.location.name,
+              } as LocationLittleResponseDto)
             : null,
         };
         return result;
@@ -211,7 +211,9 @@ export class ItemsService {
       .leftJoinAndSelect('item.location', 'location')
       .where('item.id = :id', { id })
       .andWhere('product.merchantId = :merchantId', { merchantId })
-      .andWhere('item.isActive = :isActive', { isActive: whereCondition.isActive })
+      .andWhere('item.isActive = :isActive', {
+        isActive: whereCondition.isActive,
+      })
       .getOne();
 
     if (!item) {
@@ -223,21 +225,21 @@ export class ItemsService {
       currentQty: item.currentQty,
       product: item.product
         ? ({
-          id: item.product.id,
-          name: item.product.name,
-        } as ProductLittleResponseDto)
+            id: item.product.id,
+            name: item.product.name,
+          } as ProductLittleResponseDto)
         : null,
       variant: item.variant
         ? ({
-          id: item.variant.id,
-          name: item.variant.name,
-        } as VariantLittleResponseDto)
+            id: item.variant.id,
+            name: item.variant.name,
+          } as VariantLittleResponseDto)
         : null,
       location: item.location
         ? ({
-          id: item.location.id,
-          name: item.location.name,
-        } as LocationLittleResponseDto)
+            id: item.location.id,
+            name: item.location.name,
+          } as LocationLittleResponseDto)
         : null,
     };
 

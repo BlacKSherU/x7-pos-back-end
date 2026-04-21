@@ -18,7 +18,10 @@ export class SupplierPaymentItem {
   @Column({ type: 'int', name: 'payment_id' })
   payment_id: number;
 
-  @ApiProperty({ example: 'INV-2025-001', description: 'Invoice or document number' })
+  @ApiProperty({
+    example: 'INV-2025-001',
+    description: 'Invoice or document number',
+  })
   @Column({ type: 'varchar', length: 100, name: 'document_number' })
   document_number: string;
 

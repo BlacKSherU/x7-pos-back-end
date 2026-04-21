@@ -4,6 +4,10 @@ import { BillingTransactionsModule } from './billing-transactions/billing-transa
 import { BusinessPartnersModule } from './business-partners/business-partners.module';
 
 @Module({
-  imports: [FinancialEngineModule, BillingTransactionsModule, BusinessPartnersModule],
+  imports: [
+    FinancialEngineModule,
+    BillingTransactionsModule,
+    BusinessPartnersModule,
+  ],
 })
-export class CoreModule { }
+export class CoreModule {}

@@ -1,11 +1,19 @@
 import { PartialType } from '@nestjs/swagger';
 import { CreateMarketingAutomationDto } from './create-marketing-automation.dto';
-import { IsOptional, IsString, IsEnum, MaxLength, IsBoolean } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsEnum,
+  MaxLength,
+  IsBoolean,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { MarketingAutomationTrigger } from '../constants/marketing-automation-trigger.enum';
 import { MarketingAutomationAction } from '../constants/marketing-automation-action.enum';
 
-export class UpdateMarketingAutomationDto extends PartialType(CreateMarketingAutomationDto) {
+export class UpdateMarketingAutomationDto extends PartialType(
+  CreateMarketingAutomationDto,
+) {
   @ApiPropertyOptional({
     example: 'Welcome Email Campaign',
     description: 'Name of the marketing automation',

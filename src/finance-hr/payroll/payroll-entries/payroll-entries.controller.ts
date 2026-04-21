@@ -142,7 +142,9 @@ export class PayrollEntriesController {
     type: OnePayrollEntryResponseDto,
   })
   @ApiBadRequestResponse({ description: 'Invalid input or validation error' })
-  @ApiNotFoundResponse({ description: 'Payroll entry, payroll run or collaborator not found' })
+  @ApiNotFoundResponse({
+    description: 'Payroll entry, payroll run or collaborator not found',
+  })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiForbiddenResponse({ description: 'Forbidden' })
   async update(

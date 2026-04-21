@@ -7,6 +7,8 @@ import {
   computeTipTotalFromPayments,
   deriveKitchenStatusFromItems,
 } from './order-aggregation.util';
+import type { OrderItem } from '../order-item/entities/order-item.entity';
+import type { OrderTax } from '../order-taxes/entities/order-tax.entity';
 import { OrderItemStatus } from '../order-item/constants/order-item-status.enum';
 import { KitchenStatus } from './constants/kitchen-status.enum';
 
@@ -37,7 +39,7 @@ describe('order-aggregation.util', () => {
         computeTaxTotalFromOrderTaxes([
           { amount: 2.5 },
           { amount: 1.25 },
-        ] as any),
+        ] as Pick<OrderTax, 'amount'>[]),
       ).toBe(3.75);
     });
 
@@ -54,19 +56,19 @@ describe('order-aggregation.util', () => {
           price: 15,
           discount: 5,
           status: OrderItemStatus.ACTIVE,
-        } as any,
+        } as unknown as OrderItem,
         {
           quantity: 1,
           price: 10,
           discount: 0,
           status: OrderItemStatus.ACTIVE,
-        } as any,
+        } as unknown as OrderItem,
         {
           quantity: 10,
           price: 100,
           discount: 0,
           status: OrderItemStatus.DELETED,
-        } as any,
+        } as unknown as OrderItem,
       ]);
 
       expect(subtotal).toBe(35); // (2*15-5) + (1*10)
@@ -83,7 +85,7 @@ describe('order-aggregation.util', () => {
             discount: 0,
             status: OrderItemStatus.ACTIVE,
             total_price: 20,
-          } as any,
+          } as unknown as OrderItem,
         ],
         addon,
       );
@@ -159,11 +161,11 @@ describe('order-aggregation.util', () => {
         {
           status: OrderItemStatus.ACTIVE,
           kitchen_status: 'pending',
-        } as any,
+        } as unknown as OrderItem,
         {
           status: OrderItemStatus.ACTIVE,
           kitchen_status: 'pending',
-        } as any,
+        } as unknown as OrderItem,
       ]);
       expect(status).toBe(KitchenStatus.PENDING);
     });
@@ -173,11 +175,11 @@ describe('order-aggregation.util', () => {
         {
           status: OrderItemStatus.ACTIVE,
           kitchen_status: 'pending',
-        } as any,
+        } as unknown as OrderItem,
         {
           status: OrderItemStatus.ACTIVE,
           kitchen_status: 'served',
-        } as any,
+        } as unknown as OrderItem,
       ]);
       expect(status).toBe(KitchenStatus.SENT);
     });
@@ -187,11 +189,11 @@ describe('order-aggregation.util', () => {
         {
           status: OrderItemStatus.ACTIVE,
           kitchen_status: 'pending',
-        } as any,
+        } as unknown as OrderItem,
         {
           status: OrderItemStatus.ACTIVE,
           kitchen_status: 'ready',
-        } as any,
+        } as unknown as OrderItem,
       ]);
       expect(status).toBe(KitchenStatus.READY);
     });
@@ -201,11 +203,11 @@ describe('order-aggregation.util', () => {
         {
           status: OrderItemStatus.ACTIVE,
           kitchen_status: 'pending',
-        } as any,
+        } as unknown as OrderItem,
         {
           status: OrderItemStatus.ACTIVE,
           kitchen_status: 'in_preparation',
-        } as any,
+        } as unknown as OrderItem,
       ]);
       expect(status).toBe(KitchenStatus.PREPARING);
     });
@@ -215,11 +217,11 @@ describe('order-aggregation.util', () => {
         {
           status: OrderItemStatus.ACTIVE,
           kitchen_status: 'ready',
-        } as any,
+        } as unknown as OrderItem,
         {
           status: OrderItemStatus.ACTIVE,
           kitchen_status: 'ready',
-        } as any,
+        } as unknown as OrderItem,
       ]);
       expect(status).toBe(KitchenStatus.READY);
     });
@@ -229,11 +231,11 @@ describe('order-aggregation.util', () => {
         {
           status: OrderItemStatus.ACTIVE,
           kitchen_status: 'served',
-        } as any,
+        } as unknown as OrderItem,
         {
           status: OrderItemStatus.ACTIVE,
           kitchen_status: 'served',
-        } as any,
+        } as unknown as OrderItem,
       ]);
       expect(status).toBe(KitchenStatus.COMPLETED);
     });
@@ -241,17 +243,26 @@ describe('order-aggregation.util', () => {
     it('should map legacy TypeORM enum strings (sent/preparing/completed) for roll-up', () => {
       expect(
         deriveKitchenStatusFromItems([
-          { status: OrderItemStatus.ACTIVE, kitchen_status: 'sent' } as any,
+          {
+            status: OrderItemStatus.ACTIVE,
+            kitchen_status: 'sent',
+          } as unknown as OrderItem,
         ]),
       ).toBe(KitchenStatus.PREPARING);
       expect(
         deriveKitchenStatusFromItems([
-          { status: OrderItemStatus.ACTIVE, kitchen_status: 'preparing' } as any,
+          {
+            status: OrderItemStatus.ACTIVE,
+            kitchen_status: 'preparing',
+          } as unknown as OrderItem,
         ]),
       ).toBe(KitchenStatus.PREPARING);
       expect(
         deriveKitchenStatusFromItems([
-          { status: OrderItemStatus.ACTIVE, kitchen_status: 'completed' } as any,
+          {
+            status: OrderItemStatus.ACTIVE,
+            kitchen_status: 'completed',
+          } as unknown as OrderItem,
         ]),
       ).toBe(KitchenStatus.COMPLETED);
     });

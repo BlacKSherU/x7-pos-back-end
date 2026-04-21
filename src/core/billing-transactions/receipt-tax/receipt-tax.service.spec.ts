@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/unbound-method */
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { ReceiptTaxService } from './receipt-tax.service';
@@ -9,7 +8,11 @@ import { Receipt } from '../receipts/entities/receipt.entity';
 import { Order } from 'src/restaurant-operations/pos/orders/entities/order.entity';
 import { ReceiptItem } from '../receipt-item/entities/receipt-item.entity';
 import { ReceiptsService } from '../receipts/receipts.service';
-import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateReceiptTaxDto } from './dto/create-receipt-tax.dto';
 import { UpdateReceiptTaxDto } from './dto/update-receipt-tax.dto';
 import { ReceiptTaxScope } from './constants/receipt-tax-scope.enum';
@@ -50,10 +53,16 @@ describe('ReceiptTaxService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ReceiptTaxService,
-        { provide: getRepositoryToken(ReceiptTax), useValue: mockReceiptTaxRepo },
+        {
+          provide: getRepositoryToken(ReceiptTax),
+          useValue: mockReceiptTaxRepo,
+        },
         { provide: getRepositoryToken(Receipt), useValue: mockReceiptRepo },
         { provide: getRepositoryToken(Order), useValue: mockOrderRepo },
-        { provide: getRepositoryToken(ReceiptItem), useValue: mockReceiptItemRepo },
+        {
+          provide: getRepositoryToken(ReceiptItem),
+          useValue: mockReceiptItemRepo,
+        },
         { provide: ReceiptsService, useValue: mockReceiptsService },
       ],
     }).compile();
@@ -93,26 +102,42 @@ describe('ReceiptTaxService', () => {
     });
 
     it('should create a receipt tax with scope ITEM when receiptItemId is provided', async () => {
-      const dtoItem: CreateReceiptTaxDto = { ...dto, scope: ReceiptTaxScope.ITEM, receiptItemId: 5 };
-      mockReceiptTaxRepo.save.mockResolvedValue({ ...mockTax, scope: ReceiptTaxScope.ITEM, receipt_item_id: 5 });
+      const dtoItem: CreateReceiptTaxDto = {
+        ...dto,
+        scope: ReceiptTaxScope.ITEM,
+        receiptItemId: 5,
+      };
+      mockReceiptTaxRepo.save.mockResolvedValue({
+        ...mockTax,
+        scope: ReceiptTaxScope.ITEM,
+        receipt_item_id: 5,
+      });
       const result = await service.create(dtoItem, MERCHANT_ID);
       expect(result.statusCode).toBe(201);
     });
 
     it('should throw ForbiddenException when merchantId is not provided', async () => {
-      await expect(service.create(dto, undefined as any)).rejects.toThrow(ForbiddenException);
+      await expect(service.create(dto, undefined as any)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw BadRequestException when receiptId is invalid', async () => {
-      await expect(service.create({ ...dto, receiptId: 0 }, MERCHANT_ID)).rejects.toThrow(BadRequestException);
+      await expect(
+        service.create({ ...dto, receiptId: 0 }, MERCHANT_ID),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException when rate is negative', async () => {
-      await expect(service.create({ ...dto, rate: -1 }, MERCHANT_ID)).rejects.toThrow(BadRequestException);
+      await expect(
+        service.create({ ...dto, rate: -1 }, MERCHANT_ID),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException when amount is negative', async () => {
-      await expect(service.create({ ...dto, amount: -1 }, MERCHANT_ID)).rejects.toThrow(BadRequestException);
+      await expect(
+        service.create({ ...dto, amount: -1 }, MERCHANT_ID),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException when scope is ITEM but receiptItemId is missing', async () => {
@@ -123,18 +148,28 @@ describe('ReceiptTaxService', () => {
 
     it('should throw NotFoundException when receipt not found', async () => {
       mockReceiptRepo.findOne.mockResolvedValue(null);
-      await expect(service.create(dto, MERCHANT_ID)).rejects.toThrow(NotFoundException);
+      await expect(service.create(dto, MERCHANT_ID)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw ForbiddenException when receipt belongs to different merchant', async () => {
-      mockOrderRepo.findOne.mockResolvedValue({ ...mockOrder, merchant_id: 99 });
-      await expect(service.create(dto, MERCHANT_ID)).rejects.toThrow(ForbiddenException);
+      mockOrderRepo.findOne.mockResolvedValue({
+        ...mockOrder,
+        merchant_id: 99,
+      });
+      await expect(service.create(dto, MERCHANT_ID)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw NotFoundException when receiptItem does not belong to receipt', async () => {
       mockReceiptItemRepo.findOne.mockResolvedValue(null);
       await expect(
-        service.create({ ...dto, scope: ReceiptTaxScope.ITEM, receiptItemId: 999 }, MERCHANT_ID),
+        service.create(
+          { ...dto, scope: ReceiptTaxScope.ITEM, receiptItemId: 999 },
+          MERCHANT_ID,
+        ),
       ).rejects.toThrow(NotFoundException);
     });
   });
@@ -154,7 +189,9 @@ describe('ReceiptTaxService', () => {
     });
 
     it('should return paginated receipt taxes', async () => {
-      mockReceiptTaxRepo.createQueryBuilder.mockReturnValue(buildQb([mockTax], 1));
+      mockReceiptTaxRepo.createQueryBuilder.mockReturnValue(
+        buildQb([mockTax], 1),
+      );
       const result = await service.findAll({ page: 1, limit: 10 }, MERCHANT_ID);
       expect(result.statusCode).toBe(200);
       expect(result.data).toHaveLength(1);
@@ -162,15 +199,21 @@ describe('ReceiptTaxService', () => {
     });
 
     it('should throw ForbiddenException when no merchantId', async () => {
-      await expect(service.findAll({}, undefined as any)).rejects.toThrow(ForbiddenException);
+      await expect(service.findAll({}, undefined as any)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw BadRequestException when page < 1', async () => {
-      await expect(service.findAll({ page: 0 }, MERCHANT_ID)).rejects.toThrow(BadRequestException);
+      await expect(service.findAll({ page: 0 }, MERCHANT_ID)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException when limit > 100', async () => {
-      await expect(service.findAll({ limit: 101 }, MERCHANT_ID)).rejects.toThrow(BadRequestException);
+      await expect(
+        service.findAll({ limit: 101 }, MERCHANT_ID),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -184,55 +227,80 @@ describe('ReceiptTaxService', () => {
     });
 
     it('should throw BadRequestException when id is invalid', async () => {
-      await expect(service.findOne(0, MERCHANT_ID)).rejects.toThrow(BadRequestException);
+      await expect(service.findOne(0, MERCHANT_ID)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw ForbiddenException when no merchantId', async () => {
-      await expect(service.findOne(1, undefined as any)).rejects.toThrow(ForbiddenException);
+      await expect(service.findOne(1, undefined as any)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw NotFoundException when tax not found', async () => {
       mockReceiptTaxRepo.findOne.mockResolvedValue(null);
-      await expect(service.findOne(999, MERCHANT_ID)).rejects.toThrow(NotFoundException);
+      await expect(service.findOne(999, MERCHANT_ID)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw ForbiddenException when tax belongs to different merchant', async () => {
-      mockOrderRepo.findOne.mockResolvedValue({ ...mockOrder, merchant_id: 99 });
-      await expect(service.findOne(1, MERCHANT_ID)).rejects.toThrow(ForbiddenException);
+      mockOrderRepo.findOne.mockResolvedValue({
+        ...mockOrder,
+        merchant_id: 99,
+      });
+      await expect(service.findOne(1, MERCHANT_ID)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
   // ─── update ─────────────────────────────────────────────────────────────────
 
   describe('update', () => {
-    const dto: UpdateReceiptTaxDto = { name: 'IVA Actualizado', amount: 5.00 };
+    const dto: UpdateReceiptTaxDto = { name: 'IVA Actualizado', amount: 5.0 };
 
     it('should update a receipt tax successfully', async () => {
-      mockReceiptTaxRepo.save.mockResolvedValue({ ...mockTax, name: 'IVA Actualizado', amount: 5.00 });
+      mockReceiptTaxRepo.save.mockResolvedValue({
+        ...mockTax,
+        name: 'IVA Actualizado',
+        amount: 5.0,
+      });
       const result = await service.update(1, dto, MERCHANT_ID);
       expect(result.statusCode).toBe(200);
       expect(result.message).toBe('Receipt tax updated successfully');
     });
 
     it('should throw BadRequestException when id is invalid', async () => {
-      await expect(service.update(0, dto, MERCHANT_ID)).rejects.toThrow(BadRequestException);
+      await expect(service.update(0, dto, MERCHANT_ID)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw ForbiddenException when no merchantId', async () => {
-      await expect(service.update(1, dto, undefined as any)).rejects.toThrow(ForbiddenException);
+      await expect(service.update(1, dto, undefined as any)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw NotFoundException when tax not found', async () => {
       mockReceiptTaxRepo.findOne.mockResolvedValue(null);
-      await expect(service.update(999, dto, MERCHANT_ID)).rejects.toThrow(NotFoundException);
+      await expect(service.update(999, dto, MERCHANT_ID)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw BadRequestException when rate is negative', async () => {
-      await expect(service.update(1, { rate: -1 }, MERCHANT_ID)).rejects.toThrow(BadRequestException);
+      await expect(
+        service.update(1, { rate: -1 }, MERCHANT_ID),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException when amount is negative', async () => {
-      await expect(service.update(1, { amount: -1 }, MERCHANT_ID)).rejects.toThrow(BadRequestException);
+      await expect(
+        service.update(1, { amount: -1 }, MERCHANT_ID),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -244,20 +312,29 @@ describe('ReceiptTaxService', () => {
       const result = await service.remove(1, MERCHANT_ID);
       expect(result.statusCode).toBe(200);
       expect(result.message).toBe('Receipt tax deleted successfully');
-      expect(mockReceiptTaxRepo.update).toHaveBeenCalledWith(1, expect.any(Object));
+      expect(mockReceiptTaxRepo.update).toHaveBeenCalledWith(
+        1,
+        expect.any(Object),
+      );
     });
 
     it('should throw BadRequestException when id is invalid', async () => {
-      await expect(service.remove(0, MERCHANT_ID)).rejects.toThrow(BadRequestException);
+      await expect(service.remove(0, MERCHANT_ID)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw ForbiddenException when no merchantId', async () => {
-      await expect(service.remove(1, undefined as any)).rejects.toThrow(ForbiddenException);
+      await expect(service.remove(1, undefined as any)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw NotFoundException when tax not found', async () => {
       mockReceiptTaxRepo.findOne.mockResolvedValue(null);
-      await expect(service.remove(999, MERCHANT_ID)).rejects.toThrow(NotFoundException);
+      await expect(service.remove(999, MERCHANT_ID)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

@@ -19,7 +19,9 @@ export class OrderPayment {
   @Column({ name: 'order_id' })
   order_id: number;
 
-  @ManyToOne(() => Order, (order) => order.orderPayments, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Order, (order) => order.orderPayments, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'order_id' })
   order: Order;
 
@@ -31,7 +33,10 @@ export class OrderPayment {
   @Column({ type: 'varchar', length: 50 })
   method: string;
 
-  @ApiPropertyOptional({ example: 'stripe', description: 'clover, stripe, transbank' })
+  @ApiPropertyOptional({
+    example: 'stripe',
+    description: 'clover, stripe, transbank',
+  })
   @Column({ type: 'varchar', length: 50, nullable: true })
   provider: string | null;
 

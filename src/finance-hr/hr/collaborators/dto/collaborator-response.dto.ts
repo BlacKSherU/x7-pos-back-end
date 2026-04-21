@@ -4,29 +4,41 @@ import { ShiftRole } from '../constants/shift-role.enum';
 import { CollaboratorStatus } from '../constants/collaborator-status.enum';
 
 export class CollaboratorResponseDto {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Collaborator' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Collaborator',
+  })
   id: number;
 
-  @ApiProperty({ example: 1, description: 'Identifier of the User associated with the Collaborator' })
+  @ApiProperty({
+    example: 1,
+    description: 'Identifier of the User associated with the Collaborator',
+  })
   user_id: number;
 
-  @ApiProperty({ example: 1, description: 'Identifier of the Merchant owning the Collaborator' })
+  @ApiProperty({
+    example: 1,
+    description: 'Identifier of the Merchant owning the Collaborator',
+  })
   merchant_id: number;
 
-  @ApiProperty({ example: 'Juan Pérez', description: 'Name of the Collaborator' })
+  @ApiProperty({
+    example: 'Juan Pérez',
+    description: 'Name of the Collaborator',
+  })
   name: string;
 
-  @ApiProperty({ 
-    example: ShiftRole.WAITER, 
+  @ApiProperty({
+    example: ShiftRole.WAITER,
     enum: ShiftRole,
-    description: 'Role of the Collaborator' 
+    description: 'Role of the Collaborator',
   })
   role: ShiftRole;
 
-  @ApiProperty({ 
-    example: CollaboratorStatus.ACTIVE, 
+  @ApiProperty({
+    example: CollaboratorStatus.ACTIVE,
     enum: CollaboratorStatus,
-    description: 'Status of the Collaborator' 
+    description: 'Status of the Collaborator',
   })
   status: CollaboratorStatus;
 
@@ -34,8 +46,8 @@ export class CollaboratorResponseDto {
     description: 'Basic merchant information',
     example: {
       id: 1,
-      name: 'Restaurant ABC'
-    }
+      name: 'Restaurant ABC',
+    },
   })
   merchant: {
     id: number;
@@ -47,8 +59,8 @@ export class CollaboratorResponseDto {
     example: {
       id: 1,
       firstname: 'Juan',
-      lastname: 'Pérez'
-    }
+      lastname: 'Pérez',
+    },
   })
   user: {
     id: number;

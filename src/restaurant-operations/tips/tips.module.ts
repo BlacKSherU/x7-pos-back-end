@@ -7,21 +7,21 @@ import { CashTipMovementsModule } from './cash-tip-movements/cash-tip-movements.
 import { TipPoolsModule } from './tip-pools/tip-pools.module';
 
 @Module({
-    imports: [
-        TipAllocationsModule,
-        TipSettlementsModule,
-        TipPoolMembersModule,
-        SubTipsModule,
-        CashTipMovementsModule,
-        TipPoolsModule,
-    ],
-    exports: [
-        TipAllocationsModule,
-        TipSettlementsModule,
-        TipPoolMembersModule,
-        SubTipsModule,
-        CashTipMovementsModule,
-        TipPoolsModule,
-    ],
+  imports: [
+    TipAllocationsModule,
+    TipSettlementsModule,
+    TipPoolMembersModule,
+    SubTipsModule,
+    CashTipMovementsModule,
+    TipPoolsModule,
+  ],
+  exports: [
+    TipAllocationsModule,
+    TipSettlementsModule,
+    TipPoolMembersModule,
+    SubTipsModule,
+    CashTipMovementsModule,
+    TipPoolsModule,
+  ],
 })
-export class TipsModule { }
+export class TipsModule {}

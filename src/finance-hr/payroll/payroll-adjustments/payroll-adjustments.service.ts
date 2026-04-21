@@ -9,7 +9,10 @@ import { PayrollAdjustment } from './entities/payroll-adjustment.entity';
 import { PayrollEntry } from '../payroll-entries/entities/payroll-entry.entity';
 import { CreatePayrollAdjustmentDto } from './dto/create-payroll-adjustment.dto';
 import { UpdatePayrollAdjustmentDto } from './dto/update-payroll-adjustment.dto';
-import { GetPayrollAdjustmentsQueryDto, PayrollAdjustmentSortBy } from './dto/get-payroll-adjustments-query.dto';
+import {
+  GetPayrollAdjustmentsQueryDto,
+  PayrollAdjustmentSortBy,
+} from './dto/get-payroll-adjustments-query.dto';
 import {
   PayrollAdjustmentResponseDto,
   OnePayrollAdjustmentResponseDto,
@@ -144,9 +147,7 @@ export class PayrollAdjustmentsService {
       where: { id, deleted_at: IsNull() },
     });
     if (!adjustment) {
-      throw new NotFoundException(
-        `Payroll adjustment with ID ${id} not found`,
-      );
+      throw new NotFoundException(`Payroll adjustment with ID ${id} not found`);
     }
 
     return {
@@ -168,9 +169,7 @@ export class PayrollAdjustmentsService {
       where: { id, deleted_at: IsNull() },
     });
     if (!adjustment) {
-      throw new NotFoundException(
-        `Payroll adjustment with ID ${id} not found`,
-      );
+      throw new NotFoundException(`Payroll adjustment with ID ${id} not found`);
     }
 
     if (dto.payroll_entry_id != null) {
@@ -184,8 +183,10 @@ export class PayrollAdjustmentsService {
       }
       adjustment.payroll_entry_id = dto.payroll_entry_id;
     }
-    if (dto.adjustment_type != null) adjustment.adjustment_type = dto.adjustment_type;
-    if (dto.description !== undefined) adjustment.description = dto.description ?? null;
+    if (dto.adjustment_type != null)
+      adjustment.adjustment_type = dto.adjustment_type;
+    if (dto.description !== undefined)
+      adjustment.description = dto.description ?? null;
     if (dto.amount != null) {
       const type = dto.adjustment_type ?? adjustment.adjustment_type;
       if (type === AdjustmentType.DEDUCTION && dto.amount > 0) {
@@ -218,9 +219,7 @@ export class PayrollAdjustmentsService {
       where: { id, deleted_at: IsNull() },
     });
     if (!adjustment) {
-      throw new NotFoundException(
-        `Payroll adjustment with ID ${id} not found`,
-      );
+      throw new NotFoundException(`Payroll adjustment with ID ${id} not found`);
     }
 
     adjustment.deleted_at = new Date();

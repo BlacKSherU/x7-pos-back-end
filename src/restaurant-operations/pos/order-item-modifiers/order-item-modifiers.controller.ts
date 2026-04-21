@@ -101,7 +101,10 @@ export class OrderItemModifiersController {
     @Query() query: GetOrderItemModifierQueryDto,
     @Request() req: AuthenticatedRequest,
   ): Promise<PaginatedOrderItemModifierResponseDto> {
-    return this.orderItemModifiersService.findAll(query, req.user?.merchant?.id);
+    return this.orderItemModifiersService.findAll(
+      query,
+      req.user?.merchant?.id,
+    );
   }
 
   @Get(':id')
@@ -141,7 +144,11 @@ export class OrderItemModifiersController {
     @Body() dto: UpdateOrderItemModifierDto,
     @Request() req: AuthenticatedRequest,
   ): Promise<OneOrderItemModifierResponseDto> {
-    return this.orderItemModifiersService.update(id, dto, req.user?.merchant?.id);
+    return this.orderItemModifiersService.update(
+      id,
+      dto,
+      req.user?.merchant?.id,
+    );
   }
 
   @Delete(':id')

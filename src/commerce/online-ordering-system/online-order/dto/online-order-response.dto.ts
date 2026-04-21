@@ -40,7 +40,10 @@ export class BasicCustomerInfoDto {
 }
 
 export class OnlineOrderResponseDto {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Online Order' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Online Order',
+  })
   id: number;
 
   @ApiProperty({ example: 1, description: 'Identifier of the Merchant' })
@@ -49,7 +52,11 @@ export class OnlineOrderResponseDto {
   @ApiProperty({ example: 1, description: 'Identifier of the Online Store' })
   storeId: number;
 
-  @ApiProperty({ example: 1, description: 'Identifier of the Order', nullable: true })
+  @ApiProperty({
+    example: 1,
+    description: 'Identifier of the Order',
+    nullable: true,
+  })
   orderId: number | null;
 
   @ApiProperty({ example: 1, description: 'Identifier of the Customer' })
@@ -72,17 +79,29 @@ export class OnlineOrderResponseDto {
   @ApiProperty({
     example: OnlineOrderPaymentStatus.PENDING,
     enum: OnlineOrderPaymentStatus,
-    description: 'Payment status of the order (pending, paid, failed, refunded)',
+    description:
+      'Payment status of the order (pending, paid, failed, refunded)',
   })
   paymentStatus: OnlineOrderPaymentStatus;
 
-  @ApiProperty({ example: '2024-01-15T10:00:00Z', description: 'Scheduled time for the order', nullable: true })
+  @ApiProperty({
+    example: '2024-01-15T10:00:00Z',
+    description: 'Scheduled time for the order',
+    nullable: true,
+  })
   scheduledAt: Date | null;
 
-  @ApiProperty({ example: '2024-01-15T08:00:00Z', description: 'Time when the order was placed', nullable: true })
+  @ApiProperty({
+    example: '2024-01-15T08:00:00Z',
+    description: 'Time when the order was placed',
+    nullable: true,
+  })
   placedAt: Date | null;
 
-  @ApiProperty({ example: '2024-01-15T09:00:00Z', description: 'Last update timestamp' })
+  @ApiProperty({
+    example: '2024-01-15T09:00:00Z',
+    description: 'Last update timestamp',
+  })
   updatedAt: Date;
 
   @ApiProperty({
@@ -92,7 +111,11 @@ export class OnlineOrderResponseDto {
   })
   totalAmount: number;
 
-  @ApiProperty({ example: 'Please deliver to the back door', description: 'Additional notes for the order', nullable: true })
+  @ApiProperty({
+    example: 'Please deliver to the back door',
+    description: 'Additional notes for the order',
+    nullable: true,
+  })
   notes: string | null;
 
   @ApiProperty({ enum: OnlineOrderFulfillmentStatus })
@@ -107,16 +130,29 @@ export class OnlineOrderResponseDto {
   @ApiProperty({ nullable: true })
   completedAt: Date | null;
 
-  @ApiProperty({ type: () => BasicMerchantInfoDto, description: 'Merchant information' })
+  @ApiProperty({
+    type: () => BasicMerchantInfoDto,
+    description: 'Merchant information',
+  })
   merchant: BasicMerchantInfoDto;
 
-  @ApiProperty({ type: () => BasicOnlineStoreInfoDto, description: 'Online Store information' })
+  @ApiProperty({
+    type: () => BasicOnlineStoreInfoDto,
+    description: 'Online Store information',
+  })
   store: BasicOnlineStoreInfoDto;
 
-  @ApiProperty({ type: () => BasicOrderInfoDto, description: 'Order information', nullable: true })
+  @ApiProperty({
+    type: () => BasicOrderInfoDto,
+    description: 'Order information',
+    nullable: true,
+  })
   order: BasicOrderInfoDto | null;
 
-  @ApiProperty({ type: () => BasicCustomerInfoDto, description: 'Customer information' })
+  @ApiProperty({
+    type: () => BasicCustomerInfoDto,
+    description: 'Customer information',
+  })
   customer: BasicCustomerInfoDto;
 
   @ApiPropertyOptional({
@@ -127,15 +163,16 @@ export class OnlineOrderResponseDto {
 
   @ApiPropertyOptional({
     type: () => [KitchenOrderNestedInOnlineOrderDto],
-    description: 'Kitchen tickets linked to this online order (included when relations are loaded)',
+    description:
+      'Kitchen tickets linked to this online order (included when relations are loaded)',
   })
   kitchenOrders?: KitchenOrderNestedInOnlineOrderDto[];
 }
 
 export class OneOnlineOrderResponseDto extends SuccessResponse {
-  @ApiProperty({ type: () => OnlineOrderResponseDto, description: 'Online order data' })
+  @ApiProperty({
+    type: () => OnlineOrderResponseDto,
+    description: 'Online order data',
+  })
   data: OnlineOrderResponseDto;
 }
-
-
-

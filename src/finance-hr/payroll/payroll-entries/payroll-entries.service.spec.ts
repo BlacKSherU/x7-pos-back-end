@@ -31,8 +31,14 @@ describe('PayrollEntriesService', () => {
       providers: [
         PayrollEntriesService,
         { provide: getRepositoryToken(PayrollEntry), useValue: mockEntryRepo },
-        { provide: getRepositoryToken(PayrollRun), useValue: mockPayrollRunRepo },
-        { provide: getRepositoryToken(Collaborator), useValue: mockCollaboratorRepo },
+        {
+          provide: getRepositoryToken(PayrollRun),
+          useValue: mockPayrollRunRepo,
+        },
+        {
+          provide: getRepositoryToken(Collaborator),
+          useValue: mockCollaboratorRepo,
+        },
       ],
     }).compile();
 

@@ -43,9 +43,14 @@ import { PayrollTaxDetailSortBy } from './dto/get-payroll-tax-details-query.dto'
 @ApiBearerAuth()
 @Controller('payroll-tax-details')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@ApiExtraModels(OnePayrollTaxDetailResponseDto, PaginatedPayrollTaxDetailsResponseDto)
+@ApiExtraModels(
+  OnePayrollTaxDetailResponseDto,
+  PaginatedPayrollTaxDetailsResponseDto,
+)
 export class PayrollTaxDetailsController {
-  constructor(private readonly payrollTaxDetailsService: PayrollTaxDetailsService) {}
+  constructor(
+    private readonly payrollTaxDetailsService: PayrollTaxDetailsService,
+  ) {}
 
   @Post()
   @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
@@ -141,7 +146,9 @@ export class PayrollTaxDetailsController {
     type: OnePayrollTaxDetailResponseDto,
   })
   @ApiBadRequestResponse({ description: 'Invalid input or validation error' })
-  @ApiNotFoundResponse({ description: 'Payroll tax detail or payroll entry not found' })
+  @ApiNotFoundResponse({
+    description: 'Payroll tax detail or payroll entry not found',
+  })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiForbiddenResponse({ description: 'Forbidden' })
   async update(

@@ -3,6 +3,3 @@ export enum OnlineOrderType {
   PICKUP = 'pickup',
   DINE_IN = 'dine_in',
 }
-
-
-

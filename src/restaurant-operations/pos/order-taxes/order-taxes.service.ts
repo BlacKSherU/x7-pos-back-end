@@ -5,7 +5,13 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, In, Like } from 'typeorm';
+import {
+  Repository,
+  Between,
+  In,
+  Like,
+  type QueryDeepPartialEntity,
+} from 'typeorm';
 import { OrderTax } from './entities/order-tax.entity';
 import { Order } from '../orders/entities/order.entity';
 import { CreateOrderTaxDto } from './dto/create-order-tax.dto';
@@ -109,7 +115,9 @@ export class OrderTaxesService {
     if (query.createdDate) {
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
       if (!dateRegex.test(query.createdDate)) {
-        throw new BadRequestException('Created date must be in YYYY-MM-DD format');
+        throw new BadRequestException(
+          'Created date must be in YYYY-MM-DD format',
+        );
       }
     }
 
@@ -208,7 +216,9 @@ export class OrderTaxesService {
     authenticatedUserMerchantId: number,
   ): Promise<OneOrderTaxResponseDto> {
     if (!id || id <= 0) {
-      throw new BadRequestException('Order tax ID must be a valid positive number');
+      throw new BadRequestException(
+        'Order tax ID must be a valid positive number',
+      );
     }
     if (!authenticatedUserMerchantId) {
       throw new ForbiddenException(
@@ -242,7 +252,9 @@ export class OrderTaxesService {
     authenticatedUserMerchantId: number,
   ): Promise<OneOrderTaxResponseDto> {
     if (!id || id <= 0) {
-      throw new BadRequestException('Order tax ID must be a valid positive number');
+      throw new BadRequestException(
+        'Order tax ID must be a valid positive number',
+      );
     }
     if (!authenticatedUserMerchantId) {
       throw new ForbiddenException(
@@ -274,14 +286,18 @@ export class OrderTaxesService {
         throw new NotFoundException('Order not found');
       }
       if (order.merchant_id !== authenticatedUserMerchantId) {
-        throw new ForbiddenException('You can only assign orders from your merchant');
+        throw new ForbiddenException(
+          'You can only assign orders from your merchant',
+        );
       }
       if (order.logical_status !== OrderStatus.ACTIVE) {
-        throw new BadRequestException('Cannot move a tax line to a deleted order');
+        throw new BadRequestException(
+          'Cannot move a tax line to a deleted order',
+        );
       }
     }
 
-    const patch: Partial<OrderTax> = {};
+    const patch: QueryDeepPartialEntity<OrderTax> = {};
     if (dto.orderId !== undefined) patch.order_id = dto.orderId;
     if (dto.name !== undefined) patch.name = dto.name;
     if (dto.rate !== undefined) {
@@ -324,7 +340,9 @@ export class OrderTaxesService {
     authenticatedUserMerchantId: number,
   ): Promise<OneOrderTaxResponseDto> {
     if (!id || id <= 0) {
-      throw new BadRequestException('Order tax ID must be a valid positive number');
+      throw new BadRequestException(
+        'Order tax ID must be a valid positive number',
+      );
     }
     if (!authenticatedUserMerchantId) {
       throw new ForbiddenException(

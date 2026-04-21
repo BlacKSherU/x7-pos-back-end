@@ -1,5 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNumber, IsNotEmpty, IsOptional, IsInt, Min, MaxLength, IsEnum } from 'class-validator';
+import {
+  IsNumber,
+  IsNotEmpty,
+  IsOptional,
+  IsInt,
+  Min,
+  MaxLength,
+  IsEnum,
+} from 'class-validator';
 import { KitchenOrderItemPreparationStatus } from '../constants/kitchen-order-item-preparation-status.enum';
 
 export class CreateKitchenOrderItemDto {

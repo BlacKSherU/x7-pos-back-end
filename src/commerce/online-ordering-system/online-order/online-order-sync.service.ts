@@ -52,8 +52,10 @@ export class OnlineOrderSyncService {
 
     const fulfillment = this.mapPosToFulfillment(order, online.type);
     online.fulfillment_status = fulfillment;
-    if (fulfillment === OnlineOrderFulfillmentStatus.READY_FOR_PICKUP ||
-        fulfillment === OnlineOrderFulfillmentStatus.OUT_FOR_DELIVERY) {
+    if (
+      fulfillment === OnlineOrderFulfillmentStatus.READY_FOR_PICKUP ||
+      fulfillment === OnlineOrderFulfillmentStatus.OUT_FOR_DELIVERY
+    ) {
       if (!online.ready_at) {
         online.ready_at = new Date();
       }

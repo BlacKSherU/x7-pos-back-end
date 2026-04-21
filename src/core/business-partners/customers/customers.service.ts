@@ -27,7 +27,7 @@ export class CustomersService {
     private readonly userRepo: Repository<User>,
     @InjectRepository(Company)
     private readonly companyRepo: Repository<Company>,
-  ) { }
+  ) {}
 
   async create(dto: CreateCustomerDto, user: AuthenticatedUser) {
     const userData = await this.userRepo.findOneBy({ id: user.id });

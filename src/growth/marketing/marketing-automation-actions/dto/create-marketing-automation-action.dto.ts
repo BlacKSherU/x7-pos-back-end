@@ -1,4 +1,11 @@
-import { IsNotEmpty, IsNumber, IsEnum, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsEnum,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { MarketingAutomationActionType } from '../constants/marketing-automation-action-type.enum';
@@ -6,7 +13,8 @@ import { MarketingAutomationActionType } from '../constants/marketing-automation
 export class CreateMarketingAutomationActionDto {
   @ApiProperty({
     example: 1,
-    description: 'Identifier of the Marketing Automation this action belongs to',
+    description:
+      'Identifier of the Marketing Automation this action belongs to',
   })
   @IsNotEmpty({ message: 'Automation ID is required' })
   @Type(() => Number)
@@ -31,13 +39,15 @@ export class CreateMarketingAutomationActionDto {
   })
   @IsNotEmpty({ message: 'Action type is required' })
   @IsEnum(MarketingAutomationActionType, {
-    message: 'Action type must be a valid type (send_email, send_sms, send_push, assign_coupon, remove_coupon, add_to_segment, remove_from_segment, add_loyalty_points, notify_manager, webhook)',
+    message:
+      'Action type must be a valid type (send_email, send_sms, send_push, assign_coupon, remove_coupon, add_to_segment, remove_from_segment, add_loyalty_points, notify_manager, webhook)',
   })
   actionType: MarketingAutomationActionType;
 
   @ApiPropertyOptional({
     example: 1,
-    description: 'Target ID (coupon_id, segment_id, etc. depending on action_type)',
+    description:
+      'Target ID (coupon_id, segment_id, etc. depending on action_type)',
   })
   @IsOptional()
   @Type(() => Number)

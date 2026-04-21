@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/unbound-method */
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { KitchenEventLogController } from './kitchen-event-log.controller';
 import { KitchenEventLogService } from './kitchen-event-log.service';
@@ -12,6 +8,10 @@ import { OneKitchenEventLogResponseDto } from './dto/kitchen-event-log-response.
 import { PaginatedKitchenEventLogResponseDto } from './dto/kitchen-event-log-response.dto';
 import { KitchenEventLogEventType } from './constants/kitchen-event-log-event-type.enum';
 import { KitchenEventLogStatus } from './constants/kitchen-event-log-status.enum';
+import { AuthenticatedUser } from '../../../auth/interfaces/authenticated-user.interface';
+import { Request as ExpressRequest } from 'express';
+
+type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
 
 describe('KitchenEventLogController', () => {
   let controller: KitchenEventLogController;
@@ -35,7 +35,7 @@ describe('KitchenEventLogController', () => {
 
   const mockRequest = {
     user: mockUser,
-  };
+  } as AuthenticatedRequest;
 
   const mockKitchenEventLogResponse: OneKitchenEventLogResponseDto = {
     statusCode: 201,
@@ -92,7 +92,9 @@ describe('KitchenEventLogController', () => {
       ],
     }).compile();
 
-    controller = module.get<KitchenEventLogController>(KitchenEventLogController);
+    controller = module.get<KitchenEventLogController>(
+      KitchenEventLogController,
+    );
     service = module.get<KitchenEventLogService>(KitchenEventLogService);
   });
 
@@ -182,7 +184,11 @@ describe('KitchenEventLogController', () => {
 
       const result = await controller.update(1, updateDto, mockRequest);
 
-      expect(updateSpy).toHaveBeenCalledWith(1, updateDto, mockUser.merchant.id);
+      expect(updateSpy).toHaveBeenCalledWith(
+        1,
+        updateDto,
+        mockUser.merchant.id,
+      );
       expect(result).toEqual(updatedResponse);
       expect(result.statusCode).toBe(200);
       expect(result.message).toBe('Kitchen event log updated successfully');

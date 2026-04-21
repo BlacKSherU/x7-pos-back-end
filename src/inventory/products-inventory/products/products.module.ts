@@ -27,4 +27,4 @@ import { VariantsModule } from '../variants/variants.module';
   providers: [ProductsService],
   exports: [ProductsService],
 })
-export class ProductsModule { }
+export class ProductsModule {}

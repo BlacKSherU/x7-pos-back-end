@@ -63,7 +63,9 @@ export class PayrollRunsController {
     description: 'Payroll run created successfully',
     type: OnePayrollRunResponseDto,
   })
-  @ApiBadRequestResponse({ description: 'Invalid input or period_end before period_start' })
+  @ApiBadRequestResponse({
+    description: 'Invalid input or period_end before period_start',
+  })
   @ApiNotFoundResponse({ description: 'Company or merchant not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiForbiddenResponse({ description: 'Forbidden' })
@@ -143,8 +145,12 @@ export class PayrollRunsController {
     description: 'Payroll run updated successfully',
     type: OnePayrollRunResponseDto,
   })
-  @ApiBadRequestResponse({ description: 'Invalid input or period_end before period_start' })
-  @ApiNotFoundResponse({ description: 'Payroll run, company or merchant not found' })
+  @ApiBadRequestResponse({
+    description: 'Invalid input or period_end before period_start',
+  })
+  @ApiNotFoundResponse({
+    description: 'Payroll run, company or merchant not found',
+  })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiForbiddenResponse({ description: 'Forbidden' })
   async update(

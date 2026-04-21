@@ -13,7 +13,10 @@ import { PayrollRunStatus } from '../constants/payroll-run-status.enum';
 
 @Entity('payroll_runs')
 export class PayrollRun {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the payroll run' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the payroll run',
+  })
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -57,7 +60,10 @@ export class PayrollRun {
   @Column({ type: 'timestamp', name: 'approved_at', nullable: true })
   approved_at: Date | null;
 
-  @ApiProperty({ description: 'Logical delete timestamp (null = active)', nullable: true })
+  @ApiProperty({
+    description: 'Logical delete timestamp (null = active)',
+    nullable: true,
+  })
   @Column({ type: 'timestamp', name: 'deleted_at', nullable: true })
   deleted_at: Date | null;
 }

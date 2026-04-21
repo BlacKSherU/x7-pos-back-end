@@ -229,7 +229,7 @@ export class KitchenOrderItemController {
   @ApiOperation({
     summary: 'Advance kitchen order item preparation status',
     description:
-      "Moves preparation to the next step (pending → in preparation → ready). Cannot advance from the final status. Same access rules as updating a kitchen order item.",
+      'Moves preparation to the next step (pending → in preparation → ready). Cannot advance from the final status. Same access rules as updating a kitchen order item.',
   })
   @ApiOkResponse({
     description: 'Preparation status advanced successfully',
@@ -283,7 +283,7 @@ export class KitchenOrderItemController {
   @ApiOperation({
     summary: 'Revert kitchen order item preparation status',
     description:
-      "Moves preparation to the previous step (ready → in preparation → pending). Cannot revert from the initial status. Same access rules as updating a kitchen order item.",
+      'Moves preparation to the previous step (ready → in preparation → pending). Cannot revert from the initial status. Same access rules as updating a kitchen order item.',
   })
   @ApiOkResponse({
     description: 'Preparation status reverted successfully',

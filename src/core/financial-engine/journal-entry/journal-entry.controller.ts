@@ -46,7 +46,7 @@ import {
 @Controller('journal-entry')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class JournalEntryController {
-  constructor(private readonly journalEntryService: JournalEntryService) { }
+  constructor(private readonly journalEntryService: JournalEntryService) {}
 
   @Post()
   @Roles(UserRole.MERCHANT_ADMIN)
@@ -63,11 +63,17 @@ export class JournalEntryController {
       'Creates a balanced journal entry. Total debit must equal total credit across all lines. Only DRAFT status entries can be edited or deleted.',
   })
   @ApiCreatedResponse({ description: 'Journal entry created successfully' })
-  @ApiBadRequestResponse({ description: 'Invalid input or unbalanced entry (debit ≠ credit)' })
+  @ApiBadRequestResponse({
+    description: 'Invalid input or unbalanced entry (debit ≠ credit)',
+  })
   @ApiConflictResponse({ description: 'Entry number already exists' })
   @ApiNotFoundResponse({ description: 'Company or ledger account not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  @ApiResponse({ status: 500, description: 'Internal server error', type: ErrorResponse })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+    type: ErrorResponse,
+  })
   @ApiBody({ type: CreateJournalEntryDto })
   async create(
     @CurrentUser() user: AuthenticatedUser,
@@ -93,13 +99,22 @@ export class JournalEntryController {
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
   @ApiQuery({ name: 'status', required: false, enum: JournalEntryStatus })
-  @ApiQuery({ name: 'reference_type', required: false, type: String, example: 'ORDER' })
+  @ApiQuery({
+    name: 'reference_type',
+    required: false,
+    type: String,
+    example: 'ORDER',
+  })
   @ApiOkResponse({
     description: 'Paginated list of journal entries retrieved successfully',
     type: AllPaginatedJournalEntries,
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  @ApiResponse({ status: 500, description: 'Internal server error', type: ErrorResponse })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+    type: ErrorResponse,
+  })
   async findAll(
     @CurrentUser() user: AuthenticatedUser,
     @Query() query: GetJournalEntriesQueryDto,
@@ -148,7 +163,9 @@ export class JournalEntryController {
   @ApiParam({ name: 'id', type: Number })
   @ApiOkResponse({ description: 'Journal entry updated successfully' })
   @ApiNotFoundResponse({ description: 'Journal entry not found' })
-  @ApiBadRequestResponse({ description: 'Invalid input, unbalanced entry, or not in DRAFT status' })
+  @ApiBadRequestResponse({
+    description: 'Invalid input, unbalanced entry, or not in DRAFT status',
+  })
   @ApiConflictResponse({ description: 'Entry number already in use' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiBody({ type: UpdateJournalEntryDto })
@@ -158,7 +175,11 @@ export class JournalEntryController {
     @Body() updateJournalEntryDto: UpdateJournalEntryDto,
   ) {
     const merchantId = user.merchant.id;
-    return this.journalEntryService.update(id, merchantId, updateJournalEntryDto);
+    return this.journalEntryService.update(
+      id,
+      merchantId,
+      updateJournalEntryDto,
+    );
   }
 
   @Delete(':id')
@@ -178,7 +199,9 @@ export class JournalEntryController {
   @ApiParam({ name: 'id', type: Number })
   @ApiOkResponse({ description: 'Journal entry deleted successfully' })
   @ApiNotFoundResponse({ description: 'Journal entry not found' })
-  @ApiBadRequestResponse({ description: 'Invalid ID or entry is not in DRAFT status' })
+  @ApiBadRequestResponse({
+    description: 'Invalid ID or entry is not in DRAFT status',
+  })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   remove(
     @CurrentUser() user: AuthenticatedUser,
@@ -205,7 +228,9 @@ export class JournalEntryController {
   @ApiParam({ name: 'id', type: Number })
   @ApiOkResponse({ description: 'Journal entry posted successfully' })
   @ApiNotFoundResponse({ description: 'Journal entry not found' })
-  @ApiBadRequestResponse({ description: 'Journal entry is already posted or unbalanced' })
+  @ApiBadRequestResponse({
+    description: 'Journal entry is already posted or unbalanced',
+  })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   post(
     @CurrentUser() user: AuthenticatedUser,
@@ -225,7 +250,8 @@ export class JournalEntryController {
     Scope.MERCHANT_CLOVER,
   )
   @ApiOperation({
-    summary: 'Void a posted journal entry (change status from POSTED to VOIDED)',
+    summary:
+      'Void a posted journal entry (change status from POSTED to VOIDED)',
     description:
       'Voids a journal entry. Only posted entries can be voided. This is used for audit purposes instead of deleting records.',
   })

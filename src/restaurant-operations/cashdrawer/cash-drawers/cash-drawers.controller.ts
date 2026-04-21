@@ -33,7 +33,11 @@ import { CashDrawersService } from './cash-drawers.service';
 import { CreateCashDrawerDto } from './dto/create-cash-drawer.dto';
 import { UpdateCashDrawerDto } from './dto/update-cash-drawer.dto';
 import { GetCashDrawersQueryDto } from './dto/get-cash-drawers-query.dto';
-import { CashDrawerResponseDto, OneCashDrawerResponseDto, AllCashDrawersResponseDto } from './dto/cash-drawer-response.dto';
+import {
+  CashDrawerResponseDto,
+  OneCashDrawerResponseDto,
+  AllCashDrawersResponseDto,
+} from './dto/cash-drawer-response.dto';
 import { PaginatedCashDrawersResponseDto } from './dto/paginated-cash-drawers-response.dto';
 import { CashDrawerStatus } from './constants/cash-drawer-status.enum';
 import { JwtAuthGuard } from '../../../auth/guards/jwt-auth.guard';
@@ -45,7 +49,12 @@ import { Scope } from '../../../platform-saas/users/constants/scope.enum';
 
 @ApiTags('Cash Drawers')
 @ApiBearerAuth()
-@ApiExtraModels(CashDrawerResponseDto, OneCashDrawerResponseDto, AllCashDrawersResponseDto, PaginatedCashDrawersResponseDto)
+@ApiExtraModels(
+  CashDrawerResponseDto,
+  OneCashDrawerResponseDto,
+  AllCashDrawersResponseDto,
+  PaginatedCashDrawersResponseDto,
+)
 @Controller('cash-drawers')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class CashDrawersController {
@@ -61,7 +70,8 @@ export class CashDrawersController {
   )
   @ApiOperation({
     summary: 'Create a new cash drawer',
-    description: 'Creates a new cash drawer for a specific shift. Only merchant administrators and users can create cash drawers for their merchant.',
+    description:
+      'Creates a new cash drawer for a specific shift. Only merchant administrators and users can create cash drawers for their merchant.',
   })
   @ApiCreatedResponse({
     description: 'Cash drawer created successfully',
@@ -71,8 +81,8 @@ export class CashDrawersController {
       message: 'Cash drawer created successfully',
       data: {
         id: 1,
-        openingBalance: 100.00,
-        currentBalance: 100.00,
+        openingBalance: 100.0,
+        currentBalance: 100.0,
         closingBalance: null,
         createdAt: '2023-10-01T12:00:00Z',
         updatedAt: '2023-10-01T12:00:00Z',
@@ -120,7 +130,8 @@ export class CashDrawersController {
     description: 'Forbidden - Insufficient permissions or merchant mismatch',
     example: {
       statusCode: 403,
-      message: 'You can only create cash drawers for shifts belonging to your merchant',
+      message:
+        'You can only create cash drawers for shifts belonging to your merchant',
     },
   })
   @ApiNotFoundResponse({
@@ -138,9 +149,15 @@ export class CashDrawersController {
     },
   })
   @ApiBody({ type: CreateCashDrawerDto })
-  async create(@Body() createCashDrawerDto: CreateCashDrawerDto, @Request() req) {
+  async create(
+    @Body() createCashDrawerDto: CreateCashDrawerDto,
+    @Request() req,
+  ) {
     const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.cashDrawersService.create(createCashDrawerDto, authenticatedUserMerchantId);
+    return this.cashDrawersService.create(
+      createCashDrawerDto,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Get()
@@ -153,7 +170,8 @@ export class CashDrawersController {
   )
   @ApiOperation({
     summary: 'Get all cash drawers',
-    description: 'Retrieves all cash drawers for the authenticated user\'s merchant with filtering and pagination support.',
+    description:
+      "Retrieves all cash drawers for the authenticated user's merchant with filtering and pagination support.",
   })
   @ApiOkResponse({
     description: 'Cash drawers retrieved successfully',
@@ -164,9 +182,9 @@ export class CashDrawersController {
       data: [
         {
           id: 1,
-          openingBalance: 100.00,
-          currentBalance: 150.50,
-          closingBalance: 150.50,
+          openingBalance: 100.0,
+          currentBalance: 150.5,
+          closingBalance: 150.5,
           createdAt: '2023-10-01T12:00:00Z',
           updatedAt: '2023-10-01T12:00:00Z',
           status: 'Close',
@@ -228,15 +246,67 @@ export class CashDrawersController {
       message: 'You must be associated with a merchant to access cash drawers',
     },
   })
-  @ApiQuery({ name: 'shiftId', required: false, type: Number, description: 'Filter by shift ID' })
-  @ApiQuery({ name: 'openedBy', required: false, type: Number, description: 'Filter by collaborator who opened the drawer' })
-  @ApiQuery({ name: 'closedBy', required: false, type: Number, description: 'Filter by collaborator who closed the drawer' })
-  @ApiQuery({ name: 'status', required: false, enum: CashDrawerStatus, description: 'Filter by cash drawer status (Open, Close, Pause)' })
-  @ApiQuery({ name: 'createdDate', required: false, type: String, description: 'Filter by creation date (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number (default: 1)' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items per page (default: 10, max: 100)' })
-  @ApiQuery({ name: 'sortBy', required: false, enum: ['id', 'openingBalance', 'closingBalance', 'status', 'createdAt', 'updatedAt'], description: 'Sort field' })
-  @ApiQuery({ name: 'sortOrder', required: false, enum: ['ASC', 'DESC'], description: 'Sort order' })
+  @ApiQuery({
+    name: 'shiftId',
+    required: false,
+    type: Number,
+    description: 'Filter by shift ID',
+  })
+  @ApiQuery({
+    name: 'openedBy',
+    required: false,
+    type: Number,
+    description: 'Filter by collaborator who opened the drawer',
+  })
+  @ApiQuery({
+    name: 'closedBy',
+    required: false,
+    type: Number,
+    description: 'Filter by collaborator who closed the drawer',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: CashDrawerStatus,
+    description: 'Filter by cash drawer status (Open, Close, Pause)',
+  })
+  @ApiQuery({
+    name: 'createdDate',
+    required: false,
+    type: String,
+    description: 'Filter by creation date (YYYY-MM-DD)',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number (default: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page (default: 10, max: 100)',
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    enum: [
+      'id',
+      'openingBalance',
+      'closingBalance',
+      'status',
+      'createdAt',
+      'updatedAt',
+    ],
+    description: 'Sort field',
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    required: false,
+    enum: ['ASC', 'DESC'],
+    description: 'Sort order',
+  })
   async findAll(@Query() query: GetCashDrawersQueryDto, @Request() req) {
     const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.cashDrawersService.findAll(query, authenticatedUserMerchantId);
@@ -252,7 +322,8 @@ export class CashDrawersController {
   )
   @ApiOperation({
     summary: 'Get a cash drawer by ID',
-    description: 'Retrieves a specific cash drawer by ID. Only cash drawers from the authenticated user\'s merchant can be accessed.',
+    description:
+      "Retrieves a specific cash drawer by ID. Only cash drawers from the authenticated user's merchant can be accessed.",
   })
   @ApiOkResponse({
     description: 'Cash drawer retrieved successfully',
@@ -262,9 +333,9 @@ export class CashDrawersController {
       message: 'Cash drawer retrieved successfully',
       data: {
         id: 1,
-        openingBalance: 100.00,
-        currentBalance: 150.50,
-        closingBalance: 150.50,
+        openingBalance: 100.0,
+        currentBalance: 150.5,
+        closingBalance: 150.5,
         createdAt: '2023-10-01T12:00:00Z',
         updatedAt: '2023-10-01T12:00:00Z',
         status: 'Close',
@@ -340,7 +411,8 @@ export class CashDrawersController {
   )
   @ApiOperation({
     summary: 'Update a cash drawer',
-    description: 'Updates a specific cash drawer by ID. Only cash drawers from the authenticated user\'s merchant can be updated.',
+    description:
+      "Updates a specific cash drawer by ID. Only cash drawers from the authenticated user's merchant can be updated.",
   })
   @ApiOkResponse({
     description: 'Cash drawer updated successfully',
@@ -350,7 +422,7 @@ export class CashDrawersController {
       message: 'Cash drawer updated successfully',
       data: {
         id: 1,
-        openingBalance: 100.00,
+        openingBalance: 100.0,
         currentBalance: 175.25,
         closingBalance: 175.25,
         createdAt: '2023-10-01T12:00:00Z',
@@ -421,9 +493,17 @@ export class CashDrawersController {
   })
   @ApiParam({ name: 'id', type: Number, description: 'Cash drawer ID' })
   @ApiBody({ type: UpdateCashDrawerDto })
-  async update(@Param('id', ParseIntPipe) id: number, @Body() updateCashDrawerDto: UpdateCashDrawerDto, @Request() req) {
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateCashDrawerDto: UpdateCashDrawerDto,
+    @Request() req,
+  ) {
     const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.cashDrawersService.update(id, updateCashDrawerDto, authenticatedUserMerchantId);
+    return this.cashDrawersService.update(
+      id,
+      updateCashDrawerDto,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Delete(':id')
@@ -436,7 +516,8 @@ export class CashDrawersController {
   )
   @ApiOperation({
     summary: 'Delete a cash drawer',
-    description: 'Deletes a specific cash drawer by ID. Only cash drawers from the authenticated user\'s merchant can be deleted.',
+    description:
+      "Deletes a specific cash drawer by ID. Only cash drawers from the authenticated user's merchant can be deleted.",
   })
   @ApiOkResponse({
     description: 'Cash drawer deleted successfully',
@@ -446,9 +527,9 @@ export class CashDrawersController {
       message: 'Cash drawer deleted successfully',
       data: {
         id: 1,
-        openingBalance: 100.00,
-        currentBalance: 150.50,
-        closingBalance: 150.50,
+        openingBalance: 100.0,
+        currentBalance: 150.5,
+        closingBalance: 150.5,
         createdAt: '2023-10-01T12:00:00Z',
         updatedAt: '2023-10-01T12:00:00Z',
         status: 'Close',

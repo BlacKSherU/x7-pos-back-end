@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { In, Repository, type QueryDeepPartialEntity } from 'typeorm';
 import { KitchenOrder } from './entities/kitchen-order.entity';
 import { KitchenOrderItem } from '../kitchen-order-item/entities/kitchen-order-item.entity';
 import { KitchenOrderStatus } from './constants/kitchen-order-status.enum';
@@ -27,7 +27,9 @@ function preparationToOrderLineStatus(
 function deriveKitchenOrderBusinessStatus(
   items: KitchenOrderItem[],
 ): KitchenOrderBusinessStatus {
-  const active = items.filter((i) => i.status === KitchenOrderItemStatus.ACTIVE);
+  const active = items.filter(
+    (i) => i.status === KitchenOrderItemStatus.ACTIVE,
+  );
   if (active.length === 0) {
     return KitchenOrderBusinessStatus.PENDING;
   }
@@ -98,7 +100,9 @@ export class KitchenOrderSyncService {
     for (const ko of kitchenOrders) {
       const koItems = allItems.filter((i) => i.kitchen_order_id === ko.id);
       const nextBusiness = deriveKitchenOrderBusinessStatus(koItems);
-      const patch: Partial<KitchenOrder> = { business_status: nextBusiness };
+      const patch: QueryDeepPartialEntity<KitchenOrder> = {
+        business_status: nextBusiness,
+      };
       if (
         (nextBusiness === KitchenOrderBusinessStatus.STARTED ||
           nextBusiness === KitchenOrderBusinessStatus.COMPLETED) &&

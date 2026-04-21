@@ -6,19 +6,19 @@ import { KitchenOrderItemModule } from './kitchen-order-item/kitchen-order-item.
 import { KitchenStationModule } from './kitchen-station/kitchen-station.module';
 
 @Module({
-    imports: [
-        KitchenDisplayDeviceModule,
-        KitchenEventLogModule,
-        KitchenOrderModule,
-        KitchenOrderItemModule,
-        KitchenStationModule,
-    ],
-    exports: [
-        KitchenDisplayDeviceModule,
-        KitchenEventLogModule,
-        KitchenOrderModule,
-        KitchenOrderItemModule,
-        KitchenStationModule,
-    ],
+  imports: [
+    KitchenDisplayDeviceModule,
+    KitchenEventLogModule,
+    KitchenOrderModule,
+    KitchenOrderItemModule,
+    KitchenStationModule,
+  ],
+  exports: [
+    KitchenDisplayDeviceModule,
+    KitchenEventLogModule,
+    KitchenOrderModule,
+    KitchenOrderItemModule,
+    KitchenStationModule,
+  ],
 })
-export class KitchenDisplaySystemModule { }
+export class KitchenDisplaySystemModule {}

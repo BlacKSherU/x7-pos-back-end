@@ -7,9 +7,7 @@ import { TipPool } from '../tip-pools/entities/tip-pool.entity';
 import { Collaborator } from 'src/finance-hr/hr/collaborators/entities/collaborator.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([TipPoolMember, TipPool, Collaborator]),
-  ],
+  imports: [TypeOrmModule.forFeature([TipPoolMember, TipPool, Collaborator])],
   controllers: [TipPoolMembersController],
   providers: [TipPoolMembersService],
   exports: [TipPoolMembersService],

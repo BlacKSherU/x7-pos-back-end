@@ -67,7 +67,9 @@ export async function computeOnlineOrderTotalAmountsForMany(
     }
   }
 
-  const needCatalog = orders.filter((o) => !o.order_id || !o.order).map((o) => o.id);
+  const needCatalog = orders
+    .filter((o) => !o.order_id || !o.order)
+    .map((o) => o.id);
   if (needCatalog.length === 0) {
     return result;
   }

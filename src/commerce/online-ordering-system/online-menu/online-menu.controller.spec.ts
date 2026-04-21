@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/unbound-method */
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { OnlineMenuController } from './online-menu.controller';
 import { OnlineMenuService } from './online-menu.service';
@@ -114,7 +110,8 @@ describe('OnlineMenuController', () => {
     });
 
     it('should handle service errors during creation', async () => {
-      const errorMessage = 'Online store not found or you do not have access to it';
+      const errorMessage =
+        'Online store not found or you do not have access to it';
       const createSpy = jest.spyOn(service, 'create');
       createSpy.mockRejectedValue(new Error(errorMessage));
 
@@ -167,7 +164,10 @@ describe('OnlineMenuController', () => {
 
       await controller.findAll(queryWithFilters, mockRequest);
 
-      expect(findAllSpy).toHaveBeenCalledWith(queryWithFilters, mockUser.merchant.id);
+      expect(findAllSpy).toHaveBeenCalledWith(
+        queryWithFilters,
+        mockUser.merchant.id,
+      );
     });
   });
 
@@ -227,7 +227,11 @@ describe('OnlineMenuController', () => {
 
       const result = await controller.update(1, updateDto, mockRequest);
 
-      expect(updateSpy).toHaveBeenCalledWith(1, updateDto, mockUser.merchant.id);
+      expect(updateSpy).toHaveBeenCalledWith(
+        1,
+        updateDto,
+        mockUser.merchant.id,
+      );
       expect(result).toEqual(updatedResponse);
       expect(result.statusCode).toBe(200);
       expect(result.message).toBe('Online menu updated successfully');
@@ -238,10 +242,14 @@ describe('OnlineMenuController', () => {
       const updateSpy = jest.spyOn(service, 'update');
       updateSpy.mockRejectedValue(new Error(errorMessage));
 
-      await expect(controller.update(1, updateDto, mockRequest)).rejects.toThrow(
-        errorMessage,
+      await expect(
+        controller.update(1, updateDto, mockRequest),
+      ).rejects.toThrow(errorMessage);
+      expect(updateSpy).toHaveBeenCalledWith(
+        1,
+        updateDto,
+        mockUser.merchant.id,
       );
-      expect(updateSpy).toHaveBeenCalledWith(1, updateDto, mockUser.merchant.id);
     });
 
     it('should handle partial updates', async () => {
@@ -262,7 +270,11 @@ describe('OnlineMenuController', () => {
 
       const result = await controller.update(1, partialDto, mockRequest);
 
-      expect(updateSpy).toHaveBeenCalledWith(1, partialDto, mockUser.merchant.id);
+      expect(updateSpy).toHaveBeenCalledWith(
+        1,
+        partialDto,
+        mockUser.merchant.id,
+      );
       expect(result.data.name).toBe('Only Name Updated');
     });
   });
@@ -328,7 +340,10 @@ describe('OnlineMenuController', () => {
       const createSpy = jest.spyOn(service, 'create');
       createSpy.mockResolvedValue(mockOnlineMenuResponse);
 
-      const result = await controller.create(createDto, requestWithoutMerchant as any);
+      const result = await controller.create(
+        createDto,
+        requestWithoutMerchant as unknown as AuthenticatedRequest,
+      );
 
       expect(createSpy).toHaveBeenCalledWith(createDto, undefined);
       expect(result).toEqual(mockOnlineMenuResponse);

@@ -12,13 +12,20 @@ import {
 import { ReceiptType } from '../constants/receipt-type.enum';
 
 export class CreateReceiptDto {
-  @ApiProperty({ example: 200, description: 'Order ID associated to the receipt' })
+  @ApiProperty({
+    example: 200,
+    description: 'Order ID associated to the receipt',
+  })
   @IsNumber()
   @IsNotEmpty()
   @IsPositive()
   orderId: number;
 
-  @ApiProperty({ example: ReceiptType.INVOICE, enum: ReceiptType, description: 'Type of receipt' })
+  @ApiProperty({
+    example: ReceiptType.INVOICE,
+    enum: ReceiptType,
+    description: 'Type of receipt',
+  })
   @IsEnum(ReceiptType)
   @IsNotEmpty()
   type: ReceiptType;

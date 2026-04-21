@@ -1,12 +1,24 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { OnlineDeliveryInfo } from './entities/online-delivery-info.entity';
 import { OnlineOrder } from '../online-order/entities/online-order.entity';
 import { CreateOnlineDeliveryInfoDto } from './dto/create-online-delivery-info.dto';
 import { UpdateOnlineDeliveryInfoDto } from './dto/update-online-delivery-info.dto';
-import { GetOnlineDeliveryInfoQueryDto, OnlineDeliveryInfoSortBy } from './dto/get-online-delivery-info-query.dto';
-import { OnlineDeliveryInfoResponseDto, OneOnlineDeliveryInfoResponseDto } from './dto/online-delivery-info-response.dto';
+import {
+  GetOnlineDeliveryInfoQueryDto,
+  OnlineDeliveryInfoSortBy,
+} from './dto/get-online-delivery-info-query.dto';
+import {
+  OnlineDeliveryInfoResponseDto,
+  OneOnlineDeliveryInfoResponseDto,
+} from './dto/online-delivery-info-response.dto';
 import { PaginatedOnlineDeliveryInfoResponseDto } from './dto/paginated-online-delivery-info-response.dto';
 import { OnlineStoreStatus } from '../online-stores/constants/online-store-status.enum';
 import { OnlineOrderStatus } from '../online-order/constants/online-order-status.enum';
@@ -21,53 +33,75 @@ export class OnlineDeliveryInfoService {
     private readonly onlineOrderRepository: Repository<OnlineOrder>,
   ) {}
 
-  async create(createOnlineDeliveryInfoDto: CreateOnlineDeliveryInfoDto, authenticatedUserMerchantId: number): Promise<OneOnlineDeliveryInfoResponseDto> {
+  async create(
+    createOnlineDeliveryInfoDto: CreateOnlineDeliveryInfoDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneOnlineDeliveryInfoResponseDto> {
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to create online delivery info');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to create online delivery info',
+      );
     }
 
     const onlineOrder = await this.onlineOrderRepository
       .createQueryBuilder('onlineOrder')
       .leftJoinAndSelect('onlineOrder.store', 'store')
       .leftJoin('store.merchant', 'merchant')
-      .where('onlineOrder.id = :orderId', { orderId: createOnlineDeliveryInfoDto.onlineOrderId })
-      .andWhere('merchant.id = :merchantId', { merchantId: authenticatedUserMerchantId })
+      .where('onlineOrder.id = :orderId', {
+        orderId: createOnlineDeliveryInfoDto.onlineOrderId,
+      })
+      .andWhere('merchant.id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
       .andWhere('store.status = :status', { status: OnlineStoreStatus.ACTIVE })
-      .andWhere('onlineOrder.status != :deletedStatus', { deletedStatus: OnlineOrderStatus.DELETED })
+      .andWhere('onlineOrder.status != :deletedStatus', {
+        deletedStatus: OnlineOrderStatus.DELETED,
+      })
       .getOne();
 
     if (!onlineOrder) {
-      throw new NotFoundException('Online order not found or you do not have access to it');
+      throw new NotFoundException(
+        'Online order not found or you do not have access to it',
+      );
     }
 
-    const existingDeliveryInfo = await this.onlineDeliveryInfoRepository.findOne({
-      where: {
-        online_order_id: createOnlineDeliveryInfoDto.onlineOrderId,
-        status: OnlineDeliveryInfoStatus.ACTIVE,
-      },
-    });
+    const existingDeliveryInfo =
+      await this.onlineDeliveryInfoRepository.findOne({
+        where: {
+          online_order_id: createOnlineDeliveryInfoDto.onlineOrderId,
+          status: OnlineDeliveryInfoStatus.ACTIVE,
+        },
+      });
 
     if (existingDeliveryInfo) {
-      throw new BadRequestException('This online order already has delivery info associated');
+      throw new BadRequestException(
+        'This online order already has delivery info associated',
+      );
     }
 
     const onlineDeliveryInfo = new OnlineDeliveryInfo();
-    onlineDeliveryInfo.online_order_id = createOnlineDeliveryInfoDto.onlineOrderId;
+    onlineDeliveryInfo.online_order_id =
+      createOnlineDeliveryInfoDto.onlineOrderId;
     onlineDeliveryInfo.customer_name = createOnlineDeliveryInfoDto.customerName;
     onlineDeliveryInfo.address = createOnlineDeliveryInfoDto.address;
     onlineDeliveryInfo.city = createOnlineDeliveryInfoDto.city;
     onlineDeliveryInfo.phone = createOnlineDeliveryInfoDto.phone;
-    onlineDeliveryInfo.delivery_instructions = createOnlineDeliveryInfoDto.deliveryInstructions || null;
+    onlineDeliveryInfo.delivery_instructions =
+      createOnlineDeliveryInfoDto.deliveryInstructions || null;
 
-    const savedOnlineDeliveryInfo = await this.onlineDeliveryInfoRepository.save(onlineDeliveryInfo);
+    const savedOnlineDeliveryInfo =
+      await this.onlineDeliveryInfoRepository.save(onlineDeliveryInfo);
 
-    const completeOnlineDeliveryInfo = await this.onlineDeliveryInfoRepository.findOne({
-      where: { id: savedOnlineDeliveryInfo.id },
-      relations: ['onlineOrder'],
-    });
+    const completeOnlineDeliveryInfo =
+      await this.onlineDeliveryInfoRepository.findOne({
+        where: { id: savedOnlineDeliveryInfo.id },
+        relations: ['onlineOrder'],
+      });
 
     if (!completeOnlineDeliveryInfo) {
-      throw new NotFoundException('Online delivery info not found after creation');
+      throw new NotFoundException(
+        'Online delivery info not found after creation',
+      );
     }
 
     return {
@@ -77,9 +111,14 @@ export class OnlineDeliveryInfoService {
     };
   }
 
-  async findAll(query: GetOnlineDeliveryInfoQueryDto, authenticatedUserMerchantId: number): Promise<PaginatedOnlineDeliveryInfoResponseDto> {
+  async findAll(
+    query: GetOnlineDeliveryInfoQueryDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<PaginatedOnlineDeliveryInfoResponseDto> {
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to access online delivery info');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to access online delivery info',
+      );
     }
 
     if (query.page !== undefined && query.page < 1) {
@@ -93,7 +132,9 @@ export class OnlineDeliveryInfoService {
     if (query.createdDate) {
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
       if (!dateRegex.test(query.createdDate)) {
-        throw new BadRequestException('Created date must be in YYYY-MM-DD format');
+        throw new BadRequestException(
+          'Created date must be in YYYY-MM-DD format',
+        );
       }
     }
 
@@ -106,37 +147,58 @@ export class OnlineDeliveryInfoService {
       .leftJoinAndSelect('onlineDeliveryInfo.onlineOrder', 'onlineOrder')
       .leftJoin('onlineOrder.store', 'store')
       .leftJoin('store.merchant', 'merchant')
-      .where('merchant.id = :merchantId', { merchantId: authenticatedUserMerchantId })
+      .where('merchant.id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
       .andWhere('store.status = :status', { status: OnlineStoreStatus.ACTIVE })
-      .andWhere('onlineOrder.status != :deletedStatus', { deletedStatus: OnlineOrderStatus.DELETED })
-      .andWhere('onlineDeliveryInfo.status != :itemDeletedStatus', { itemDeletedStatus: OnlineDeliveryInfoStatus.DELETED });
+      .andWhere('onlineOrder.status != :deletedStatus', {
+        deletedStatus: OnlineOrderStatus.DELETED,
+      })
+      .andWhere('onlineDeliveryInfo.status != :itemDeletedStatus', {
+        itemDeletedStatus: OnlineDeliveryInfoStatus.DELETED,
+      });
 
     if (query.onlineOrderId) {
-      queryBuilder.andWhere('onlineDeliveryInfo.online_order_id = :onlineOrderId', { onlineOrderId: query.onlineOrderId });
+      queryBuilder.andWhere(
+        'onlineDeliveryInfo.online_order_id = :onlineOrderId',
+        { onlineOrderId: query.onlineOrderId },
+      );
     }
 
     if (query.customerName) {
-      queryBuilder.andWhere('onlineDeliveryInfo.customer_name ILIKE :customerName', { customerName: `%${query.customerName}%` });
+      queryBuilder.andWhere(
+        'onlineDeliveryInfo.customer_name ILIKE :customerName',
+        { customerName: `%${query.customerName}%` },
+      );
     }
 
     if (query.city) {
-      queryBuilder.andWhere('onlineDeliveryInfo.city = :city', { city: query.city });
+      queryBuilder.andWhere('onlineDeliveryInfo.city = :city', {
+        city: query.city,
+      });
     }
 
     if (query.createdDate) {
       const startDate = new Date(query.createdDate);
       const endDate = new Date(query.createdDate);
       endDate.setDate(endDate.getDate() + 1);
-      queryBuilder.andWhere('onlineDeliveryInfo.created_at >= :startDate', { startDate })
+      queryBuilder
+        .andWhere('onlineDeliveryInfo.created_at >= :startDate', { startDate })
         .andWhere('onlineDeliveryInfo.created_at < :endDate', { endDate });
     }
 
-    const sortField = query.sortBy === OnlineDeliveryInfoSortBy.ONLINE_ORDER_ID ? 'onlineDeliveryInfo.online_order_id' :
-                     query.sortBy === OnlineDeliveryInfoSortBy.CUSTOMER_NAME ? 'onlineDeliveryInfo.customer_name' :
-                     query.sortBy === OnlineDeliveryInfoSortBy.CITY ? 'onlineDeliveryInfo.city' :
-                     query.sortBy === OnlineDeliveryInfoSortBy.UPDATED_AT ? 'onlineDeliveryInfo.updated_at' :
-                     query.sortBy === OnlineDeliveryInfoSortBy.ID ? 'onlineDeliveryInfo.id' :
-                     'onlineDeliveryInfo.created_at';
+    const sortField =
+      query.sortBy === OnlineDeliveryInfoSortBy.ONLINE_ORDER_ID
+        ? 'onlineDeliveryInfo.online_order_id'
+        : query.sortBy === OnlineDeliveryInfoSortBy.CUSTOMER_NAME
+          ? 'onlineDeliveryInfo.customer_name'
+          : query.sortBy === OnlineDeliveryInfoSortBy.CITY
+            ? 'onlineDeliveryInfo.city'
+            : query.sortBy === OnlineDeliveryInfoSortBy.UPDATED_AT
+              ? 'onlineDeliveryInfo.updated_at'
+              : query.sortBy === OnlineDeliveryInfoSortBy.ID
+                ? 'onlineDeliveryInfo.id'
+                : 'onlineDeliveryInfo.created_at';
     const sortOrder = query.sortOrder || 'DESC';
     queryBuilder.orderBy(sortField, sortOrder);
 
@@ -160,18 +222,27 @@ export class OnlineDeliveryInfoService {
     return {
       statusCode: 200,
       message: 'Online delivery info retrieved successfully',
-      data: onlineDeliveryInfos.map(item => this.formatOnlineDeliveryInfoResponse(item)),
+      data: onlineDeliveryInfos.map((item) =>
+        this.formatOnlineDeliveryInfoResponse(item),
+      ),
       paginationMeta,
     };
   }
 
-  async findOne(id: number, authenticatedUserMerchantId: number): Promise<OneOnlineDeliveryInfoResponseDto> {
+  async findOne(
+    id: number,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneOnlineDeliveryInfoResponseDto> {
     if (!id || id <= 0) {
-      throw new BadRequestException('Online delivery info ID must be a valid positive number');
+      throw new BadRequestException(
+        'Online delivery info ID must be a valid positive number',
+      );
     }
 
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to access online delivery info');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to access online delivery info',
+      );
     }
 
     const onlineDeliveryInfo = await this.onlineDeliveryInfoRepository
@@ -180,10 +251,16 @@ export class OnlineDeliveryInfoService {
       .leftJoin('onlineOrder.store', 'store')
       .leftJoin('store.merchant', 'merchant')
       .where('onlineDeliveryInfo.id = :id', { id })
-      .andWhere('merchant.id = :merchantId', { merchantId: authenticatedUserMerchantId })
+      .andWhere('merchant.id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
       .andWhere('store.status = :status', { status: OnlineStoreStatus.ACTIVE })
-      .andWhere('onlineOrder.status != :deletedStatus', { deletedStatus: OnlineOrderStatus.DELETED })
-      .andWhere('onlineDeliveryInfo.status != :itemDeletedStatus', { itemDeletedStatus: OnlineDeliveryInfoStatus.DELETED })
+      .andWhere('onlineOrder.status != :deletedStatus', {
+        deletedStatus: OnlineOrderStatus.DELETED,
+      })
+      .andWhere('onlineDeliveryInfo.status != :itemDeletedStatus', {
+        itemDeletedStatus: OnlineDeliveryInfoStatus.DELETED,
+      })
       .getOne();
 
     if (!onlineDeliveryInfo) {
@@ -197,13 +274,21 @@ export class OnlineDeliveryInfoService {
     };
   }
 
-  async update(id: number, updateOnlineDeliveryInfoDto: UpdateOnlineDeliveryInfoDto, authenticatedUserMerchantId: number): Promise<OneOnlineDeliveryInfoResponseDto> {
+  async update(
+    id: number,
+    updateOnlineDeliveryInfoDto: UpdateOnlineDeliveryInfoDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneOnlineDeliveryInfoResponseDto> {
     if (!id || id <= 0) {
-      throw new BadRequestException('Online delivery info ID must be a valid positive number');
+      throw new BadRequestException(
+        'Online delivery info ID must be a valid positive number',
+      );
     }
 
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to update online delivery info');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to update online delivery info',
+      );
     }
 
     const existingOnlineDeliveryInfo = await this.onlineDeliveryInfoRepository
@@ -212,18 +297,28 @@ export class OnlineDeliveryInfoService {
       .leftJoin('onlineOrder.store', 'store')
       .leftJoin('store.merchant', 'merchant')
       .where('onlineDeliveryInfo.id = :id', { id })
-      .andWhere('merchant.id = :merchantId', { merchantId: authenticatedUserMerchantId })
+      .andWhere('merchant.id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
       .andWhere('store.status = :status', { status: OnlineStoreStatus.ACTIVE })
-      .andWhere('onlineOrder.status != :deletedStatus', { deletedStatus: OnlineOrderStatus.DELETED })
-      .andWhere('onlineDeliveryInfo.status != :itemDeletedStatus', { itemDeletedStatus: OnlineDeliveryInfoStatus.DELETED })
+      .andWhere('onlineOrder.status != :deletedStatus', {
+        deletedStatus: OnlineOrderStatus.DELETED,
+      })
+      .andWhere('onlineDeliveryInfo.status != :itemDeletedStatus', {
+        itemDeletedStatus: OnlineDeliveryInfoStatus.DELETED,
+      })
       .getOne();
 
     if (!existingOnlineDeliveryInfo) {
       throw new NotFoundException('Online delivery info not found');
     }
 
-    if (existingOnlineDeliveryInfo.status === OnlineDeliveryInfoStatus.DELETED) {
-      throw new ConflictException('Cannot update a deleted online delivery info');
+    if (
+      existingOnlineDeliveryInfo.status === OnlineDeliveryInfoStatus.DELETED
+    ) {
+      throw new ConflictException(
+        'Cannot update a deleted online delivery info',
+      );
     }
 
     if (updateOnlineDeliveryInfoDto.onlineOrderId !== undefined) {
@@ -231,32 +326,47 @@ export class OnlineDeliveryInfoService {
         .createQueryBuilder('onlineOrder')
         .leftJoinAndSelect('onlineOrder.store', 'store')
         .leftJoin('store.merchant', 'merchant')
-        .where('onlineOrder.id = :orderId', { orderId: updateOnlineDeliveryInfoDto.onlineOrderId })
-        .andWhere('merchant.id = :merchantId', { merchantId: authenticatedUserMerchantId })
-        .andWhere('store.status = :status', { status: OnlineStoreStatus.ACTIVE })
-        .andWhere('onlineOrder.status != :deletedStatus', { deletedStatus: OnlineOrderStatus.DELETED })
+        .where('onlineOrder.id = :orderId', {
+          orderId: updateOnlineDeliveryInfoDto.onlineOrderId,
+        })
+        .andWhere('merchant.id = :merchantId', {
+          merchantId: authenticatedUserMerchantId,
+        })
+        .andWhere('store.status = :status', {
+          status: OnlineStoreStatus.ACTIVE,
+        })
+        .andWhere('onlineOrder.status != :deletedStatus', {
+          deletedStatus: OnlineOrderStatus.DELETED,
+        })
         .getOne();
 
       if (!onlineOrder) {
-        throw new NotFoundException('Online order not found or you do not have access to it');
+        throw new NotFoundException(
+          'Online order not found or you do not have access to it',
+        );
       }
 
-      const existingDeliveryInfo = await this.onlineDeliveryInfoRepository.findOne({
-        where: {
-          online_order_id: updateOnlineDeliveryInfoDto.onlineOrderId,
-          status: OnlineDeliveryInfoStatus.ACTIVE,
-        },
-      });
+      const existingDeliveryInfo =
+        await this.onlineDeliveryInfoRepository.findOne({
+          where: {
+            online_order_id: updateOnlineDeliveryInfoDto.onlineOrderId,
+            status: OnlineDeliveryInfoStatus.ACTIVE,
+          },
+        });
 
       if (existingDeliveryInfo && existingDeliveryInfo.id !== id) {
-        throw new BadRequestException('This online order already has delivery info associated');
+        throw new BadRequestException(
+          'This online order already has delivery info associated',
+        );
       }
 
-      existingOnlineDeliveryInfo.online_order_id = updateOnlineDeliveryInfoDto.onlineOrderId;
+      existingOnlineDeliveryInfo.online_order_id =
+        updateOnlineDeliveryInfoDto.onlineOrderId;
     }
 
     if (updateOnlineDeliveryInfoDto.customerName !== undefined) {
-      existingOnlineDeliveryInfo.customer_name = updateOnlineDeliveryInfoDto.customerName;
+      existingOnlineDeliveryInfo.customer_name =
+        updateOnlineDeliveryInfoDto.customerName;
     }
 
     if (updateOnlineDeliveryInfoDto.address !== undefined) {
@@ -272,18 +382,23 @@ export class OnlineDeliveryInfoService {
     }
 
     if (updateOnlineDeliveryInfoDto.deliveryInstructions !== undefined) {
-      existingOnlineDeliveryInfo.delivery_instructions = updateOnlineDeliveryInfoDto.deliveryInstructions || null;
+      existingOnlineDeliveryInfo.delivery_instructions =
+        updateOnlineDeliveryInfoDto.deliveryInstructions || null;
     }
 
-    const updatedOnlineDeliveryInfo = await this.onlineDeliveryInfoRepository.save(existingOnlineDeliveryInfo);
+    const updatedOnlineDeliveryInfo =
+      await this.onlineDeliveryInfoRepository.save(existingOnlineDeliveryInfo);
 
-    const completeOnlineDeliveryInfo = await this.onlineDeliveryInfoRepository.findOne({
-      where: { id: updatedOnlineDeliveryInfo.id },
-      relations: ['onlineOrder'],
-    });
+    const completeOnlineDeliveryInfo =
+      await this.onlineDeliveryInfoRepository.findOne({
+        where: { id: updatedOnlineDeliveryInfo.id },
+        relations: ['onlineOrder'],
+      });
 
     if (!completeOnlineDeliveryInfo) {
-      throw new NotFoundException('Online delivery info not found after update');
+      throw new NotFoundException(
+        'Online delivery info not found after update',
+      );
     }
 
     return {
@@ -293,13 +408,20 @@ export class OnlineDeliveryInfoService {
     };
   }
 
-  async remove(id: number, authenticatedUserMerchantId: number): Promise<OneOnlineDeliveryInfoResponseDto> {
+  async remove(
+    id: number,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneOnlineDeliveryInfoResponseDto> {
     if (!id || id <= 0) {
-      throw new BadRequestException('Online delivery info ID must be a valid positive number');
+      throw new BadRequestException(
+        'Online delivery info ID must be a valid positive number',
+      );
     }
 
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to delete online delivery info');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to delete online delivery info',
+      );
     }
 
     const existingOnlineDeliveryInfo = await this.onlineDeliveryInfoRepository
@@ -308,22 +430,31 @@ export class OnlineDeliveryInfoService {
       .leftJoin('onlineOrder.store', 'store')
       .leftJoin('store.merchant', 'merchant')
       .where('onlineDeliveryInfo.id = :id', { id })
-      .andWhere('merchant.id = :merchantId', { merchantId: authenticatedUserMerchantId })
+      .andWhere('merchant.id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
       .andWhere('store.status = :status', { status: OnlineStoreStatus.ACTIVE })
-      .andWhere('onlineOrder.status != :deletedStatus', { deletedStatus: OnlineOrderStatus.DELETED })
-      .andWhere('onlineDeliveryInfo.status != :itemDeletedStatus', { itemDeletedStatus: OnlineDeliveryInfoStatus.DELETED })
+      .andWhere('onlineOrder.status != :deletedStatus', {
+        deletedStatus: OnlineOrderStatus.DELETED,
+      })
+      .andWhere('onlineDeliveryInfo.status != :itemDeletedStatus', {
+        itemDeletedStatus: OnlineDeliveryInfoStatus.DELETED,
+      })
       .getOne();
 
     if (!existingOnlineDeliveryInfo) {
       throw new NotFoundException('Online delivery info not found');
     }
 
-    if (existingOnlineDeliveryInfo.status === OnlineDeliveryInfoStatus.DELETED) {
+    if (
+      existingOnlineDeliveryInfo.status === OnlineDeliveryInfoStatus.DELETED
+    ) {
       throw new ConflictException('Online delivery info is already deleted');
     }
 
     existingOnlineDeliveryInfo.status = OnlineDeliveryInfoStatus.DELETED;
-    const updatedOnlineDeliveryInfo = await this.onlineDeliveryInfoRepository.save(existingOnlineDeliveryInfo);
+    const updatedOnlineDeliveryInfo =
+      await this.onlineDeliveryInfoRepository.save(existingOnlineDeliveryInfo);
 
     return {
       statusCode: 200,
@@ -332,7 +463,9 @@ export class OnlineDeliveryInfoService {
     };
   }
 
-  private formatOnlineDeliveryInfoResponse(onlineDeliveryInfo: OnlineDeliveryInfo): OnlineDeliveryInfoResponseDto {
+  private formatOnlineDeliveryInfoResponse(
+    onlineDeliveryInfo: OnlineDeliveryInfo,
+  ): OnlineDeliveryInfoResponseDto {
     return {
       id: onlineDeliveryInfo.id,
       onlineOrderId: onlineDeliveryInfo.online_order_id,

@@ -91,7 +91,9 @@ describe('CashTipMovementsService', () => {
       mockCashDrawerRepository.findOne.mockResolvedValue(mockCashDrawer);
       mockTipRepository.findOne.mockResolvedValue(mockTip);
       mockCashTipMovementRepository.save.mockResolvedValue(mockCashTipMovement);
-      mockCashTipMovementRepository.findOne.mockResolvedValue(mockCashTipMovement);
+      mockCashTipMovementRepository.findOne.mockResolvedValue(
+        mockCashTipMovement,
+      );
 
       const result = await service.create(createDto, 1);
 

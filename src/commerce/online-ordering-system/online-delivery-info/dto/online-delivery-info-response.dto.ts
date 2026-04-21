@@ -11,25 +11,41 @@ export class BasicOnlineOrderInfoDto {
 }
 
 export class OnlineDeliveryInfoResponseDto {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Online Delivery Info' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Online Delivery Info',
+  })
   id: number;
 
   @ApiProperty({ example: 1, description: 'Identifier of the Online Order' })
   onlineOrderId: number;
 
-  @ApiProperty({ example: 'John Doe', description: 'Customer name for delivery' })
+  @ApiProperty({
+    example: 'John Doe',
+    description: 'Customer name for delivery',
+  })
   customerName: string;
 
-  @ApiProperty({ example: '123 Main Street, Apt 4B', description: 'Delivery address' })
+  @ApiProperty({
+    example: '123 Main Street, Apt 4B',
+    description: 'Delivery address',
+  })
   address: string;
 
   @ApiProperty({ example: 'New York', description: 'City for delivery' })
   city: string;
 
-  @ApiProperty({ example: '+1-555-123-4567', description: 'Contact phone number' })
+  @ApiProperty({
+    example: '+1-555-123-4567',
+    description: 'Contact phone number',
+  })
   phone: string;
 
-  @ApiProperty({ example: 'Ring the doorbell twice', description: 'Special delivery instructions', nullable: true })
+  @ApiProperty({
+    example: 'Ring the doorbell twice',
+    description: 'Special delivery instructions',
+    nullable: true,
+  })
   deliveryInstructions: string | null;
 
   @ApiProperty({
@@ -39,18 +55,29 @@ export class OnlineDeliveryInfoResponseDto {
   })
   status: OnlineDeliveryInfoStatus;
 
-  @ApiProperty({ example: '2024-01-15T08:00:00Z', description: 'Creation timestamp' })
+  @ApiProperty({
+    example: '2024-01-15T08:00:00Z',
+    description: 'Creation timestamp',
+  })
   createdAt: Date;
 
-  @ApiProperty({ example: '2024-01-15T09:00:00Z', description: 'Last update timestamp' })
+  @ApiProperty({
+    example: '2024-01-15T09:00:00Z',
+    description: 'Last update timestamp',
+  })
   updatedAt: Date;
 
-  @ApiProperty({ type: () => BasicOnlineOrderInfoDto, description: 'Online Order information' })
+  @ApiProperty({
+    type: () => BasicOnlineOrderInfoDto,
+    description: 'Online Order information',
+  })
   onlineOrder: BasicOnlineOrderInfoDto;
 }
 
 export class OneOnlineDeliveryInfoResponseDto extends SuccessResponse {
-  @ApiProperty({ type: () => OnlineDeliveryInfoResponseDto, description: 'Online delivery info data' })
+  @ApiProperty({
+    type: () => OnlineDeliveryInfoResponseDto,
+    description: 'Online delivery info data',
+  })
   data: OnlineDeliveryInfoResponseDto;
 }
-

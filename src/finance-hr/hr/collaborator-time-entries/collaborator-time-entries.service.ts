@@ -1,11 +1,19 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TimeEntry } from './entities/time-entry.entity';
 import { CreateTimeEntryDto } from './dto/create-time-entry.dto';
 import { UpdateTimeEntryDto } from './dto/update-time-entry.dto';
 import { GetTimeEntryQueryDto } from './dto/get-time-entry-query.dto';
-import { TimeEntryResponseDto, OneTimeEntryResponseDto } from './dto/time-entry-response.dto';
+import {
+  TimeEntryResponseDto,
+  OneTimeEntryResponseDto,
+} from './dto/time-entry-response.dto';
 import { PaginatedTimeEntriesResponseDto } from './dto/paginated-time-entries-response.dto';
 import { Company } from 'src/platform-saas/companies/entities/company.entity';
 import { Merchant } from 'src/platform-saas/merchants/entities/merchant.entity';
@@ -47,26 +55,51 @@ export class CollaboratorTimeEntriesService {
     dto: CreateTimeEntryDto,
     authenticatedUserMerchantId: number | undefined,
   ): Promise<OneTimeEntryResponseDto> {
-    if (authenticatedUserMerchantId != null && dto.merchant_id !== authenticatedUserMerchantId) {
-      throw new ForbiddenException('You can only create time entries for your own merchant');
+    if (
+      authenticatedUserMerchantId != null &&
+      dto.merchant_id !== authenticatedUserMerchantId
+    ) {
+      throw new ForbiddenException(
+        'You can only create time entries for your own merchant',
+      );
     }
 
-    const company = await this.companyRepo.findOne({ where: { id: dto.company_id } });
-    if (!company) throw new NotFoundException(`Company with ID ${dto.company_id} not found`);
+    const company = await this.companyRepo.findOne({
+      where: { id: dto.company_id },
+    });
+    if (!company)
+      throw new NotFoundException(
+        `Company with ID ${dto.company_id} not found`,
+      );
 
-    const merchant = await this.merchantRepo.findOne({ where: { id: dto.merchant_id } });
-    if (!merchant) throw new NotFoundException(`Merchant with ID ${dto.merchant_id} not found`);
+    const merchant = await this.merchantRepo.findOne({
+      where: { id: dto.merchant_id },
+    });
+    if (!merchant)
+      throw new NotFoundException(
+        `Merchant with ID ${dto.merchant_id} not found`,
+      );
 
-    const collaborator = await this.collaboratorRepo.findOne({ where: { id: dto.collaborator_id } });
-    if (!collaborator) throw new NotFoundException(`Collaborator with ID ${dto.collaborator_id} not found`);
+    const collaborator = await this.collaboratorRepo.findOne({
+      where: { id: dto.collaborator_id },
+    });
+    if (!collaborator)
+      throw new NotFoundException(
+        `Collaborator with ID ${dto.collaborator_id} not found`,
+      );
     if (collaborator.merchant_id !== dto.merchant_id) {
-      throw new BadRequestException('Collaborator does not belong to the given merchant');
+      throw new BadRequestException(
+        'Collaborator does not belong to the given merchant',
+      );
     }
 
     const shift = await this.shiftRepo.findOne({ where: { id: dto.shift_id } });
-    if (!shift) throw new NotFoundException(`Shift with ID ${dto.shift_id} not found`);
+    if (!shift)
+      throw new NotFoundException(`Shift with ID ${dto.shift_id} not found`);
     if (shift.merchantId !== dto.merchant_id) {
-      throw new BadRequestException('Shift does not belong to the given merchant');
+      throw new BadRequestException(
+        'Shift does not belong to the given merchant',
+      );
     }
 
     const clockIn = new Date(dto.clock_in);
@@ -104,23 +137,39 @@ export class CollaboratorTimeEntriesService {
     const limit = query.limit ?? 10;
     const skip = (page - 1) * limit;
 
-    const qb = this.timeEntryRepo.createQueryBuilder('entry').orderBy('entry.clock_in', 'DESC');
+    const qb = this.timeEntryRepo
+      .createQueryBuilder('entry')
+      .orderBy('entry.clock_in', 'DESC');
 
     if (authenticatedUserMerchantId != null) {
-      qb.andWhere('entry.merchant_id = :merchantId', { merchantId: authenticatedUserMerchantId });
+      qb.andWhere('entry.merchant_id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      });
     }
-    if (query.company_id != null) qb.andWhere('entry.company_id = :companyId', { companyId: query.company_id });
-    if (query.merchant_id != null) qb.andWhere('entry.merchant_id = :merchantId', { merchantId: query.merchant_id });
+    if (query.company_id != null)
+      qb.andWhere('entry.company_id = :companyId', {
+        companyId: query.company_id,
+      });
+    if (query.merchant_id != null)
+      qb.andWhere('entry.merchant_id = :merchantId', {
+        merchantId: query.merchant_id,
+      });
     if (query.collaborator_id != null) {
-      qb.andWhere('entry.collaborator_id = :collaboratorId', { collaboratorId: query.collaborator_id });
+      qb.andWhere('entry.collaborator_id = :collaboratorId', {
+        collaboratorId: query.collaborator_id,
+      });
     }
-    if (query.shift_id != null) qb.andWhere('entry.shift_id = :shiftId', { shiftId: query.shift_id });
-    if (query.approved !== undefined) qb.andWhere('entry.approved = :approved', { approved: query.approved });
+    if (query.shift_id != null)
+      qb.andWhere('entry.shift_id = :shiftId', { shiftId: query.shift_id });
+    if (query.approved !== undefined)
+      qb.andWhere('entry.approved = :approved', { approved: query.approved });
     if (query.from_date) {
       qb.andWhere('entry.clock_in >= :fromDate', { fromDate: query.from_date });
     }
     if (query.to_date) {
-      qb.andWhere('entry.clock_in <= :toDate', { toDate: query.to_date + 'T23:59:59.999Z' });
+      qb.andWhere('entry.clock_in <= :toDate', {
+        toDate: query.to_date + 'T23:59:59.999Z',
+      });
     }
 
     const total = await qb.getCount();
@@ -149,10 +198,16 @@ export class CollaboratorTimeEntriesService {
     if (!id || id <= 0) throw new BadRequestException('Invalid time entry ID');
 
     const entry = await this.timeEntryRepo.findOne({ where: { id } });
-    if (!entry) throw new NotFoundException(`Time entry with ID ${id} not found`);
+    if (!entry)
+      throw new NotFoundException(`Time entry with ID ${id} not found`);
 
-    if (authenticatedUserMerchantId != null && entry.merchant_id !== authenticatedUserMerchantId) {
-      throw new ForbiddenException('You can only view time entries from your own merchant');
+    if (
+      authenticatedUserMerchantId != null &&
+      entry.merchant_id !== authenticatedUserMerchantId
+    ) {
+      throw new ForbiddenException(
+        'You can only view time entries from your own merchant',
+      );
     }
 
     return {
@@ -170,40 +225,72 @@ export class CollaboratorTimeEntriesService {
     if (!id || id <= 0) throw new BadRequestException('Invalid time entry ID');
 
     const entry = await this.timeEntryRepo.findOne({ where: { id } });
-    if (!entry) throw new NotFoundException(`Time entry with ID ${id} not found`);
+    if (!entry)
+      throw new NotFoundException(`Time entry with ID ${id} not found`);
 
-    if (authenticatedUserMerchantId != null && entry.merchant_id !== authenticatedUserMerchantId) {
-      throw new ForbiddenException('You can only update time entries from your own merchant');
+    if (
+      authenticatedUserMerchantId != null &&
+      entry.merchant_id !== authenticatedUserMerchantId
+    ) {
+      throw new ForbiddenException(
+        'You can only update time entries from your own merchant',
+      );
     }
 
     if (dto.company_id != null) {
-      const company = await this.companyRepo.findOne({ where: { id: dto.company_id } });
-      if (!company) throw new NotFoundException(`Company with ID ${dto.company_id} not found`);
+      const company = await this.companyRepo.findOne({
+        where: { id: dto.company_id },
+      });
+      if (!company)
+        throw new NotFoundException(
+          `Company with ID ${dto.company_id} not found`,
+        );
       entry.company_id = dto.company_id;
     }
     if (dto.merchant_id != null) {
-      const merchant = await this.merchantRepo.findOne({ where: { id: dto.merchant_id } });
-      if (!merchant) throw new NotFoundException(`Merchant with ID ${dto.merchant_id} not found`);
+      const merchant = await this.merchantRepo.findOne({
+        where: { id: dto.merchant_id },
+      });
+      if (!merchant)
+        throw new NotFoundException(
+          `Merchant with ID ${dto.merchant_id} not found`,
+        );
       entry.merchant_id = dto.merchant_id;
     }
     if (dto.collaborator_id != null) {
-      const collaborator = await this.collaboratorRepo.findOne({ where: { id: dto.collaborator_id } });
-      if (!collaborator) throw new NotFoundException(`Collaborator with ID ${dto.collaborator_id} not found`);
+      const collaborator = await this.collaboratorRepo.findOne({
+        where: { id: dto.collaborator_id },
+      });
+      if (!collaborator)
+        throw new NotFoundException(
+          `Collaborator with ID ${dto.collaborator_id} not found`,
+        );
       entry.collaborator_id = dto.collaborator_id;
     }
     if (dto.shift_id != null) {
-      const shift = await this.shiftRepo.findOne({ where: { id: dto.shift_id } });
-      if (!shift) throw new NotFoundException(`Shift with ID ${dto.shift_id} not found`);
+      const shift = await this.shiftRepo.findOne({
+        where: { id: dto.shift_id },
+      });
+      if (!shift)
+        throw new NotFoundException(`Shift with ID ${dto.shift_id} not found`);
       entry.shift_id = dto.shift_id;
     }
     if (dto.clock_in != null) entry.clock_in = new Date(dto.clock_in);
-    if (dto.clock_out !== undefined) entry.clock_out = dto.clock_out ? new Date(dto.clock_out) : null;
-    if (dto.regular_hours != null) entry.regular_hours = dto.regular_hours as any;
-    if (dto.overtime_hours != null) entry.overtime_hours = dto.overtime_hours as any;
-    if (dto.double_overtime_hours != null) entry.double_overtime_hours = dto.double_overtime_hours as any;
+    if (dto.clock_out !== undefined)
+      entry.clock_out = dto.clock_out ? new Date(dto.clock_out) : null;
+    if (dto.regular_hours != null)
+      entry.regular_hours = dto.regular_hours as any;
+    if (dto.overtime_hours != null)
+      entry.overtime_hours = dto.overtime_hours as any;
+    if (dto.double_overtime_hours != null)
+      entry.double_overtime_hours = dto.double_overtime_hours as any;
     if (dto.approved !== undefined) entry.approved = dto.approved;
 
-    if (entry.clock_out && entry.clock_in && entry.clock_out <= entry.clock_in) {
+    if (
+      entry.clock_out &&
+      entry.clock_in &&
+      entry.clock_out <= entry.clock_in
+    ) {
       throw new BadRequestException('clock_out must be after clock_in');
     }
 
@@ -222,10 +309,16 @@ export class CollaboratorTimeEntriesService {
     if (!id || id <= 0) throw new BadRequestException('Invalid time entry ID');
 
     const entry = await this.timeEntryRepo.findOne({ where: { id } });
-    if (!entry) throw new NotFoundException(`Time entry with ID ${id} not found`);
+    if (!entry)
+      throw new NotFoundException(`Time entry with ID ${id} not found`);
 
-    if (authenticatedUserMerchantId != null && entry.merchant_id !== authenticatedUserMerchantId) {
-      throw new ForbiddenException('You can only delete time entries from your own merchant');
+    if (
+      authenticatedUserMerchantId != null &&
+      entry.merchant_id !== authenticatedUserMerchantId
+    ) {
+      throw new ForbiddenException(
+        'You can only delete time entries from your own merchant',
+      );
     }
 
     await this.timeEntryRepo.remove(entry);

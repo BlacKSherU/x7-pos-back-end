@@ -28,4 +28,4 @@ import { VariantsModule } from '../variants/variants.module';
   providers: [PurchaseOrderItemService],
   exports: [PurchaseOrderItemService],
 })
-export class PurchaseOrderItemModule { }
+export class PurchaseOrderItemModule {}

@@ -41,7 +41,7 @@ import { RolesGuard } from 'src/auth/guards/roles.guard';
 @Controller('purchase-order')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class PurchaseOrderController {
-  constructor(private readonly purchaseOrderService: PurchaseOrderService) { }
+  constructor(private readonly purchaseOrderService: PurchaseOrderService) {}
 
   @Post()
   @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)

@@ -4,9 +4,7 @@ import { ReceiptItemService } from './receipt-item.service';
 import { CreateReceiptItemDto } from './dto/create-receipt-item.dto';
 import { UpdateReceiptItemDto } from './dto/update-receipt-item.dto';
 import { GetReceiptItemsQueryDto } from './dto/get-receipt-items-query.dto';
-import {
-  OneReceiptItemResponseDto,
-} from './dto/receipt-item-response.dto';
+import { OneReceiptItemResponseDto } from './dto/receipt-item-response.dto';
 import { AllPaginatedReceiptItems } from './dto/all-paginated-receipt-items.dto';
 
 const MERCHANT_ID = 1;
@@ -78,7 +76,10 @@ describe('ReceiptItemController', () => {
         quantity: 2,
         unitPrice: 12.5,
       };
-      mockService.create.mockResolvedValue({ ...mockOneResponse, statusCode: 201 });
+      mockService.create.mockResolvedValue({
+        ...mockOneResponse,
+        statusCode: 201,
+      });
 
       const result = await controller.create(dto, mockReq);
 
@@ -114,7 +115,10 @@ describe('ReceiptItemController', () => {
   describe('update', () => {
     it('should call service.update with id, dto and merchantId', async () => {
       const dto: UpdateReceiptItemDto = { metadata: '{"notes":"Sin cebolla"}' };
-      const updated = { ...mockOneResponse, data: { ...mockOneResponse.data, metadata: dto.metadata } };
+      const updated = {
+        ...mockOneResponse,
+        data: { ...mockOneResponse.data, metadata: dto.metadata },
+      };
       mockService.update.mockResolvedValue(updated);
 
       const result = await controller.update(1, dto, mockReq);
@@ -126,7 +130,10 @@ describe('ReceiptItemController', () => {
 
   describe('remove', () => {
     it('should call service.remove with id and merchantId', async () => {
-      const deleted = { ...mockOneResponse, message: 'Receipt item deleted successfully' };
+      const deleted = {
+        ...mockOneResponse,
+        message: 'Receipt item deleted successfully',
+      };
       mockService.remove.mockResolvedValue(deleted);
 
       const result = await controller.remove(1, mockReq);

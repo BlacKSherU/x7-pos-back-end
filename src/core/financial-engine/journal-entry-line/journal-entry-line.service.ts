@@ -31,7 +31,7 @@ export class JournalEntryLineService {
     private readonly companyRepository: Repository<Company>,
     @InjectRepository(Merchant)
     private readonly merchantRepository: Repository<Merchant>,
-  ) { }
+  ) {}
 
   // ─── Helpers privados ──────────────────────────────────────────────────────
 
@@ -48,7 +48,11 @@ export class JournalEntryLineService {
     return {
       id: line.id,
       account: line.account
-        ? { id: line.account.id, code: line.account.code, name: line.account.name }
+        ? {
+            id: line.account.id,
+            code: line.account.code,
+            name: line.account.name,
+          }
         : null,
       debit: Number(line.debit),
       credit: Number(line.credit),
@@ -56,7 +60,11 @@ export class JournalEntryLineService {
     };
   }
 
-  private async fetchOne(id: number, companyId: number, context: string): Promise<JournalEntryLine> {
+  private async fetchOne(
+    id: number,
+    companyId: number,
+    context: string,
+  ): Promise<JournalEntryLine> {
     const line = await this.lineRepository.findOne({
       where: { id, is_active: true },
       relations: ['account', 'journal_entry'],
@@ -112,7 +120,9 @@ export class JournalEntryLineService {
       is_active: true,
     });
     if (!account) {
-      ErrorHandler.notFound(`Ledger Account #${dto.account_id} not found or inactive`);
+      ErrorHandler.notFound(
+        `Ledger Account #${dto.account_id} not found or inactive`,
+      );
     }
 
     const newLine = this.lineRepository.create({
@@ -195,7 +205,8 @@ export class JournalEntryLineService {
     merchantId: number,
     id: number,
   ): Promise<OneJournalEntryLineResponse> {
-    if (!id || id <= 0) ErrorHandler.badRequest('Journal Entry Line ID incorrect');
+    if (!id || id <= 0)
+      ErrorHandler.badRequest('Journal Entry Line ID incorrect');
 
     const companyId = await this.getCompanyId(merchantId);
     const line = await this.fetchOne(id, companyId, 'FindOne');
@@ -214,7 +225,8 @@ export class JournalEntryLineService {
     id: number,
     dto: UpdateJournalEntryLineDto,
   ): Promise<OneJournalEntryLineResponse> {
-    if (!id || id <= 0) ErrorHandler.badRequest('Journal Entry Line ID incorrect');
+    if (!id || id <= 0)
+      ErrorHandler.badRequest('Journal Entry Line ID incorrect');
 
     const companyId = await this.getCompanyId(merchantId);
     const line = await this.fetchOne(id, companyId, 'Update');
@@ -232,7 +244,9 @@ export class JournalEntryLineService {
         is_active: true,
       });
       if (!account) {
-        ErrorHandler.notFound(`Ledger Account #${dto.account_id} not found or inactive`);
+        ErrorHandler.notFound(
+          `Ledger Account #${dto.account_id} not found or inactive`,
+        );
       }
     }
 
@@ -258,7 +272,8 @@ export class JournalEntryLineService {
     merchantId: number,
     id: number,
   ): Promise<OneJournalEntryLineResponse> {
-    if (!id || id <= 0) ErrorHandler.badRequest('Journal Entry Line ID incorrect');
+    if (!id || id <= 0)
+      ErrorHandler.badRequest('Journal Entry Line ID incorrect');
 
     const companyId = await this.getCompanyId(merchantId);
     const line = await this.fetchOne(id, companyId, 'Remove');

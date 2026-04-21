@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/unbound-method */
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { KitchenOrderItemController } from './kitchen-order-item.controller';
 import { KitchenOrderItemService } from './kitchen-order-item.service';
@@ -100,7 +96,9 @@ describe('KitchenOrderItemController', () => {
       ],
     }).compile();
 
-    controller = module.get<KitchenOrderItemController>(KitchenOrderItemController);
+    controller = module.get<KitchenOrderItemController>(
+      KitchenOrderItemController,
+    );
     service = module.get<KitchenOrderItemService>(KitchenOrderItemService);
   });
 
@@ -175,8 +173,7 @@ describe('KitchenOrderItemController', () => {
         message: 'Kitchen order item preparation status advanced successfully',
         data: {
           ...mockKitchenOrderItemResponse.data,
-          preparationStatus:
-            KitchenOrderItemPreparationStatus.IN_PREPARATION,
+          preparationStatus: KitchenOrderItemPreparationStatus.IN_PREPARATION,
         },
       };
       advanceSpy.mockResolvedValue(response);
@@ -227,7 +224,11 @@ describe('KitchenOrderItemController', () => {
 
       const result = await controller.update(1, updateDto, mockRequest);
 
-      expect(updateSpy).toHaveBeenCalledWith(1, updateDto, mockUser.merchant.id);
+      expect(updateSpy).toHaveBeenCalledWith(
+        1,
+        updateDto,
+        mockUser.merchant.id,
+      );
       expect(result).toEqual(updatedResponse);
       expect(result.statusCode).toBe(200);
       expect(result.message).toBe('Kitchen order item updated successfully');

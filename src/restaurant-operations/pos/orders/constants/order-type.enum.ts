@@ -3,4 +3,3 @@ export enum OrderType {
   TAKE_OUT = 'take_out',
   DELIVERY = 'delivery',
 }
-

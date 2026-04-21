@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, In } from 'typeorm';
+import { Repository, Between, In, type QueryDeepPartialEntity } from 'typeorm';
 import { OrderPayment } from './entities/order-payment.entity';
 import { Order } from '../orders/entities/order.entity';
 import { CreateOrderPaymentDto } from './dto/create-order-payment.dto';
@@ -121,7 +121,9 @@ export class OrderPaymentsService {
     if (query.createdDate) {
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
       if (!dateRegex.test(query.createdDate)) {
-        throw new BadRequestException('Created date must be in YYYY-MM-DD format');
+        throw new BadRequestException(
+          'Created date must be in YYYY-MM-DD format',
+        );
       }
     }
 
@@ -221,7 +223,9 @@ export class OrderPaymentsService {
     authenticatedUserMerchantId: number,
   ): Promise<OneOrderPaymentResponseDto> {
     if (!id || id <= 0) {
-      throw new BadRequestException('Order payment ID must be a valid positive number');
+      throw new BadRequestException(
+        'Order payment ID must be a valid positive number',
+      );
     }
     if (!authenticatedUserMerchantId) {
       throw new ForbiddenException(
@@ -255,7 +259,9 @@ export class OrderPaymentsService {
     authenticatedUserMerchantId: number,
   ): Promise<OneOrderPaymentResponseDto> {
     if (!id || id <= 0) {
-      throw new BadRequestException('Order payment ID must be a valid positive number');
+      throw new BadRequestException(
+        'Order payment ID must be a valid positive number',
+      );
     }
     if (!authenticatedUserMerchantId) {
       throw new ForbiddenException(
@@ -287,14 +293,18 @@ export class OrderPaymentsService {
         throw new NotFoundException('Order not found');
       }
       if (order.merchant_id !== authenticatedUserMerchantId) {
-        throw new ForbiddenException('You can only assign orders from your merchant');
+        throw new ForbiddenException(
+          'You can only assign orders from your merchant',
+        );
       }
       if (order.logical_status !== OrderStatus.ACTIVE) {
-        throw new BadRequestException('Cannot move a payment to a deleted order');
+        throw new BadRequestException(
+          'Cannot move a payment to a deleted order',
+        );
       }
     }
 
-    const patch: Partial<OrderPayment> = {};
+    const patch: QueryDeepPartialEntity<OrderPayment> = {};
     if (dto.orderId !== undefined) patch.order_id = dto.orderId;
     if (dto.amount !== undefined) {
       if (dto.amount < 0) {
@@ -354,7 +364,9 @@ export class OrderPaymentsService {
     authenticatedUserMerchantId: number,
   ): Promise<OneOrderPaymentResponseDto> {
     if (!id || id <= 0) {
-      throw new BadRequestException('Order payment ID must be a valid positive number');
+      throw new BadRequestException(
+        'Order payment ID must be a valid positive number',
+      );
     }
     if (!authenticatedUserMerchantId) {
       throw new ForbiddenException(

@@ -22,7 +22,10 @@ export class CreateTipPoolMemberDto {
   @IsString()
   role: string;
 
-  @ApiProperty({ example: 10.5, description: 'Weight or points for distribution' })
+  @ApiProperty({
+    example: 10.5,
+    description: 'Weight or points for distribution',
+  })
   @IsNotEmpty()
   @Type(() => Number)
   @IsNumber()

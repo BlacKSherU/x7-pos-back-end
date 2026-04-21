@@ -1,17 +1,23 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/unbound-method */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { Repository } from 'typeorm';
+import { Repository, type SelectQueryBuilder } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException, ForbiddenException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { OnlineDeliveryInfoService } from './online-delivery-info.service';
 import { OnlineDeliveryInfo } from './entities/online-delivery-info.entity';
 import { OnlineOrder } from '../online-order/entities/online-order.entity';
 import { CreateOnlineDeliveryInfoDto } from './dto/create-online-delivery-info.dto';
 import { UpdateOnlineDeliveryInfoDto } from './dto/update-online-delivery-info.dto';
-import { GetOnlineDeliveryInfoQueryDto, OnlineDeliveryInfoSortBy } from './dto/get-online-delivery-info-query.dto';
+import {
+  GetOnlineDeliveryInfoQueryDto,
+  OnlineDeliveryInfoSortBy,
+} from './dto/get-online-delivery-info-query.dto';
 import { OnlineStoreStatus } from '../online-stores/constants/online-store-status.enum';
 import { OnlineOrderStatus } from '../online-order/constants/online-order-status.enum';
 import { OnlineDeliveryInfoStatus } from './constants/online-delivery-info-status.enum';
@@ -141,13 +147,24 @@ describe('OnlineDeliveryInfoService', () => {
     };
 
     it('should create an online delivery info successfully', async () => {
-      jest.spyOn(onlineOrderRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(mockOnlineOrder as any);
+      jest
+        .spyOn(onlineOrderRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineOrder>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        mockOnlineOrder as unknown as OnlineOrder,
+      );
       const savedItem = { ...mockOnlineDeliveryInfo, id: 1 };
-      jest.spyOn(onlineDeliveryInfoRepository, 'save').mockResolvedValue(savedItem as any);
-      onlineDeliveryInfoRepository.findOne = jest.fn()
+      jest
+        .spyOn(onlineDeliveryInfoRepository, 'save')
+        .mockResolvedValue(savedItem as unknown as OnlineDeliveryInfo);
+      onlineDeliveryInfoRepository.findOne = jest
+        .fn()
         .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(mockOnlineDeliveryInfo as any);
+        .mockResolvedValueOnce(
+          mockOnlineDeliveryInfo as unknown as OnlineDeliveryInfo,
+        );
 
       const result = await service.create(createOnlineDeliveryInfoDto, 1);
 
@@ -164,35 +181,61 @@ describe('OnlineDeliveryInfoService', () => {
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.create(createOnlineDeliveryInfoDto, undefined as any)).rejects.toThrow(
-        ForbiddenException,
-      );
-      await expect(service.create(createOnlineDeliveryInfoDto, undefined as any)).rejects.toThrow(
+      await expect(
+        service.create(
+          createOnlineDeliveryInfoDto,
+          undefined as unknown as number,
+        ),
+      ).rejects.toThrow(ForbiddenException);
+      await expect(
+        service.create(
+          createOnlineDeliveryInfoDto,
+          undefined as unknown as number,
+        ),
+      ).rejects.toThrow(
         'You must be associated with a merchant to create online delivery info',
       );
     });
 
     it('should throw NotFoundException if online order not found', async () => {
-      jest.spyOn(onlineOrderRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(onlineOrderRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineOrder>,
+        );
       mockQueryBuilder.getOne.mockResolvedValue(null);
 
-      await expect(service.create(createOnlineDeliveryInfoDto, 1)).rejects.toThrow(
-        NotFoundException,
-      );
-      await expect(service.create(createOnlineDeliveryInfoDto, 1)).rejects.toThrow(
+      await expect(
+        service.create(createOnlineDeliveryInfoDto, 1),
+      ).rejects.toThrow(NotFoundException);
+      await expect(
+        service.create(createOnlineDeliveryInfoDto, 1),
+      ).rejects.toThrow(
         'Online order not found or you do not have access to it',
       );
     });
 
     it('should throw BadRequestException if delivery info already exists', async () => {
-      jest.spyOn(onlineOrderRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(mockOnlineOrder as any);
-      jest.spyOn(onlineDeliveryInfoRepository, 'findOne').mockResolvedValue(mockOnlineDeliveryInfo as any);
-
-      await expect(service.create(createOnlineDeliveryInfoDto, 1)).rejects.toThrow(
-        BadRequestException,
+      jest
+        .spyOn(onlineOrderRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineOrder>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        mockOnlineOrder as unknown as OnlineOrder,
       );
-      await expect(service.create(createOnlineDeliveryInfoDto, 1)).rejects.toThrow(
+      jest
+        .spyOn(onlineDeliveryInfoRepository, 'findOne')
+        .mockResolvedValue(
+          mockOnlineDeliveryInfo as unknown as OnlineDeliveryInfo,
+        );
+
+      await expect(
+        service.create(createOnlineDeliveryInfoDto, 1),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.create(createOnlineDeliveryInfoDto, 1),
+      ).rejects.toThrow(
         'This online order already has delivery info associated',
       );
     });
@@ -205,14 +248,25 @@ describe('OnlineDeliveryInfoService', () => {
     };
 
     it('should return paginated list of online delivery info', async () => {
-      jest.spyOn(onlineDeliveryInfoRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockOnlineDeliveryInfo] as any, 1]);
+      jest
+        .spyOn(onlineDeliveryInfoRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineDeliveryInfo>,
+        );
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([
+        [mockOnlineDeliveryInfo] as unknown as OnlineDeliveryInfo[],
+        1,
+      ]);
 
       const result = await service.findAll(query, 1);
 
-      expect(onlineDeliveryInfoRepository.createQueryBuilder).toHaveBeenCalled();
+      expect(
+        onlineDeliveryInfoRepository.createQueryBuilder,
+      ).toHaveBeenCalled();
       expect(result.statusCode).toBe(200);
-      expect(result.message).toBe('Online delivery info retrieved successfully');
+      expect(result.message).toBe(
+        'Online delivery info retrieved successfully',
+      );
       expect(result.data).toHaveLength(1);
       expect(result.paginationMeta.page).toBe(1);
       expect(result.paginationMeta.limit).toBe(10);
@@ -220,10 +274,12 @@ describe('OnlineDeliveryInfoService', () => {
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.findAll(query, undefined as any)).rejects.toThrow(
-        ForbiddenException,
-      );
-      await expect(service.findAll(query, undefined as any)).rejects.toThrow(
+      await expect(
+        service.findAll(query, undefined as unknown as number),
+      ).rejects.toThrow(ForbiddenException);
+      await expect(
+        service.findAll(query, undefined as unknown as number),
+      ).rejects.toThrow(
         'You must be associated with a merchant to access online delivery info',
       );
     });
@@ -235,46 +291,72 @@ describe('OnlineDeliveryInfoService', () => {
         customerName: 'John',
         city: 'New York',
       };
-      jest.spyOn(onlineDeliveryInfoRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockOnlineDeliveryInfo] as any, 1]);
+      jest
+        .spyOn(onlineDeliveryInfoRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineDeliveryInfo>,
+        );
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([
+        [mockOnlineDeliveryInfo] as unknown as OnlineDeliveryInfo[],
+        1,
+      ]);
 
       await service.findAll(queryWithFilters, 1);
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('onlineDeliveryInfo.online_order_id = :onlineOrderId', { onlineOrderId: 1 });
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('onlineDeliveryInfo.customer_name ILIKE :customerName', { customerName: '%John%' });
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('onlineDeliveryInfo.city = :city', { city: 'New York' });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'onlineDeliveryInfo.online_order_id = :onlineOrderId',
+        { onlineOrderId: 1 },
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'onlineDeliveryInfo.customer_name ILIKE :customerName',
+        { customerName: '%John%' },
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'onlineDeliveryInfo.city = :city',
+        { city: 'New York' },
+      );
     });
   });
 
   describe('findOne', () => {
     it('should return an online delivery info successfully', async () => {
-      jest.spyOn(onlineDeliveryInfoRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(mockOnlineDeliveryInfo as any);
+      jest
+        .spyOn(onlineDeliveryInfoRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineDeliveryInfo>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        mockOnlineDeliveryInfo as unknown as OnlineDeliveryInfo,
+      );
 
       const result = await service.findOne(1, 1);
 
-      expect(onlineDeliveryInfoRepository.createQueryBuilder).toHaveBeenCalled();
+      expect(
+        onlineDeliveryInfoRepository.createQueryBuilder,
+      ).toHaveBeenCalled();
       expect(result.statusCode).toBe(200);
-      expect(result.message).toBe('Online delivery info retrieved successfully');
+      expect(result.message).toBe(
+        'Online delivery info retrieved successfully',
+      );
       expect(result.data.id).toBe(1);
     });
 
     it('should throw BadRequestException if id is invalid', async () => {
-      await expect(service.findOne(0, 1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.findOne(0, 1)).rejects.toThrow(BadRequestException);
       await expect(service.findOne(0, 1)).rejects.toThrow(
         'Online delivery info ID must be a valid positive number',
       );
     });
 
     it('should throw NotFoundException if online delivery info not found', async () => {
-      jest.spyOn(onlineDeliveryInfoRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(onlineDeliveryInfoRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineDeliveryInfo>,
+        );
       mockQueryBuilder.getOne.mockResolvedValue(null);
 
-      await expect(service.findOne(1, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.findOne(1, 1)).rejects.toThrow(NotFoundException);
       await expect(service.findOne(1, 1)).rejects.toThrow(
         'Online delivery info not found',
       );
@@ -288,76 +370,127 @@ describe('OnlineDeliveryInfoService', () => {
     };
 
     it('should update an online delivery info successfully', async () => {
-      jest.spyOn(onlineDeliveryInfoRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne
-        .mockResolvedValueOnce(mockOnlineDeliveryInfo as any);
-      jest.spyOn(onlineDeliveryInfoRepository, 'save').mockResolvedValue(mockOnlineDeliveryInfo as any);
-      jest.spyOn(onlineDeliveryInfoRepository, 'findOne')
-        .mockResolvedValueOnce({ ...mockOnlineDeliveryInfo, address: '456 Oak Avenue, Suite 2', phone: '+1-555-987-6543' } as any);
+      jest
+        .spyOn(onlineDeliveryInfoRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineDeliveryInfo>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValueOnce(
+        mockOnlineDeliveryInfo as unknown as OnlineDeliveryInfo,
+      );
+      jest
+        .spyOn(onlineDeliveryInfoRepository, 'save')
+        .mockResolvedValue(
+          mockOnlineDeliveryInfo as unknown as OnlineDeliveryInfo,
+        );
+      jest
+        .spyOn(onlineDeliveryInfoRepository, 'findOne')
+        .mockResolvedValueOnce({
+          ...mockOnlineDeliveryInfo,
+          address: '456 Oak Avenue, Suite 2',
+          phone: '+1-555-987-6543',
+        } as unknown as OnlineDeliveryInfo);
 
       const result = await service.update(1, updateOnlineDeliveryInfoDto, 1);
 
-      expect(onlineDeliveryInfoRepository.createQueryBuilder).toHaveBeenCalled();
+      expect(
+        onlineDeliveryInfoRepository.createQueryBuilder,
+      ).toHaveBeenCalled();
       expect(onlineDeliveryInfoRepository.save).toHaveBeenCalled();
       expect(result.statusCode).toBe(200);
       expect(result.message).toBe('Online delivery info updated successfully');
     });
 
     it('should throw NotFoundException if online delivery info not found', async () => {
-      jest.spyOn(onlineDeliveryInfoRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(onlineDeliveryInfoRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineDeliveryInfo>,
+        );
       mockQueryBuilder.getOne.mockResolvedValue(null);
 
-      await expect(service.update(1, updateOnlineDeliveryInfoDto, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.update(1, updateOnlineDeliveryInfoDto, 1),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ConflictException if online delivery info is already deleted', async () => {
-      const deletedItem = { ...mockOnlineDeliveryInfo, status: OnlineDeliveryInfoStatus.DELETED };
-      jest.spyOn(onlineDeliveryInfoRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(deletedItem as any);
+      const deletedItem = {
+        ...mockOnlineDeliveryInfo,
+        status: OnlineDeliveryInfoStatus.DELETED,
+      };
+      jest
+        .spyOn(onlineDeliveryInfoRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineDeliveryInfo>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        deletedItem as unknown as OnlineDeliveryInfo,
+      );
 
-      await expect(service.update(1, updateOnlineDeliveryInfoDto, 1)).rejects.toThrow(
-        ConflictException,
-      );
-      await expect(service.update(1, updateOnlineDeliveryInfoDto, 1)).rejects.toThrow(
-        'Cannot update a deleted online delivery info',
-      );
+      await expect(
+        service.update(1, updateOnlineDeliveryInfoDto, 1),
+      ).rejects.toThrow(ConflictException);
+      await expect(
+        service.update(1, updateOnlineDeliveryInfoDto, 1),
+      ).rejects.toThrow('Cannot update a deleted online delivery info');
     });
   });
 
   describe('remove', () => {
     it('should remove an online delivery info successfully', async () => {
-      const deletedItem = { ...mockOnlineDeliveryInfo, status: OnlineDeliveryInfoStatus.DELETED };
-      jest.spyOn(onlineDeliveryInfoRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(mockOnlineDeliveryInfo as any);
-      jest.spyOn(onlineDeliveryInfoRepository, 'save').mockResolvedValue(deletedItem as any);
+      const deletedItem = {
+        ...mockOnlineDeliveryInfo,
+        status: OnlineDeliveryInfoStatus.DELETED,
+      };
+      jest
+        .spyOn(onlineDeliveryInfoRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineDeliveryInfo>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        mockOnlineDeliveryInfo as unknown as OnlineDeliveryInfo,
+      );
+      jest
+        .spyOn(onlineDeliveryInfoRepository, 'save')
+        .mockResolvedValue(deletedItem as unknown as OnlineDeliveryInfo);
 
       const result = await service.remove(1, 1);
 
-      expect(onlineDeliveryInfoRepository.createQueryBuilder).toHaveBeenCalled();
+      expect(
+        onlineDeliveryInfoRepository.createQueryBuilder,
+      ).toHaveBeenCalled();
       expect(onlineDeliveryInfoRepository.save).toHaveBeenCalled();
       expect(result.statusCode).toBe(200);
       expect(result.message).toBe('Online delivery info deleted successfully');
     });
 
     it('should throw NotFoundException if online delivery info not found', async () => {
-      jest.spyOn(onlineDeliveryInfoRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(onlineDeliveryInfoRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineDeliveryInfo>,
+        );
       mockQueryBuilder.getOne.mockResolvedValue(null);
 
-      await expect(service.remove(1, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.remove(1, 1)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ConflictException if online delivery info is already deleted', async () => {
-      const deletedItem = { ...mockOnlineDeliveryInfo, status: OnlineDeliveryInfoStatus.DELETED };
-      jest.spyOn(onlineDeliveryInfoRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(deletedItem as any);
-
-      await expect(service.remove(1, 1)).rejects.toThrow(
-        ConflictException,
+      const deletedItem = {
+        ...mockOnlineDeliveryInfo,
+        status: OnlineDeliveryInfoStatus.DELETED,
+      };
+      jest
+        .spyOn(onlineDeliveryInfoRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineDeliveryInfo>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        deletedItem as unknown as OnlineDeliveryInfo,
       );
+
+      await expect(service.remove(1, 1)).rejects.toThrow(ConflictException);
       await expect(service.remove(1, 1)).rejects.toThrow(
         'Online delivery info is already deleted',
       );

@@ -16,13 +16,17 @@ import { MarketingAutomationActionStatus } from '../constants/marketing-automati
 @Index(['automation_id', 'sequence', 'status', 'created_at'])
 @Index(['action_type', 'status'])
 export class MarketingAutomationAction {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the marketing automation action' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the marketing automation action',
+  })
   @PrimaryGeneratedColumn({ type: 'bigint' })
   id: number;
 
   @ApiProperty({
     example: 1,
-    description: 'Identifier of the Marketing Automation this action belongs to',
+    description:
+      'Identifier of the Marketing Automation this action belongs to',
   })
   @Column({ type: 'bigint', name: 'automation_id' })
   automation_id: number;
@@ -54,7 +58,8 @@ export class MarketingAutomationAction {
 
   @ApiProperty({
     example: 1,
-    description: 'Target ID (coupon_id, segment_id, etc. depending on action_type)',
+    description:
+      'Target ID (coupon_id, segment_id, etc. depending on action_type)',
     nullable: true,
   })
   @Column({ type: 'bigint', nullable: true, name: 'target_id' })
@@ -62,7 +67,8 @@ export class MarketingAutomationAction {
 
   @ApiProperty({
     example: '{"template_id": 1, "subject": "Welcome!"}',
-    description: 'JSON payload with dynamic data (template, message, delay, etc.)',
+    description:
+      'JSON payload with dynamic data (template, message, delay, etc.)',
     nullable: true,
   })
   @Column({ type: 'text', nullable: true })

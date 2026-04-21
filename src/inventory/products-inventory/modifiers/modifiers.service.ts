@@ -24,7 +24,7 @@ export class ModifiersService {
     private readonly productRepository: Repository<Product>,
     @Inject(forwardRef(() => ProductsService))
     private readonly productsService: ProductsService,
-  ) { }
+  ) {}
 
   async create(
     merchant_id: number,

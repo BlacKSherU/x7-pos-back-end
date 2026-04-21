@@ -91,6 +91,9 @@ export class SupplierPayment {
   @OneToMany(() => SupplierPaymentItem, (item) => item.payment)
   items: SupplierPaymentItem[];
 
-  @OneToMany(() => SupplierPaymentAllocation, (allocation) => allocation.payment)
+  @OneToMany(
+    () => SupplierPaymentAllocation,
+    (allocation) => allocation.payment,
+  )
   allocations: SupplierPaymentAllocation[];
 }

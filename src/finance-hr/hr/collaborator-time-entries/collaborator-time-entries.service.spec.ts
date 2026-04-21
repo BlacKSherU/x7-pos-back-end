@@ -37,7 +37,9 @@ describe('CollaboratorTimeEntriesService', () => {
       ],
     }).compile();
 
-    service = module.get<CollaboratorTimeEntriesService>(CollaboratorTimeEntriesService);
+    service = module.get<CollaboratorTimeEntriesService>(
+      CollaboratorTimeEntriesService,
+    );
   });
 
   it('should be defined', () => {

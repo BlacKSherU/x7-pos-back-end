@@ -19,4 +19,3 @@ export class UpdateLoyaltyCustomerDto extends PartialType(
   @Type(() => Number)
   loyalty_tier_id?: number;
 }
-

@@ -59,7 +59,12 @@ const mockQb = {
 
 describe('TipPoolsService', () => {
   let service: TipPoolsService;
-  const tipPoolRepo = { save: jest.fn(), findOne: jest.fn(), update: jest.fn(), createQueryBuilder: jest.fn(() => mockQb) };
+  const tipPoolRepo = {
+    save: jest.fn(),
+    findOne: jest.fn(),
+    update: jest.fn(),
+    createQueryBuilder: jest.fn(() => mockQb),
+  };
   const companyRepo = { findOne: jest.fn() };
   const merchantRepo = { findOne: jest.fn() };
   const shiftRepo = { findOne: jest.fn() };
@@ -101,7 +106,9 @@ describe('TipPoolsService', () => {
   });
 
   it('create: should throw when no merchant', async () => {
-    await expect(service.create({} as CreateTipPoolDto, null)).rejects.toThrow(ForbiddenException);
+    await expect(service.create({} as CreateTipPoolDto, null)).rejects.toThrow(
+      ForbiddenException,
+    );
   });
 
   it('findAll: should return paginated', async () => {
@@ -133,7 +140,10 @@ describe('TipPoolsService', () => {
 
   it('remove: should soft delete', async () => {
     tipPoolRepo.findOne.mockResolvedValue(mockTipPool);
-    tipPoolRepo.save.mockResolvedValue({ ...mockTipPool, record_status: TipPoolRecordStatus.DELETED });
+    tipPoolRepo.save.mockResolvedValue({
+      ...mockTipPool,
+      record_status: TipPoolRecordStatus.DELETED,
+    });
     const result = await service.remove(1, 1);
     expect(result.statusCode).toBe(200);
     expect(result.data.recordStatus).toBe(TipPoolRecordStatus.DELETED);

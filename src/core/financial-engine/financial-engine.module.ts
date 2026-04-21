@@ -6,4 +6,4 @@ import { JournalEntryLineModule } from './journal-entry-line/journal-entry-line.
 @Module({
   imports: [JournalEntryModule, LedgerAccountsModule, JournalEntryLineModule],
 })
-export class FinancialEngineModule { }
+export class FinancialEngineModule {}

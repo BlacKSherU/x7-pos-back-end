@@ -46,9 +46,14 @@ import { PaginatedSupplierCreditNotesResponseDto } from './dto/paginated-supplie
 @ApiBearerAuth()
 @Controller('supplier-credit-notes')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@ApiExtraModels(OneSupplierCreditNoteResponseDto, PaginatedSupplierCreditNotesResponseDto)
+@ApiExtraModels(
+  OneSupplierCreditNoteResponseDto,
+  PaginatedSupplierCreditNotesResponseDto,
+)
 export class SupplierCreditNotesController {
-  constructor(private readonly supplierCreditNotesService: SupplierCreditNotesService) {}
+  constructor(
+    private readonly supplierCreditNotesService: SupplierCreditNotesService,
+  ) {}
 
   @Post()
   @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
@@ -69,7 +74,9 @@ export class SupplierCreditNotesController {
   @ApiNotFoundResponse({ description: 'Company or supplier not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiForbiddenResponse({ description: 'Forbidden' })
-  async create(@Body() dto: CreateSupplierCreditNoteDto): Promise<OneSupplierCreditNoteResponseDto> {
+  async create(
+    @Body() dto: CreateSupplierCreditNoteDto,
+  ): Promise<OneSupplierCreditNoteResponseDto> {
     return this.supplierCreditNotesService.create(dto);
   }
 
@@ -121,7 +128,9 @@ export class SupplierCreditNotesController {
   @ApiBadRequestResponse({ description: 'Invalid ID' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiForbiddenResponse({ description: 'Forbidden' })
-  async findOne(@Param('id', ParseIntPipe) id: number): Promise<OneSupplierCreditNoteResponseDto> {
+  async findOne(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<OneSupplierCreditNoteResponseDto> {
     return this.supplierCreditNotesService.findOne(id);
   }
 
@@ -142,7 +151,9 @@ export class SupplierCreditNotesController {
     type: OneSupplierCreditNoteResponseDto,
   })
   @ApiBadRequestResponse({ description: 'Invalid input' })
-  @ApiNotFoundResponse({ description: 'Supplier credit note, company or supplier not found' })
+  @ApiNotFoundResponse({
+    description: 'Supplier credit note, company or supplier not found',
+  })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiForbiddenResponse({ description: 'Forbidden' })
   async update(
@@ -171,7 +182,9 @@ export class SupplierCreditNotesController {
   @ApiBadRequestResponse({ description: 'Invalid ID' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiForbiddenResponse({ description: 'Forbidden' })
-  async remove(@Param('id', ParseIntPipe) id: number): Promise<OneSupplierCreditNoteResponseDto> {
+  async remove(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<OneSupplierCreditNoteResponseDto> {
     return this.supplierCreditNotesService.remove(id);
   }
 }

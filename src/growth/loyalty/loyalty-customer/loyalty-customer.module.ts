@@ -21,4 +21,4 @@ import { Customer } from 'src/core/business-partners/customers/entities/customer
   providers: [LoyaltyCustomerService],
   exports: [LoyaltyCustomerService],
 })
-export class LoyaltyCustomerModule { }
+export class LoyaltyCustomerModule {}

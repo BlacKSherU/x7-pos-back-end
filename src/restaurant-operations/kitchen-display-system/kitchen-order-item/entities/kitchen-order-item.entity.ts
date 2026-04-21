@@ -120,7 +120,8 @@ export class KitchenOrderItem {
   @ApiProperty({
     example: KitchenOrderItemPreparationStatus.PENDING,
     enum: KitchenOrderItemPreparationStatus,
-    description: 'Preparation step in kitchen (pending → in_preparation → ready)',
+    description:
+      'Preparation step in kitchen (pending → in_preparation → ready)',
   })
   @Column({
     type: 'varchar',

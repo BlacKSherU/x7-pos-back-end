@@ -1,17 +1,24 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/unbound-method */
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException, ForbiddenException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { MarketingSegmentsService } from './marketing-segments.service';
 import { MarketingSegment } from './entities/marketing-segment.entity';
 import { Merchant } from '../../../platform-saas/merchants/entities/merchant.entity';
 import { CreateMarketingSegmentDto } from './dto/create-marketing-segment.dto';
 import { UpdateMarketingSegmentDto } from './dto/update-marketing-segment.dto';
-import { GetMarketingSegmentQueryDto, MarketingSegmentSortBy } from './dto/get-marketing-segment-query.dto';
+import {
+  GetMarketingSegmentQueryDto,
+  MarketingSegmentSortBy,
+} from './dto/get-marketing-segment-query.dto';
 import { MarketingSegmentStatus } from './constants/marketing-segment-status.enum';
 import { MarketingSegmentType } from './constants/marketing-segment-type.enum';
 
@@ -100,9 +107,15 @@ describe('MarketingSegmentsService', () => {
     };
 
     it('should create a marketing segment successfully', async () => {
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(marketingSegmentRepository, 'save').mockResolvedValue(mockMarketingSegment as any);
-      jest.spyOn(marketingSegmentRepository, 'findOne').mockResolvedValue(mockMarketingSegment as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(marketingSegmentRepository, 'save')
+        .mockResolvedValue(mockMarketingSegment as any);
+      jest
+        .spyOn(marketingSegmentRepository, 'findOne')
+        .mockResolvedValue(mockMarketingSegment as any);
 
       const result = await service.create(createMarketingSegmentDto, 1);
 
@@ -111,20 +124,31 @@ describe('MarketingSegmentsService', () => {
       expect(result.data.name).toBe('VIP Customers');
       expect(result.data.type).toBe(MarketingSegmentType.AUTOMATIC);
       expect(result.data.status).toBe(MarketingSegmentStatus.ACTIVE);
-      expect(merchantRepository.findOne).toHaveBeenCalledWith({ where: { id: 1 } });
+      expect(merchantRepository.findOne).toHaveBeenCalledWith({
+        where: { id: 1 },
+      });
       expect(marketingSegmentRepository.save).toHaveBeenCalled();
     });
 
     it('should create segments with different types', async () => {
-      const types = [MarketingSegmentType.AUTOMATIC, MarketingSegmentType.MANUAL];
+      const types = [
+        MarketingSegmentType.AUTOMATIC,
+        MarketingSegmentType.MANUAL,
+      ];
 
       for (const type of types) {
         const dto = { ...createMarketingSegmentDto, type };
         const segment = { ...mockMarketingSegment, type };
 
-        jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-        jest.spyOn(marketingSegmentRepository, 'save').mockResolvedValue(segment as any);
-        jest.spyOn(marketingSegmentRepository, 'findOne').mockResolvedValue(segment as any);
+        jest
+          .spyOn(merchantRepository, 'findOne')
+          .mockResolvedValue(mockMerchant as any);
+        jest
+          .spyOn(marketingSegmentRepository, 'save')
+          .mockResolvedValue(segment as any);
+        jest
+          .spyOn(marketingSegmentRepository, 'findOne')
+          .mockResolvedValue(segment as any);
 
         const result = await service.create(dto, 1);
         expect(result.data.type).toBe(type);
@@ -132,8 +156,12 @@ describe('MarketingSegmentsService', () => {
     });
 
     it('should throw ForbiddenException if user is not associated with a merchant', async () => {
-      await expect(service.create(createMarketingSegmentDto, undefined as any)).rejects.toThrow(ForbiddenException);
-      await expect(service.create(createMarketingSegmentDto, undefined as any)).rejects.toThrow(
+      await expect(
+        service.create(createMarketingSegmentDto, undefined as any),
+      ).rejects.toThrow(ForbiddenException);
+      await expect(
+        service.create(createMarketingSegmentDto, undefined as any),
+      ).rejects.toThrow(
         'You must be associated with a merchant to create marketing segments',
       );
     });
@@ -141,32 +169,57 @@ describe('MarketingSegmentsService', () => {
     it('should throw NotFoundException if merchant does not exist', async () => {
       jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.create(createMarketingSegmentDto, 1)).rejects.toThrow(NotFoundException);
-      await expect(service.create(createMarketingSegmentDto, 1)).rejects.toThrow('Merchant not found');
+      await expect(
+        service.create(createMarketingSegmentDto, 1),
+      ).rejects.toThrow(NotFoundException);
+      await expect(
+        service.create(createMarketingSegmentDto, 1),
+      ).rejects.toThrow('Merchant not found');
     });
 
     it('should throw BadRequestException if name is empty', async () => {
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
 
       const invalidDto = { ...createMarketingSegmentDto, name: '' };
-      await expect(service.create(invalidDto, 1)).rejects.toThrow(BadRequestException);
-      await expect(service.create(invalidDto, 1)).rejects.toThrow('Name cannot be empty');
+      await expect(service.create(invalidDto, 1)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.create(invalidDto, 1)).rejects.toThrow(
+        'Name cannot be empty',
+      );
     });
 
     it('should throw BadRequestException if name is only whitespace', async () => {
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
 
       const invalidDto = { ...createMarketingSegmentDto, name: '   ' };
-      await expect(service.create(invalidDto, 1)).rejects.toThrow(BadRequestException);
-      await expect(service.create(invalidDto, 1)).rejects.toThrow('Name cannot be empty');
+      await expect(service.create(invalidDto, 1)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.create(invalidDto, 1)).rejects.toThrow(
+        'Name cannot be empty',
+      );
     });
 
     it('should throw BadRequestException if name exceeds 255 characters', async () => {
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
 
-      const invalidDto = { ...createMarketingSegmentDto, name: 'a'.repeat(256) };
-      await expect(service.create(invalidDto, 1)).rejects.toThrow(BadRequestException);
-      await expect(service.create(invalidDto, 1)).rejects.toThrow('Name cannot exceed 255 characters');
+      const invalidDto = {
+        ...createMarketingSegmentDto,
+        name: 'a'.repeat(256),
+      };
+      await expect(service.create(invalidDto, 1)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.create(invalidDto, 1)).rejects.toThrow(
+        'Name cannot exceed 255 characters',
+      );
     });
 
     it('should trim name when creating', async () => {
@@ -175,12 +228,18 @@ describe('MarketingSegmentsService', () => {
         name: '  VIP Customers  ',
       };
 
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(marketingSegmentRepository, 'save').mockImplementation((segment: any) => {
-        expect(segment.name).toBe('VIP Customers');
-        return Promise.resolve(mockMarketingSegment as any);
-      });
-      jest.spyOn(marketingSegmentRepository, 'findOne').mockResolvedValue(mockMarketingSegment as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(marketingSegmentRepository, 'save')
+        .mockImplementation((segment: any) => {
+          expect(segment.name).toBe('VIP Customers');
+          return Promise.resolve(mockMarketingSegment as any);
+        });
+      jest
+        .spyOn(marketingSegmentRepository, 'findOne')
+        .mockResolvedValue(mockMarketingSegment as any);
 
       await service.create(dtoWithWhitespace, 1);
     });
@@ -196,8 +255,13 @@ describe('MarketingSegmentsService', () => {
 
     beforeEach(() => {
       mockQueryBuilder = createMockQueryBuilder();
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockMarketingSegment], 1]);
-      jest.spyOn(marketingSegmentRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([
+        [mockMarketingSegment],
+        1,
+      ]);
+      jest
+        .spyOn(marketingSegmentRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder);
     });
 
     it('should return paginated marketing segments', async () => {
@@ -226,7 +290,10 @@ describe('MarketingSegmentsService', () => {
 
     it('should filter by type', async () => {
       const queryWithType = { ...query, type: MarketingSegmentType.AUTOMATIC };
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockMarketingSegment], 1]);
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([
+        [mockMarketingSegment],
+        1,
+      ]);
 
       await service.findAll(queryWithType, 1);
 
@@ -238,7 +305,10 @@ describe('MarketingSegmentsService', () => {
 
     it('should filter by name', async () => {
       const queryWithName = { ...query, name: 'VIP' };
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockMarketingSegment], 1]);
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([
+        [mockMarketingSegment],
+        1,
+      ]);
 
       await service.findAll(queryWithName, 1);
 
@@ -249,7 +319,10 @@ describe('MarketingSegmentsService', () => {
     });
 
     it('should exclude deleted segments by default', async () => {
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockMarketingSegment], 1]);
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([
+        [mockMarketingSegment],
+        1,
+      ]);
 
       await service.findAll(query, 1);
 
@@ -260,7 +333,9 @@ describe('MarketingSegmentsService', () => {
     });
 
     it('should throw ForbiddenException if user is not associated with a merchant', async () => {
-      await expect(service.findAll(query, undefined as any)).rejects.toThrow(ForbiddenException);
+      await expect(service.findAll(query, undefined as any)).rejects.toThrow(
+        ForbiddenException,
+      );
       await expect(service.findAll(query, undefined as any)).rejects.toThrow(
         'You must be associated with a merchant to access marketing segments',
       );
@@ -270,24 +345,36 @@ describe('MarketingSegmentsService', () => {
       jest.restoreAllMocks();
       const invalidQuery = { ...query, page: 0 };
 
-      await expect(service.findAll(invalidQuery, 1)).rejects.toThrow(BadRequestException);
-      await expect(service.findAll(invalidQuery, 1)).rejects.toThrow('Page number must be greater than 0');
+      await expect(service.findAll(invalidQuery, 1)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.findAll(invalidQuery, 1)).rejects.toThrow(
+        'Page number must be greater than 0',
+      );
     });
 
     it('should throw BadRequestException if limit is less than 1', async () => {
       jest.restoreAllMocks();
       const invalidQuery = { ...query, limit: 0 };
 
-      await expect(service.findAll(invalidQuery, 1)).rejects.toThrow(BadRequestException);
-      await expect(service.findAll(invalidQuery, 1)).rejects.toThrow('Limit must be between 1 and 100');
+      await expect(service.findAll(invalidQuery, 1)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.findAll(invalidQuery, 1)).rejects.toThrow(
+        'Limit must be between 1 and 100',
+      );
     });
 
     it('should throw BadRequestException if limit exceeds 100', async () => {
       jest.restoreAllMocks();
       const invalidQuery = { ...query, limit: 101 };
 
-      await expect(service.findAll(invalidQuery, 1)).rejects.toThrow(BadRequestException);
-      await expect(service.findAll(invalidQuery, 1)).rejects.toThrow('Limit must be between 1 and 100');
+      await expect(service.findAll(invalidQuery, 1)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.findAll(invalidQuery, 1)).rejects.toThrow(
+        'Limit must be between 1 and 100',
+      );
     });
   });
 
@@ -297,7 +384,9 @@ describe('MarketingSegmentsService', () => {
     beforeEach(() => {
       mockQueryBuilder = createMockQueryBuilder();
       mockQueryBuilder.getOne.mockResolvedValue(mockMarketingSegment as any);
-      jest.spyOn(marketingSegmentRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(marketingSegmentRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder);
     });
 
     it('should return a marketing segment by ID', async () => {
@@ -316,14 +405,18 @@ describe('MarketingSegmentsService', () => {
     });
 
     it('should throw ForbiddenException if user is not associated with a merchant', async () => {
-      await expect(service.findOne(1, undefined as any)).rejects.toThrow(ForbiddenException);
+      await expect(service.findOne(1, undefined as any)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw NotFoundException if segment does not exist', async () => {
       mockQueryBuilder.getOne.mockResolvedValue(null);
 
       await expect(service.findOne(999, 1)).rejects.toThrow(NotFoundException);
-      await expect(service.findOne(999, 1)).rejects.toThrow('Marketing segment not found');
+      await expect(service.findOne(999, 1)).rejects.toThrow(
+        'Marketing segment not found',
+      );
     });
   });
 
@@ -333,7 +426,9 @@ describe('MarketingSegmentsService', () => {
     beforeEach(() => {
       mockQueryBuilder = createMockQueryBuilder();
       mockQueryBuilder.getOne.mockResolvedValue(mockMarketingSegment as any);
-      jest.spyOn(marketingSegmentRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(marketingSegmentRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder);
     });
 
     it('should update a marketing segment successfully', async () => {
@@ -341,10 +436,17 @@ describe('MarketingSegmentsService', () => {
         name: 'VIP Customers Updated',
       };
 
-      jest.spyOn(marketingSegmentRepository, 'update').mockResolvedValue(undefined as any);
-      
-      const updatedSegment = { ...mockMarketingSegment, name: 'VIP Customers Updated' };
-      jest.spyOn(marketingSegmentRepository, 'findOne').mockResolvedValue(updatedSegment as any);
+      jest
+        .spyOn(marketingSegmentRepository, 'update')
+        .mockResolvedValue(undefined as any);
+
+      const updatedSegment = {
+        ...mockMarketingSegment,
+        name: 'VIP Customers Updated',
+      };
+      jest
+        .spyOn(marketingSegmentRepository, 'findOne')
+        .mockResolvedValue(updatedSegment as any);
 
       const result = await service.update(1, updateDto, 1);
 
@@ -354,17 +456,23 @@ describe('MarketingSegmentsService', () => {
     });
 
     it('should throw BadRequestException if ID is invalid', async () => {
-      await expect(service.update(0, {}, 1)).rejects.toThrow(BadRequestException);
+      await expect(service.update(0, {}, 1)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw ForbiddenException if user is not associated with a merchant', async () => {
-      await expect(service.update(1, {}, undefined as any)).rejects.toThrow(ForbiddenException);
+      await expect(service.update(1, {}, undefined as any)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw NotFoundException if segment does not exist', async () => {
       mockQueryBuilder.getOne.mockResolvedValue(null);
 
-      await expect(service.update(999, {}, 1)).rejects.toThrow(NotFoundException);
+      await expect(service.update(999, {}, 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw BadRequestException if name is empty', async () => {
@@ -372,8 +480,12 @@ describe('MarketingSegmentsService', () => {
         name: '',
       };
 
-      await expect(service.update(1, updateDto, 1)).rejects.toThrow(BadRequestException);
-      await expect(service.update(1, updateDto, 1)).rejects.toThrow('Name cannot be empty');
+      await expect(service.update(1, updateDto, 1)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.update(1, updateDto, 1)).rejects.toThrow(
+        'Name cannot be empty',
+      );
     });
 
     it('should throw BadRequestException if name exceeds 255 characters', async () => {
@@ -381,8 +493,12 @@ describe('MarketingSegmentsService', () => {
         name: 'a'.repeat(256),
       };
 
-      await expect(service.update(1, updateDto, 1)).rejects.toThrow(BadRequestException);
-      await expect(service.update(1, updateDto, 1)).rejects.toThrow('Name cannot exceed 255 characters');
+      await expect(service.update(1, updateDto, 1)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.update(1, updateDto, 1)).rejects.toThrow(
+        'Name cannot exceed 255 characters',
+      );
     });
   });
 
@@ -392,7 +508,9 @@ describe('MarketingSegmentsService', () => {
     beforeEach(() => {
       mockQueryBuilder = createMockQueryBuilder();
       mockQueryBuilder.getOne.mockResolvedValue(mockMarketingSegment as any);
-      jest.spyOn(marketingSegmentRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(marketingSegmentRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder);
     });
 
     it('should soft delete a marketing segment', async () => {
@@ -414,7 +532,9 @@ describe('MarketingSegmentsService', () => {
     });
 
     it('should throw ForbiddenException if user is not associated with a merchant', async () => {
-      await expect(service.remove(1, undefined as any)).rejects.toThrow(ForbiddenException);
+      await expect(service.remove(1, undefined as any)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw NotFoundException if segment does not exist', async () => {
@@ -424,11 +544,16 @@ describe('MarketingSegmentsService', () => {
     });
 
     it('should throw ConflictException if segment is already deleted', async () => {
-      const deletedSegment = { ...mockMarketingSegment, status: MarketingSegmentStatus.DELETED };
+      const deletedSegment = {
+        ...mockMarketingSegment,
+        status: MarketingSegmentStatus.DELETED,
+      };
       mockQueryBuilder.getOne.mockResolvedValue(deletedSegment as any);
 
       await expect(service.remove(1, 1)).rejects.toThrow(ConflictException);
-      await expect(service.remove(1, 1)).rejects.toThrow('Marketing segment is already deleted');
+      await expect(service.remove(1, 1)).rejects.toThrow(
+        'Marketing segment is already deleted',
+      );
     });
   });
 });

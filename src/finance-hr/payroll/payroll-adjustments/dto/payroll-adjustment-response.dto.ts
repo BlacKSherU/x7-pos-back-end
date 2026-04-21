@@ -15,7 +15,7 @@ export class PayrollAdjustmentResponseDto {
   @ApiProperty({ example: 'Performance bonus', nullable: true })
   description: string | null;
 
-  @ApiProperty({ example: 150.50 })
+  @ApiProperty({ example: 150.5 })
   amount: number;
 
   @ApiProperty({ description: 'Creation timestamp' })

@@ -8,12 +8,18 @@ export class BasicMerchantInfoDto {
   @ApiProperty({ example: 1, description: 'Unique identifier of the Merchant' })
   id: number;
 
-  @ApiProperty({ example: 'Restaurant ABC', description: 'Name of the merchant' })
+  @ApiProperty({
+    example: 'Restaurant ABC',
+    description: 'Name of the merchant',
+  })
   name: string;
 }
 
 export class MarketingAutomationResponseDto {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Marketing Automation' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Marketing Automation',
+  })
   id: number;
 
   @ApiProperty({

@@ -19,7 +19,10 @@ import { TipAllocationRecordStatus } from '../constants/tip-allocation-record-st
 @Index(['tip_id', 'collaborator_id', 'shift_id'])
 @Index(['role', 'record_status', 'created_at'])
 export class TipAllocation {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the tip allocation' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the tip allocation',
+  })
   @PrimaryGeneratedColumn({ type: 'bigint' })
   id: number;
 
@@ -77,7 +80,7 @@ export class TipAllocation {
   role: TipAllocationRole;
 
   @ApiProperty({
-    example: 50.00,
+    example: 50.0,
     description: 'Percentage of the tip allocated (0-100)',
   })
   @Column({ type: 'decimal', precision: 5, scale: 2 })

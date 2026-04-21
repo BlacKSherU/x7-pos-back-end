@@ -6,9 +6,7 @@ import { OnlineMenu } from './entities/online-menu.entity';
 import { OnlineStore } from '../online-stores/entities/online-store.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([OnlineMenu, OnlineStore]),
-  ],
+  imports: [TypeOrmModule.forFeature([OnlineMenu, OnlineStore])],
   controllers: [OnlineMenuController],
   providers: [OnlineMenuService],
   exports: [OnlineMenuService],

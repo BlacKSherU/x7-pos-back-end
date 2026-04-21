@@ -125,9 +125,6 @@ export class LoyaltyReward {
   )
   loyaltyRewardsRedemptions: LoyaltyRewardsRedemption[];
 
-  @OneToMany(
-    () => LoyaltyCoupon,
-    (loyaltyCoupon) => loyaltyCoupon.reward,
-  )
+  @OneToMany(() => LoyaltyCoupon, (loyaltyCoupon) => loyaltyCoupon.reward)
   loyaltyCoupons: LoyaltyCoupon[];
 }

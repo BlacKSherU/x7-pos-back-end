@@ -32,7 +32,9 @@ describe('SupplierPaymentAllocationsService', () => {
       ],
     }).compile();
 
-    service = module.get<SupplierPaymentAllocationsService>(SupplierPaymentAllocationsService);
+    service = module.get<SupplierPaymentAllocationsService>(
+      SupplierPaymentAllocationsService,
+    );
   });
 
   it('should be defined', () => {

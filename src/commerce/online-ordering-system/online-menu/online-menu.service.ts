@@ -1,12 +1,28 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, Like } from 'typeorm';
+import {
+  Repository,
+  Between,
+  Like,
+  type QueryDeepPartialEntity,
+} from 'typeorm';
 import { OnlineMenu } from './entities/online-menu.entity';
 import { OnlineStore } from '../online-stores/entities/online-store.entity';
 import { CreateOnlineMenuDto } from './dto/create-online-menu.dto';
 import { UpdateOnlineMenuDto } from './dto/update-online-menu.dto';
-import { GetOnlineMenuQueryDto, OnlineMenuSortBy } from './dto/get-online-menu-query.dto';
-import { OnlineMenuResponseDto, OneOnlineMenuResponseDto } from './dto/online-menu-response.dto';
+import {
+  GetOnlineMenuQueryDto,
+  OnlineMenuSortBy,
+} from './dto/get-online-menu-query.dto';
+import {
+  OnlineMenuResponseDto,
+  OneOnlineMenuResponseDto,
+} from './dto/online-menu-response.dto';
 import { PaginatedOnlineMenuResponseDto } from './dto/paginated-online-menu-response.dto';
 import { OnlineStoreStatus } from '../online-stores/constants/online-store-status.enum';
 
@@ -19,16 +35,20 @@ export class OnlineMenuService {
     private readonly onlineStoreRepository: Repository<OnlineStore>,
   ) {}
 
-  async create(createOnlineMenuDto: CreateOnlineMenuDto, authenticatedUserMerchantId: number): Promise<OneOnlineMenuResponseDto> {
-
+  async create(
+    createOnlineMenuDto: CreateOnlineMenuDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneOnlineMenuResponseDto> {
     // Validate user permissions - must be associated with a merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to create online menus');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to create online menus',
+      );
     }
 
     // Validate online store exists and belongs to the authenticated user's merchant
     const onlineStore = await this.onlineStoreRepository.findOne({
-      where: { 
+      where: {
         id: createOnlineMenuDto.storeId,
         merchant_id: authenticatedUserMerchantId,
         status: OnlineStoreStatus.ACTIVE,
@@ -37,11 +57,16 @@ export class OnlineMenuService {
     });
 
     if (!onlineStore) {
-      throw new NotFoundException('Online store not found or you do not have access to it');
+      throw new NotFoundException(
+        'Online store not found or you do not have access to it',
+      );
     }
 
     // Business rule validation: name must not be empty
-    if (!createOnlineMenuDto.name || createOnlineMenuDto.name.trim().length === 0) {
+    if (
+      !createOnlineMenuDto.name ||
+      createOnlineMenuDto.name.trim().length === 0
+    ) {
       throw new BadRequestException('Name cannot be empty');
     }
 
@@ -75,11 +100,15 @@ export class OnlineMenuService {
     };
   }
 
-  async findAll(query: GetOnlineMenuQueryDto, authenticatedUserMerchantId: number): Promise<PaginatedOnlineMenuResponseDto> {
-
+  async findAll(
+    query: GetOnlineMenuQueryDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<PaginatedOnlineMenuResponseDto> {
     // Validate user has merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to access online menus');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to access online menus',
+      );
     }
 
     // Validate pagination parameters
@@ -95,7 +124,9 @@ export class OnlineMenuService {
     if (query.createdDate) {
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
       if (!dateRegex.test(query.createdDate)) {
-        throw new BadRequestException('Created date must be in YYYY-MM-DD format');
+        throw new BadRequestException(
+          'Created date must be in YYYY-MM-DD format',
+        );
       }
     }
 
@@ -108,46 +139,58 @@ export class OnlineMenuService {
       .createQueryBuilder('onlineMenu')
       .leftJoinAndSelect('onlineMenu.store', 'store')
       .leftJoin('store.merchant', 'merchant')
-      .where('merchant.id = :merchantId', { merchantId: authenticatedUserMerchantId })
+      .where('merchant.id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
       .andWhere('store.status = :status', { status: OnlineStoreStatus.ACTIVE });
 
     // Apply filters
     if (query.storeId) {
-      queryBuilder.andWhere('onlineMenu.store_id = :storeId', { storeId: query.storeId });
+      queryBuilder.andWhere('onlineMenu.store_id = :storeId', {
+        storeId: query.storeId,
+      });
     }
 
     if (query.name) {
-      queryBuilder.andWhere('onlineMenu.name LIKE :name', { name: `%${query.name}%` });
+      queryBuilder.andWhere('onlineMenu.name LIKE :name', {
+        name: `%${query.name}%`,
+      });
     }
 
     if (query.isActive !== undefined) {
-      queryBuilder.andWhere('onlineMenu.is_active = :isActive', { isActive: query.isActive });
+      queryBuilder.andWhere('onlineMenu.is_active = :isActive', {
+        isActive: query.isActive,
+      });
     }
 
     if (query.createdDate) {
       const startDate = new Date(query.createdDate);
       const endDate = new Date(query.createdDate);
       endDate.setDate(endDate.getDate() + 1);
-      queryBuilder.andWhere('onlineMenu.created_at >= :startDate', { startDate })
+      queryBuilder
+        .andWhere('onlineMenu.created_at >= :startDate', { startDate })
         .andWhere('onlineMenu.created_at < :endDate', { endDate });
     }
 
     // Apply sorting
-    const sortField = query.sortBy === OnlineMenuSortBy.NAME ? 'onlineMenu.name' :
-                     query.sortBy === OnlineMenuSortBy.IS_ACTIVE ? 'onlineMenu.is_active' :
-                     query.sortBy === OnlineMenuSortBy.UPDATED_AT ? 'onlineMenu.updated_at' :
-                     query.sortBy === OnlineMenuSortBy.ID ? 'onlineMenu.id' :
-                     'onlineMenu.created_at';
+    const sortField =
+      query.sortBy === OnlineMenuSortBy.NAME
+        ? 'onlineMenu.name'
+        : query.sortBy === OnlineMenuSortBy.IS_ACTIVE
+          ? 'onlineMenu.is_active'
+          : query.sortBy === OnlineMenuSortBy.UPDATED_AT
+            ? 'onlineMenu.updated_at'
+            : query.sortBy === OnlineMenuSortBy.ID
+              ? 'onlineMenu.id'
+              : 'onlineMenu.created_at';
     const sortOrder = query.sortOrder || 'DESC';
     queryBuilder.orderBy(sortField, sortOrder);
 
     // Apply pagination
     queryBuilder.skip(skip).take(limit);
 
-
     // Execute query
     const [onlineMenus, total] = await queryBuilder.getManyAndCount();
-
 
     // Calculate pagination metadata
     const totalPages = Math.ceil(total / limit);
@@ -166,21 +209,27 @@ export class OnlineMenuService {
     return {
       statusCode: 200,
       message: 'Online menus retrieved successfully',
-      data: onlineMenus.map(menu => this.formatOnlineMenuResponse(menu)),
+      data: onlineMenus.map((menu) => this.formatOnlineMenuResponse(menu)),
       paginationMeta,
     };
   }
 
-  async findOne(id: number, authenticatedUserMerchantId: number): Promise<OneOnlineMenuResponseDto> {
-
+  async findOne(
+    id: number,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneOnlineMenuResponseDto> {
     // Validate ID
     if (!id || id <= 0) {
-      throw new BadRequestException('Online menu ID must be a valid positive number');
+      throw new BadRequestException(
+        'Online menu ID must be a valid positive number',
+      );
     }
 
     // Validate user has merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to access online menus');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to access online menus',
+      );
     }
 
     // Find online menu with merchant validation
@@ -189,14 +238,15 @@ export class OnlineMenuService {
       .leftJoinAndSelect('onlineMenu.store', 'store')
       .leftJoin('store.merchant', 'merchant')
       .where('onlineMenu.id = :id', { id })
-      .andWhere('merchant.id = :merchantId', { merchantId: authenticatedUserMerchantId })
+      .andWhere('merchant.id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
       .andWhere('store.status = :status', { status: OnlineStoreStatus.ACTIVE })
       .getOne();
 
     if (!onlineMenu) {
       throw new NotFoundException('Online menu not found');
     }
-
 
     return {
       statusCode: 200,
@@ -205,16 +255,23 @@ export class OnlineMenuService {
     };
   }
 
-  async update(id: number, updateOnlineMenuDto: UpdateOnlineMenuDto, authenticatedUserMerchantId: number): Promise<OneOnlineMenuResponseDto> {
-
+  async update(
+    id: number,
+    updateOnlineMenuDto: UpdateOnlineMenuDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneOnlineMenuResponseDto> {
     // Validate ID
     if (!id || id <= 0) {
-      throw new BadRequestException('Online menu ID must be a valid positive number');
+      throw new BadRequestException(
+        'Online menu ID must be a valid positive number',
+      );
     }
 
     // Validate user has merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to update online menus');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to update online menus',
+      );
     }
 
     // Find existing online menu with merchant validation
@@ -223,7 +280,9 @@ export class OnlineMenuService {
       .leftJoinAndSelect('onlineMenu.store', 'store')
       .leftJoin('store.merchant', 'merchant')
       .where('onlineMenu.id = :id', { id })
-      .andWhere('merchant.id = :merchantId', { merchantId: authenticatedUserMerchantId })
+      .andWhere('merchant.id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
       .andWhere('store.status = :status', { status: OnlineStoreStatus.ACTIVE })
       .getOne();
 
@@ -233,7 +292,10 @@ export class OnlineMenuService {
 
     // Business rule validation: name must not be empty if provided
     if (updateOnlineMenuDto.name !== undefined) {
-      if (!updateOnlineMenuDto.name || updateOnlineMenuDto.name.trim().length === 0) {
+      if (
+        !updateOnlineMenuDto.name ||
+        updateOnlineMenuDto.name.trim().length === 0
+      ) {
         throw new BadRequestException('Name cannot be empty');
       }
       if (updateOnlineMenuDto.name.length > 100) {
@@ -242,10 +304,13 @@ export class OnlineMenuService {
     }
 
     // Update online menu
-    const updateData: any = {};
-    if (updateOnlineMenuDto.name !== undefined) updateData.name = updateOnlineMenuDto.name.trim();
-    if (updateOnlineMenuDto.description !== undefined) updateData.description = updateOnlineMenuDto.description?.trim() || null;
-    if (updateOnlineMenuDto.isActive !== undefined) updateData.is_active = updateOnlineMenuDto.isActive;
+    const updateData: QueryDeepPartialEntity<OnlineMenu> = {};
+    if (updateOnlineMenuDto.name !== undefined)
+      updateData.name = updateOnlineMenuDto.name.trim();
+    if (updateOnlineMenuDto.description !== undefined)
+      updateData.description = updateOnlineMenuDto.description?.trim() || null;
+    if (updateOnlineMenuDto.isActive !== undefined)
+      updateData.is_active = updateOnlineMenuDto.isActive;
 
     await this.onlineMenuRepository.update(id, updateData);
 
@@ -266,16 +331,22 @@ export class OnlineMenuService {
     };
   }
 
-  async remove(id: number, authenticatedUserMerchantId: number): Promise<OneOnlineMenuResponseDto> {
-   
+  async remove(
+    id: number,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneOnlineMenuResponseDto> {
     // Validate ID
     if (!id || id <= 0) {
-      throw new BadRequestException('Online menu ID must be a valid positive number');
+      throw new BadRequestException(
+        'Online menu ID must be a valid positive number',
+      );
     }
 
     // Validate user has merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to delete online menus');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to delete online menus',
+      );
     }
 
     // Find existing online menu with merchant validation
@@ -284,7 +355,9 @@ export class OnlineMenuService {
       .leftJoinAndSelect('onlineMenu.store', 'store')
       .leftJoin('store.merchant', 'merchant')
       .where('onlineMenu.id = :id', { id })
-      .andWhere('merchant.id = :merchantId', { merchantId: authenticatedUserMerchantId })
+      .andWhere('merchant.id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
       .andWhere('store.status = :status', { status: OnlineStoreStatus.ACTIVE })
       .getOne();
 
@@ -302,7 +375,9 @@ export class OnlineMenuService {
     };
   }
 
-  private formatOnlineMenuResponse(onlineMenu: OnlineMenu): OnlineMenuResponseDto {
+  private formatOnlineMenuResponse(
+    onlineMenu: OnlineMenu,
+  ): OnlineMenuResponseDto {
     return {
       id: onlineMenu.id,
       storeId: onlineMenu.store_id,

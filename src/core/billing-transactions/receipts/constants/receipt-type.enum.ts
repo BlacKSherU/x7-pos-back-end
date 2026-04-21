@@ -1,4 +1,4 @@
 export enum ReceiptType {
-    INVOICE = 'INVOICE',
-    RECEIPT = 'RECEIPT',
+  INVOICE = 'INVOICE',
+  RECEIPT = 'RECEIPT',
 }

@@ -90,7 +90,11 @@ describe('JournalEntryController', () => {
           { account_id: 2, debit: 0, credit: 1000 },
         ],
       };
-      const createdResponse = { ...mockEntryResponse, statusCode: 201, message: 'Journal Entry Created successfully' };
+      const createdResponse = {
+        ...mockEntryResponse,
+        statusCode: 201,
+        message: 'Journal Entry Created successfully',
+      };
       service.create.mockResolvedValueOnce(createdResponse as any);
 
       const result = await controller.create(mockUser, dto);
@@ -112,8 +116,15 @@ describe('JournalEntryController', () => {
     });
 
     it('should apply status filter', async () => {
-      const query: GetJournalEntriesQueryDto = { page: 1, limit: 10, status: JournalEntryStatus.POSTED };
-      service.findAll.mockResolvedValueOnce({ ...mockPaginatedResponse, data: [] } as any);
+      const query: GetJournalEntriesQueryDto = {
+        page: 1,
+        limit: 10,
+        status: JournalEntryStatus.POSTED,
+      };
+      service.findAll.mockResolvedValueOnce({
+        ...mockPaginatedResponse,
+        data: [],
+      } as any);
 
       await controller.findAll(mockUser, query);
 
@@ -135,7 +146,11 @@ describe('JournalEntryController', () => {
   describe('update', () => {
     it('should call service.update with id, merchantId and dto', async () => {
       const dto: UpdateJournalEntryDto = { description: 'Updated description' };
-      const updatedResponse = { ...mockEntryResponse, statusCode: 201, message: 'Journal Entry Updated successfully' };
+      const updatedResponse = {
+        ...mockEntryResponse,
+        statusCode: 201,
+        message: 'Journal Entry Updated successfully',
+      };
       service.update.mockResolvedValueOnce(updatedResponse as any);
 
       const result = await controller.update(mockUser, 1, dto);
@@ -147,7 +162,11 @@ describe('JournalEntryController', () => {
 
   describe('remove', () => {
     it('should call service.remove with id and merchantId', async () => {
-      const deletedResponse = { ...mockEntryResponse, statusCode: 201, message: 'Journal Entry Deleted successfully' };
+      const deletedResponse = {
+        ...mockEntryResponse,
+        statusCode: 201,
+        message: 'Journal Entry Deleted successfully',
+      };
       service.remove.mockResolvedValueOnce(deletedResponse as any);
 
       const result = await controller.remove(mockUser, 1);

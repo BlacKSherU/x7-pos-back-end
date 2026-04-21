@@ -6,7 +6,13 @@ import { OrderTaxesModule } from './order-taxes/order-taxes.module';
 import { OrderItemModifiersModule } from './order-item-modifiers/order-item-modifiers.module';
 
 @Module({
-  imports: [OrdersModule, OrderItemModule, OrderPaymentsModule, OrderTaxesModule, OrderItemModifiersModule],
+  imports: [
+    OrdersModule,
+    OrderItemModule,
+    OrderPaymentsModule,
+    OrderTaxesModule,
+    OrderItemModifiersModule,
+  ],
   exports: [
     OrdersModule,
     OrderItemModule,

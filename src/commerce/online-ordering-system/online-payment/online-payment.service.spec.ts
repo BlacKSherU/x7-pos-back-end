@@ -1,17 +1,23 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/unbound-method */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { Repository } from 'typeorm';
+import { Repository, type SelectQueryBuilder } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException, ForbiddenException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { OnlinePaymentService } from './online-payment.service';
 import { OnlinePayment } from './entities/online-payment.entity';
 import { OnlineOrder } from '../online-order/entities/online-order.entity';
 import { CreateOnlinePaymentDto } from './dto/create-online-payment.dto';
 import { UpdateOnlinePaymentDto } from './dto/update-online-payment.dto';
-import { GetOnlinePaymentQueryDto, OnlinePaymentSortBy } from './dto/get-online-payment-query.dto';
+import {
+  GetOnlinePaymentQueryDto,
+  OnlinePaymentSortBy,
+} from './dto/get-online-payment-query.dto';
 import { OnlineStoreStatus } from '../online-stores/constants/online-store-status.enum';
 import { OnlineOrderStatus } from '../online-order/constants/online-order-status.enum';
 import { OnlineOrderPaymentStatus } from '../online-order/constants/online-order-payment-status.enum';
@@ -142,13 +148,22 @@ describe('OnlinePaymentService', () => {
     };
 
     it('should create an online payment successfully', async () => {
-      jest.spyOn(onlineOrderRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(mockOnlineOrder as any);
+      jest
+        .spyOn(onlineOrderRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineOrder>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        mockOnlineOrder as unknown as OnlineOrder,
+      );
       const savedItem = { ...mockOnlinePayment, id: 1 };
-      jest.spyOn(onlinePaymentRepository, 'save').mockResolvedValue(savedItem as any);
-      onlinePaymentRepository.findOne = jest.fn()
+      jest
+        .spyOn(onlinePaymentRepository, 'save')
+        .mockResolvedValue(savedItem as unknown as OnlinePayment);
+      onlinePaymentRepository.findOne = jest
+        .fn()
         .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(mockOnlinePayment as any);
+        .mockResolvedValueOnce(mockOnlinePayment as unknown as OnlinePayment);
 
       const result = await service.create(createOnlinePaymentDto, 1);
 
@@ -165,16 +180,22 @@ describe('OnlinePaymentService', () => {
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.create(createOnlinePaymentDto, undefined as any)).rejects.toThrow(
-        ForbiddenException,
-      );
-      await expect(service.create(createOnlinePaymentDto, undefined as any)).rejects.toThrow(
+      await expect(
+        service.create(createOnlinePaymentDto, undefined as unknown as number),
+      ).rejects.toThrow(ForbiddenException);
+      await expect(
+        service.create(createOnlinePaymentDto, undefined as unknown as number),
+      ).rejects.toThrow(
         'You must be associated with a merchant to create online payments',
       );
     });
 
     it('should throw NotFoundException if online order not found', async () => {
-      jest.spyOn(onlineOrderRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(onlineOrderRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineOrder>,
+        );
       mockQueryBuilder.getOne.mockResolvedValue(null);
 
       await expect(service.create(createOnlinePaymentDto, 1)).rejects.toThrow(
@@ -187,8 +208,14 @@ describe('OnlinePaymentService', () => {
 
     it('should throw BadRequestException if amount is negative', async () => {
       const dtoWithNegativeAmount = { ...createOnlinePaymentDto, amount: -1 };
-      jest.spyOn(onlineOrderRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(mockOnlineOrder as any);
+      jest
+        .spyOn(onlineOrderRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineOrder>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        mockOnlineOrder as unknown as OnlineOrder,
+      );
 
       await expect(service.create(dtoWithNegativeAmount, 1)).rejects.toThrow(
         BadRequestException,
@@ -199,9 +226,17 @@ describe('OnlinePaymentService', () => {
     });
 
     it('should throw BadRequestException if transaction ID already exists', async () => {
-      jest.spyOn(onlineOrderRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(mockOnlineOrder as any);
-      jest.spyOn(onlinePaymentRepository, 'findOne').mockResolvedValue(mockOnlinePayment as any);
+      jest
+        .spyOn(onlineOrderRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineOrder>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        mockOnlineOrder as unknown as OnlineOrder,
+      );
+      jest
+        .spyOn(onlinePaymentRepository, 'findOne')
+        .mockResolvedValue(mockOnlinePayment as unknown as OnlinePayment);
 
       await expect(service.create(createOnlinePaymentDto, 1)).rejects.toThrow(
         BadRequestException,
@@ -219,8 +254,15 @@ describe('OnlinePaymentService', () => {
     };
 
     it('should return paginated list of online payments', async () => {
-      jest.spyOn(onlinePaymentRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockOnlinePayment] as any, 1]);
+      jest
+        .spyOn(onlinePaymentRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlinePayment>,
+        );
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([
+        [mockOnlinePayment] as unknown as OnlinePayment[],
+        1,
+      ]);
 
       const result = await service.findAll(query, 1);
 
@@ -234,10 +276,12 @@ describe('OnlinePaymentService', () => {
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.findAll(query, undefined as any)).rejects.toThrow(
-        ForbiddenException,
-      );
-      await expect(service.findAll(query, undefined as any)).rejects.toThrow(
+      await expect(
+        service.findAll(query, undefined as unknown as number),
+      ).rejects.toThrow(ForbiddenException);
+      await expect(
+        service.findAll(query, undefined as unknown as number),
+      ).rejects.toThrow(
         'You must be associated with a merchant to access online payments',
       );
     });
@@ -250,22 +294,47 @@ describe('OnlinePaymentService', () => {
         transactionId: 'txn_1234567890',
         status: OnlineOrderPaymentStatus.PAID,
       };
-      jest.spyOn(onlinePaymentRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockOnlinePayment] as any, 1]);
+      jest
+        .spyOn(onlinePaymentRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlinePayment>,
+        );
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([
+        [mockOnlinePayment] as unknown as OnlinePayment[],
+        1,
+      ]);
 
       await service.findAll(queryWithFilters, 1);
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('onlinePayment.online_order_id = :onlineOrderId', { onlineOrderId: 1 });
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('onlinePayment.payment_provider = :paymentProvider', { paymentProvider: 'stripe' });
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('onlinePayment.transaction_id = :transactionId', { transactionId: 'txn_1234567890' });
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('onlinePayment.status = :status', { status: OnlineOrderPaymentStatus.PAID });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'onlinePayment.online_order_id = :onlineOrderId',
+        { onlineOrderId: 1 },
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'onlinePayment.payment_provider = :paymentProvider',
+        { paymentProvider: 'stripe' },
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'onlinePayment.transaction_id = :transactionId',
+        { transactionId: 'txn_1234567890' },
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'onlinePayment.status = :status',
+        { status: OnlineOrderPaymentStatus.PAID },
+      );
     });
   });
 
   describe('findOne', () => {
     it('should return an online payment successfully', async () => {
-      jest.spyOn(onlinePaymentRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(mockOnlinePayment as any);
+      jest
+        .spyOn(onlinePaymentRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlinePayment>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        mockOnlinePayment as unknown as OnlinePayment,
+      );
 
       const result = await service.findOne(1, 1);
 
@@ -276,21 +345,21 @@ describe('OnlinePaymentService', () => {
     });
 
     it('should throw BadRequestException if id is invalid', async () => {
-      await expect(service.findOne(0, 1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.findOne(0, 1)).rejects.toThrow(BadRequestException);
       await expect(service.findOne(0, 1)).rejects.toThrow(
         'Online payment ID must be a valid positive number',
       );
     });
 
     it('should throw NotFoundException if online payment not found', async () => {
-      jest.spyOn(onlinePaymentRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(onlinePaymentRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlinePayment>,
+        );
       mockQueryBuilder.getOne.mockResolvedValue(null);
 
-      await expect(service.findOne(1, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.findOne(1, 1)).rejects.toThrow(NotFoundException);
       await expect(service.findOne(1, 1)).rejects.toThrow(
         'Online payment not found',
       );
@@ -304,12 +373,21 @@ describe('OnlinePaymentService', () => {
     };
 
     it('should update an online payment successfully', async () => {
-      jest.spyOn(onlinePaymentRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne
-        .mockResolvedValueOnce(mockOnlinePayment as any);
-      jest.spyOn(onlinePaymentRepository, 'save').mockResolvedValue(mockOnlinePayment as any);
-      jest.spyOn(onlinePaymentRepository, 'findOne')
-        .mockResolvedValueOnce({ ...mockOnlinePayment, status: OnlineOrderPaymentStatus.PAID } as any);
+      jest
+        .spyOn(onlinePaymentRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlinePayment>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValueOnce(
+        mockOnlinePayment as unknown as OnlinePayment,
+      );
+      jest
+        .spyOn(onlinePaymentRepository, 'save')
+        .mockResolvedValue(mockOnlinePayment as unknown as OnlinePayment);
+      jest.spyOn(onlinePaymentRepository, 'findOne').mockResolvedValueOnce({
+        ...mockOnlinePayment,
+        status: OnlineOrderPaymentStatus.PAID,
+      } as unknown as OnlinePayment);
 
       const result = await service.update(1, updateOnlinePaymentDto, 1);
 
@@ -320,34 +398,58 @@ describe('OnlinePaymentService', () => {
     });
 
     it('should throw NotFoundException if online payment not found', async () => {
-      jest.spyOn(onlinePaymentRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(onlinePaymentRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlinePayment>,
+        );
       mockQueryBuilder.getOne.mockResolvedValue(null);
 
-      await expect(service.update(1, updateOnlinePaymentDto, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.update(1, updateOnlinePaymentDto, 1),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ConflictException if online payment is already deleted', async () => {
-      const deletedItem = { ...mockOnlinePayment, logical_status: OnlinePaymentStatus.DELETED };
-      jest.spyOn(onlinePaymentRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(deletedItem as any);
+      const deletedItem = {
+        ...mockOnlinePayment,
+        logical_status: OnlinePaymentStatus.DELETED,
+      };
+      jest
+        .spyOn(onlinePaymentRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlinePayment>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        deletedItem as unknown as OnlinePayment,
+      );
 
-      await expect(service.update(1, updateOnlinePaymentDto, 1)).rejects.toThrow(
-        ConflictException,
-      );
-      await expect(service.update(1, updateOnlinePaymentDto, 1)).rejects.toThrow(
-        'Cannot update a deleted online payment',
-      );
+      await expect(
+        service.update(1, updateOnlinePaymentDto, 1),
+      ).rejects.toThrow(ConflictException);
+      await expect(
+        service.update(1, updateOnlinePaymentDto, 1),
+      ).rejects.toThrow('Cannot update a deleted online payment');
     });
   });
 
   describe('remove', () => {
     it('should remove an online payment successfully', async () => {
-      const deletedItem = { ...mockOnlinePayment, logical_status: OnlinePaymentStatus.DELETED };
-      jest.spyOn(onlinePaymentRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(mockOnlinePayment as any);
-      jest.spyOn(onlinePaymentRepository, 'save').mockResolvedValue(deletedItem as any);
+      const deletedItem = {
+        ...mockOnlinePayment,
+        logical_status: OnlinePaymentStatus.DELETED,
+      };
+      jest
+        .spyOn(onlinePaymentRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlinePayment>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        mockOnlinePayment as unknown as OnlinePayment,
+      );
+      jest
+        .spyOn(onlinePaymentRepository, 'save')
+        .mockResolvedValue(deletedItem as unknown as OnlinePayment);
 
       const result = await service.remove(1, 1);
 
@@ -358,22 +460,31 @@ describe('OnlinePaymentService', () => {
     });
 
     it('should throw NotFoundException if online payment not found', async () => {
-      jest.spyOn(onlinePaymentRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(onlinePaymentRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlinePayment>,
+        );
       mockQueryBuilder.getOne.mockResolvedValue(null);
 
-      await expect(service.remove(1, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.remove(1, 1)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ConflictException if online payment is already deleted', async () => {
-      const deletedItem = { ...mockOnlinePayment, logical_status: OnlinePaymentStatus.DELETED };
-      jest.spyOn(onlinePaymentRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(deletedItem as any);
-
-      await expect(service.remove(1, 1)).rejects.toThrow(
-        ConflictException,
+      const deletedItem = {
+        ...mockOnlinePayment,
+        logical_status: OnlinePaymentStatus.DELETED,
+      };
+      jest
+        .spyOn(onlinePaymentRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlinePayment>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        deletedItem as unknown as OnlinePayment,
       );
+
+      await expect(service.remove(1, 1)).rejects.toThrow(ConflictException);
       await expect(service.remove(1, 1)).rejects.toThrow(
         'Online payment is already deleted',
       );

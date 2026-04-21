@@ -22,4 +22,4 @@ import { Merchant } from 'src/platform-saas/merchants/entities/merchant.entity';
   providers: [JournalEntryLineService],
   exports: [JournalEntryLineService],
 })
-export class JournalEntryLineModule { }
+export class JournalEntryLineModule {}

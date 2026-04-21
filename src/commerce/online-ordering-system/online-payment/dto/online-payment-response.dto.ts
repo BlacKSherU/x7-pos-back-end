@@ -12,7 +12,10 @@ export class BasicOnlineOrderInfoDto {
 }
 
 export class OnlinePaymentResponseDto {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Online Payment' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Online Payment',
+  })
   id: number;
 
   @ApiProperty({ example: 1, description: 'Identifier of the Online Order' })
@@ -21,7 +24,10 @@ export class OnlinePaymentResponseDto {
   @ApiProperty({ example: 'stripe', description: 'Payment provider name' })
   paymentProvider: string;
 
-  @ApiProperty({ example: 'txn_1234567890', description: 'Transaction ID from the payment provider' })
+  @ApiProperty({
+    example: 'txn_1234567890',
+    description: 'Transaction ID from the payment provider',
+  })
   transactionId: string;
 
   @ApiProperty({ example: 125.99, description: 'Payment amount' })
@@ -34,7 +40,11 @@ export class OnlinePaymentResponseDto {
   })
   status: OnlineOrderPaymentStatus;
 
-  @ApiProperty({ example: '2024-01-15T08:30:00Z', description: 'Timestamp when the payment was processed', nullable: true })
+  @ApiProperty({
+    example: '2024-01-15T08:30:00Z',
+    description: 'Timestamp when the payment was processed',
+    nullable: true,
+  })
   processedAt: Date | null;
 
   @ApiProperty({
@@ -44,24 +54,29 @@ export class OnlinePaymentResponseDto {
   })
   logicalStatus: OnlinePaymentStatus;
 
-  @ApiProperty({ example: '2024-01-15T08:00:00Z', description: 'Creation timestamp' })
+  @ApiProperty({
+    example: '2024-01-15T08:00:00Z',
+    description: 'Creation timestamp',
+  })
   createdAt: Date;
 
-  @ApiProperty({ example: '2024-01-15T09:00:00Z', description: 'Last update timestamp' })
+  @ApiProperty({
+    example: '2024-01-15T09:00:00Z',
+    description: 'Last update timestamp',
+  })
   updatedAt: Date;
 
-  @ApiProperty({ type: () => BasicOnlineOrderInfoDto, description: 'Online Order information' })
+  @ApiProperty({
+    type: () => BasicOnlineOrderInfoDto,
+    description: 'Online Order information',
+  })
   onlineOrder: BasicOnlineOrderInfoDto;
 }
 
 export class OneOnlinePaymentResponseDto extends SuccessResponse {
-  @ApiProperty({ type: () => OnlinePaymentResponseDto, description: 'Online payment data' })
+  @ApiProperty({
+    type: () => OnlinePaymentResponseDto,
+    description: 'Online payment data',
+  })
   data: OnlinePaymentResponseDto;
 }
-
-
-
-
-
-
-

@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { KitchenEventLog } from './entities/kitchen-event-log.entity';
@@ -8,8 +14,15 @@ import { KitchenStation } from '../kitchen-station/entities/kitchen-station.enti
 import { User } from '../../../platform-saas/users/entities/user.entity';
 import { CreateKitchenEventLogDto } from './dto/create-kitchen-event-log.dto';
 import { UpdateKitchenEventLogDto } from './dto/update-kitchen-event-log.dto';
-import { GetKitchenEventLogQueryDto, KitchenEventLogSortBy } from './dto/get-kitchen-event-log-query.dto';
-import { KitchenEventLogResponseDto, OneKitchenEventLogResponseDto, PaginatedKitchenEventLogResponseDto } from './dto/kitchen-event-log-response.dto';
+import {
+  GetKitchenEventLogQueryDto,
+  KitchenEventLogSortBy,
+} from './dto/get-kitchen-event-log-query.dto';
+import {
+  KitchenEventLogResponseDto,
+  OneKitchenEventLogResponseDto,
+  PaginatedKitchenEventLogResponseDto,
+} from './dto/kitchen-event-log-response.dto';
 import { KitchenEventLogStatus } from './constants/kitchen-event-log-status.enum';
 import { KitchenOrderStatus } from '../kitchen-order/constants/kitchen-order-status.enum';
 import { KitchenOrderItemStatus } from '../kitchen-order-item/constants/kitchen-order-item-status.enum';
@@ -30,9 +43,14 @@ export class KitchenEventLogService {
     private readonly userRepository: Repository<User>,
   ) {}
 
-  async create(createKitchenEventLogDto: CreateKitchenEventLogDto, authenticatedUserMerchantId: number): Promise<OneKitchenEventLogResponseDto> {
+  async create(
+    createKitchenEventLogDto: CreateKitchenEventLogDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneKitchenEventLogResponseDto> {
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to create kitchen event logs');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to create kitchen event logs',
+      );
     }
 
     if (createKitchenEventLogDto.kitchenOrderId) {
@@ -45,7 +63,9 @@ export class KitchenEventLogService {
       });
 
       if (!kitchenOrder) {
-        throw new NotFoundException('Kitchen order not found or you do not have access to it');
+        throw new NotFoundException(
+          'Kitchen order not found or you do not have access to it',
+        );
       }
     }
 
@@ -54,13 +74,21 @@ export class KitchenEventLogService {
         .createQueryBuilder('kitchenOrderItem')
         .leftJoin('kitchenOrderItem.kitchenOrder', 'kitchenOrder')
         .leftJoin('kitchenOrder.merchant', 'merchant')
-        .where('kitchenOrderItem.id = :id', { id: createKitchenEventLogDto.kitchenOrderItemId })
-        .andWhere('merchant.id = :merchantId', { merchantId: authenticatedUserMerchantId })
-        .andWhere('kitchenOrderItem.status = :status', { status: KitchenOrderItemStatus.ACTIVE })
+        .where('kitchenOrderItem.id = :id', {
+          id: createKitchenEventLogDto.kitchenOrderItemId,
+        })
+        .andWhere('merchant.id = :merchantId', {
+          merchantId: authenticatedUserMerchantId,
+        })
+        .andWhere('kitchenOrderItem.status = :status', {
+          status: KitchenOrderItemStatus.ACTIVE,
+        })
         .getOne();
 
       if (!kitchenOrderItem) {
-        throw new NotFoundException('Kitchen order item not found or you do not have access to it');
+        throw new NotFoundException(
+          'Kitchen order item not found or you do not have access to it',
+        );
       }
     }
 
@@ -74,7 +102,9 @@ export class KitchenEventLogService {
       });
 
       if (!station) {
-        throw new NotFoundException('Kitchen station not found or you do not have access to it');
+        throw new NotFoundException(
+          'Kitchen station not found or you do not have access to it',
+        );
       }
     }
 
@@ -93,23 +123,27 @@ export class KitchenEventLogService {
     }
 
     const kitchenEventLog = new KitchenEventLog();
-    kitchenEventLog.kitchen_order_id = createKitchenEventLogDto.kitchenOrderId || null;
-    kitchenEventLog.kitchen_order_item_id = createKitchenEventLogDto.kitchenOrderItemId || null;
+    kitchenEventLog.kitchen_order_id =
+      createKitchenEventLogDto.kitchenOrderId || null;
+    kitchenEventLog.kitchen_order_item_id =
+      createKitchenEventLogDto.kitchenOrderItemId || null;
     kitchenEventLog.station_id = createKitchenEventLogDto.stationId || null;
     kitchenEventLog.user_id = createKitchenEventLogDto.userId || null;
     kitchenEventLog.event_type = createKitchenEventLogDto.eventType;
     // Generate event_time automatically if not provided
-    kitchenEventLog.event_time = createKitchenEventLogDto.eventTime 
-      ? new Date(createKitchenEventLogDto.eventTime) 
+    kitchenEventLog.event_time = createKitchenEventLogDto.eventTime
+      ? new Date(createKitchenEventLogDto.eventTime)
       : new Date();
     kitchenEventLog.message = createKitchenEventLogDto.message || null;
 
-    const savedKitchenEventLog = await this.kitchenEventLogRepository.save(kitchenEventLog);
+    const savedKitchenEventLog =
+      await this.kitchenEventLogRepository.save(kitchenEventLog);
 
-    const completeKitchenEventLog = await this.kitchenEventLogRepository.findOne({
-      where: { id: savedKitchenEventLog.id },
-      relations: ['kitchenOrder', 'kitchenOrderItem', 'station', 'user'],
-    });
+    const completeKitchenEventLog =
+      await this.kitchenEventLogRepository.findOne({
+        where: { id: savedKitchenEventLog.id },
+        relations: ['kitchenOrder', 'kitchenOrderItem', 'station', 'user'],
+      });
 
     if (!completeKitchenEventLog) {
       throw new NotFoundException('Kitchen event log not found after creation');
@@ -122,9 +156,14 @@ export class KitchenEventLogService {
     };
   }
 
-  async findAll(query: GetKitchenEventLogQueryDto, authenticatedUserMerchantId: number): Promise<PaginatedKitchenEventLogResponseDto> {
+  async findAll(
+    query: GetKitchenEventLogQueryDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<PaginatedKitchenEventLogResponseDto> {
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to access kitchen event logs');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to access kitchen event logs',
+      );
     }
 
     if (query.page !== undefined && query.page < 1) {
@@ -138,14 +177,18 @@ export class KitchenEventLogService {
     if (query.eventDate) {
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
       if (!dateRegex.test(query.eventDate)) {
-        throw new BadRequestException('Event date must be in YYYY-MM-DD format');
+        throw new BadRequestException(
+          'Event date must be in YYYY-MM-DD format',
+        );
       }
     }
 
     if (query.createdDate) {
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
       if (!dateRegex.test(query.createdDate)) {
-        throw new BadRequestException('Created date must be in YYYY-MM-DD format');
+        throw new BadRequestException(
+          'Created date must be in YYYY-MM-DD format',
+        );
       }
     }
 
@@ -160,38 +203,58 @@ export class KitchenEventLogService {
       .leftJoinAndSelect('kitchenEventLog.station', 'station')
       .leftJoinAndSelect('kitchenEventLog.user', 'user')
       .leftJoin('kitchenOrder.merchant', 'merchant')
-      .where('(kitchenOrder.merchant_id = :merchantId OR kitchenEventLog.kitchen_order_id IS NULL)', { merchantId: authenticatedUserMerchantId })
-      .andWhere('kitchenEventLog.status != :deletedStatus', { deletedStatus: KitchenEventLogStatus.DELETED });
+      .where(
+        '(kitchenOrder.merchant_id = :merchantId OR kitchenEventLog.kitchen_order_id IS NULL)',
+        { merchantId: authenticatedUserMerchantId },
+      )
+      .andWhere('kitchenEventLog.status != :deletedStatus', {
+        deletedStatus: KitchenEventLogStatus.DELETED,
+      });
 
     if (query.kitchenOrderId) {
-      queryBuilder.andWhere('kitchenEventLog.kitchen_order_id = :kitchenOrderId', { kitchenOrderId: query.kitchenOrderId });
+      queryBuilder.andWhere(
+        'kitchenEventLog.kitchen_order_id = :kitchenOrderId',
+        { kitchenOrderId: query.kitchenOrderId },
+      );
     }
 
     if (query.kitchenOrderItemId) {
-      queryBuilder.andWhere('kitchenEventLog.kitchen_order_item_id = :kitchenOrderItemId', { kitchenOrderItemId: query.kitchenOrderItemId });
+      queryBuilder.andWhere(
+        'kitchenEventLog.kitchen_order_item_id = :kitchenOrderItemId',
+        { kitchenOrderItemId: query.kitchenOrderItemId },
+      );
     }
 
     if (query.stationId) {
-      queryBuilder.andWhere('kitchenEventLog.station_id = :stationId', { stationId: query.stationId });
+      queryBuilder.andWhere('kitchenEventLog.station_id = :stationId', {
+        stationId: query.stationId,
+      });
     }
 
     if (query.userId) {
-      queryBuilder.andWhere('kitchenEventLog.user_id = :userId', { userId: query.userId });
+      queryBuilder.andWhere('kitchenEventLog.user_id = :userId', {
+        userId: query.userId,
+      });
     }
 
     if (query.eventType) {
-      queryBuilder.andWhere('kitchenEventLog.event_type = :eventType', { eventType: query.eventType });
+      queryBuilder.andWhere('kitchenEventLog.event_type = :eventType', {
+        eventType: query.eventType,
+      });
     }
 
     if (query.status) {
-      queryBuilder.andWhere('kitchenEventLog.status = :status', { status: query.status });
+      queryBuilder.andWhere('kitchenEventLog.status = :status', {
+        status: query.status,
+      });
     }
 
     if (query.eventDate) {
       const startDate = new Date(query.eventDate);
       const endDate = new Date(query.eventDate);
       endDate.setDate(endDate.getDate() + 1);
-      queryBuilder.andWhere('kitchenEventLog.event_time >= :startDate', { startDate })
+      queryBuilder
+        .andWhere('kitchenEventLog.event_time >= :startDate', { startDate })
         .andWhere('kitchenEventLog.event_time < :endDate', { endDate });
     }
 
@@ -199,19 +262,29 @@ export class KitchenEventLogService {
       const startDate = new Date(query.createdDate);
       const endDate = new Date(query.createdDate);
       endDate.setDate(endDate.getDate() + 1);
-      queryBuilder.andWhere('kitchenEventLog.created_at >= :startDate', { startDate })
+      queryBuilder
+        .andWhere('kitchenEventLog.created_at >= :startDate', { startDate })
         .andWhere('kitchenEventLog.created_at < :endDate', { endDate });
     }
 
-    const sortField = query.sortBy === KitchenEventLogSortBy.KITCHEN_ORDER_ID ? 'kitchenEventLog.kitchen_order_id' :
-                     query.sortBy === KitchenEventLogSortBy.KITCHEN_ORDER_ITEM_ID ? 'kitchenEventLog.kitchen_order_item_id' :
-                     query.sortBy === KitchenEventLogSortBy.STATION_ID ? 'kitchenEventLog.station_id' :
-                     query.sortBy === KitchenEventLogSortBy.USER_ID ? 'kitchenEventLog.user_id' :
-                     query.sortBy === KitchenEventLogSortBy.EVENT_TYPE ? 'kitchenEventLog.event_type' :
-                     query.sortBy === KitchenEventLogSortBy.UPDATED_AT ? 'kitchenEventLog.updated_at' :
-                     query.sortBy === KitchenEventLogSortBy.ID ? 'kitchenEventLog.id' :
-                     query.sortBy === KitchenEventLogSortBy.CREATED_AT ? 'kitchenEventLog.created_at' :
-                     'kitchenEventLog.event_time';
+    const sortField =
+      query.sortBy === KitchenEventLogSortBy.KITCHEN_ORDER_ID
+        ? 'kitchenEventLog.kitchen_order_id'
+        : query.sortBy === KitchenEventLogSortBy.KITCHEN_ORDER_ITEM_ID
+          ? 'kitchenEventLog.kitchen_order_item_id'
+          : query.sortBy === KitchenEventLogSortBy.STATION_ID
+            ? 'kitchenEventLog.station_id'
+            : query.sortBy === KitchenEventLogSortBy.USER_ID
+              ? 'kitchenEventLog.user_id'
+              : query.sortBy === KitchenEventLogSortBy.EVENT_TYPE
+                ? 'kitchenEventLog.event_type'
+                : query.sortBy === KitchenEventLogSortBy.UPDATED_AT
+                  ? 'kitchenEventLog.updated_at'
+                  : query.sortBy === KitchenEventLogSortBy.ID
+                    ? 'kitchenEventLog.id'
+                    : query.sortBy === KitchenEventLogSortBy.CREATED_AT
+                      ? 'kitchenEventLog.created_at'
+                      : 'kitchenEventLog.event_time';
     const sortOrder = query.sortOrder || 'DESC';
     queryBuilder.orderBy(sortField, sortOrder);
 
@@ -235,18 +308,27 @@ export class KitchenEventLogService {
     return {
       statusCode: 200,
       message: 'Kitchen event logs retrieved successfully',
-      data: kitchenEventLogs.map(item => this.formatKitchenEventLogResponse(item)),
+      data: kitchenEventLogs.map((item) =>
+        this.formatKitchenEventLogResponse(item),
+      ),
       paginationMeta,
     };
   }
 
-  async findOne(id: number, authenticatedUserMerchantId: number): Promise<OneKitchenEventLogResponseDto> {
+  async findOne(
+    id: number,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneKitchenEventLogResponseDto> {
     if (!id || id <= 0) {
-      throw new BadRequestException('Kitchen event log ID must be a valid positive number');
+      throw new BadRequestException(
+        'Kitchen event log ID must be a valid positive number',
+      );
     }
 
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to access kitchen event logs');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to access kitchen event logs',
+      );
     }
 
     const kitchenEventLog = await this.kitchenEventLogRepository
@@ -257,8 +339,13 @@ export class KitchenEventLogService {
       .leftJoinAndSelect('kitchenEventLog.user', 'user')
       .leftJoin('kitchenOrder.merchant', 'merchant')
       .where('kitchenEventLog.id = :id', { id })
-      .andWhere('(kitchenOrder.merchant_id = :merchantId OR kitchenEventLog.kitchen_order_id IS NULL)', { merchantId: authenticatedUserMerchantId })
-      .andWhere('kitchenEventLog.status = :status', { status: KitchenEventLogStatus.ACTIVE })
+      .andWhere(
+        '(kitchenOrder.merchant_id = :merchantId OR kitchenEventLog.kitchen_order_id IS NULL)',
+        { merchantId: authenticatedUserMerchantId },
+      )
+      .andWhere('kitchenEventLog.status = :status', {
+        status: KitchenEventLogStatus.ACTIVE,
+      })
       .getOne();
 
     if (!kitchenEventLog) {
@@ -272,13 +359,21 @@ export class KitchenEventLogService {
     };
   }
 
-  async update(id: number, updateKitchenEventLogDto: UpdateKitchenEventLogDto, authenticatedUserMerchantId: number): Promise<OneKitchenEventLogResponseDto> {
+  async update(
+    id: number,
+    updateKitchenEventLogDto: UpdateKitchenEventLogDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneKitchenEventLogResponseDto> {
     if (!id || id <= 0) {
-      throw new BadRequestException('Kitchen event log ID must be a valid positive number');
+      throw new BadRequestException(
+        'Kitchen event log ID must be a valid positive number',
+      );
     }
 
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to update kitchen event logs');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to update kitchen event logs',
+      );
     }
 
     const existingKitchenEventLog = await this.kitchenEventLogRepository
@@ -286,8 +381,13 @@ export class KitchenEventLogService {
       .leftJoin('kitchenEventLog.kitchenOrder', 'kitchenOrder')
       .leftJoin('kitchenOrder.merchant', 'merchant')
       .where('kitchenEventLog.id = :id', { id })
-      .andWhere('(kitchenOrder.merchant_id = :merchantId OR kitchenEventLog.kitchen_order_id IS NULL)', { merchantId: authenticatedUserMerchantId })
-      .andWhere('kitchenEventLog.status = :status', { status: KitchenEventLogStatus.ACTIVE })
+      .andWhere(
+        '(kitchenOrder.merchant_id = :merchantId OR kitchenEventLog.kitchen_order_id IS NULL)',
+        { merchantId: authenticatedUserMerchantId },
+      )
+      .andWhere('kitchenEventLog.status = :status', {
+        status: KitchenEventLogStatus.ACTIVE,
+      })
       .getOne();
 
     if (!existingKitchenEventLog) {
@@ -309,10 +409,13 @@ export class KitchenEventLogService {
         });
 
         if (!kitchenOrder) {
-          throw new NotFoundException('Kitchen order not found or you do not have access to it');
+          throw new NotFoundException(
+            'Kitchen order not found or you do not have access to it',
+          );
         }
       }
-      existingKitchenEventLog.kitchen_order_id = updateKitchenEventLogDto.kitchenOrderId || null;
+      existingKitchenEventLog.kitchen_order_id =
+        updateKitchenEventLogDto.kitchenOrderId || null;
     }
 
     if (updateKitchenEventLogDto.kitchenOrderItemId !== undefined) {
@@ -321,16 +424,25 @@ export class KitchenEventLogService {
           .createQueryBuilder('kitchenOrderItem')
           .leftJoin('kitchenOrderItem.kitchenOrder', 'kitchenOrder')
           .leftJoin('kitchenOrder.merchant', 'merchant')
-          .where('kitchenOrderItem.id = :id', { id: updateKitchenEventLogDto.kitchenOrderItemId })
-          .andWhere('merchant.id = :merchantId', { merchantId: authenticatedUserMerchantId })
-          .andWhere('kitchenOrderItem.status = :status', { status: KitchenOrderItemStatus.ACTIVE })
+          .where('kitchenOrderItem.id = :id', {
+            id: updateKitchenEventLogDto.kitchenOrderItemId,
+          })
+          .andWhere('merchant.id = :merchantId', {
+            merchantId: authenticatedUserMerchantId,
+          })
+          .andWhere('kitchenOrderItem.status = :status', {
+            status: KitchenOrderItemStatus.ACTIVE,
+          })
           .getOne();
 
         if (!kitchenOrderItem) {
-          throw new NotFoundException('Kitchen order item not found or you do not have access to it');
+          throw new NotFoundException(
+            'Kitchen order item not found or you do not have access to it',
+          );
         }
       }
-      existingKitchenEventLog.kitchen_order_item_id = updateKitchenEventLogDto.kitchenOrderItemId || null;
+      existingKitchenEventLog.kitchen_order_item_id =
+        updateKitchenEventLogDto.kitchenOrderItemId || null;
     }
 
     if (updateKitchenEventLogDto.stationId !== undefined) {
@@ -344,10 +456,13 @@ export class KitchenEventLogService {
         });
 
         if (!station) {
-          throw new NotFoundException('Kitchen station not found or you do not have access to it');
+          throw new NotFoundException(
+            'Kitchen station not found or you do not have access to it',
+          );
         }
       }
-      existingKitchenEventLog.station_id = updateKitchenEventLogDto.stationId || null;
+      existingKitchenEventLog.station_id =
+        updateKitchenEventLogDto.stationId || null;
     }
 
     if (updateKitchenEventLogDto.userId !== undefined) {
@@ -372,21 +487,25 @@ export class KitchenEventLogService {
     }
 
     if (updateKitchenEventLogDto.eventTime !== undefined) {
-      existingKitchenEventLog.event_time = updateKitchenEventLogDto.eventTime 
-        ? new Date(updateKitchenEventLogDto.eventTime) 
+      existingKitchenEventLog.event_time = updateKitchenEventLogDto.eventTime
+        ? new Date(updateKitchenEventLogDto.eventTime)
         : new Date();
     }
 
     if (updateKitchenEventLogDto.message !== undefined) {
-      existingKitchenEventLog.message = updateKitchenEventLogDto.message || null;
+      existingKitchenEventLog.message =
+        updateKitchenEventLogDto.message || null;
     }
 
-    const updatedKitchenEventLog = await this.kitchenEventLogRepository.save(existingKitchenEventLog);
+    const updatedKitchenEventLog = await this.kitchenEventLogRepository.save(
+      existingKitchenEventLog,
+    );
 
-    const completeKitchenEventLog = await this.kitchenEventLogRepository.findOne({
-      where: { id: updatedKitchenEventLog.id },
-      relations: ['kitchenOrder', 'kitchenOrderItem', 'station', 'user'],
-    });
+    const completeKitchenEventLog =
+      await this.kitchenEventLogRepository.findOne({
+        where: { id: updatedKitchenEventLog.id },
+        relations: ['kitchenOrder', 'kitchenOrderItem', 'station', 'user'],
+      });
 
     if (!completeKitchenEventLog) {
       throw new NotFoundException('Kitchen event log not found after update');
@@ -399,13 +518,20 @@ export class KitchenEventLogService {
     };
   }
 
-  async remove(id: number, authenticatedUserMerchantId: number): Promise<OneKitchenEventLogResponseDto> {
+  async remove(
+    id: number,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneKitchenEventLogResponseDto> {
     if (!id || id <= 0) {
-      throw new BadRequestException('Kitchen event log ID must be a valid positive number');
+      throw new BadRequestException(
+        'Kitchen event log ID must be a valid positive number',
+      );
     }
 
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to delete kitchen event logs');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to delete kitchen event logs',
+      );
     }
 
     const existingKitchenEventLog = await this.kitchenEventLogRepository
@@ -413,8 +539,13 @@ export class KitchenEventLogService {
       .leftJoin('kitchenEventLog.kitchenOrder', 'kitchenOrder')
       .leftJoin('kitchenOrder.merchant', 'merchant')
       .where('kitchenEventLog.id = :id', { id })
-      .andWhere('(kitchenOrder.merchant_id = :merchantId OR kitchenEventLog.kitchen_order_id IS NULL)', { merchantId: authenticatedUserMerchantId })
-      .andWhere('kitchenEventLog.status = :status', { status: KitchenEventLogStatus.ACTIVE })
+      .andWhere(
+        '(kitchenOrder.merchant_id = :merchantId OR kitchenEventLog.kitchen_order_id IS NULL)',
+        { merchantId: authenticatedUserMerchantId },
+      )
+      .andWhere('kitchenEventLog.status = :status', {
+        status: KitchenEventLogStatus.ACTIVE,
+      })
       .getOne();
 
     if (!existingKitchenEventLog) {
@@ -428,10 +559,11 @@ export class KitchenEventLogService {
     existingKitchenEventLog.status = KitchenEventLogStatus.DELETED;
     await this.kitchenEventLogRepository.save(existingKitchenEventLog);
 
-    const completeKitchenEventLog = await this.kitchenEventLogRepository.findOne({
-      where: { id: existingKitchenEventLog.id },
-      relations: ['kitchenOrder', 'kitchenOrderItem', 'station', 'user'],
-    });
+    const completeKitchenEventLog =
+      await this.kitchenEventLogRepository.findOne({
+        where: { id: existingKitchenEventLog.id },
+        relations: ['kitchenOrder', 'kitchenOrderItem', 'station', 'user'],
+      });
 
     if (!completeKitchenEventLog) {
       throw new NotFoundException('Kitchen event log not found after deletion');
@@ -444,7 +576,9 @@ export class KitchenEventLogService {
     };
   }
 
-  private formatKitchenEventLogResponse(kitchenEventLog: KitchenEventLog): KitchenEventLogResponseDto {
+  private formatKitchenEventLogResponse(
+    kitchenEventLog: KitchenEventLog,
+  ): KitchenEventLogResponseDto {
     return {
       id: kitchenEventLog.id,
       kitchenOrderId: kitchenEventLog.kitchen_order_id,
@@ -457,20 +591,28 @@ export class KitchenEventLogService {
       status: kitchenEventLog.status,
       createdAt: kitchenEventLog.created_at,
       updatedAt: kitchenEventLog.updated_at,
-      kitchenOrder: kitchenEventLog.kitchenOrder ? {
-        id: kitchenEventLog.kitchenOrder.id,
-      } : null,
-      kitchenOrderItem: kitchenEventLog.kitchenOrderItem ? {
-        id: kitchenEventLog.kitchenOrderItem.id,
-      } : null,
-      station: kitchenEventLog.station ? {
-        id: kitchenEventLog.station.id,
-        name: kitchenEventLog.station.name,
-      } : null,
-      user: kitchenEventLog.user ? {
-        id: kitchenEventLog.user.id,
-        email: kitchenEventLog.user.email,
-      } : null,
+      kitchenOrder: kitchenEventLog.kitchenOrder
+        ? {
+            id: kitchenEventLog.kitchenOrder.id,
+          }
+        : null,
+      kitchenOrderItem: kitchenEventLog.kitchenOrderItem
+        ? {
+            id: kitchenEventLog.kitchenOrderItem.id,
+          }
+        : null,
+      station: kitchenEventLog.station
+        ? {
+            id: kitchenEventLog.station.id,
+            name: kitchenEventLog.station.name,
+          }
+        : null,
+      user: kitchenEventLog.user
+        ? {
+            id: kitchenEventLog.user.id,
+            email: kitchenEventLog.user.email,
+          }
+        : null,
     };
   }
 }

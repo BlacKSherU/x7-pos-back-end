@@ -15,7 +15,10 @@ export class CreateSupplierPaymentItemDto {
   @IsPositive()
   payment_id: number;
 
-  @ApiProperty({ example: 'INV-2025-001', description: 'Document / invoice number' })
+  @ApiProperty({
+    example: 'INV-2025-001',
+    description: 'Document / invoice number',
+  })
   @IsString()
   @MaxLength(100)
   document_number: string;

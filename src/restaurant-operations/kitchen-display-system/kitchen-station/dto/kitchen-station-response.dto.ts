@@ -5,7 +5,10 @@ import { KitchenDisplayMode } from '../constants/kitchen-display-mode.enum';
 import { KitchenStationStatus } from '../constants/kitchen-station-status.enum';
 
 export class KitchenStationResponseDto {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Kitchen Station' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Kitchen Station',
+  })
   id: number;
 
   @ApiProperty({
@@ -88,5 +91,3 @@ export class OneKitchenStationResponseDto extends SuccessResponse {
   @ApiProperty({ type: KitchenStationResponseDto })
   data: KitchenStationResponseDto;
 }
-
-

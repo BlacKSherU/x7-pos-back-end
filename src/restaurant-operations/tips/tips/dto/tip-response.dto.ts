@@ -73,7 +73,7 @@ export class TipResponseDto {
   paymentId: number | null;
 
   @ApiProperty({
-    example: 5.50,
+    example: 5.5,
     description: 'Tip amount',
   })
   amount: number;

@@ -185,12 +185,18 @@ describe('SuppliersService', () => {
       supplierRepository.findOne.mockResolvedValueOnce(null); // No isActive supplier with same name
       supplierRepository.findOne.mockResolvedValueOnce(null); // No isActive supplier with same tax_id
       supplierRepository.findOne.mockResolvedValueOnce(null); // No inisActive supplier with same name
-      supplierRepository.findOne.mockResolvedValueOnce(
-        { ...mockSupplier } as Supplier,
-      ); // For the findOne call within the create method
-      supplierRepository.create.mockReturnValueOnce({ ...mockSupplier } as Supplier);
-      supplierRepository.save.mockResolvedValueOnce({ ...mockSupplier } as Supplier);
-      mockQueryBuilder.getOne.mockResolvedValueOnce({ ...mockSupplier } as Supplier); // findOne inside findOne method
+      supplierRepository.findOne.mockResolvedValueOnce({
+        ...mockSupplier,
+      } as Supplier); // For the findOne call within the create method
+      supplierRepository.create.mockReturnValueOnce({
+        ...mockSupplier,
+      } as Supplier);
+      supplierRepository.save.mockResolvedValueOnce({
+        ...mockSupplier,
+      } as Supplier);
+      mockQueryBuilder.getOne.mockResolvedValueOnce({
+        ...mockSupplier,
+      } as Supplier); // findOne inside findOne method
 
       const result = await service.create(company_id, mockCreateSupplierDto);
 
@@ -280,9 +286,9 @@ describe('SuppliersService', () => {
     });
 
     it('should throw BadRequestException if supplier name already exists', async () => {
-      supplierRepository.findOne.mockResolvedValueOnce(
-        { ...mockSupplier } as Supplier,
-      ); // Active supplier with same name exists
+      supplierRepository.findOne.mockResolvedValueOnce({
+        ...mockSupplier,
+      } as Supplier); // Active supplier with same name exists
 
       await expect(
         async () => await service.create(company_id, mockCreateSupplierDto),
@@ -301,9 +307,9 @@ describe('SuppliersService', () => {
 
     it('should throw ConflictException if supplier tax_id already exists', async () => {
       supplierRepository.findOne.mockResolvedValueOnce(null); // No active supplier with same name
-      supplierRepository.findOne.mockResolvedValueOnce(
-        { ...mockSupplier } as Supplier,
-      ); // Active supplier with same tax_id exists
+      supplierRepository.findOne.mockResolvedValueOnce({
+        ...mockSupplier,
+      } as Supplier); // Active supplier with same tax_id exists
 
       await expect(
         async () => await service.create(company_id, mockCreateSupplierDto),
@@ -317,7 +323,9 @@ describe('SuppliersService', () => {
       supplierRepository.findOne.mockResolvedValueOnce(null);
       supplierRepository.findOne.mockResolvedValueOnce(null);
       supplierRepository.findOne.mockResolvedValueOnce(null);
-      supplierRepository.create.mockReturnValueOnce({ ...mockSupplier } as Supplier);
+      supplierRepository.create.mockReturnValueOnce({
+        ...mockSupplier,
+      } as Supplier);
       supplierRepository.save.mockRejectedValueOnce(
         new Error('Database error'),
       ); // Simulate DB error
@@ -414,9 +422,9 @@ describe('SuppliersService', () => {
     const supplierId = mockSupplier.id!;
 
     it('should return a Supplier successfully by ID and company ID', async () => {
-      supplierRepository.findOne.mockResolvedValueOnce(
-        { ...mockSupplier } as Supplier,
-      );
+      supplierRepository.findOne.mockResolvedValueOnce({
+        ...mockSupplier,
+      } as Supplier);
 
       const result = await service.findOne(supplierId, company_id);
 
@@ -431,9 +439,9 @@ describe('SuppliersService', () => {
     });
 
     it('should return a Supplier successfully by ID without company ID', async () => {
-      supplierRepository.findOne.mockResolvedValueOnce(
-        { ...mockSupplier } as Supplier,
-      );
+      supplierRepository.findOne.mockResolvedValueOnce({
+        ...mockSupplier,
+      } as Supplier);
 
       const result = await service.findOne(supplierId);
 
@@ -502,9 +510,9 @@ describe('SuppliersService', () => {
         email: mockUpdateSupplierDto.email,
       } as Supplier;
 
-      supplierRepository.findOneBy.mockResolvedValueOnce(
-        { ...mockSupplier } as Supplier,
-      );
+      supplierRepository.findOneBy.mockResolvedValueOnce({
+        ...mockSupplier,
+      } as Supplier);
       supplierRepository.findOne.mockResolvedValueOnce(null); // No existing supplier with same name
       supplierRepository.findOne.mockResolvedValueOnce(updatedSupplier); // For the findOne call within the update method
       supplierRepository.save.mockResolvedValueOnce(updatedSupplier);
@@ -568,9 +576,9 @@ describe('SuppliersService', () => {
         name: 'Existing Supplier Name',
       };
 
-      supplierRepository.findOneBy.mockResolvedValueOnce(
-        { ...mockSupplier } as Supplier,
-      );
+      supplierRepository.findOneBy.mockResolvedValueOnce({
+        ...mockSupplier,
+      } as Supplier);
       supplierRepository.findOne.mockResolvedValueOnce(
         existingSupplierWithNewName,
       ); // Supplier with same name found
@@ -600,13 +608,15 @@ describe('SuppliersService', () => {
         tax_id: '99999999-9',
       };
 
-      supplierRepository.findOneBy.mockResolvedValueOnce(
-        { ...mockSupplier } as Supplier,
-      );
+      supplierRepository.findOneBy.mockResolvedValueOnce({
+        ...mockSupplier,
+      } as Supplier);
       // name not changing → no name check → skip to tax_id check
-      supplierRepository.findOne.mockResolvedValueOnce(
-        { ...mockSupplier, id: 2, tax_id: '99999999-9' } as Supplier,
-      ); // Supplier with same tax_id found
+      supplierRepository.findOne.mockResolvedValueOnce({
+        ...mockSupplier,
+        id: 2,
+        tax_id: '99999999-9',
+      } as Supplier); // Supplier with same tax_id found
 
       await expect(
         async () =>
@@ -632,9 +642,9 @@ describe('SuppliersService', () => {
     });
 
     it('should handle database errors during update', async () => {
-      supplierRepository.findOneBy.mockResolvedValueOnce(
-        { ...mockSupplier } as Supplier,
-      );
+      supplierRepository.findOneBy.mockResolvedValueOnce({
+        ...mockSupplier,
+      } as Supplier);
       supplierRepository.findOne.mockResolvedValueOnce(null);
       supplierRepository.save.mockRejectedValueOnce(
         new Error('Database error'),
@@ -657,9 +667,9 @@ describe('SuppliersService', () => {
         isActive: false,
       } as Supplier;
 
-      supplierRepository.findOne.mockResolvedValueOnce(
-        { ...mockSupplier } as Supplier,
-      );
+      supplierRepository.findOne.mockResolvedValueOnce({
+        ...mockSupplier,
+      } as Supplier);
       supplierRepository.findOne.mockResolvedValueOnce(inisActiveSupplier); // For the findOne call within the remove method
       supplierRepository.save.mockResolvedValueOnce(inisActiveSupplier);
       mockQueryBuilder.getOne.mockResolvedValueOnce(inisActiveSupplier); // findOne inside findOne method
@@ -706,9 +716,9 @@ describe('SuppliersService', () => {
     });
 
     it('should handle database errors during remove', async () => {
-      supplierRepository.findOne.mockResolvedValueOnce(
-        { ...mockSupplier } as Supplier,
-      );
+      supplierRepository.findOne.mockResolvedValueOnce({
+        ...mockSupplier,
+      } as Supplier);
       supplierRepository.save.mockRejectedValueOnce(
         new Error('Database error'),
       ); // Simulate DB error

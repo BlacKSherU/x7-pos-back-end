@@ -131,16 +131,17 @@ export class OnlineOrderFulfillmentService {
         }
       }
 
-      const order = await this.ordersService.createOrderForOnlineAcceptanceWithManager(
-        queryRunner.manager,
-        {
-          merchantId: oo.merchant_id,
-          customerId: oo.customer_id,
-          orderType: mapOnlineTypeToOrderType(oo.type),
-          deliveryAddress,
-          deliveryFee: 0,
-        },
-      );
+      const order =
+        await this.ordersService.createOrderForOnlineAcceptanceWithManager(
+          queryRunner.manager,
+          {
+            merchantId: oo.merchant_id,
+            customerId: oo.customer_id,
+            orderType: mapOnlineTypeToOrderType(oo.type),
+            deliveryAddress,
+            deliveryFee: 0,
+          },
+        );
       posOrderId = order.id;
 
       for (const ooi of lines) {
@@ -200,7 +201,10 @@ export class OnlineOrderFulfillmentService {
     await this.ordersService.syncOrderAggregates(posOrderId);
 
     try {
-      await this.kitchenOrderService.create({ orderId: posOrderId }, merchantId);
+      await this.kitchenOrderService.create(
+        { orderId: posOrderId },
+        merchantId,
+      );
     } catch (e) {
       if (!(e instanceof ConflictException)) {
         throw e;

@@ -53,7 +53,10 @@ describe('OnlineOrderFulfillmentService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OnlineOrderFulfillmentService,
-        { provide: getRepositoryToken(OnlineOrder), useValue: mockOnlineOrderRepo },
+        {
+          provide: getRepositoryToken(OnlineOrder),
+          useValue: mockOnlineOrderRepo,
+        },
         {
           provide: getRepositoryToken(OnlineOrderItem),
           useValue: mockOnlineOrderItemRepo,

@@ -1,14 +1,33 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, In } from 'typeorm';
+import {
+  Repository,
+  Between,
+  In,
+  type FindOptionsOrder,
+  type FindOptionsWhere,
+  type QueryDeepPartialEntity,
+} from 'typeorm';
 import { OrderItem } from './entities/order-item.entity';
 import { Order } from '../orders/entities/order.entity';
 import { Product } from '../../../inventory/products-inventory/products/entities/product.entity';
 import { Variant } from '../../../inventory/products-inventory/variants/entities/variant.entity';
 import { CreateOrderItemDto } from './dto/create-order-item.dto';
 import { UpdateOrderItemDto } from './dto/update-order-item.dto';
-import { GetOrderItemQueryDto, OrderItemSortBy } from './dto/get-order-item-query.dto';
-import { OrderItemResponseDto, OneOrderItemResponseDto } from './dto/order-item-response.dto';
+import {
+  GetOrderItemQueryDto,
+  OrderItemSortBy,
+} from './dto/get-order-item-query.dto';
+import {
+  OrderItemResponseDto,
+  OneOrderItemResponseDto,
+} from './dto/order-item-response.dto';
 import { PaginatedOrderItemResponseDto } from './dto/paginated-order-item-response.dto';
 import { OrderItemStatus } from './constants/order-item-status.enum';
 import { OrderItemKitchenStatus } from './constants/order-item-kitchen-status.enum';
@@ -39,12 +58,15 @@ export class OrderItemService {
     private readonly ordersService: OrdersService,
   ) {}
 
-  async create(createOrderItemDto: CreateOrderItemDto, authenticatedUserMerchantId: number): Promise<OneOrderItemResponseDto> {
-
-
+  async create(
+    createOrderItemDto: CreateOrderItemDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneOrderItemResponseDto> {
     // Validate user permissions - must be associated with a merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to create order items');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to create order items',
+      );
     }
 
     // Validate order exists and belongs to merchant
@@ -58,7 +80,9 @@ export class OrderItemService {
     }
 
     if (order.merchant_id !== authenticatedUserMerchantId) {
-  throw new ForbiddenException('You can only create order items for orders belonging to your merchant');
+      throw new ForbiddenException(
+        'You can only create order items for orders belonging to your merchant',
+      );
     }
 
     if (order.logical_status !== OrderStatus.ACTIVE) {
@@ -76,7 +100,9 @@ export class OrderItemService {
     }
 
     if (product.merchantId !== authenticatedUserMerchantId) {
-      throw new ForbiddenException('You can only use products from your merchant');
+      throw new ForbiddenException(
+        'You can only use products from your merchant',
+      );
     }
 
     // Validate variant if provided
@@ -91,11 +117,15 @@ export class OrderItemService {
       }
 
       if (variant.product.merchantId !== authenticatedUserMerchantId) {
-        throw new ForbiddenException('You can only use variants from your merchant');
+        throw new ForbiddenException(
+          'You can only use variants from your merchant',
+        );
       }
 
       if (variant.productId !== createOrderItemDto.productId) {
-        throw new BadRequestException('Variant does not belong to the specified product');
+        throw new BadRequestException(
+          'Variant does not belong to the specified product',
+        );
       }
     }
 
@@ -154,11 +184,15 @@ export class OrderItemService {
     };
   }
 
-  async findAll(query: GetOrderItemQueryDto, authenticatedUserMerchantId: number): Promise<PaginatedOrderItemResponseDto> {
-
+  async findAll(
+    query: GetOrderItemQueryDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<PaginatedOrderItemResponseDto> {
     // Validate user has merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to access order items');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to access order items',
+      );
     }
 
     // Validate pagination parameters
@@ -174,7 +208,9 @@ export class OrderItemService {
     if (query.createdDate) {
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
       if (!dateRegex.test(query.createdDate)) {
-        throw new BadRequestException('Created date must be in YYYY-MM-DD format');
+        throw new BadRequestException(
+          'Created date must be in YYYY-MM-DD format',
+        );
       }
     }
 
@@ -183,7 +219,7 @@ export class OrderItemService {
     const skip = (page - 1) * limit;
 
     // Build where conditions - filter by merchant through order
-    const whereConditions: any = {
+    const whereConditions: FindOptionsWhere<OrderItem> = {
       status: query.status || OrderItemStatus.ACTIVE,
     };
 
@@ -206,7 +242,7 @@ export class OrderItemService {
         where: { merchant_id: authenticatedUserMerchantId },
         select: ['id'],
       });
-      const merchantOrderIds = merchantOrders.map(o => o.id);
+      const merchantOrderIds = merchantOrders.map((o) => o.id);
       if (merchantOrderIds.length === 0) {
         // No orders for this merchant, return empty result
         return {
@@ -224,9 +260,10 @@ export class OrderItemService {
         };
       }
       // Use In operator when there are multiple order IDs
-      whereConditions.order_id = merchantOrderIds.length === 1 
-        ? merchantOrderIds[0] 
-        : In(merchantOrderIds);
+      whereConditions.order_id =
+        merchantOrderIds.length === 1
+          ? merchantOrderIds[0]
+          : In(merchantOrderIds);
     }
 
     if (query.productId) {
@@ -236,10 +273,14 @@ export class OrderItemService {
         relations: ['merchant'],
       });
       if (!product) {
-        throw new NotFoundException(`Product with ID ${query.productId} not found`);
+        throw new NotFoundException(
+          `Product with ID ${query.productId} not found`,
+        );
       }
       if (product.merchantId !== authenticatedUserMerchantId) {
-        throw new ForbiddenException('Product does not belong to your merchant');
+        throw new ForbiddenException(
+          'Product does not belong to your merchant',
+        );
       }
       whereConditions.product_id = query.productId;
     }
@@ -260,16 +301,30 @@ export class OrderItemService {
     }
 
     // Build order conditions
-    const orderConditions: any = {};
+    const sortDir = query.sortOrder || 'DESC';
+    let orderConditions: FindOptionsOrder<OrderItem>;
     if (query.sortBy) {
-      const sortField = query.sortBy === OrderItemSortBy.QUANTITY ? 'quantity' :
-                       query.sortBy === OrderItemSortBy.PRICE ? 'price' :
-                       query.sortBy === OrderItemSortBy.DISCOUNT ? 'discount' :
-                       query.sortBy === OrderItemSortBy.CREATED_AT ? 'created_at' :
-                       query.sortBy === OrderItemSortBy.UPDATED_AT ? 'updated_at' : 'id';
-      orderConditions[sortField] = query.sortOrder || 'DESC';
+      switch (query.sortBy) {
+        case OrderItemSortBy.QUANTITY:
+          orderConditions = { quantity: sortDir };
+          break;
+        case OrderItemSortBy.PRICE:
+          orderConditions = { price: sortDir };
+          break;
+        case OrderItemSortBy.DISCOUNT:
+          orderConditions = { discount: sortDir };
+          break;
+        case OrderItemSortBy.CREATED_AT:
+          orderConditions = { created_at: sortDir };
+          break;
+        case OrderItemSortBy.UPDATED_AT:
+          orderConditions = { updated_at: sortDir };
+          break;
+        default:
+          orderConditions = { id: sortDir };
+      }
     } else {
-      orderConditions.created_at = 'DESC';
+      orderConditions = { created_at: 'DESC' };
     }
 
     // Execute query
@@ -298,26 +353,32 @@ export class OrderItemService {
     return {
       statusCode: 200,
       message: 'Order items retrieved successfully',
-      data: orderItems.map(item => this.formatOrderItemResponse(item)),
+      data: orderItems.map((item) => this.formatOrderItemResponse(item)),
       paginationMeta,
     };
   }
 
-  async findOne(id: number, authenticatedUserMerchantId: number): Promise<OneOrderItemResponseDto> {
-
+  async findOne(
+    id: number,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneOrderItemResponseDto> {
     // Validate ID
     if (!id || id <= 0) {
-      throw new BadRequestException('Order item ID must be a valid positive number');
+      throw new BadRequestException(
+        'Order item ID must be a valid positive number',
+      );
     }
 
     // Validate user has merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to access order items');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to access order items',
+      );
     }
 
     // Find order item
     const orderItem = await this.orderItemRepository.findOne({
-      where: { 
+      where: {
         id,
         status: OrderItemStatus.ACTIVE,
       },
@@ -330,7 +391,9 @@ export class OrderItemService {
 
     // Validate merchant ownership through order
     if (orderItem.order.merchant_id !== authenticatedUserMerchantId) {
-      throw new ForbiddenException('You can only access order items from your merchant');
+      throw new ForbiddenException(
+        'You can only access order items from your merchant',
+      );
     }
 
     return {
@@ -340,21 +403,28 @@ export class OrderItemService {
     };
   }
 
-  async update(id: number, updateOrderItemDto: UpdateOrderItemDto, authenticatedUserMerchantId: number): Promise<OneOrderItemResponseDto> {
-
+  async update(
+    id: number,
+    updateOrderItemDto: UpdateOrderItemDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneOrderItemResponseDto> {
     // Validate ID
     if (!id || id <= 0) {
-      throw new BadRequestException('Order item ID must be a valid positive number');
+      throw new BadRequestException(
+        'Order item ID must be a valid positive number',
+      );
     }
 
     // Validate user has merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to update order items');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to update order items',
+      );
     }
 
     // Find existing order item
     const existingOrderItem = await this.orderItemRepository.findOne({
-      where: { 
+      where: {
         id,
         status: OrderItemStatus.ACTIVE,
       },
@@ -369,7 +439,9 @@ export class OrderItemService {
 
     // Validate merchant ownership
     if (existingOrderItem.order.merchant_id !== authenticatedUserMerchantId) {
-      throw new ForbiddenException('You can only update order items from your merchant');
+      throw new ForbiddenException(
+        'You can only update order items from your merchant',
+      );
     }
 
     // Validate order if provided
@@ -384,7 +456,9 @@ export class OrderItemService {
       }
 
       if (order.merchant_id !== authenticatedUserMerchantId) {
-        throw new ForbiddenException('You can only assign orders from your merchant');
+        throw new ForbiddenException(
+          'You can only assign orders from your merchant',
+        );
       }
     }
 
@@ -400,7 +474,9 @@ export class OrderItemService {
       }
 
       if (product.merchantId !== authenticatedUserMerchantId) {
-        throw new ForbiddenException('You can only use products from your merchant');
+        throw new ForbiddenException(
+          'You can only use products from your merchant',
+        );
       }
     }
 
@@ -419,51 +495,72 @@ export class OrderItemService {
         }
 
         if (variant.product.merchantId !== authenticatedUserMerchantId) {
-          throw new ForbiddenException('You can only use variants from your merchant');
+          throw new ForbiddenException(
+            'You can only use variants from your merchant',
+          );
         }
 
-        const productId = updateOrderItemDto.productId || existingOrderItem.product_id;
+        const productId =
+          updateOrderItemDto.productId || existingOrderItem.product_id;
         if (variant.productId !== productId) {
-          throw new BadRequestException('Variant does not belong to the specified product');
+          throw new BadRequestException(
+            'Variant does not belong to the specified product',
+          );
         }
       }
     }
 
     // Business rule validation: amounts
-    if (updateOrderItemDto.quantity !== undefined && updateOrderItemDto.quantity <= 0) {
+    if (
+      updateOrderItemDto.quantity !== undefined &&
+      updateOrderItemDto.quantity <= 0
+    ) {
       throw new BadRequestException('Quantity must be greater than 0');
     }
-    if (updateOrderItemDto.price !== undefined && updateOrderItemDto.price < 0) {
+    if (
+      updateOrderItemDto.price !== undefined &&
+      updateOrderItemDto.price < 0
+    ) {
       throw new BadRequestException('Price must be non-negative');
     }
-    if (updateOrderItemDto.discount !== undefined && updateOrderItemDto.discount < 0) {
+    if (
+      updateOrderItemDto.discount !== undefined &&
+      updateOrderItemDto.discount < 0
+    ) {
       throw new BadRequestException('Discount must be non-negative');
     }
 
     // Update order item
-    const updateData: any = {};
-    if (updateOrderItemDto.orderId !== undefined) updateData.order_id = updateOrderItemDto.orderId;
-    if (updateOrderItemDto.productId !== undefined) updateData.product_id = updateOrderItemDto.productId;
-    if (updateOrderItemDto.variantId !== undefined) updateData.variant_id = updateOrderItemDto.variantId;
-    if (updateOrderItemDto.quantity !== undefined) updateData.quantity = updateOrderItemDto.quantity;
-    if (updateOrderItemDto.price !== undefined) updateData.price = updateOrderItemDto.price;
-    if (updateOrderItemDto.discount !== undefined) updateData.discount = updateOrderItemDto.discount;
-    if (updateOrderItemDto.notes !== undefined) updateData.notes = updateOrderItemDto.notes || null;
+    const updateData: QueryDeepPartialEntity<OrderItem> = {};
+    if (updateOrderItemDto.orderId !== undefined)
+      updateData.order_id = updateOrderItemDto.orderId;
+    if (updateOrderItemDto.productId !== undefined)
+      updateData.product_id = updateOrderItemDto.productId;
+    if (updateOrderItemDto.variantId !== undefined)
+      updateData.variant_id = updateOrderItemDto.variantId;
+    if (updateOrderItemDto.quantity !== undefined)
+      updateData.quantity = updateOrderItemDto.quantity;
+    if (updateOrderItemDto.price !== undefined)
+      updateData.price = updateOrderItemDto.price;
+    if (updateOrderItemDto.discount !== undefined)
+      updateData.discount = updateOrderItemDto.discount;
+    if (updateOrderItemDto.notes !== undefined)
+      updateData.notes = updateOrderItemDto.notes || null;
     if (updateOrderItemDto.kitchenStatus !== undefined) {
       updateData.kitchen_status = updateOrderItemDto.kitchenStatus;
     }
 
     const nextQty =
       updateData.quantity !== undefined
-        ? updateData.quantity
+        ? Number(updateData.quantity)
         : existingOrderItem.quantity;
     const nextPrice =
       updateData.price !== undefined
-        ? updateData.price
+        ? Number(updateData.price)
         : existingOrderItem.price;
     const nextDisc =
       updateData.discount !== undefined
-        ? updateData.discount
+        ? Number(updateData.discount)
         : existingOrderItem.discount;
     if (
       updateData.quantity !== undefined ||
@@ -501,21 +598,27 @@ export class OrderItemService {
     };
   }
 
-  async remove(id: number, authenticatedUserMerchantId: number): Promise<OneOrderItemResponseDto> {
-
+  async remove(
+    id: number,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneOrderItemResponseDto> {
     // Validate ID
     if (!id || id <= 0) {
-      throw new BadRequestException('Order item ID must be a valid positive number');
+      throw new BadRequestException(
+        'Order item ID must be a valid positive number',
+      );
     }
 
     // Validate user has merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to delete order items');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to delete order items',
+      );
     }
 
     // Find existing order item
     const existingOrderItem = await this.orderItemRepository.findOne({
-      where: { 
+      where: {
         id,
         status: OrderItemStatus.ACTIVE,
       },
@@ -528,7 +631,9 @@ export class OrderItemService {
 
     // Validate merchant ownership
     if (existingOrderItem.order.merchant_id !== authenticatedUserMerchantId) {
-      throw new ForbiddenException('You can only delete order items from your merchant');
+      throw new ForbiddenException(
+        'You can only delete order items from your merchant',
+      );
     }
 
     // Check if already deleted
@@ -566,12 +671,14 @@ export class OrderItemService {
         basePrice: Number(orderItem.product.basePrice),
       },
       variantId: orderItem.variant_id,
-      variant: orderItem.variant ? {
-        id: orderItem.variant.id,
-        name: orderItem.variant.name,
-        price: Number(orderItem.variant.price),
-        sku: orderItem.variant.sku,
-      } : null,
+      variant: orderItem.variant
+        ? {
+            id: orderItem.variant.id,
+            name: orderItem.variant.name,
+            price: Number(orderItem.variant.price),
+            sku: orderItem.variant.sku,
+          }
+        : null,
       quantity: orderItem.quantity,
       price: Number(orderItem.price),
       discount: Number(orderItem.discount),

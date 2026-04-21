@@ -1,5 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNumber, IsNotEmpty, IsOptional, IsString, IsEnum, Min, MaxLength } from 'class-validator';
+import {
+  IsNumber,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsEnum,
+  Min,
+  MaxLength,
+} from 'class-validator';
 import { OnlineOrderPaymentStatus } from '../../online-order/constants/online-order-payment-status.enum';
 
 export class CreateOnlinePaymentDto {
@@ -8,13 +16,19 @@ export class CreateOnlinePaymentDto {
   @IsNotEmpty({ message: 'Online order ID is required' })
   onlineOrderId: number;
 
-  @ApiProperty({ example: 'stripe', description: 'Payment provider name (e.g., stripe, paypal, square)' })
+  @ApiProperty({
+    example: 'stripe',
+    description: 'Payment provider name (e.g., stripe, paypal, square)',
+  })
   @IsString({ message: 'Payment provider must be a string' })
   @IsNotEmpty({ message: 'Payment provider is required' })
   @MaxLength(50, { message: 'Payment provider must not exceed 50 characters' })
   paymentProvider: string;
 
-  @ApiProperty({ example: 'txn_1234567890', description: 'Transaction ID from the payment provider' })
+  @ApiProperty({
+    example: 'txn_1234567890',
+    description: 'Transaction ID from the payment provider',
+  })
   @IsString({ message: 'Transaction ID must be a string' })
   @IsNotEmpty({ message: 'Transaction ID is required' })
   @MaxLength(100, { message: 'Transaction ID must not exceed 100 characters' })
@@ -31,7 +45,9 @@ export class CreateOnlinePaymentDto {
     enum: OnlineOrderPaymentStatus,
     description: 'Payment status (pending, paid, failed, refunded)',
   })
-  @IsEnum(OnlineOrderPaymentStatus, { message: 'Status must be a valid payment status' })
+  @IsEnum(OnlineOrderPaymentStatus, {
+    message: 'Status must be a valid payment status',
+  })
   @IsNotEmpty({ message: 'Status is required' })
   status: OnlineOrderPaymentStatus;
 

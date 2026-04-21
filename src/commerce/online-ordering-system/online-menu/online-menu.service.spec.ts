@@ -1,17 +1,22 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/unbound-method */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { Repository } from 'typeorm';
+import { Repository, UpdateResult, type SelectQueryBuilder } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { OnlineMenuService } from './online-menu.service';
 import { OnlineMenu } from './entities/online-menu.entity';
 import { OnlineStore } from '../online-stores/entities/online-store.entity';
 import { CreateOnlineMenuDto } from './dto/create-online-menu.dto';
 import { UpdateOnlineMenuDto } from './dto/update-online-menu.dto';
-import { GetOnlineMenuQueryDto, OnlineMenuSortBy } from './dto/get-online-menu-query.dto';
+import {
+  GetOnlineMenuQueryDto,
+  OnlineMenuSortBy,
+} from './dto/get-online-menu-query.dto';
 import { OnlineStoreStatus } from '../online-stores/constants/online-store-status.enum';
 
 describe('OnlineMenuService', () => {
@@ -114,15 +119,20 @@ describe('OnlineMenuService', () => {
     };
 
     it('should create an online menu successfully', async () => {
-      jest.spyOn(onlineStoreRepository, 'findOne').mockResolvedValue(mockOnlineStore as any);
-      jest.spyOn(onlineMenuRepository, 'save').mockResolvedValue(mockOnlineMenu as any);
-      jest.spyOn(onlineMenuRepository, 'findOne')
-        .mockResolvedValueOnce(mockOnlineMenu as any);
+      jest
+        .spyOn(onlineStoreRepository, 'findOne')
+        .mockResolvedValue(mockOnlineStore as unknown as OnlineStore);
+      jest
+        .spyOn(onlineMenuRepository, 'save')
+        .mockResolvedValue(mockOnlineMenu as unknown as OnlineMenu);
+      jest
+        .spyOn(onlineMenuRepository, 'findOne')
+        .mockResolvedValueOnce(mockOnlineMenu as unknown as OnlineMenu);
 
       const result = await service.create(createOnlineMenuDto, 1);
 
       expect(onlineStoreRepository.findOne).toHaveBeenCalledWith({
-        where: { 
+        where: {
           id: 1,
           merchant_id: 1,
           status: OnlineStoreStatus.ACTIVE,
@@ -136,10 +146,10 @@ describe('OnlineMenuService', () => {
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.create(createOnlineMenuDto, undefined as any)).rejects.toThrow(
+      await expect(service.create(createOnlineMenuDto, 0)).rejects.toThrow(
         ForbiddenException,
       );
-      await expect(service.create(createOnlineMenuDto, undefined as any)).rejects.toThrow(
+      await expect(service.create(createOnlineMenuDto, 0)).rejects.toThrow(
         'You must be associated with a merchant to create online menus',
       );
     });
@@ -157,7 +167,9 @@ describe('OnlineMenuService', () => {
 
     it('should throw BadRequestException if name is empty', async () => {
       const dtoWithEmptyName = { ...createOnlineMenuDto, name: '' };
-      jest.spyOn(onlineStoreRepository, 'findOne').mockResolvedValue(mockOnlineStore as any);
+      jest
+        .spyOn(onlineStoreRepository, 'findOne')
+        .mockResolvedValue(mockOnlineStore as unknown as OnlineStore);
 
       await expect(service.create(dtoWithEmptyName, 1)).rejects.toThrow(
         BadRequestException,
@@ -172,7 +184,9 @@ describe('OnlineMenuService', () => {
         ...createOnlineMenuDto,
         name: 'a'.repeat(101),
       };
-      jest.spyOn(onlineStoreRepository, 'findOne').mockResolvedValue(mockOnlineStore as any);
+      jest
+        .spyOn(onlineStoreRepository, 'findOne')
+        .mockResolvedValue(mockOnlineStore as unknown as OnlineStore);
 
       await expect(service.create(dtoWithLongName, 1)).rejects.toThrow(
         BadRequestException,
@@ -188,10 +202,15 @@ describe('OnlineMenuService', () => {
         name: '  Main Menu  ',
         description: '  Description  ',
       };
-      jest.spyOn(onlineStoreRepository, 'findOne').mockResolvedValue(mockOnlineStore as any);
-      jest.spyOn(onlineMenuRepository, 'save').mockResolvedValue(mockOnlineMenu as any);
-      jest.spyOn(onlineMenuRepository, 'findOne')
-        .mockResolvedValueOnce(mockOnlineMenu as any);
+      jest
+        .spyOn(onlineStoreRepository, 'findOne')
+        .mockResolvedValue(mockOnlineStore as unknown as OnlineStore);
+      jest
+        .spyOn(onlineMenuRepository, 'save')
+        .mockResolvedValue(mockOnlineMenu as unknown as OnlineMenu);
+      jest
+        .spyOn(onlineMenuRepository, 'findOne')
+        .mockResolvedValueOnce(mockOnlineMenu as unknown as OnlineMenu);
 
       await service.create(dtoWithSpaces, 1);
 
@@ -204,10 +223,15 @@ describe('OnlineMenuService', () => {
     });
 
     it('should always set is_active to true when creating', async () => {
-      jest.spyOn(onlineStoreRepository, 'findOne').mockResolvedValue(mockOnlineStore as any);
-      jest.spyOn(onlineMenuRepository, 'save').mockResolvedValue(mockOnlineMenu as any);
-      jest.spyOn(onlineMenuRepository, 'findOne')
-        .mockResolvedValueOnce(mockOnlineMenu as any);
+      jest
+        .spyOn(onlineStoreRepository, 'findOne')
+        .mockResolvedValue(mockOnlineStore as unknown as OnlineStore);
+      jest
+        .spyOn(onlineMenuRepository, 'save')
+        .mockResolvedValue(mockOnlineMenu as unknown as OnlineMenu);
+      jest
+        .spyOn(onlineMenuRepository, 'findOne')
+        .mockResolvedValueOnce(mockOnlineMenu as unknown as OnlineMenu);
 
       await service.create(createOnlineMenuDto, 1);
 
@@ -226,8 +250,15 @@ describe('OnlineMenuService', () => {
     };
 
     it('should return paginated list of online menus', async () => {
-      jest.spyOn(onlineMenuRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockOnlineMenu] as any, 1]);
+      jest
+        .spyOn(onlineMenuRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineMenu>,
+        );
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([
+        [mockOnlineMenu] as unknown as OnlineMenu[],
+        1,
+      ]);
 
       const result = await service.findAll(query, 1);
 
@@ -241,10 +272,10 @@ describe('OnlineMenuService', () => {
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.findAll(query, undefined as any)).rejects.toThrow(
+      await expect(service.findAll(query, 0)).rejects.toThrow(
         ForbiddenException,
       );
-      await expect(service.findAll(query, undefined as any)).rejects.toThrow(
+      await expect(service.findAll(query, 0)).rejects.toThrow(
         'You must be associated with a merchant to access online menus',
       );
     });
@@ -288,20 +319,43 @@ describe('OnlineMenuService', () => {
         name: 'Main',
         isActive: true,
       };
-      jest.spyOn(onlineMenuRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockOnlineMenu] as any, 1]);
+      jest
+        .spyOn(onlineMenuRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineMenu>,
+        );
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([
+        [mockOnlineMenu] as unknown as OnlineMenu[],
+        1,
+      ]);
 
       await service.findAll(queryWithFilters, 1);
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('onlineMenu.store_id = :storeId', { storeId: 1 });
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('onlineMenu.name LIKE :name', { name: '%Main%' });
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('onlineMenu.is_active = :isActive', { isActive: true });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'onlineMenu.store_id = :storeId',
+        { storeId: 1 },
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'onlineMenu.name LIKE :name',
+        { name: '%Main%' },
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'onlineMenu.is_active = :isActive',
+        { isActive: true },
+      );
     });
 
     it('should use default pagination values', async () => {
       const emptyQuery: GetOnlineMenuQueryDto = {};
-      jest.spyOn(onlineMenuRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([[] as any, 0]);
+      jest
+        .spyOn(onlineMenuRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineMenu>,
+        );
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([[], 0] as unknown as [
+        OnlineMenu[],
+        number,
+      ]);
 
       const result = await service.findAll(emptyQuery, 1);
 
@@ -310,8 +364,15 @@ describe('OnlineMenuService', () => {
     });
 
     it('should calculate pagination metadata correctly', async () => {
-      jest.spyOn(onlineMenuRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockOnlineMenu] as any, 25]);
+      jest
+        .spyOn(onlineMenuRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineMenu>,
+        );
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([
+        [mockOnlineMenu] as unknown as OnlineMenu[],
+        25,
+      ]);
 
       const result = await service.findAll({ page: 2, limit: 10 }, 1);
 
@@ -324,8 +385,14 @@ describe('OnlineMenuService', () => {
 
   describe('findOne', () => {
     it('should return an online menu successfully', async () => {
-      jest.spyOn(onlineMenuRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(mockOnlineMenu as any);
+      jest
+        .spyOn(onlineMenuRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineMenu>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        mockOnlineMenu as unknown as OnlineMenu,
+      );
 
       const result = await service.findOne(1, 1);
 
@@ -336,30 +403,28 @@ describe('OnlineMenuService', () => {
     });
 
     it('should throw BadRequestException if id is invalid', async () => {
-      await expect(service.findOne(0, 1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.findOne(0, 1)).rejects.toThrow(BadRequestException);
       await expect(service.findOne(0, 1)).rejects.toThrow(
         'Online menu ID must be a valid positive number',
       );
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.findOne(1, undefined as any)).rejects.toThrow(
-        ForbiddenException,
-      );
-      await expect(service.findOne(1, undefined as any)).rejects.toThrow(
+      await expect(service.findOne(1, 0)).rejects.toThrow(ForbiddenException);
+      await expect(service.findOne(1, 0)).rejects.toThrow(
         'You must be associated with a merchant to access online menus',
       );
     });
 
     it('should throw NotFoundException if online menu not found', async () => {
-      jest.spyOn(onlineMenuRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(onlineMenuRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineMenu>,
+        );
       mockQueryBuilder.getOne.mockResolvedValue(null);
 
-      await expect(service.findOne(1, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.findOne(1, 1)).rejects.toThrow(NotFoundException);
       await expect(service.findOne(1, 1)).rejects.toThrow(
         'Online menu not found',
       );
@@ -374,12 +439,23 @@ describe('OnlineMenuService', () => {
     };
 
     it('should update an online menu successfully', async () => {
-      jest.spyOn(onlineMenuRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne
-        .mockResolvedValueOnce(mockOnlineMenu as any); // First call: find existing menu
-      jest.spyOn(onlineMenuRepository, 'update').mockResolvedValue(undefined as any);
-      jest.spyOn(onlineMenuRepository, 'findOne')
-        .mockResolvedValueOnce({ ...mockOnlineMenu, ...updateOnlineMenuDto } as any);
+      jest
+        .spyOn(onlineMenuRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineMenu>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValueOnce(
+        mockOnlineMenu as unknown as OnlineMenu,
+      ); // First call: find existing menu
+      jest.spyOn(onlineMenuRepository, 'update').mockResolvedValue({
+        affected: 1,
+        raw: [],
+        generatedMaps: [],
+      } as UpdateResult);
+      jest.spyOn(onlineMenuRepository, 'findOne').mockResolvedValueOnce({
+        ...mockOnlineMenu,
+        ...updateOnlineMenuDto,
+      } as unknown as OnlineMenu);
 
       const result = await service.update(1, updateOnlineMenuDto, 1);
 
@@ -396,13 +472,17 @@ describe('OnlineMenuService', () => {
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.update(1, updateOnlineMenuDto, undefined as any)).rejects.toThrow(
+      await expect(service.update(1, updateOnlineMenuDto, 0)).rejects.toThrow(
         ForbiddenException,
       );
     });
 
     it('should throw NotFoundException if online menu not found', async () => {
-      jest.spyOn(onlineMenuRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(onlineMenuRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineMenu>,
+        );
       mockQueryBuilder.getOne.mockResolvedValue(null);
 
       await expect(service.update(1, updateOnlineMenuDto, 1)).rejects.toThrow(
@@ -412,8 +492,14 @@ describe('OnlineMenuService', () => {
 
     it('should throw BadRequestException if name is empty', async () => {
       const dtoWithEmptyName = { ...updateOnlineMenuDto, name: '' };
-      jest.spyOn(onlineMenuRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(mockOnlineMenu as any);
+      jest
+        .spyOn(onlineMenuRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineMenu>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        mockOnlineMenu as unknown as OnlineMenu,
+      );
 
       await expect(service.update(1, dtoWithEmptyName, 1)).rejects.toThrow(
         BadRequestException,
@@ -428,8 +514,14 @@ describe('OnlineMenuService', () => {
         ...updateOnlineMenuDto,
         name: 'a'.repeat(101),
       };
-      jest.spyOn(onlineMenuRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(mockOnlineMenu as any);
+      jest
+        .spyOn(onlineMenuRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineMenu>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        mockOnlineMenu as unknown as OnlineMenu,
+      );
 
       await expect(service.update(1, dtoWithLongName, 1)).rejects.toThrow(
         BadRequestException,
@@ -443,12 +535,23 @@ describe('OnlineMenuService', () => {
       const partialDto: UpdateOnlineMenuDto = {
         name: 'Only Name Updated',
       };
-      jest.spyOn(onlineMenuRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne
-        .mockResolvedValueOnce(mockOnlineMenu as any);
-      jest.spyOn(onlineMenuRepository, 'update').mockResolvedValue(undefined as any);
-      jest.spyOn(onlineMenuRepository, 'findOne')
-        .mockResolvedValueOnce({ ...mockOnlineMenu, name: 'Only Name Updated' } as any);
+      jest
+        .spyOn(onlineMenuRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineMenu>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValueOnce(
+        mockOnlineMenu as unknown as OnlineMenu,
+      );
+      jest.spyOn(onlineMenuRepository, 'update').mockResolvedValue({
+        affected: 1,
+        raw: [],
+        generatedMaps: [],
+      } as UpdateResult);
+      jest.spyOn(onlineMenuRepository, 'findOne').mockResolvedValueOnce({
+        ...mockOnlineMenu,
+        name: 'Only Name Updated',
+      } as unknown as OnlineMenu);
 
       await service.update(1, partialDto, 1);
 
@@ -465,12 +568,22 @@ describe('OnlineMenuService', () => {
         name: '  Updated Menu  ',
         description: '  Updated Description  ',
       };
-      jest.spyOn(onlineMenuRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne
-        .mockResolvedValueOnce(mockOnlineMenu as any);
-      jest.spyOn(onlineMenuRepository, 'update').mockResolvedValue(undefined as any);
-      jest.spyOn(onlineMenuRepository, 'findOne')
-        .mockResolvedValueOnce(mockOnlineMenu as any);
+      jest
+        .spyOn(onlineMenuRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineMenu>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValueOnce(
+        mockOnlineMenu as unknown as OnlineMenu,
+      );
+      jest.spyOn(onlineMenuRepository, 'update').mockResolvedValue({
+        affected: 1,
+        raw: [],
+        generatedMaps: [],
+      } as UpdateResult);
+      jest
+        .spyOn(onlineMenuRepository, 'findOne')
+        .mockResolvedValueOnce(mockOnlineMenu as unknown as OnlineMenu);
 
       await service.update(1, dtoWithSpaces, 1);
 
@@ -486,9 +599,17 @@ describe('OnlineMenuService', () => {
 
   describe('remove', () => {
     it('should remove an online menu successfully', async () => {
-      jest.spyOn(onlineMenuRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(mockOnlineMenu as any);
-      jest.spyOn(onlineMenuRepository, 'remove').mockResolvedValue(mockOnlineMenu as any);
+      jest
+        .spyOn(onlineMenuRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineMenu>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        mockOnlineMenu as unknown as OnlineMenu,
+      );
+      jest
+        .spyOn(onlineMenuRepository, 'remove')
+        .mockResolvedValue(mockOnlineMenu as unknown as OnlineMenu);
 
       const result = await service.remove(1, 1);
 
@@ -499,24 +620,22 @@ describe('OnlineMenuService', () => {
     });
 
     it('should throw BadRequestException if id is invalid', async () => {
-      await expect(service.remove(0, 1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.remove(0, 1)).rejects.toThrow(BadRequestException);
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.remove(1, undefined as any)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.remove(1, 0)).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw NotFoundException if online menu not found', async () => {
-      jest.spyOn(onlineMenuRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(onlineMenuRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineMenu>,
+        );
       mockQueryBuilder.getOne.mockResolvedValue(null);
 
-      await expect(service.remove(1, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.remove(1, 1)).rejects.toThrow(NotFoundException);
     });
   });
 });

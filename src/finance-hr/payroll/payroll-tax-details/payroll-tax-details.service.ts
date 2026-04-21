@@ -123,9 +123,7 @@ export class PayrollTaxDetailsService {
       where: { id, deleted_at: IsNull() },
     });
     if (!taxDetail) {
-      throw new NotFoundException(
-        `Payroll tax detail with ID ${id} not found`,
-      );
+      throw new NotFoundException(`Payroll tax detail with ID ${id} not found`);
     }
 
     return {
@@ -147,9 +145,7 @@ export class PayrollTaxDetailsService {
       where: { id, deleted_at: IsNull() },
     });
     if (!taxDetail) {
-      throw new NotFoundException(
-        `Payroll tax detail with ID ${id} not found`,
-      );
+      throw new NotFoundException(`Payroll tax detail with ID ${id} not found`);
     }
 
     if (dto.payroll_entry_id != null) {
@@ -184,9 +180,7 @@ export class PayrollTaxDetailsService {
       where: { id, deleted_at: IsNull() },
     });
     if (!taxDetail) {
-      throw new NotFoundException(
-        `Payroll tax detail with ID ${id} not found`,
-      );
+      throw new NotFoundException(`Payroll tax detail with ID ${id} not found`);
     }
 
     taxDetail.deleted_at = new Date();

@@ -3,7 +3,10 @@ import { SuccessResponse } from '../../../../common/dtos/success-response.dto';
 import { MarketingCampaignAudienceStatus } from '../constants/marketing-campaign-audience-status.enum';
 
 export class MarketingCampaignAudienceResponseDto {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Marketing Campaign Audience' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Marketing Campaign Audience',
+  })
   id: number;
 
   @ApiProperty({
@@ -96,7 +99,8 @@ export class MarketingCampaignAudienceResponseDto {
 
   @ApiProperty({
     example: '2023-10-01T12:00:00Z',
-    description: 'Last update timestamp of the Marketing Campaign Audience record',
+    description:
+      'Last update timestamp of the Marketing Campaign Audience record',
   })
   updatedAt: Date;
 }

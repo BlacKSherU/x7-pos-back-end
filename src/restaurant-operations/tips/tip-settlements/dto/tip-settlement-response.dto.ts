@@ -20,7 +20,10 @@ export class BasicShiftInfoDto {
 export class BasicSettledByUserDto {
   @ApiProperty({ example: 1 })
   id: number;
-  @ApiProperty({ example: 'Juan Pérez', description: 'Nombre (username o email)' })
+  @ApiProperty({
+    example: 'Juan Pérez',
+    description: 'Nombre (username o email)',
+  })
   name: string;
   @ApiProperty({ example: 'juan@example.com' })
   email: string;
@@ -45,7 +48,11 @@ export class TipSettlementResponseDto {
   totalAmount: number;
   @ApiProperty({ enum: SettlementMethod })
   settlementMethod: SettlementMethod;
-  @ApiProperty({ type: () => BasicSettledByUserDto, nullable: true, description: 'Usuario que realizó el settlement (nombre y correo)' })
+  @ApiProperty({
+    type: () => BasicSettledByUserDto,
+    nullable: true,
+    description: 'Usuario que realizó el settlement (nombre y correo)',
+  })
   settledBy: BasicSettledByUserDto | null;
   @ApiProperty({ nullable: true })
   settledAt: Date | null;
@@ -63,7 +70,14 @@ export class PaginatedTipSettlementResponseDto extends SuccessResponse {
   data: TipSettlementResponseDto[];
   @ApiProperty({
     description: 'Pagination metadata',
-    example: { page: 1, limit: 10, total: 50, totalPages: 5, hasNext: true, hasPrev: false },
+    example: {
+      page: 1,
+      limit: 10,
+      total: 50,
+      totalPages: 5,
+      hasNext: true,
+      hasPrev: false,
+    },
   })
   paginationMeta: {
     page: number;

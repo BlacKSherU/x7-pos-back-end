@@ -6,4 +6,4 @@ import { CustomersModule } from './customers/customers.module';
   imports: [SuppliersModule, CustomersModule],
   exports: [SuppliersModule, CustomersModule],
 })
-export class BusinessPartnersModule { }
+export class BusinessPartnersModule {}

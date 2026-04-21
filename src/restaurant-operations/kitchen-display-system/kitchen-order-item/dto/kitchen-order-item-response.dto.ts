@@ -30,19 +30,30 @@ export class BasicVariantInfoDto {
 }
 
 export class KitchenOrderItemResponseDto {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Kitchen Order Item' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Kitchen Order Item',
+  })
   id: number;
 
   @ApiProperty({ example: 1, description: 'Identifier of the Kitchen Order' })
   kitchenOrderId: number;
 
-  @ApiProperty({ example: 1, description: 'Identifier of the Order Item', nullable: true })
+  @ApiProperty({
+    example: 1,
+    description: 'Identifier of the Order Item',
+    nullable: true,
+  })
   orderItemId: number | null;
 
   @ApiProperty({ example: 1, description: 'Identifier of the Product' })
   productId: number;
 
-  @ApiProperty({ example: 1, description: 'Identifier of the Variant', nullable: true })
+  @ApiProperty({
+    example: 1,
+    description: 'Identifier of the Variant',
+    nullable: true,
+  })
   variantId: number | null;
 
   @ApiProperty({ example: 2, description: 'Quantity of the item' })
@@ -65,41 +76,79 @@ export class KitchenOrderItemResponseDto {
   })
   status: KitchenOrderItemStatus;
 
-  @ApiProperty({ example: '2024-01-15T08:30:00Z', description: 'Timestamp when the item preparation was started', nullable: true })
+  @ApiProperty({
+    example: '2024-01-15T08:30:00Z',
+    description: 'Timestamp when the item preparation was started',
+    nullable: true,
+  })
   startedAt: Date | null;
 
-  @ApiProperty({ example: '2024-01-15T09:00:00Z', description: 'Timestamp when the item preparation was completed', nullable: true })
+  @ApiProperty({
+    example: '2024-01-15T09:00:00Z',
+    description: 'Timestamp when the item preparation was completed',
+    nullable: true,
+  })
   completedAt: Date | null;
 
-  @ApiProperty({ example: 'Extra sauce on the side', description: 'Notes about the kitchen order item', nullable: true })
+  @ApiProperty({
+    example: 'Extra sauce on the side',
+    description: 'Notes about the kitchen order item',
+    nullable: true,
+  })
   notes: string | null;
 
-  @ApiProperty({ example: '2024-01-15T08:00:00Z', description: 'Creation timestamp' })
+  @ApiProperty({
+    example: '2024-01-15T08:00:00Z',
+    description: 'Creation timestamp',
+  })
   createdAt: Date;
 
-  @ApiProperty({ example: '2024-01-15T09:00:00Z', description: 'Last update timestamp' })
+  @ApiProperty({
+    example: '2024-01-15T09:00:00Z',
+    description: 'Last update timestamp',
+  })
   updatedAt: Date;
 
-  @ApiProperty({ type: () => BasicKitchenOrderInfoDto, description: 'Kitchen Order information' })
+  @ApiProperty({
+    type: () => BasicKitchenOrderInfoDto,
+    description: 'Kitchen Order information',
+  })
   kitchenOrder: BasicKitchenOrderInfoDto;
 
-  @ApiProperty({ type: () => BasicOrderItemInfoDto, description: 'Order Item information', nullable: true })
+  @ApiProperty({
+    type: () => BasicOrderItemInfoDto,
+    description: 'Order Item information',
+    nullable: true,
+  })
   orderItem: BasicOrderItemInfoDto | null;
 
-  @ApiProperty({ type: () => BasicProductInfoDto, description: 'Product information' })
+  @ApiProperty({
+    type: () => BasicProductInfoDto,
+    description: 'Product information',
+  })
   product: BasicProductInfoDto;
 
-  @ApiProperty({ type: () => BasicVariantInfoDto, description: 'Variant information', nullable: true })
+  @ApiProperty({
+    type: () => BasicVariantInfoDto,
+    description: 'Variant information',
+    nullable: true,
+  })
   variant: BasicVariantInfoDto | null;
 }
 
 export class OneKitchenOrderItemResponseDto extends SuccessResponse {
-  @ApiProperty({ type: () => KitchenOrderItemResponseDto, description: 'Kitchen order item data' })
+  @ApiProperty({
+    type: () => KitchenOrderItemResponseDto,
+    description: 'Kitchen order item data',
+  })
   data: KitchenOrderItemResponseDto;
 }
 
 export class PaginatedKitchenOrderItemResponseDto extends SuccessResponse {
-  @ApiProperty({ type: [KitchenOrderItemResponseDto], description: 'List of kitchen order items' })
+  @ApiProperty({
+    type: [KitchenOrderItemResponseDto],
+    description: 'List of kitchen order items',
+  })
   data: KitchenOrderItemResponseDto[];
 
   @ApiProperty({

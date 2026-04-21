@@ -32,7 +32,7 @@ export class ReceiptItemService {
     @InjectRepository(Order)
     private readonly orderRepo: Repository<Order>,
     private readonly receiptsService: ReceiptsService,
-  ) { }
+  ) {}
 
   // ─── Helper: verifica ownership via receipt → order → merchant ───────────────
 
@@ -44,12 +44,16 @@ export class ReceiptItemService {
       throw new ForbiddenException('You must be associated with a merchant');
     }
 
-    const receipt = await this.receiptRepo.findOne({ where: { id: receiptId, is_active: true } });
+    const receipt = await this.receiptRepo.findOne({
+      where: { id: receiptId, is_active: true },
+    });
     if (!receipt) {
       throw new NotFoundException(`Receipt with ID ${receiptId} not found`);
     }
 
-    const order = await this.orderRepo.findOne({ where: { id: receipt.order_id } });
+    const order = await this.orderRepo.findOne({
+      where: { id: receipt.order_id },
+    });
     if (!order) {
       throw new NotFoundException(
         `Order associated with receipt ${receiptId} not found`,
@@ -57,7 +61,9 @@ export class ReceiptItemService {
     }
 
     if (order.merchant_id !== merchantId) {
-      throw new ForbiddenException('This receipt does not belong to your merchant');
+      throw new ForbiddenException(
+        'This receipt does not belong to your merchant',
+      );
     }
 
     return receipt;
@@ -92,7 +98,11 @@ export class ReceiptItemService {
     if (dto.metadata) {
       try {
         const parsed = JSON.parse(dto.metadata);
-        if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+        if (
+          typeof parsed !== 'object' ||
+          parsed === null ||
+          Array.isArray(parsed)
+        ) {
           throw new BadRequestException('metadata must be a valid JSON object');
         }
       } catch (e) {
@@ -320,7 +330,11 @@ export class ReceiptItemService {
     if (dto.metadata) {
       try {
         const parsed = JSON.parse(dto.metadata);
-        if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+        if (
+          typeof parsed !== 'object' ||
+          parsed === null ||
+          Array.isArray(parsed)
+        ) {
           throw new BadRequestException('metadata must be a valid JSON object');
         }
       } catch (e) {

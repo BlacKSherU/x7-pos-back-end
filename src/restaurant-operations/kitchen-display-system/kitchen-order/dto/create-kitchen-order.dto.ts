@@ -14,7 +14,8 @@ import { KitchenOrderBusinessStatus } from '../constants/kitchen-order-business-
 export class CreateKitchenOrderDto {
   @ApiPropertyOptional({
     example: 1,
-    description: 'Identifier of the Order (optional - either orderId or onlineOrderId must be provided)',
+    description:
+      'Identifier of the Order (optional - either orderId or onlineOrderId must be provided)',
     nullable: true,
     required: false,
   })
@@ -24,7 +25,8 @@ export class CreateKitchenOrderDto {
 
   @ApiPropertyOptional({
     example: 1,
-    description: 'Identifier of the Online Order (optional - either orderId or onlineOrderId must be provided)',
+    description:
+      'Identifier of the Online Order (optional - either orderId or onlineOrderId must be provided)',
     nullable: true,
     required: false,
   })
@@ -61,7 +63,9 @@ export class CreateKitchenOrderDto {
     default: KitchenOrderBusinessStatus.PENDING,
   })
   @IsOptional()
-  @IsEnum(KitchenOrderBusinessStatus, { message: 'Business status must be a valid kitchen order status' })
+  @IsEnum(KitchenOrderBusinessStatus, {
+    message: 'Business status must be a valid kitchen order status',
+  })
   businessStatus?: KitchenOrderBusinessStatus;
 
   @ApiPropertyOptional({

@@ -1,12 +1,25 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MarketingCoupon } from './entities/marketing-coupon.entity';
 import { Merchant } from '../../../platform-saas/merchants/entities/merchant.entity';
 import { CreateMarketingCouponDto } from './dto/create-marketing-coupon.dto';
 import { UpdateMarketingCouponDto } from './dto/update-marketing-coupon.dto';
-import { GetMarketingCouponQueryDto, MarketingCouponSortBy } from './dto/get-marketing-coupon-query.dto';
-import { MarketingCouponResponseDto, OneMarketingCouponResponseDto, PaginatedMarketingCouponResponseDto } from './dto/marketing-coupon-response.dto';
+import {
+  GetMarketingCouponQueryDto,
+  MarketingCouponSortBy,
+} from './dto/get-marketing-coupon-query.dto';
+import {
+  MarketingCouponResponseDto,
+  OneMarketingCouponResponseDto,
+  PaginatedMarketingCouponResponseDto,
+} from './dto/marketing-coupon-response.dto';
 import { MarketingCouponStatus } from './constants/marketing-coupon-status.enum';
 import { MarketingCouponType } from './constants/marketing-coupon-type.enum';
 
@@ -19,10 +32,15 @@ export class MarketingCouponsService {
     private readonly merchantRepository: Repository<Merchant>,
   ) {}
 
-  async create(createMarketingCouponDto: CreateMarketingCouponDto, authenticatedUserMerchantId: number | null | undefined): Promise<OneMarketingCouponResponseDto> {
+  async create(
+    createMarketingCouponDto: CreateMarketingCouponDto,
+    authenticatedUserMerchantId: number | null | undefined,
+  ): Promise<OneMarketingCouponResponseDto> {
     // Validate user permissions - must be associated with a merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to create marketing coupons');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to create marketing coupons',
+      );
     }
 
     // Validate merchant exists
@@ -35,7 +53,10 @@ export class MarketingCouponsService {
     }
 
     // Business rule validation: code must not be empty
-    if (!createMarketingCouponDto.code || createMarketingCouponDto.code.trim().length === 0) {
+    if (
+      !createMarketingCouponDto.code ||
+      createMarketingCouponDto.code.trim().length === 0
+    ) {
       throw new BadRequestException('Code cannot be empty');
     }
 
@@ -53,28 +74,46 @@ export class MarketingCouponsService {
     });
 
     if (existingCoupon) {
-      throw new ConflictException('A coupon with this code already exists for your merchant');
+      throw new ConflictException(
+        'A coupon with this code already exists for your merchant',
+      );
     }
 
     // Validate type-specific fields
     if (createMarketingCouponDto.type === MarketingCouponType.FIXED) {
-      if (!createMarketingCouponDto.amount || createMarketingCouponDto.amount <= 0) {
-        throw new BadRequestException('Amount is required and must be greater than 0 for fixed type coupons');
+      if (
+        !createMarketingCouponDto.amount ||
+        createMarketingCouponDto.amount <= 0
+      ) {
+        throw new BadRequestException(
+          'Amount is required and must be greater than 0 for fixed type coupons',
+        );
       }
     }
 
     if (createMarketingCouponDto.type === MarketingCouponType.PERCENTAGE) {
-      if (!createMarketingCouponDto.percentage || createMarketingCouponDto.percentage <= 0 || createMarketingCouponDto.percentage > 100) {
-        throw new BadRequestException('Percentage is required and must be between 1 and 100 for percentage type coupons');
+      if (
+        !createMarketingCouponDto.percentage ||
+        createMarketingCouponDto.percentage <= 0 ||
+        createMarketingCouponDto.percentage > 100
+      ) {
+        throw new BadRequestException(
+          'Percentage is required and must be between 1 and 100 for percentage type coupons',
+        );
       }
     }
 
     // Validate date range if both dates are provided
-    if (createMarketingCouponDto.validFrom && createMarketingCouponDto.validUntil) {
+    if (
+      createMarketingCouponDto.validFrom &&
+      createMarketingCouponDto.validUntil
+    ) {
       const validFromDate = new Date(createMarketingCouponDto.validFrom);
       const validUntilDate = new Date(createMarketingCouponDto.validUntil);
       if (validUntilDate <= validFromDate) {
-        throw new BadRequestException('Valid until date must be after valid from date');
+        throw new BadRequestException(
+          'Valid until date must be after valid from date',
+        );
       }
     }
 
@@ -86,20 +125,28 @@ export class MarketingCouponsService {
     marketingCoupon.amount = createMarketingCouponDto.amount ?? null;
     marketingCoupon.percentage = createMarketingCouponDto.percentage ?? null;
     marketingCoupon.max_uses = createMarketingCouponDto.maxUses ?? null;
-    marketingCoupon.max_uses_per_customer = createMarketingCouponDto.maxUsesPerCustomer ?? null;
-    marketingCoupon.valid_from = createMarketingCouponDto.validFrom ? new Date(createMarketingCouponDto.validFrom) : null;
-    marketingCoupon.valid_until = createMarketingCouponDto.validUntil ? new Date(createMarketingCouponDto.validUntil) : null;
-    marketingCoupon.min_order_amount = createMarketingCouponDto.minOrderAmount ?? null;
+    marketingCoupon.max_uses_per_customer =
+      createMarketingCouponDto.maxUsesPerCustomer ?? null;
+    marketingCoupon.valid_from = createMarketingCouponDto.validFrom
+      ? new Date(createMarketingCouponDto.validFrom)
+      : null;
+    marketingCoupon.valid_until = createMarketingCouponDto.validUntil
+      ? new Date(createMarketingCouponDto.validUntil)
+      : null;
+    marketingCoupon.min_order_amount =
+      createMarketingCouponDto.minOrderAmount ?? null;
     marketingCoupon.applies_to = createMarketingCouponDto.appliesTo;
     marketingCoupon.status = MarketingCouponStatus.ACTIVE;
 
-    const savedMarketingCoupon = await this.marketingCouponRepository.save(marketingCoupon);
+    const savedMarketingCoupon =
+      await this.marketingCouponRepository.save(marketingCoupon);
 
     // Fetch the complete marketing coupon with relations
-    const completeMarketingCoupon = await this.marketingCouponRepository.findOne({
-      where: { id: savedMarketingCoupon.id },
-      relations: ['merchant'],
-    });
+    const completeMarketingCoupon =
+      await this.marketingCouponRepository.findOne({
+        where: { id: savedMarketingCoupon.id },
+        relations: ['merchant'],
+      });
 
     if (!completeMarketingCoupon) {
       throw new NotFoundException('Marketing coupon not found after creation');
@@ -112,10 +159,15 @@ export class MarketingCouponsService {
     };
   }
 
-  async findAll(query: GetMarketingCouponQueryDto, authenticatedUserMerchantId: number | null | undefined): Promise<PaginatedMarketingCouponResponseDto> {
+  async findAll(
+    query: GetMarketingCouponQueryDto,
+    authenticatedUserMerchantId: number | null | undefined,
+  ): Promise<PaginatedMarketingCouponResponseDto> {
     // Validate user has merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to access marketing coupons');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to access marketing coupons',
+      );
     }
 
     // Validate pagination parameters
@@ -131,7 +183,9 @@ export class MarketingCouponsService {
     if (query.createdDate) {
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
       if (!dateRegex.test(query.createdDate)) {
-        throw new BadRequestException('Created date must be in YYYY-MM-DD format');
+        throw new BadRequestException(
+          'Created date must be in YYYY-MM-DD format',
+        );
       }
     }
 
@@ -143,13 +197,19 @@ export class MarketingCouponsService {
     const queryBuilder = this.marketingCouponRepository
       .createQueryBuilder('coupon')
       .leftJoinAndSelect('coupon.merchant', 'merchant')
-      .where('coupon.merchant_id = :merchantId', { merchantId: authenticatedUserMerchantId });
+      .where('coupon.merchant_id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      });
 
     // Exclude deleted coupons by default
-    queryBuilder.andWhere('coupon.status != :deletedStatus', { deletedStatus: MarketingCouponStatus.DELETED });
+    queryBuilder.andWhere('coupon.status != :deletedStatus', {
+      deletedStatus: MarketingCouponStatus.DELETED,
+    });
 
     if (query.code) {
-      queryBuilder.andWhere('coupon.code ILIKE :code', { code: `%${query.code}%` });
+      queryBuilder.andWhere('coupon.code ILIKE :code', {
+        code: `%${query.code}%`,
+      });
     }
 
     if (query.type) {
@@ -157,7 +217,9 @@ export class MarketingCouponsService {
     }
 
     if (query.appliesTo) {
-      queryBuilder.andWhere('coupon.applies_to = :appliesTo', { appliesTo: query.appliesTo });
+      queryBuilder.andWhere('coupon.applies_to = :appliesTo', {
+        appliesTo: query.appliesTo,
+      });
     }
 
     if (query.createdDate) {
@@ -170,22 +232,34 @@ export class MarketingCouponsService {
 
     if (query.validFrom) {
       const validFromDate = new Date(query.validFrom);
-      queryBuilder.andWhere('coupon.valid_from >= :validFromDate', { validFromDate });
+      queryBuilder.andWhere('coupon.valid_from >= :validFromDate', {
+        validFromDate,
+      });
     }
 
     if (query.validUntil) {
       const validUntilDate = new Date(query.validUntil);
-      queryBuilder.andWhere('coupon.valid_until <= :validUntilDate', { validUntilDate });
+      queryBuilder.andWhere('coupon.valid_until <= :validUntilDate', {
+        validUntilDate,
+      });
     }
 
     // Build order conditions
     if (query.sortBy) {
-      const sortField = query.sortBy === MarketingCouponSortBy.CODE ? 'coupon.code' :
-                       query.sortBy === MarketingCouponSortBy.TYPE ? 'coupon.type' :
-                       query.sortBy === MarketingCouponSortBy.CREATED_AT ? 'coupon.created_at' :
-                       query.sortBy === MarketingCouponSortBy.UPDATED_AT ? 'coupon.updated_at' :
-                       query.sortBy === MarketingCouponSortBy.VALID_FROM ? 'coupon.valid_from' :
-                       query.sortBy === MarketingCouponSortBy.VALID_UNTIL ? 'coupon.valid_until' : 'coupon.id';
+      const sortField =
+        query.sortBy === MarketingCouponSortBy.CODE
+          ? 'coupon.code'
+          : query.sortBy === MarketingCouponSortBy.TYPE
+            ? 'coupon.type'
+            : query.sortBy === MarketingCouponSortBy.CREATED_AT
+              ? 'coupon.created_at'
+              : query.sortBy === MarketingCouponSortBy.UPDATED_AT
+                ? 'coupon.updated_at'
+                : query.sortBy === MarketingCouponSortBy.VALID_FROM
+                  ? 'coupon.valid_from'
+                  : query.sortBy === MarketingCouponSortBy.VALID_UNTIL
+                    ? 'coupon.valid_until'
+                    : 'coupon.id';
       queryBuilder.orderBy(sortField, query.sortOrder || 'DESC');
     } else {
       queryBuilder.orderBy('coupon.created_at', 'DESC');
@@ -213,20 +287,29 @@ export class MarketingCouponsService {
     return {
       statusCode: 200,
       message: 'Marketing coupons retrieved successfully',
-      data: marketingCoupons.map(coupon => this.formatMarketingCouponResponse(coupon)),
+      data: marketingCoupons.map((coupon) =>
+        this.formatMarketingCouponResponse(coupon),
+      ),
       paginationMeta,
     };
   }
 
-  async findOne(id: number, authenticatedUserMerchantId: number | null | undefined): Promise<OneMarketingCouponResponseDto> {
+  async findOne(
+    id: number,
+    authenticatedUserMerchantId: number | null | undefined,
+  ): Promise<OneMarketingCouponResponseDto> {
     // Validate ID
     if (!id || id <= 0) {
-      throw new BadRequestException('Marketing coupon ID must be a valid positive number');
+      throw new BadRequestException(
+        'Marketing coupon ID must be a valid positive number',
+      );
     }
 
     // Validate user has merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to access marketing coupons');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to access marketing coupons',
+      );
     }
 
     // Find marketing coupon
@@ -234,8 +317,12 @@ export class MarketingCouponsService {
       .createQueryBuilder('coupon')
       .leftJoinAndSelect('coupon.merchant', 'merchant')
       .where('coupon.id = :id', { id })
-      .andWhere('coupon.merchant_id = :merchantId', { merchantId: authenticatedUserMerchantId })
-      .andWhere('coupon.status != :deletedStatus', { deletedStatus: MarketingCouponStatus.DELETED })
+      .andWhere('coupon.merchant_id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
+      .andWhere('coupon.status != :deletedStatus', {
+        deletedStatus: MarketingCouponStatus.DELETED,
+      })
       .getOne();
 
     if (!marketingCoupon) {
@@ -249,15 +336,23 @@ export class MarketingCouponsService {
     };
   }
 
-  async update(id: number, updateMarketingCouponDto: UpdateMarketingCouponDto, authenticatedUserMerchantId: number | null | undefined): Promise<OneMarketingCouponResponseDto> {
+  async update(
+    id: number,
+    updateMarketingCouponDto: UpdateMarketingCouponDto,
+    authenticatedUserMerchantId: number | null | undefined,
+  ): Promise<OneMarketingCouponResponseDto> {
     // Validate ID
     if (!id || id <= 0) {
-      throw new BadRequestException('Marketing coupon ID must be a valid positive number');
+      throw new BadRequestException(
+        'Marketing coupon ID must be a valid positive number',
+      );
     }
 
     // Validate user has merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to update marketing coupons');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to update marketing coupons',
+      );
     }
 
     // Find existing marketing coupon
@@ -265,8 +360,12 @@ export class MarketingCouponsService {
       .createQueryBuilder('coupon')
       .leftJoinAndSelect('coupon.merchant', 'merchant')
       .where('coupon.id = :id', { id })
-      .andWhere('coupon.merchant_id = :merchantId', { merchantId: authenticatedUserMerchantId })
-      .andWhere('coupon.status != :deletedStatus', { deletedStatus: MarketingCouponStatus.DELETED })
+      .andWhere('coupon.merchant_id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
+      .andWhere('coupon.status != :deletedStatus', {
+        deletedStatus: MarketingCouponStatus.DELETED,
+      })
       .getOne();
 
     if (!existingMarketingCoupon) {
@@ -275,7 +374,10 @@ export class MarketingCouponsService {
 
     // Business rule validation: code must not be empty if provided
     if (updateMarketingCouponDto.code !== undefined) {
-      if (!updateMarketingCouponDto.code || updateMarketingCouponDto.code.trim().length === 0) {
+      if (
+        !updateMarketingCouponDto.code ||
+        updateMarketingCouponDto.code.trim().length === 0
+      ) {
         throw new BadRequestException('Code cannot be empty');
       }
       if (updateMarketingCouponDto.code.length > 100) {
@@ -292,54 +394,86 @@ export class MarketingCouponsService {
       });
 
       if (existingCoupon && existingCoupon.id !== id) {
-        throw new ConflictException('A coupon with this code already exists for your merchant');
+        throw new ConflictException(
+          'A coupon with this code already exists for your merchant',
+        );
       }
     }
 
     // Validate type-specific fields if type is being updated
     if (updateMarketingCouponDto.type !== undefined) {
       if (updateMarketingCouponDto.type === MarketingCouponType.FIXED) {
-        const amount = updateMarketingCouponDto.amount ?? existingMarketingCoupon.amount;
+        const amount =
+          updateMarketingCouponDto.amount ?? existingMarketingCoupon.amount;
         if (!amount || amount <= 0) {
-          throw new BadRequestException('Amount is required and must be greater than 0 for fixed type coupons');
+          throw new BadRequestException(
+            'Amount is required and must be greater than 0 for fixed type coupons',
+          );
         }
       }
 
       if (updateMarketingCouponDto.type === MarketingCouponType.PERCENTAGE) {
-        const percentage = updateMarketingCouponDto.percentage ?? existingMarketingCoupon.percentage;
+        const percentage =
+          updateMarketingCouponDto.percentage ??
+          existingMarketingCoupon.percentage;
         if (!percentage || percentage <= 0 || percentage > 100) {
-          throw new BadRequestException('Percentage is required and must be between 1 and 100 for percentage type coupons');
+          throw new BadRequestException(
+            'Percentage is required and must be between 1 and 100 for percentage type coupons',
+          );
         }
       }
     }
 
     // Validate date range if both dates are provided
-    const validFrom = updateMarketingCouponDto.validFrom ? new Date(updateMarketingCouponDto.validFrom) : existingMarketingCoupon.valid_from;
-    const validUntil = updateMarketingCouponDto.validUntil ? new Date(updateMarketingCouponDto.validUntil) : existingMarketingCoupon.valid_until;
+    const validFrom = updateMarketingCouponDto.validFrom
+      ? new Date(updateMarketingCouponDto.validFrom)
+      : existingMarketingCoupon.valid_from;
+    const validUntil = updateMarketingCouponDto.validUntil
+      ? new Date(updateMarketingCouponDto.validUntil)
+      : existingMarketingCoupon.valid_until;
     if (validFrom && validUntil && validUntil <= validFrom) {
-      throw new BadRequestException('Valid until date must be after valid from date');
+      throw new BadRequestException(
+        'Valid until date must be after valid from date',
+      );
     }
 
     // Update marketing coupon
     const updateData: any = {};
-    if (updateMarketingCouponDto.code !== undefined) updateData.code = updateMarketingCouponDto.code.trim().toUpperCase();
-    if (updateMarketingCouponDto.type !== undefined) updateData.type = updateMarketingCouponDto.type;
-    if (updateMarketingCouponDto.amount !== undefined) updateData.amount = updateMarketingCouponDto.amount;
-    if (updateMarketingCouponDto.percentage !== undefined) updateData.percentage = updateMarketingCouponDto.percentage;
-    if (updateMarketingCouponDto.maxUses !== undefined) updateData.max_uses = updateMarketingCouponDto.maxUses;
-    if (updateMarketingCouponDto.maxUsesPerCustomer !== undefined) updateData.max_uses_per_customer = updateMarketingCouponDto.maxUsesPerCustomer;
-    if (updateMarketingCouponDto.validFrom !== undefined) updateData.valid_from = updateMarketingCouponDto.validFrom ? new Date(updateMarketingCouponDto.validFrom) : null;
-    if (updateMarketingCouponDto.validUntil !== undefined) updateData.valid_until = updateMarketingCouponDto.validUntil ? new Date(updateMarketingCouponDto.validUntil) : null;
-    if (updateMarketingCouponDto.minOrderAmount !== undefined) updateData.min_order_amount = updateMarketingCouponDto.minOrderAmount;
-    if (updateMarketingCouponDto.appliesTo !== undefined) updateData.applies_to = updateMarketingCouponDto.appliesTo;
+    if (updateMarketingCouponDto.code !== undefined)
+      updateData.code = updateMarketingCouponDto.code.trim().toUpperCase();
+    if (updateMarketingCouponDto.type !== undefined)
+      updateData.type = updateMarketingCouponDto.type;
+    if (updateMarketingCouponDto.amount !== undefined)
+      updateData.amount = updateMarketingCouponDto.amount;
+    if (updateMarketingCouponDto.percentage !== undefined)
+      updateData.percentage = updateMarketingCouponDto.percentage;
+    if (updateMarketingCouponDto.maxUses !== undefined)
+      updateData.max_uses = updateMarketingCouponDto.maxUses;
+    if (updateMarketingCouponDto.maxUsesPerCustomer !== undefined)
+      updateData.max_uses_per_customer =
+        updateMarketingCouponDto.maxUsesPerCustomer;
+    if (updateMarketingCouponDto.validFrom !== undefined)
+      updateData.valid_from = updateMarketingCouponDto.validFrom
+        ? new Date(updateMarketingCouponDto.validFrom)
+        : null;
+    if (updateMarketingCouponDto.validUntil !== undefined)
+      updateData.valid_until = updateMarketingCouponDto.validUntil
+        ? new Date(updateMarketingCouponDto.validUntil)
+        : null;
+    if (updateMarketingCouponDto.minOrderAmount !== undefined)
+      updateData.min_order_amount = updateMarketingCouponDto.minOrderAmount;
+    if (updateMarketingCouponDto.appliesTo !== undefined)
+      updateData.applies_to = updateMarketingCouponDto.appliesTo;
 
     await this.marketingCouponRepository.update(id, updateData);
 
     // Fetch updated marketing coupon
-    const updatedMarketingCoupon = await this.marketingCouponRepository.findOne({
-      where: { id },
-      relations: ['merchant'],
-    });
+    const updatedMarketingCoupon = await this.marketingCouponRepository.findOne(
+      {
+        where: { id },
+        relations: ['merchant'],
+      },
+    );
 
     if (!updatedMarketingCoupon) {
       throw new NotFoundException('Marketing coupon not found after update');
@@ -352,15 +486,22 @@ export class MarketingCouponsService {
     };
   }
 
-  async remove(id: number, authenticatedUserMerchantId: number | null | undefined): Promise<OneMarketingCouponResponseDto> {
+  async remove(
+    id: number,
+    authenticatedUserMerchantId: number | null | undefined,
+  ): Promise<OneMarketingCouponResponseDto> {
     // Validate ID
     if (!id || id <= 0) {
-      throw new BadRequestException('Marketing coupon ID must be a valid positive number');
+      throw new BadRequestException(
+        'Marketing coupon ID must be a valid positive number',
+      );
     }
 
     // Validate user has merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to delete marketing coupons');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to delete marketing coupons',
+      );
     }
 
     // Find existing marketing coupon
@@ -368,8 +509,12 @@ export class MarketingCouponsService {
       .createQueryBuilder('coupon')
       .leftJoinAndSelect('coupon.merchant', 'merchant')
       .where('coupon.id = :id', { id })
-      .andWhere('coupon.merchant_id = :merchantId', { merchantId: authenticatedUserMerchantId })
-      .andWhere('coupon.status != :deletedStatus', { deletedStatus: MarketingCouponStatus.DELETED })
+      .andWhere('coupon.merchant_id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
+      .andWhere('coupon.status != :deletedStatus', {
+        deletedStatus: MarketingCouponStatus.DELETED,
+      })
       .getOne();
 
     if (!existingMarketingCoupon) {
@@ -392,7 +537,9 @@ export class MarketingCouponsService {
     };
   }
 
-  private formatMarketingCouponResponse(marketingCoupon: MarketingCoupon): MarketingCouponResponseDto {
+  private formatMarketingCouponResponse(
+    marketingCoupon: MarketingCoupon,
+  ): MarketingCouponResponseDto {
     return {
       id: marketingCoupon.id,
       merchantId: marketingCoupon.merchant_id,

@@ -1,5 +1,13 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsNumber, IsOptional, IsPositive, Min, IsDateString, IsString } from 'class-validator';
+import {
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsPositive,
+  Min,
+  IsDateString,
+  IsString,
+} from 'class-validator';
 import { OrderStatus } from '../constants/order-status.enum';
 import { OrderBusinessStatus } from '../constants/order-business-status.enum';
 import { OrderType } from '../constants/order-type.enum';
@@ -43,7 +51,10 @@ export class GetOrdersQueryDto {
   @IsPositive()
   customerId?: number;
 
-  @ApiPropertyOptional({ example: OrderBusinessStatus.PENDING, enum: OrderBusinessStatus })
+  @ApiPropertyOptional({
+    example: OrderBusinessStatus.PENDING,
+    enum: OrderBusinessStatus,
+  })
   @IsOptional()
   @IsEnum(OrderBusinessStatus)
   businessStatus?: OrderBusinessStatus;
@@ -85,4 +96,3 @@ export class GetOrdersQueryDto {
   @IsString()
   sortOrder?: 'ASC' | 'DESC';
 }
-

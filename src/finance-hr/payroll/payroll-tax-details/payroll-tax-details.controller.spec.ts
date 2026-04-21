@@ -24,7 +24,9 @@ describe('PayrollTaxDetailsController', () => {
       ],
     }).compile();
 
-    controller = module.get<PayrollTaxDetailsController>(PayrollTaxDetailsController);
+    controller = module.get<PayrollTaxDetailsController>(
+      PayrollTaxDetailsController,
+    );
     jest.clearAllMocks();
   });
 

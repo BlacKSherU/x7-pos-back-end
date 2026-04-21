@@ -24,7 +24,9 @@ describe('SupplierCreditNotesService', () => {
       ],
     }).compile();
 
-    service = module.get<SupplierCreditNotesService>(SupplierCreditNotesService);
+    service = module.get<SupplierCreditNotesService>(
+      SupplierCreditNotesService,
+    );
   });
 
   it('should be defined', () => {

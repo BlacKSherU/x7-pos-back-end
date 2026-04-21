@@ -40,7 +40,10 @@ export class BasicOnlineOrderInfoDto {
 }
 
 export class OnlineOrderItemResponseDto {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Online Order Item' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Online Order Item',
+  })
   id: number;
 
   @ApiProperty({ example: 1, description: 'Identifier of the Online Order' })
@@ -49,7 +52,11 @@ export class OnlineOrderItemResponseDto {
   @ApiProperty({ example: 1, description: 'Identifier of the Product' })
   productId: number;
 
-  @ApiProperty({ example: 1, description: 'Identifier of the Variant', nullable: true })
+  @ApiProperty({
+    example: 1,
+    description: 'Identifier of the Variant',
+    nullable: true,
+  })
   variantId: number | null;
 
   @ApiProperty({ example: 2, description: 'Quantity of the item' })
@@ -67,9 +74,13 @@ export class OnlineOrderItemResponseDto {
     description: 'Modifiers applied to the item in JSON format',
     nullable: true,
   })
-  modifiers: Record<string, any> | null;
+  modifiers: Record<string, unknown> | null;
 
-  @ApiProperty({ example: 'Extra sauce on the side', description: 'Notes about the item', nullable: true })
+  @ApiProperty({
+    example: 'Extra sauce on the side',
+    description: 'Notes about the item',
+    nullable: true,
+  })
   notes: string | null;
 
   @ApiProperty({
@@ -85,25 +96,44 @@ export class OnlineOrderItemResponseDto {
   @ApiProperty({ enum: OrderItemKitchenStatus, nullable: true })
   kitchenLineStatus: OrderItemKitchenStatus | null;
 
-  @ApiProperty({ example: '2024-01-15T08:00:00Z', description: 'Creation timestamp' })
+  @ApiProperty({
+    example: '2024-01-15T08:00:00Z',
+    description: 'Creation timestamp',
+  })
   createdAt: Date;
 
-  @ApiProperty({ example: '2024-01-15T09:00:00Z', description: 'Last update timestamp' })
+  @ApiProperty({
+    example: '2024-01-15T09:00:00Z',
+    description: 'Last update timestamp',
+  })
   updatedAt: Date;
 
-  @ApiProperty({ type: () => BasicOnlineOrderInfoDto, description: 'Online Order information' })
+  @ApiProperty({
+    type: () => BasicOnlineOrderInfoDto,
+    description: 'Online Order information',
+  })
   onlineOrder: BasicOnlineOrderInfoDto;
 
-  @ApiProperty({ type: () => BasicProductInfoDto, description: 'Product information' })
+  @ApiProperty({
+    type: () => BasicProductInfoDto,
+    description: 'Product information',
+  })
   product: BasicProductInfoDto;
 
-  @ApiProperty({ type: () => BasicVariantInfoDto, description: 'Variant information', nullable: true })
+  @ApiProperty({
+    type: () => BasicVariantInfoDto,
+    description: 'Variant information',
+    nullable: true,
+  })
   variant: BasicVariantInfoDto | null;
 }
 
 /** Line item when nested under OnlineOrder (no redundant `onlineOrder`). */
 export class OnlineOrderItemNestedInOnlineOrderDto {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Online Order Item' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Online Order Item',
+  })
   id: number;
 
   @ApiProperty({ example: 1, description: 'Identifier of the Online Order' })
@@ -112,7 +142,11 @@ export class OnlineOrderItemNestedInOnlineOrderDto {
   @ApiProperty({ example: 1, description: 'Identifier of the Product' })
   productId: number;
 
-  @ApiProperty({ example: 1, description: 'Identifier of the Variant', nullable: true })
+  @ApiProperty({
+    example: 1,
+    description: 'Identifier of the Variant',
+    nullable: true,
+  })
   variantId: number | null;
 
   @ApiProperty({ example: 2, description: 'Quantity of the item' })
@@ -130,9 +164,13 @@ export class OnlineOrderItemNestedInOnlineOrderDto {
     description: 'Modifiers applied to the item in JSON format',
     nullable: true,
   })
-  modifiers: Record<string, any> | null;
+  modifiers: Record<string, unknown> | null;
 
-  @ApiProperty({ example: 'Extra sauce on the side', description: 'Notes about the item', nullable: true })
+  @ApiProperty({
+    example: 'Extra sauce on the side',
+    description: 'Notes about the item',
+    nullable: true,
+  })
   notes: string | null;
 
   @ApiProperty({
@@ -148,21 +186,36 @@ export class OnlineOrderItemNestedInOnlineOrderDto {
   @ApiProperty({ enum: OrderItemKitchenStatus, nullable: true })
   kitchenLineStatus: OrderItemKitchenStatus | null;
 
-  @ApiProperty({ example: '2024-01-15T08:00:00Z', description: 'Creation timestamp' })
+  @ApiProperty({
+    example: '2024-01-15T08:00:00Z',
+    description: 'Creation timestamp',
+  })
   createdAt: Date;
 
-  @ApiProperty({ example: '2024-01-15T09:00:00Z', description: 'Last update timestamp' })
+  @ApiProperty({
+    example: '2024-01-15T09:00:00Z',
+    description: 'Last update timestamp',
+  })
   updatedAt: Date;
 
-  @ApiProperty({ type: () => BasicProductInfoDto, description: 'Product information' })
+  @ApiProperty({
+    type: () => BasicProductInfoDto,
+    description: 'Product information',
+  })
   product: BasicProductInfoDto;
 
-  @ApiProperty({ type: () => BasicVariantInfoDto, description: 'Variant information', nullable: true })
+  @ApiProperty({
+    type: () => BasicVariantInfoDto,
+    description: 'Variant information',
+    nullable: true,
+  })
   variant: BasicVariantInfoDto | null;
 }
 
 export class OneOnlineOrderItemResponseDto extends SuccessResponse {
-  @ApiProperty({ type: () => OnlineOrderItemResponseDto, description: 'Online order item data' })
+  @ApiProperty({
+    type: () => OnlineOrderItemResponseDto,
+    description: 'Online order item data',
+  })
   data: OnlineOrderItemResponseDto;
 }
-

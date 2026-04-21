@@ -31,7 +31,7 @@ describe('TipsController', () => {
     companyId: 1,
     merchantId: 1,
     orderId: 1,
-    amount: 5.50,
+    amount: 5.5,
     method: TipMethod.CARD,
     status: TipStatus.PENDING,
   };
@@ -48,7 +48,7 @@ describe('TipsController', () => {
       orderId: 1,
       order: { id: 1 },
       paymentId: null,
-      amount: 5.50,
+      amount: 5.5,
       method: TipMethod.CARD,
       status: TipStatus.PENDING,
       recordStatus: TipRecordStatus.ACTIVE,

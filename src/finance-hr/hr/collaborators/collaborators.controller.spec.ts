@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/unbound-method */
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { CollaboratorsController } from './collaborators.controller';
 import { CollaboratorsService } from './collaborators.service';
@@ -113,7 +109,10 @@ describe('CollaboratorsController', () => {
 
       const result = await controller.create(createDto, mockRequest);
 
-      expect(createSpy).toHaveBeenCalledWith(createDto, mockRequest.merchant.id);
+      expect(createSpy).toHaveBeenCalledWith(
+        createDto,
+        mockRequest.merchant.id,
+      );
       expect(result).toEqual(mockCollaboratorResponse);
       expect(result.statusCode).toBe(201);
       expect(result.message).toBe('Collaborator created successfully');
@@ -127,7 +126,10 @@ describe('CollaboratorsController', () => {
       await expect(controller.create(createDto, mockRequest)).rejects.toThrow(
         errorMessage,
       );
-      expect(createSpy).toHaveBeenCalledWith(createDto, mockRequest.merchant.id);
+      expect(createSpy).toHaveBeenCalledWith(
+        createDto,
+        mockRequest.merchant.id,
+      );
     });
 
     it('should handle requests without merchant', async () => {
@@ -309,9 +311,9 @@ describe('CollaboratorsController', () => {
       const updateSpy = jest.spyOn(service, 'update');
       updateSpy.mockRejectedValue(new Error(errorMessage));
 
-      await expect(controller.update(1, updateDto, mockRequest)).rejects.toThrow(
-        errorMessage,
-      );
+      await expect(
+        controller.update(1, updateDto, mockRequest),
+      ).rejects.toThrow(errorMessage);
       expect(updateSpy).toHaveBeenCalledWith(
         1,
         updateDto,
@@ -385,7 +387,11 @@ describe('CollaboratorsController', () => {
       };
       updateSpy.mockResolvedValue(updatedResponse);
 
-      const result = await controller.update(1, updateDto, requestWithoutMerchant);
+      const result = await controller.update(
+        1,
+        updateDto,
+        requestWithoutMerchant,
+      );
 
       expect(updateSpy).toHaveBeenCalledWith(1, updateDto, undefined);
       expect(result).toEqual(updatedResponse);
@@ -469,4 +475,3 @@ describe('CollaboratorsController', () => {
     });
   });
 });
-
