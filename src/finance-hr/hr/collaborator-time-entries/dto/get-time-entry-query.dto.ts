@@ -1,4 +1,11 @@
-import { IsOptional, IsNumber, IsBoolean, IsDateString, Min, Max } from 'class-validator';
+import {
+  IsOptional,
+  IsNumber,
+  IsBoolean,
+  IsDateString,
+  Min,
+  Max,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
@@ -10,7 +17,12 @@ export class GetTimeEntryQueryDto {
   @Min(1)
   page?: number;
 
-  @ApiPropertyOptional({ example: 10, description: 'Items per page', minimum: 1, maximum: 100 })
+  @ApiPropertyOptional({
+    example: 10,
+    description: 'Items per page',
+    minimum: 1,
+    maximum: 100,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
@@ -42,18 +54,27 @@ export class GetTimeEntryQueryDto {
   @IsNumber()
   shift_id?: number;
 
-  @ApiPropertyOptional({ example: true, description: 'Filter by approved status' })
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Filter by approved status',
+  })
   @IsOptional()
   @Type(() => Boolean)
   @IsBoolean()
   approved?: boolean;
 
-  @ApiPropertyOptional({ example: '2024-01-01', description: 'From date (clock_in >= date)' })
+  @ApiPropertyOptional({
+    example: '2024-01-01',
+    description: 'From date (clock_in >= date)',
+  })
   @IsOptional()
   @IsDateString()
   from_date?: string;
 
-  @ApiPropertyOptional({ example: '2024-01-31', description: 'To date (clock_in <= date)' })
+  @ApiPropertyOptional({
+    example: '2024-01-31',
+    description: 'To date (clock_in <= date)',
+  })
   @IsOptional()
   @IsDateString()
   to_date?: string;

@@ -9,7 +9,12 @@ import { UpdateMarketingCouponDto } from './dto/update-marketing-coupon.dto';
 import { MarketingCouponType } from './constants/marketing-coupon-type.enum';
 import { MarketingCouponStatus } from './constants/marketing-coupon-status.enum';
 import { MarketingCouponAppliesTo } from './constants/marketing-coupon-applies-to.enum';
-import { NotFoundException, BadRequestException, ForbiddenException, ConflictException } from '@nestjs/common';
+import {
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+  ConflictException,
+} from '@nestjs/common';
 
 describe('MarketingCouponsService', () => {
   let service: MarketingCouponsService;
@@ -32,7 +37,7 @@ describe('MarketingCouponsService', () => {
     max_uses_per_customer: 1,
     valid_from: new Date('2024-01-01'),
     valid_until: new Date('2024-12-31'),
-    min_order_amount: 50.00,
+    min_order_amount: 50.0,
     applies_to: MarketingCouponAppliesTo.ALL,
     status: MarketingCouponStatus.ACTIVE,
     merchant: mockMerchant,
@@ -107,7 +112,9 @@ describe('MarketingCouponsService', () => {
       mockMerchantRepository.findOne.mockResolvedValue(mockMerchant);
       mockMarketingCouponRepository.findOne.mockResolvedValue(null);
       mockMarketingCouponRepository.save.mockResolvedValue(mockMarketingCoupon);
-      mockMarketingCouponRepository.findOne.mockResolvedValueOnce(null).mockResolvedValueOnce(mockMarketingCoupon);
+      mockMarketingCouponRepository.findOne
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(mockMarketingCoupon);
 
       const result = await service.create(createDto, 1);
 
@@ -118,28 +125,42 @@ describe('MarketingCouponsService', () => {
     });
 
     it('should throw ForbiddenException when user has no merchant', async () => {
-      await expect(service.create(createDto, null)).rejects.toThrow(ForbiddenException);
+      await expect(service.create(createDto, null)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw NotFoundException when merchant does not exist', async () => {
       mockMerchantRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.create(createDto, 1)).rejects.toThrow(NotFoundException);
+      await expect(service.create(createDto, 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw ConflictException when code already exists', async () => {
       mockMerchantRepository.findOne.mockResolvedValue(mockMerchant);
-      mockMarketingCouponRepository.findOne.mockResolvedValue(mockMarketingCoupon);
+      mockMarketingCouponRepository.findOne.mockResolvedValue(
+        mockMarketingCoupon,
+      );
 
-      await expect(service.create(createDto, 1)).rejects.toThrow(ConflictException);
+      await expect(service.create(createDto, 1)).rejects.toThrow(
+        ConflictException,
+      );
     });
 
     it('should throw BadRequestException when fixed type has no amount', async () => {
-      const invalidDto = { ...createDto, type: MarketingCouponType.FIXED, amount: undefined };
+      const invalidDto = {
+        ...createDto,
+        type: MarketingCouponType.FIXED,
+        amount: undefined,
+      };
       mockMerchantRepository.findOne.mockResolvedValue(mockMerchant);
       mockMarketingCouponRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.create(invalidDto, 1)).rejects.toThrow(BadRequestException);
+      await expect(service.create(invalidDto, 1)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -147,7 +168,7 @@ describe('MarketingCouponsService', () => {
     it('should return paginated marketing coupons', async () => {
       const query = { page: 1, limit: 10 };
       const mockCoupons = [mockMarketingCoupon];
-      
+
       mockMarketingCouponRepository.createQueryBuilder.mockReturnValue({
         ...mockQueryBuilder,
         getManyAndCount: jest.fn().mockResolvedValue([mockCoupons, 1]),
@@ -162,7 +183,9 @@ describe('MarketingCouponsService', () => {
     });
 
     it('should throw ForbiddenException when user has no merchant', async () => {
-      await expect(service.findAll({}, null)).rejects.toThrow(ForbiddenException);
+      await expect(service.findAll({}, null)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -221,7 +244,9 @@ describe('MarketingCouponsService', () => {
         getOne: jest.fn().mockResolvedValue(null),
       });
 
-      await expect(service.update(999, updateDto, 1)).rejects.toThrow(NotFoundException);
+      await expect(service.update(999, updateDto, 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

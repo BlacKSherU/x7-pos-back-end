@@ -24,8 +24,14 @@ import {
   PaginatedKitchenOrderItemResponseDto,
 } from './dto/kitchen-order-item-response.dto';
 import { KitchenOrderItemStatus } from './constants/kitchen-order-item-status.enum';
+import {
+  KitchenOrderItemPreparationStatus,
+  getNextPreparationStatus,
+  getPreviousPreparationStatus,
+} from './constants/kitchen-order-item-preparation-status.enum';
 import { KitchenOrderStatus } from '../kitchen-order/constants/kitchen-order-status.enum';
 import { OrderItemStatus } from '../../../restaurant-operations/pos/order-item/constants/order-item-status.enum';
+import { KitchenOrderSyncService } from '../kitchen-order/kitchen-order-sync.service';
 
 @Injectable()
 export class KitchenOrderItemService {
@@ -40,6 +46,7 @@ export class KitchenOrderItemService {
     private readonly productRepository: Repository<Product>,
     @InjectRepository(Variant)
     private readonly variantRepository: Repository<Variant>,
+    private readonly kitchenOrderSyncService: KitchenOrderSyncService,
   ) {}
 
   async create(
@@ -122,12 +129,21 @@ export class KitchenOrderItemService {
     kitchenOrderItem.product_id = createKitchenOrderItemDto.productId;
     kitchenOrderItem.variant_id = createKitchenOrderItemDto.variantId || null;
     kitchenOrderItem.quantity = createKitchenOrderItemDto.quantity;
+    kitchenOrderItem.preparation_status =
+      createKitchenOrderItemDto.preparationStatus ??
+      KitchenOrderItemPreparationStatus.PENDING;
     kitchenOrderItem.prepared_quantity =
       createKitchenOrderItemDto.preparedQuantity ?? 0;
     kitchenOrderItem.started_at = createKitchenOrderItemDto.startedAt || null;
     kitchenOrderItem.completed_at =
       createKitchenOrderItemDto.completedAt || null;
     kitchenOrderItem.notes = createKitchenOrderItemDto.notes || null;
+
+    this.applyPreparationTransition(
+      kitchenOrderItem,
+      KitchenOrderItemPreparationStatus.PENDING,
+      kitchenOrderItem.preparation_status,
+    );
 
     const savedKitchenOrderItem =
       await this.kitchenOrderItemRepository.save(kitchenOrderItem);
@@ -141,6 +157,12 @@ export class KitchenOrderItemService {
     if (!completeKitchenOrderItem) {
       throw new NotFoundException(
         'Kitchen order item not found after creation',
+      );
+    }
+
+    if (completeKitchenOrderItem.kitchenOrder?.order_id) {
+      await this.kitchenOrderSyncService.syncPosOrderFromKitchenOrders(
+        completeKitchenOrderItem.kitchenOrder.order_id,
       );
     }
 
@@ -225,6 +247,15 @@ export class KitchenOrderItemService {
       queryBuilder.andWhere('kitchenOrderItem.status = :status', {
         status: query.status,
       });
+    }
+
+    if (query.preparationStatus) {
+      queryBuilder.andWhere(
+        'kitchenOrderItem.preparation_status = :preparationStatus',
+        {
+          preparationStatus: query.preparationStatus,
+        },
+      );
     }
 
     if (query.createdDate) {
@@ -348,22 +379,11 @@ export class KitchenOrderItemService {
       );
     }
 
-    const existingKitchenOrderItem = await this.kitchenOrderItemRepository
-      .createQueryBuilder('kitchenOrderItem')
-      .leftJoin('kitchenOrderItem.kitchenOrder', 'kitchenOrder')
-      .leftJoin('kitchenOrder.merchant', 'merchant')
-      .where('kitchenOrderItem.id = :id', { id })
-      .andWhere('merchant.id = :merchantId', {
-        merchantId: authenticatedUserMerchantId,
-      })
-      .andWhere('kitchenOrderItem.status = :status', {
-        status: KitchenOrderItemStatus.ACTIVE,
-      })
-      .getOne();
-
-    if (!existingKitchenOrderItem) {
-      throw new NotFoundException('Kitchen order item not found');
-    }
+    const existingKitchenOrderItem =
+      await this.findActiveKitchenOrderItemForMerchantOrThrow(
+        id,
+        authenticatedUserMerchantId,
+      );
 
     if (existingKitchenOrderItem.status === KitchenOrderItemStatus.DELETED) {
       throw new ConflictException('Cannot update a deleted kitchen order item');
@@ -469,19 +489,24 @@ export class KitchenOrderItemService {
       existingKitchenOrderItem.notes = updateKitchenOrderItemDto.notes || null;
     }
 
+    if (updateKitchenOrderItemDto.preparationStatus !== undefined) {
+      this.applyPreparationTransition(
+        existingKitchenOrderItem,
+        existingKitchenOrderItem.preparation_status,
+        updateKitchenOrderItemDto.preparationStatus,
+      );
+      existingKitchenOrderItem.preparation_status =
+        updateKitchenOrderItemDto.preparationStatus;
+    }
+
     const updatedKitchenOrderItem = await this.kitchenOrderItemRepository.save(
       existingKitchenOrderItem,
     );
 
     const completeKitchenOrderItem =
-      await this.kitchenOrderItemRepository.findOne({
-        where: { id: updatedKitchenOrderItem.id },
-        relations: ['kitchenOrder', 'orderItem', 'product', 'variant'],
-      });
-
-    if (!completeKitchenOrderItem) {
-      throw new NotFoundException('Kitchen order item not found after update');
-    }
+      await this.reloadKitchenOrderItemAfterSaveAndSync(
+        updatedKitchenOrderItem.id,
+      );
 
     return {
       statusCode: 200,
@@ -508,7 +533,7 @@ export class KitchenOrderItemService {
 
     const existingKitchenOrderItem = await this.kitchenOrderItemRepository
       .createQueryBuilder('kitchenOrderItem')
-      .leftJoin('kitchenOrderItem.kitchenOrder', 'kitchenOrder')
+      .leftJoinAndSelect('kitchenOrderItem.kitchenOrder', 'kitchenOrder')
       .leftJoin('kitchenOrder.merchant', 'merchant')
       .where('kitchenOrderItem.id = :id', { id })
       .andWhere('merchant.id = :merchantId', {
@@ -527,8 +552,20 @@ export class KitchenOrderItemService {
       throw new ConflictException('Kitchen order item is already deleted');
     }
 
+    const orderItemIdBefore = existingKitchenOrderItem.order_item_id;
+    const posOrderId = existingKitchenOrderItem.kitchenOrder?.order_id ?? null;
+
     existingKitchenOrderItem.status = KitchenOrderItemStatus.DELETED;
     await this.kitchenOrderItemRepository.save(existingKitchenOrderItem);
+
+    await this.kitchenOrderSyncService.resetOrderLineIfNoActiveKoi(
+      orderItemIdBefore,
+    );
+    if (posOrderId) {
+      await this.kitchenOrderSyncService.syncPosOrderFromKitchenOrders(
+        posOrderId,
+      );
+    }
 
     const completeKitchenOrderItem =
       await this.kitchenOrderItemRepository.findOne({
@@ -547,6 +584,216 @@ export class KitchenOrderItemService {
       message: 'Kitchen order item deleted successfully',
       data: this.formatKitchenOrderItemResponse(completeKitchenOrderItem),
     };
+  }
+
+  /**
+   * Efectos colaterales al cambiar `preparation_status` (timestamps y cantidad preparada).
+   * Cubre saltos en PUT y transiciones adyacentes next/previous.
+   */
+  private applyPreparationTransition(
+    item: KitchenOrderItem,
+    from: KitchenOrderItemPreparationStatus,
+    to: KitchenOrderItemPreparationStatus,
+  ): void {
+    if (from === to) {
+      return;
+    }
+
+    if (from === KitchenOrderItemPreparationStatus.READY) {
+      item.completed_at = null;
+      item.prepared_quantity = 0;
+      if (to === KitchenOrderItemPreparationStatus.PENDING) {
+        item.started_at = null;
+      }
+    }
+
+    if (
+      from === KitchenOrderItemPreparationStatus.IN_PREPARATION &&
+      to === KitchenOrderItemPreparationStatus.PENDING
+    ) {
+      item.started_at = null;
+    }
+
+    if (to === KitchenOrderItemPreparationStatus.IN_PREPARATION) {
+      if (!item.started_at) {
+        item.started_at = new Date();
+      }
+    }
+
+    if (to === KitchenOrderItemPreparationStatus.READY) {
+      if (!item.started_at) {
+        item.started_at = new Date();
+      }
+      if (!item.completed_at) {
+        item.completed_at = new Date();
+      }
+      item.prepared_quantity = item.quantity;
+    }
+  }
+
+  private async findActiveKitchenOrderItemForMerchantOrThrow(
+    id: number,
+    authenticatedUserMerchantId: number,
+  ): Promise<KitchenOrderItem> {
+    const kitchenOrderItem = await this.kitchenOrderItemRepository
+      .createQueryBuilder('kitchenOrderItem')
+      .leftJoinAndSelect('kitchenOrderItem.kitchenOrder', 'kitchenOrder')
+      .leftJoin('kitchenOrder.merchant', 'merchant')
+      .where('kitchenOrderItem.id = :id', { id })
+      .andWhere('merchant.id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
+      .andWhere('kitchenOrderItem.status = :status', {
+        status: KitchenOrderItemStatus.ACTIVE,
+      })
+      .getOne();
+
+    if (!kitchenOrderItem) {
+      throw new NotFoundException('Kitchen order item not found');
+    }
+
+    return kitchenOrderItem;
+  }
+
+  async advancePreparationStatus(
+    id: number,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneKitchenOrderItemResponseDto> {
+    if (!id || id <= 0) {
+      throw new BadRequestException(
+        'Kitchen order item ID must be a valid positive number',
+      );
+    }
+
+    if (!authenticatedUserMerchantId) {
+      throw new ForbiddenException(
+        'You must be associated with a merchant to update kitchen order items',
+      );
+    }
+
+    const existingKitchenOrderItem =
+      await this.findActiveKitchenOrderItemForMerchantOrThrow(
+        id,
+        authenticatedUserMerchantId,
+      );
+
+    if (existingKitchenOrderItem.status === KitchenOrderItemStatus.DELETED) {
+      throw new ConflictException('Cannot update a deleted kitchen order item');
+    }
+
+    const nextStatus = getNextPreparationStatus(
+      existingKitchenOrderItem.preparation_status,
+    );
+    if (nextStatus === null) {
+      throw new ConflictException(
+        'Kitchen order item is already at the final preparation status',
+      );
+    }
+
+    this.applyPreparationTransition(
+      existingKitchenOrderItem,
+      existingKitchenOrderItem.preparation_status,
+      nextStatus,
+    );
+    existingKitchenOrderItem.preparation_status = nextStatus;
+
+    const updatedKitchenOrderItem = await this.kitchenOrderItemRepository.save(
+      existingKitchenOrderItem,
+    );
+
+    const completeKitchenOrderItem =
+      await this.reloadKitchenOrderItemAfterSaveAndSync(
+        updatedKitchenOrderItem.id,
+      );
+
+    return {
+      statusCode: 200,
+      message: 'Kitchen order item preparation status advanced successfully',
+      data: this.formatKitchenOrderItemResponse(completeKitchenOrderItem),
+    };
+  }
+
+  async revertPreparationStatus(
+    id: number,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneKitchenOrderItemResponseDto> {
+    if (!id || id <= 0) {
+      throw new BadRequestException(
+        'Kitchen order item ID must be a valid positive number',
+      );
+    }
+
+    if (!authenticatedUserMerchantId) {
+      throw new ForbiddenException(
+        'You must be associated with a merchant to update kitchen order items',
+      );
+    }
+
+    const existingKitchenOrderItem =
+      await this.findActiveKitchenOrderItemForMerchantOrThrow(
+        id,
+        authenticatedUserMerchantId,
+      );
+
+    if (existingKitchenOrderItem.status === KitchenOrderItemStatus.DELETED) {
+      throw new ConflictException('Cannot update a deleted kitchen order item');
+    }
+
+    const previousStatus = getPreviousPreparationStatus(
+      existingKitchenOrderItem.preparation_status,
+    );
+    if (previousStatus === null) {
+      throw new ConflictException(
+        'Kitchen order item is already at the initial preparation status',
+      );
+    }
+
+    this.applyPreparationTransition(
+      existingKitchenOrderItem,
+      existingKitchenOrderItem.preparation_status,
+      previousStatus,
+    );
+    existingKitchenOrderItem.preparation_status = previousStatus;
+
+    const updatedKitchenOrderItem = await this.kitchenOrderItemRepository.save(
+      existingKitchenOrderItem,
+    );
+
+    const completeKitchenOrderItem =
+      await this.reloadKitchenOrderItemAfterSaveAndSync(
+        updatedKitchenOrderItem.id,
+      );
+
+    return {
+      statusCode: 200,
+      message: 'Kitchen order item preparation status reverted successfully',
+      data: this.formatKitchenOrderItemResponse(completeKitchenOrderItem),
+    };
+  }
+
+  private async reloadKitchenOrderItemAfterSaveAndSync(
+    savedId: number,
+  ): Promise<KitchenOrderItem> {
+    const completeKitchenOrderItem =
+      await this.kitchenOrderItemRepository.findOne({
+        where: { id: savedId },
+        relations: ['kitchenOrder', 'orderItem', 'product', 'variant'],
+      });
+
+    if (!completeKitchenOrderItem) {
+      throw new NotFoundException('Kitchen order item not found after update');
+    }
+
+    const koAfterUpdate = await this.kitchenOrderRepository.findOne({
+      where: { id: completeKitchenOrderItem.kitchen_order_id },
+    });
+    if (koAfterUpdate?.order_id) {
+      await this.kitchenOrderSyncService.syncPosOrderFromKitchenOrders(
+        koAfterUpdate.order_id,
+      );
+    }
+
+    return completeKitchenOrderItem;
   }
 
   private formatKitchenOrderItemResponse(
@@ -570,6 +817,7 @@ export class KitchenOrderItemService {
       variantId: kitchenOrderItem.variant_id,
       quantity: kitchenOrderItem.quantity,
       preparedQuantity: kitchenOrderItem.prepared_quantity,
+      preparationStatus: kitchenOrderItem.preparation_status,
       status: kitchenOrderItem.status,
       startedAt: kitchenOrderItem.started_at,
       completedAt: kitchenOrderItem.completed_at,

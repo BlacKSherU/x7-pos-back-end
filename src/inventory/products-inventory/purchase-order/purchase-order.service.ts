@@ -27,7 +27,7 @@ export class PurchaseOrderService {
     private readonly supplierRepository: Repository<Supplier>,
     @InjectRepository(PurchaseOrderItem)
     private readonly purchaseOrderItemRepository: Repository<PurchaseOrderItem>,
-  ) { }
+  ) {}
 
   async create(
     merchant_id: number,
@@ -116,18 +116,18 @@ export class PurchaseOrderService {
           orderDate: purchaseOrder.orderDate,
           merchant: purchaseOrder.merchant
             ? {
-              id: purchaseOrder.merchant.id,
-              name: purchaseOrder.merchant.name,
-            }
+                id: purchaseOrder.merchant.id,
+                name: purchaseOrder.merchant.name,
+              }
             : null,
           supplier: purchaseOrder.supplier
             ? {
-              id: purchaseOrder.supplier.id,
-              name: purchaseOrder.supplier.name,
-              tax_id: purchaseOrder.supplier.tax_id,
-              email: purchaseOrder.supplier.email,
-              company_id: purchaseOrder.supplier.company_id,
-            }
+                id: purchaseOrder.supplier.id,
+                name: purchaseOrder.supplier.name,
+                tax_id: purchaseOrder.supplier.tax_id,
+                email: purchaseOrder.supplier.email,
+                company_id: purchaseOrder.supplier.company_id,
+              }
             : null,
         };
         return result;
@@ -182,18 +182,18 @@ export class PurchaseOrderService {
       orderDate: purchaseOrder.orderDate,
       merchant: purchaseOrder.merchant
         ? {
-          id: purchaseOrder.merchant.id,
-          name: purchaseOrder.merchant.name,
-        }
+            id: purchaseOrder.merchant.id,
+            name: purchaseOrder.merchant.name,
+          }
         : null,
       supplier: purchaseOrder.supplier
         ? {
-          id: purchaseOrder.supplier.id,
-          name: purchaseOrder.supplier.name,
-          tax_id: purchaseOrder.supplier.tax_id,
-          email: purchaseOrder.supplier.email,
-          company_id: purchaseOrder.supplier.company_id,
-        }
+            id: purchaseOrder.supplier.id,
+            name: purchaseOrder.supplier.name,
+            tax_id: purchaseOrder.supplier.tax_id,
+            email: purchaseOrder.supplier.email,
+            company_id: purchaseOrder.supplier.company_id,
+          }
         : null,
     };
 

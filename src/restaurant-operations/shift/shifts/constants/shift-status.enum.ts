@@ -4,4 +4,3 @@ export enum ShiftStatus {
   CANCELLED = 'cancelled',
   DELETED = 'deleted',
 }
-

@@ -8,16 +8,32 @@ export class SupplierResponseDto {
   @ApiProperty({ example: 'Coca-Cola', description: 'Supplier name' })
   name: string;
 
-  @ApiProperty({ example: '12345678-9', description: 'Tax ID', required: false })
+  @ApiProperty({
+    example: '12345678-9',
+    description: 'Tax ID',
+    required: false,
+  })
   tax_id?: string;
 
-  @ApiProperty({ example: 'supplier@example.com', description: 'Email', required: false })
+  @ApiProperty({
+    example: 'supplier@example.com',
+    description: 'Email',
+    required: false,
+  })
   email?: string;
 
-  @ApiProperty({ example: '+123456789', description: 'Phone number', required: false })
+  @ApiProperty({
+    example: '+123456789',
+    description: 'Phone number',
+    required: false,
+  })
   phone?: string;
 
-  @ApiProperty({ example: '123 Main St', description: 'Address', required: false })
+  @ApiProperty({
+    example: '123 Main St',
+    description: 'Address',
+    required: false,
+  })
   address?: string;
 
   @ApiProperty({ description: 'Associated company ID' })

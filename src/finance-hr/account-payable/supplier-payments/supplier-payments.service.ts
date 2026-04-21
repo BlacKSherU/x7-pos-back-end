@@ -59,7 +59,9 @@ export class SupplierPaymentsService {
       where: { id: dto.company_id },
     });
     if (!company) {
-      throw new NotFoundException(`Company with ID ${dto.company_id} not found`);
+      throw new NotFoundException(
+        `Company with ID ${dto.company_id} not found`,
+      );
     }
 
     const supplier = await this.supplierRepo.findOne({
@@ -112,7 +114,9 @@ export class SupplierPaymentsService {
       .where('sp.deleted_at IS NULL');
 
     if (query.company_id != null) {
-      qb.andWhere('sp.company_id = :companyId', { companyId: query.company_id });
+      qb.andWhere('sp.company_id = :companyId', {
+        companyId: query.company_id,
+      });
     }
     if (query.supplier_id != null) {
       qb.andWhere('sp.supplier_id = :supplierId', {
@@ -196,7 +200,9 @@ export class SupplierPaymentsService {
         where: { id: dto.company_id },
       });
       if (!company) {
-        throw new NotFoundException(`Company with ID ${dto.company_id} not found`);
+        throw new NotFoundException(
+          `Company with ID ${dto.company_id} not found`,
+        );
       }
       payment.company_id = dto.company_id;
     }
@@ -214,10 +220,12 @@ export class SupplierPaymentsService {
     }
 
     if (dto.payment_number != null) payment.payment_number = dto.payment_number;
-    if (dto.payment_date != null) payment.payment_date = new Date(dto.payment_date);
+    if (dto.payment_date != null)
+      payment.payment_date = new Date(dto.payment_date);
     if (dto.payment_method != null) payment.payment_method = dto.payment_method;
     if (dto.reference !== undefined) payment.reference = dto.reference ?? null;
-    if (dto.total_amount != null) payment.total_amount = dto.total_amount as any;
+    if (dto.total_amount != null)
+      payment.total_amount = dto.total_amount as any;
     if (dto.allocated_amount != null) {
       payment.allocated_amount = dto.allocated_amount as any;
     }

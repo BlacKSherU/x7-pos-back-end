@@ -1,4 +1,10 @@
-import { IsNotEmpty, IsNumber, IsOptional, Min, IsDateString } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  Min,
+  IsDateString,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
@@ -42,7 +48,7 @@ export class CreateMarketingCouponRedemptionDto {
   redeemedAt?: string;
 
   @ApiProperty({
-    example: 10.50,
+    example: 10.5,
     description: 'Discount amount that was applied to the order',
   })
   @IsNotEmpty({ message: 'Discount applied is required' })

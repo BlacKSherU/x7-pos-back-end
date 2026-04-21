@@ -23,7 +23,7 @@ export class LoyaltyTierService {
     private readonly loyaltyTierRepo: Repository<LoyaltyTier>,
     @InjectRepository(LoyaltyProgram)
     private readonly loyaltyProgramRepo: Repository<LoyaltyProgram>,
-  ) { }
+  ) {}
 
   async create(
     merchant_id: number,
@@ -70,7 +70,10 @@ export class LoyaltyTierService {
         const savedLoyaltyTier =
           await this.loyaltyTierRepo.save(newLoyaltyTier);
 
-        await recalculateProgramLevels(loyalty_program_id, this.loyaltyTierRepo);
+        await recalculateProgramLevels(
+          loyalty_program_id,
+          this.loyaltyTierRepo,
+        );
 
         return this.findOne(savedLoyaltyTier.id, merchant_id, 'Created');
       }
@@ -133,9 +136,9 @@ export class LoyaltyTierService {
       created_at: tier.created_at,
       loyaltyProgram: tier.loyaltyProgram
         ? {
-          id: tier.loyaltyProgram.id,
-          name: tier.loyaltyProgram.name,
-        }
+            id: tier.loyaltyProgram.id,
+            name: tier.loyaltyProgram.name,
+          }
         : null,
     }));
 
@@ -193,9 +196,9 @@ export class LoyaltyTierService {
       created_at: loyaltyTier.created_at,
       loyaltyProgram: loyaltyTier.loyaltyProgram
         ? {
-          id: loyaltyTier.loyaltyProgram.id,
-          name: loyaltyTier.loyaltyProgram.name,
-        }
+            id: loyaltyTier.loyaltyProgram.id,
+            name: loyaltyTier.loyaltyProgram.name,
+          }
         : null,
     };
 
@@ -278,7 +281,10 @@ export class LoyaltyTierService {
 
     try {
       await this.loyaltyTierRepo.save(loyaltyTier);
-      await recalculateProgramLevels(loyaltyTier.loyalty_program_id, this.loyaltyTierRepo);
+      await recalculateProgramLevels(
+        loyaltyTier.loyalty_program_id,
+        this.loyaltyTierRepo,
+      );
       return this.findOne(id, merchant_id, 'Updated');
     } catch (error) {
       ErrorHandler.handleDatabaseError(error);
@@ -308,7 +314,10 @@ export class LoyaltyTierService {
     try {
       loyaltyTier.is_active = false;
       await this.loyaltyTierRepo.save(loyaltyTier);
-      await recalculateProgramLevels(loyaltyTier.loyalty_program_id, this.loyaltyTierRepo);
+      await recalculateProgramLevels(
+        loyaltyTier.loyalty_program_id,
+        this.loyaltyTierRepo,
+      );
       return this.findOne(id, merchant_id, 'Deleted');
     } catch (error) {
       ErrorHandler.handleDatabaseError(error);

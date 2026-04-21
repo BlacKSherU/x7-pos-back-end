@@ -1,18 +1,25 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/unbound-method */
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException, ForbiddenException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { MarketingCampaingAudienceService } from './marketing-campaing-audience.service';
 import { MarketingCampaignAudience } from './entities/marketing-campaing-audience.entity';
 import { MarketingCampaign } from '../marketing_campaing/entities/marketing_campaing.entity';
 import { Customer } from 'src/core/business-partners/customers/entities/customer.entity';
 import { CreateMarketingCampaignAudienceDto } from './dto/create-marketing-campaing-audience.dto';
 import { UpdateMarketingCampaignAudienceDto } from './dto/update-marketing-campaing-audience.dto';
-import { GetMarketingCampaignAudienceQueryDto, MarketingCampaignAudienceSortBy } from './dto/get-marketing-campaign-audience-query.dto';
+import {
+  GetMarketingCampaignAudienceQueryDto,
+  MarketingCampaignAudienceSortBy,
+} from './dto/get-marketing-campaign-audience-query.dto';
 import { MarketingCampaignAudienceStatus } from './constants/marketing-campaign-audience-status.enum';
 import { MarketingCampaignStatus } from '../marketing_campaing/constants/marketing-campaign-status.enum';
 import { MarketingCampaignChannel } from '../marketing_campaing/constants/marketing-campaign-channel.enum';
@@ -114,10 +121,12 @@ describe('MarketingCampaingAudienceService', () => {
       ],
     }).compile();
 
-    service = module.get<MarketingCampaingAudienceService>(MarketingCampaingAudienceService);
-    marketingCampaignAudienceRepository = module.get<Repository<MarketingCampaignAudience>>(
-      getRepositoryToken(MarketingCampaignAudience),
+    service = module.get<MarketingCampaingAudienceService>(
+      MarketingCampaingAudienceService,
     );
+    marketingCampaignAudienceRepository = module.get<
+      Repository<MarketingCampaignAudience>
+    >(getRepositoryToken(MarketingCampaignAudience));
     marketingCampaignRepository = module.get<Repository<MarketingCampaign>>(
       getRepositoryToken(MarketingCampaign),
     );
@@ -136,39 +145,56 @@ describe('MarketingCampaingAudienceService', () => {
   });
 
   describe('create', () => {
-    const createMarketingCampaignAudienceDto: CreateMarketingCampaignAudienceDto = {
-      marketingCampaignId: 1,
-      customerId: 1,
-      status: MarketingCampaignAudienceStatus.PENDING,
-    };
+    const createMarketingCampaignAudienceDto: CreateMarketingCampaignAudienceDto =
+      {
+        marketingCampaignId: 1,
+        customerId: 1,
+        status: MarketingCampaignAudienceStatus.PENDING,
+      };
 
     it('should create a marketing campaign audience entry successfully', async () => {
       // Mock para verificar que la campaña existe
       const mockCampaignQueryBuilder = createMockQueryBuilder();
-      mockCampaignQueryBuilder.getOne.mockResolvedValue(mockMarketingCampaign as any);
-      jest.spyOn(marketingCampaignRepository, 'createQueryBuilder').mockReturnValue(mockCampaignQueryBuilder as any);
-      
-      jest.spyOn(customerRepository, 'findOne').mockResolvedValue(mockCustomer as any);
-      
+      mockCampaignQueryBuilder.getOne.mockResolvedValue(
+        mockMarketingCampaign as any,
+      );
+      jest
+        .spyOn(marketingCampaignRepository, 'createQueryBuilder')
+        .mockReturnValue(mockCampaignQueryBuilder as any);
+
+      jest
+        .spyOn(customerRepository, 'findOne')
+        .mockResolvedValue(mockCustomer as any);
+
       // Mock para verificar que NO existe una audiencia (debe devolver null)
       const mockCheckAudienceQueryBuilder = createMockQueryBuilder();
       mockCheckAudienceQueryBuilder.getOne.mockResolvedValue(null);
-      
+
       // Mock para obtener la audiencia creada después de guardar
       const mockGetAudienceQueryBuilder = createMockQueryBuilder();
-      mockGetAudienceQueryBuilder.getOne.mockResolvedValue(mockMarketingCampaignAudience as any);
-      
+      mockGetAudienceQueryBuilder.getOne.mockResolvedValue(
+        mockMarketingCampaignAudience as any,
+      );
+
       // Configurar el mock para devolver diferentes QueryBuilders en diferentes llamadas
-      jest.spyOn(marketingCampaignAudienceRepository, 'createQueryBuilder')
+      jest
+        .spyOn(marketingCampaignAudienceRepository, 'createQueryBuilder')
         .mockReturnValueOnce(mockCheckAudienceQueryBuilder as any) // Primera llamada: verificar si existe
         .mockReturnValueOnce(mockGetAudienceQueryBuilder as any); // Segunda llamada: obtener la creada
-      
-      jest.spyOn(marketingCampaignAudienceRepository, 'save').mockResolvedValue(mockMarketingCampaignAudience as any);
 
-      const result = await service.create(createMarketingCampaignAudienceDto, 1);
+      jest
+        .spyOn(marketingCampaignAudienceRepository, 'save')
+        .mockResolvedValue(mockMarketingCampaignAudience as any);
+
+      const result = await service.create(
+        createMarketingCampaignAudienceDto,
+        1,
+      );
 
       expect(result.statusCode).toBe(201);
-      expect(result.message).toBe('Marketing campaign audience entry created successfully');
+      expect(result.message).toBe(
+        'Marketing campaign audience entry created successfully',
+      );
       expect(result.data.marketingCampaignId).toBe(1);
       expect(result.data.customerId).toBe(1);
       expect(result.data.status).toBe(MarketingCampaignAudienceStatus.PENDING);
@@ -180,23 +206,37 @@ describe('MarketingCampaingAudienceService', () => {
 
       // Mock para verificar que la campaña existe
       const mockCampaignQueryBuilder = createMockQueryBuilder();
-      mockCampaignQueryBuilder.getOne.mockResolvedValue(mockMarketingCampaign as any);
-      jest.spyOn(marketingCampaignRepository, 'createQueryBuilder').mockReturnValue(mockCampaignQueryBuilder as any);
-      jest.spyOn(customerRepository, 'findOne').mockResolvedValue(mockCustomer as any);
-      
+      mockCampaignQueryBuilder.getOne.mockResolvedValue(
+        mockMarketingCampaign as any,
+      );
+      jest
+        .spyOn(marketingCampaignRepository, 'createQueryBuilder')
+        .mockReturnValue(mockCampaignQueryBuilder as any);
+      jest
+        .spyOn(customerRepository, 'findOne')
+        .mockResolvedValue(mockCustomer as any);
+
       // Mock para verificar que NO existe una audiencia (debe devolver null)
       const mockCheckAudienceQueryBuilder = createMockQueryBuilder();
       mockCheckAudienceQueryBuilder.getOne.mockResolvedValue(null);
-      
-      const audienceWithDefaultStatus = { ...mockMarketingCampaignAudience, status: MarketingCampaignAudienceStatus.PENDING };
-      jest.spyOn(marketingCampaignAudienceRepository, 'save').mockResolvedValue(audienceWithDefaultStatus as any);
-      
+
+      const audienceWithDefaultStatus = {
+        ...mockMarketingCampaignAudience,
+        status: MarketingCampaignAudienceStatus.PENDING,
+      };
+      jest
+        .spyOn(marketingCampaignAudienceRepository, 'save')
+        .mockResolvedValue(audienceWithDefaultStatus as any);
+
       // Mock para obtener la audiencia creada después de guardar
       const mockGetAudienceQueryBuilder = createMockQueryBuilder();
-      mockGetAudienceQueryBuilder.getOne.mockResolvedValue(audienceWithDefaultStatus as any);
-      
+      mockGetAudienceQueryBuilder.getOne.mockResolvedValue(
+        audienceWithDefaultStatus as any,
+      );
+
       // Configurar el mock para devolver diferentes QueryBuilders en diferentes llamadas
-      jest.spyOn(marketingCampaignAudienceRepository, 'createQueryBuilder')
+      jest
+        .spyOn(marketingCampaignAudienceRepository, 'createQueryBuilder')
         .mockReturnValueOnce(mockCheckAudienceQueryBuilder as any) // Primera llamada: verificar si existe
         .mockReturnValueOnce(mockGetAudienceQueryBuilder as any); // Segunda llamada: obtener la creada
 
@@ -206,8 +246,12 @@ describe('MarketingCampaingAudienceService', () => {
     });
 
     it('should throw ForbiddenException if user is not associated with a merchant', async () => {
-      await expect(service.create(createMarketingCampaignAudienceDto, undefined as any)).rejects.toThrow(ForbiddenException);
-      await expect(service.create(createMarketingCampaignAudienceDto, undefined as any)).rejects.toThrow(
+      await expect(
+        service.create(createMarketingCampaignAudienceDto, undefined as any),
+      ).rejects.toThrow(ForbiddenException);
+      await expect(
+        service.create(createMarketingCampaignAudienceDto, undefined as any),
+      ).rejects.toThrow(
         'You must be associated with a merchant to create marketing campaign audience entries',
       );
     });
@@ -215,22 +259,34 @@ describe('MarketingCampaingAudienceService', () => {
     it('should throw NotFoundException if marketing campaign does not exist', async () => {
       const mockQueryBuilder = createMockQueryBuilder();
       mockQueryBuilder.getOne.mockResolvedValue(null);
-      jest.spyOn(marketingCampaignRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(marketingCampaignRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder as any);
 
-      await expect(service.create(createMarketingCampaignAudienceDto, 1)).rejects.toThrow(NotFoundException);
-      await expect(service.create(createMarketingCampaignAudienceDto, 1)).rejects.toThrow(
+      await expect(
+        service.create(createMarketingCampaignAudienceDto, 1),
+      ).rejects.toThrow(NotFoundException);
+      await expect(
+        service.create(createMarketingCampaignAudienceDto, 1),
+      ).rejects.toThrow(
         'Marketing campaign not found or does not belong to your merchant',
       );
     });
 
     it('should throw NotFoundException if customer does not exist', async () => {
-      let mockQueryBuilder = createMockQueryBuilder();
+      const mockQueryBuilder = createMockQueryBuilder();
       mockQueryBuilder.getOne.mockResolvedValue(mockMarketingCampaign as any);
-      jest.spyOn(marketingCampaignRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(marketingCampaignRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder as any);
       jest.spyOn(customerRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.create(createMarketingCampaignAudienceDto, 1)).rejects.toThrow(NotFoundException);
-      await expect(service.create(createMarketingCampaignAudienceDto, 1)).rejects.toThrow(
+      await expect(
+        service.create(createMarketingCampaignAudienceDto, 1),
+      ).rejects.toThrow(NotFoundException);
+      await expect(
+        service.create(createMarketingCampaignAudienceDto, 1),
+      ).rejects.toThrow(
         'Customer not found or does not belong to your merchant',
       );
     });
@@ -238,15 +294,27 @@ describe('MarketingCampaingAudienceService', () => {
     it('should throw ConflictException if audience entry already exists', async () => {
       let mockQueryBuilder = createMockQueryBuilder();
       mockQueryBuilder.getOne.mockResolvedValue(mockMarketingCampaign as any);
-      jest.spyOn(marketingCampaignRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      jest.spyOn(customerRepository, 'findOne').mockResolvedValue(mockCustomer as any);
-      
-      mockQueryBuilder = createMockQueryBuilder();
-      mockQueryBuilder.getOne.mockResolvedValue(mockMarketingCampaignAudience as any);
-      jest.spyOn(marketingCampaignAudienceRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(marketingCampaignRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(customerRepository, 'findOne')
+        .mockResolvedValue(mockCustomer as any);
 
-      await expect(service.create(createMarketingCampaignAudienceDto, 1)).rejects.toThrow(ConflictException);
-      await expect(service.create(createMarketingCampaignAudienceDto, 1)).rejects.toThrow(
+      mockQueryBuilder = createMockQueryBuilder();
+      mockQueryBuilder.getOne.mockResolvedValue(
+        mockMarketingCampaignAudience as any,
+      );
+      jest
+        .spyOn(marketingCampaignAudienceRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder as any);
+
+      await expect(
+        service.create(createMarketingCampaignAudienceDto, 1),
+      ).rejects.toThrow(ConflictException);
+      await expect(
+        service.create(createMarketingCampaignAudienceDto, 1),
+      ).rejects.toThrow(
         'This customer is already in the audience for this campaign',
       );
     });
@@ -262,15 +330,22 @@ describe('MarketingCampaingAudienceService', () => {
 
     beforeEach(() => {
       mockQueryBuilder = createMockQueryBuilder();
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockMarketingCampaignAudience], 1]);
-      jest.spyOn(marketingCampaignAudienceRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([
+        [mockMarketingCampaignAudience],
+        1,
+      ]);
+      jest
+        .spyOn(marketingCampaignAudienceRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder);
     });
 
     it('should return paginated marketing campaign audience entries', async () => {
       const result = await service.findAll(query, 1);
 
       expect(result.statusCode).toBe(200);
-      expect(result.message).toBe('Marketing campaign audience entries retrieved successfully');
+      expect(result.message).toBe(
+        'Marketing campaign audience entries retrieved successfully',
+      );
       expect(result.data).toHaveLength(1);
       expect(result.paginationMeta.total).toBe(1);
       expect(result.paginationMeta.page).toBe(1);
@@ -289,7 +364,10 @@ describe('MarketingCampaingAudienceService', () => {
 
     it('should filter by marketing campaign ID', async () => {
       const queryWithCampaign = { ...query, marketingCampaignId: 1 };
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockMarketingCampaignAudience], 1]);
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([
+        [mockMarketingCampaignAudience],
+        1,
+      ]);
 
       await service.findAll(queryWithCampaign, 1);
 
@@ -301,7 +379,10 @@ describe('MarketingCampaingAudienceService', () => {
 
     it('should filter by customer ID', async () => {
       const queryWithCustomer = { ...query, customerId: 1 };
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockMarketingCampaignAudience], 1]);
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([
+        [mockMarketingCampaignAudience],
+        1,
+      ]);
 
       await service.findAll(queryWithCustomer, 1);
 
@@ -312,8 +393,14 @@ describe('MarketingCampaingAudienceService', () => {
     });
 
     it('should filter by status', async () => {
-      const queryWithStatus = { ...query, status: MarketingCampaignAudienceStatus.SENT };
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockMarketingCampaignAudience], 1]);
+      const queryWithStatus = {
+        ...query,
+        status: MarketingCampaignAudienceStatus.SENT,
+      };
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([
+        [mockMarketingCampaignAudience],
+        1,
+      ]);
 
       await service.findAll(queryWithStatus, 1);
 
@@ -324,7 +411,10 @@ describe('MarketingCampaingAudienceService', () => {
     });
 
     it('should exclude deleted entries by default', async () => {
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockMarketingCampaignAudience], 1]);
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([
+        [mockMarketingCampaignAudience],
+        1,
+      ]);
 
       await service.findAll(query, 1);
 
@@ -335,7 +425,9 @@ describe('MarketingCampaingAudienceService', () => {
     });
 
     it('should throw ForbiddenException if user is not associated with a merchant', async () => {
-      await expect(service.findAll(query, undefined as any)).rejects.toThrow(ForbiddenException);
+      await expect(service.findAll(query, undefined as any)).rejects.toThrow(
+        ForbiddenException,
+      );
       await expect(service.findAll(query, undefined as any)).rejects.toThrow(
         'You must be associated with a merchant to access marketing campaign audience entries',
       );
@@ -345,24 +437,36 @@ describe('MarketingCampaingAudienceService', () => {
       jest.restoreAllMocks();
       const invalidQuery = { ...query, page: 0 };
 
-      await expect(service.findAll(invalidQuery, 1)).rejects.toThrow(BadRequestException);
-      await expect(service.findAll(invalidQuery, 1)).rejects.toThrow('Page number must be greater than 0');
+      await expect(service.findAll(invalidQuery, 1)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.findAll(invalidQuery, 1)).rejects.toThrow(
+        'Page number must be greater than 0',
+      );
     });
 
     it('should throw BadRequestException if limit is less than 1', async () => {
       jest.restoreAllMocks();
       const invalidQuery = { ...query, limit: 0 };
 
-      await expect(service.findAll(invalidQuery, 1)).rejects.toThrow(BadRequestException);
-      await expect(service.findAll(invalidQuery, 1)).rejects.toThrow('Limit must be between 1 and 100');
+      await expect(service.findAll(invalidQuery, 1)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.findAll(invalidQuery, 1)).rejects.toThrow(
+        'Limit must be between 1 and 100',
+      );
     });
 
     it('should throw BadRequestException if limit exceeds 100', async () => {
       jest.restoreAllMocks();
       const invalidQuery = { ...query, limit: 101 };
 
-      await expect(service.findAll(invalidQuery, 1)).rejects.toThrow(BadRequestException);
-      await expect(service.findAll(invalidQuery, 1)).rejects.toThrow('Limit must be between 1 and 100');
+      await expect(service.findAll(invalidQuery, 1)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.findAll(invalidQuery, 1)).rejects.toThrow(
+        'Limit must be between 1 and 100',
+      );
     });
   });
 
@@ -371,15 +475,21 @@ describe('MarketingCampaingAudienceService', () => {
 
     beforeEach(() => {
       mockQueryBuilder = createMockQueryBuilder();
-      mockQueryBuilder.getOne.mockResolvedValue(mockMarketingCampaignAudience as any);
-      jest.spyOn(marketingCampaignAudienceRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      mockQueryBuilder.getOne.mockResolvedValue(
+        mockMarketingCampaignAudience as any,
+      );
+      jest
+        .spyOn(marketingCampaignAudienceRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder);
     });
 
     it('should return a marketing campaign audience entry by ID', async () => {
       const result = await service.findOne(1, 1);
 
       expect(result.statusCode).toBe(200);
-      expect(result.message).toBe('Marketing campaign audience entry retrieved successfully');
+      expect(result.message).toBe(
+        'Marketing campaign audience entry retrieved successfully',
+      );
       expect(result.data.id).toBe(1);
       expect(result.data.marketingCampaignId).toBe(1);
       expect(result.data.customerId).toBe(1);
@@ -391,14 +501,18 @@ describe('MarketingCampaingAudienceService', () => {
     });
 
     it('should throw ForbiddenException if user is not associated with a merchant', async () => {
-      await expect(service.findOne(1, undefined as any)).rejects.toThrow(ForbiddenException);
+      await expect(service.findOne(1, undefined as any)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw NotFoundException if audience entry does not exist', async () => {
       mockQueryBuilder.getOne.mockResolvedValue(null);
 
       await expect(service.findOne(999, 1)).rejects.toThrow(NotFoundException);
-      await expect(service.findOne(999, 1)).rejects.toThrow('Marketing campaign audience entry not found');
+      await expect(service.findOne(999, 1)).rejects.toThrow(
+        'Marketing campaign audience entry not found',
+      );
     });
   });
 
@@ -407,8 +521,12 @@ describe('MarketingCampaingAudienceService', () => {
 
     beforeEach(() => {
       mockQueryBuilder = createMockQueryBuilder();
-      mockQueryBuilder.getOne.mockResolvedValue(mockMarketingCampaignAudience as any);
-      jest.spyOn(marketingCampaignAudienceRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      mockQueryBuilder.getOne.mockResolvedValue(
+        mockMarketingCampaignAudience as any,
+      );
+      jest
+        .spyOn(marketingCampaignAudienceRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder);
     });
 
     it('should update a marketing campaign audience entry successfully', async () => {
@@ -416,32 +534,47 @@ describe('MarketingCampaingAudienceService', () => {
         status: MarketingCampaignAudienceStatus.SENT,
       };
 
-      jest.spyOn(marketingCampaignAudienceRepository, 'update').mockResolvedValue(undefined as any);
-      
-      const updatedAudience = { ...mockMarketingCampaignAudience, status: MarketingCampaignAudienceStatus.SENT };
+      jest
+        .spyOn(marketingCampaignAudienceRepository, 'update')
+        .mockResolvedValue(undefined as any);
+
+      const updatedAudience = {
+        ...mockMarketingCampaignAudience,
+        status: MarketingCampaignAudienceStatus.SENT,
+      };
       const mockQueryBuilder2 = createMockQueryBuilder();
       mockQueryBuilder2.getOne.mockResolvedValue(updatedAudience as any);
-      jest.spyOn(marketingCampaignAudienceRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder2 as any);
+      jest
+        .spyOn(marketingCampaignAudienceRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder2 as any);
 
       const result = await service.update(1, updateDto, 1);
 
       expect(result.statusCode).toBe(200);
-      expect(result.message).toBe('Marketing campaign audience entry updated successfully');
+      expect(result.message).toBe(
+        'Marketing campaign audience entry updated successfully',
+      );
       expect(result.data.status).toBe(MarketingCampaignAudienceStatus.SENT);
     });
 
     it('should throw BadRequestException if ID is invalid', async () => {
-      await expect(service.update(0, {}, 1)).rejects.toThrow(BadRequestException);
+      await expect(service.update(0, {}, 1)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw ForbiddenException if user is not associated with a merchant', async () => {
-      await expect(service.update(1, {}, undefined as any)).rejects.toThrow(ForbiddenException);
+      await expect(service.update(1, {}, undefined as any)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw NotFoundException if audience entry does not exist', async () => {
       mockQueryBuilder.getOne.mockResolvedValue(null);
 
-      await expect(service.update(999, {}, 1)).rejects.toThrow(NotFoundException);
+      await expect(service.update(999, {}, 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw BadRequestException if error message exceeds 500 characters', async () => {
@@ -449,8 +582,12 @@ describe('MarketingCampaingAudienceService', () => {
         errorMessage: 'a'.repeat(501),
       };
 
-      await expect(service.update(1, updateDto, 1)).rejects.toThrow(BadRequestException);
-      await expect(service.update(1, updateDto, 1)).rejects.toThrow('Error message cannot exceed 500 characters');
+      await expect(service.update(1, updateDto, 1)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.update(1, updateDto, 1)).rejects.toThrow(
+        'Error message cannot exceed 500 characters',
+      );
     });
   });
 
@@ -459,20 +596,28 @@ describe('MarketingCampaingAudienceService', () => {
 
     beforeEach(() => {
       mockQueryBuilder = createMockQueryBuilder();
-      mockQueryBuilder.getOne.mockResolvedValue(mockMarketingCampaignAudience as any);
-      jest.spyOn(marketingCampaignAudienceRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      mockQueryBuilder.getOne.mockResolvedValue(
+        mockMarketingCampaignAudience as any,
+      );
+      jest
+        .spyOn(marketingCampaignAudienceRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder);
     });
 
     it('should soft delete a marketing campaign audience entry', async () => {
-      jest.spyOn(marketingCampaignAudienceRepository, 'save').mockResolvedValue({
-        ...mockMarketingCampaignAudience,
-        status: MarketingCampaignAudienceStatus.DELETED,
-      } as any);
+      jest
+        .spyOn(marketingCampaignAudienceRepository, 'save')
+        .mockResolvedValue({
+          ...mockMarketingCampaignAudience,
+          status: MarketingCampaignAudienceStatus.DELETED,
+        } as any);
 
       const result = await service.remove(1, 1);
 
       expect(result.statusCode).toBe(200);
-      expect(result.message).toBe('Marketing campaign audience entry deleted successfully');
+      expect(result.message).toBe(
+        'Marketing campaign audience entry deleted successfully',
+      );
       expect(result.data.status).toBe(MarketingCampaignAudienceStatus.DELETED);
       expect(marketingCampaignAudienceRepository.save).toHaveBeenCalled();
     });
@@ -482,7 +627,9 @@ describe('MarketingCampaingAudienceService', () => {
     });
 
     it('should throw ForbiddenException if user is not associated with a merchant', async () => {
-      await expect(service.remove(1, undefined as any)).rejects.toThrow(ForbiddenException);
+      await expect(service.remove(1, undefined as any)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw NotFoundException if audience entry does not exist', async () => {
@@ -492,11 +639,16 @@ describe('MarketingCampaingAudienceService', () => {
     });
 
     it('should throw ConflictException if audience entry is already deleted', async () => {
-      const deletedAudience = { ...mockMarketingCampaignAudience, status: MarketingCampaignAudienceStatus.DELETED };
+      const deletedAudience = {
+        ...mockMarketingCampaignAudience,
+        status: MarketingCampaignAudienceStatus.DELETED,
+      };
       mockQueryBuilder.getOne.mockResolvedValue(deletedAudience as any);
 
       await expect(service.remove(1, 1)).rejects.toThrow(ConflictException);
-      await expect(service.remove(1, 1)).rejects.toThrow('Marketing campaign audience entry is already deleted');
+      await expect(service.remove(1, 1)).rejects.toThrow(
+        'Marketing campaign audience entry is already deleted',
+      );
     });
   });
 });

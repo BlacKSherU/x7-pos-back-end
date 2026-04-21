@@ -13,4 +13,3 @@ import { Collaborator } from 'src/finance-hr/hr/collaborators/entities/collabora
   exports: [ShiftAssignmentsService],
 })
 export class ShiftAssignmentsModule {}
-

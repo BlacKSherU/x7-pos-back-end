@@ -5,7 +5,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import {
+  Repository,
+  In,
+  type FindOptionsOrder,
+  type FindOptionsWhere,
+  type QueryDeepPartialEntity,
+} from 'typeorm';
 import { CreateCashTransactionDto } from './dto/create-cash-transaction.dto';
 import { UpdateCashTransactionDto } from './dto/update-cash-transaction.dto';
 import {
@@ -155,7 +161,7 @@ export class CashTransactionsService {
     const saved = await this.cashTransactionRepo.save(entity);
 
     // Update cash drawer based on transaction type
-    const updateData: any = {};
+    const updateData: QueryDeepPartialEntity<CashDrawer> = {};
 
     // OPENING: Ignore amount, set status to OPEN, opening_balance = previous closing_balance
     if (dto.type === CashTransactionType.OPENING) {
@@ -276,23 +282,35 @@ export class CashTransactionsService {
     }
 
     // Build where clause - filter by merchant through cash drawer
-    const where: any = { status: CashTransactionStatus.ACTIVE };
+    const where: FindOptionsWhere<CashTransaction> = {
+      status: CashTransactionStatus.ACTIVE,
+    };
     if (query.cashDrawerId) where.cash_drawer_id = query.cashDrawerId;
     if (query.orderId) where.order_id = query.orderId;
     if (query.type) where.type = query.type;
     if (query.status) where.status = query.status;
 
-    const order: any = {};
+    const sortDir = query.sortOrder || 'DESC';
+    let order: FindOptionsOrder<CashTransaction>;
     if (query.sortBy) {
-      const map: Record<CashTransactionSortBy, string> = {
-        [CashTransactionSortBy.CREATED_AT]: 'created_at',
-        [CashTransactionSortBy.AMOUNT]: 'amount',
-        [CashTransactionSortBy.TYPE]: 'type',
-        [CashTransactionSortBy.STATUS]: 'status',
-      };
-      order[map[query.sortBy]] = query.sortOrder || 'DESC';
+      switch (query.sortBy) {
+        case CashTransactionSortBy.CREATED_AT:
+          order = { created_at: sortDir };
+          break;
+        case CashTransactionSortBy.AMOUNT:
+          order = { amount: sortDir };
+          break;
+        case CashTransactionSortBy.TYPE:
+          order = { type: sortDir };
+          break;
+        case CashTransactionSortBy.STATUS:
+          order = { status: sortDir };
+          break;
+        default:
+          order = { created_at: 'DESC' };
+      }
     } else {
-      order.created_at = 'DESC';
+      order = { created_at: 'DESC' };
     }
 
     // If cashDrawerId is not provided, filter by all merchant's cash drawers
@@ -401,7 +419,7 @@ export class CashTransactionsService {
         'You can only update transactions from your merchant',
       );
 
-    const updateData: any = {};
+    const updateData: QueryDeepPartialEntity<CashTransaction> = {};
     if (dto.orderId !== undefined) {
       // Validate order exists and belongs to user merchant
       const order = await this.orderRepo.findOne({

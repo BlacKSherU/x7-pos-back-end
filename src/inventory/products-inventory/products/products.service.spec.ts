@@ -211,7 +211,7 @@ describe('ProductsService', () => {
     variantsService = module.get(VariantsService);
 
     jest.clearAllMocks();
-    jest.spyOn(console, 'error').mockImplementation(() => { });
+    jest.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -319,12 +319,7 @@ describe('ProductsService', () => {
           merchantId: mockMerchant.id,
           isActive: true,
         },
-        relations: [
-          'merchant',
-          'category',
-          'category.parent',
-          'supplier',
-        ],
+        relations: ['merchant', 'category', 'category.parent', 'supplier'],
       });
 
       expect(result).toEqual({
@@ -356,12 +351,7 @@ describe('ProductsService', () => {
           merchantId: mockMerchant.id,
           isActive: true,
         },
-        relations: [
-          'merchant',
-          'category',
-          'category.parent',
-          'supplier',
-        ],
+        relations: ['merchant', 'category', 'category.parent', 'supplier'],
       });
     });
 
@@ -435,12 +425,7 @@ describe('ProductsService', () => {
           merchantId: mockMerchant.id,
           isActive: true,
         },
-        relations: [
-          'merchant',
-          'category',
-          'category.parent',
-          'supplier',
-        ],
+        relations: ['merchant', 'category', 'category.parent', 'supplier'],
       });
       expect(productRepo.create).toHaveBeenCalledWith({
         name: mockCreateProductDto.name,
@@ -622,12 +607,7 @@ describe('ProductsService', () => {
           merchantId: mockMerchant.id,
           isActive: true,
         },
-        relations: [
-          'merchant',
-          'category',
-          'category.parent',
-          'supplier',
-        ],
+        relations: ['merchant', 'category', 'category.parent', 'supplier'],
       });
       expect(productRepo.save).toHaveBeenCalledWith({
         ...mockProduct,
@@ -802,12 +782,7 @@ describe('ProductsService', () => {
           merchantId: mockMerchant.id,
           isActive: false,
         },
-        relations: [
-          'merchant',
-          'category',
-          'category.parent',
-          'supplier',
-        ],
+        relations: ['merchant', 'category', 'category.parent', 'supplier'],
       });
       expect(result).toEqual({
         statusCode: 200,
@@ -899,12 +874,7 @@ describe('ProductsService', () => {
           merchantId: mockMerchant.id,
           isActive: false,
         },
-        relations: [
-          'merchant',
-          'category',
-          'category.parent',
-          'supplier',
-        ],
+        relations: ['merchant', 'category', 'category.parent', 'supplier'],
       });
     });
   });

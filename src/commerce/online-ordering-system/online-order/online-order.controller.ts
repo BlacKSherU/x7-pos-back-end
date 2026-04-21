@@ -11,7 +11,9 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { Request as ExpressRequest } from 'express';
 import { OnlineOrderService } from './online-order.service';
+import { OnlineOrderFulfillmentService } from './online-order-fulfillment.service';
 import { CreateOnlineOrderDto } from './dto/create-online-order.dto';
 import { UpdateOnlineOrderDto } from './dto/update-online-order.dto';
 import {
@@ -43,12 +45,17 @@ import { ErrorResponse } from 'src/common/dtos/error-response.dto';
 import { OnlineOrderType } from './constants/online-order-type.enum';
 import { OnlineOrderPaymentStatus } from './constants/online-order-payment-status.enum';
 
+type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
+
 @ApiTags('Online Orders')
 @ApiBearerAuth()
 @Controller('online-orders')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class OnlineOrderController {
-  constructor(private readonly onlineOrderService: OnlineOrderService) {}
+  constructor(
+    private readonly onlineOrderService: OnlineOrderService,
+    private readonly onlineOrderFulfillmentService: OnlineOrderFulfillmentService,
+  ) {}
 
   @Post()
   @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
@@ -97,7 +104,6 @@ export class OnlineOrderController {
           customerId: 5,
           type: OnlineOrderType.DELIVERY,
           paymentStatus: OnlineOrderPaymentStatus.PENDING,
-          totalAmount: 125.99,
           notes: 'Please deliver to the back door',
         },
       },
@@ -109,7 +115,6 @@ export class OnlineOrderController {
           type: OnlineOrderType.PICKUP,
           paymentStatus: OnlineOrderPaymentStatus.PAID,
           scheduledAt: '2024-01-15T10:00:00Z',
-          totalAmount: 85.5,
         },
       },
       example3: {
@@ -121,17 +126,70 @@ export class OnlineOrderController {
           type: OnlineOrderType.DINE_IN,
           paymentStatus: OnlineOrderPaymentStatus.PAID,
           placedAt: '2024-01-15T08:00:00Z',
-          totalAmount: 200.0,
         },
       },
     },
   })
   async create(
     @Body() dto: CreateOnlineOrderDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOnlineOrderResponseDto> {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlineOrderService.create(dto, authenticatedUserMerchantId);
+  }
+
+  @Post(':id/accept')
+  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Scopes(
+    Scope.ADMIN_PORTAL,
+    Scope.MERCHANT_WEB,
+    Scope.MERCHANT_ANDROID,
+    Scope.MERCHANT_IOS,
+    Scope.MERCHANT_CLOVER,
+  )
+  @ApiOperation({
+    summary: 'Accept online order (create POS order and link lines)',
+    description:
+      'Creates a mirror POS order with source ONLINE, links online_order.order_id and online_order_item.order_item_id, and opens a kitchen order when applicable. Idempotent if already accepted.',
+  })
+  @ApiParam({ name: 'id', type: Number, description: 'Online order ID' })
+  @ApiOkResponse({
+    description: 'Online order accepted',
+    type: OneOnlineOrderResponseDto,
+  })
+  async accept(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedRequest,
+  ): Promise<OneOnlineOrderResponseDto> {
+    const merchantId = req.user?.merchant?.id;
+    return this.onlineOrderFulfillmentService.acceptOnlineOrder(id, merchantId);
+  }
+
+  @Post(':id/cancel')
+  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Scopes(
+    Scope.ADMIN_PORTAL,
+    Scope.MERCHANT_WEB,
+    Scope.MERCHANT_ANDROID,
+    Scope.MERCHANT_IOS,
+    Scope.MERCHANT_CLOVER,
+  )
+  @ApiOperation({
+    summary: 'Cancel online order before POS acceptance',
+    description:
+      'Only allowed while fulfillment is received and no POS order exists yet.',
+  })
+  @ApiParam({ name: 'id', type: Number, description: 'Online order ID' })
+  @ApiOkResponse({
+    description: 'Online order cancelled',
+    type: OneOnlineOrderResponseDto,
+  })
+  async cancelFulfillment(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedRequest,
+  ): Promise<OneOnlineOrderResponseDto> {
+    const merchantId = req.user?.merchant?.id;
+    return this.onlineOrderFulfillmentService.cancelOnlineOrder(id, merchantId);
   }
 
   @Get()
@@ -222,7 +280,6 @@ export class OnlineOrderController {
       'customerId',
       'type',
       'paymentStatus',
-      'totalAmount',
       'placedAt',
       'scheduledAt',
       'updatedAt',
@@ -256,9 +313,9 @@ export class OnlineOrderController {
   })
   async findAll(
     @Query() query: GetOnlineOrderQueryDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<PaginatedOnlineOrderResponseDto> {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlineOrderService.findAll(query, authenticatedUserMerchantId);
   }
 
@@ -297,9 +354,9 @@ export class OnlineOrderController {
   })
   async findOne(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOnlineOrderResponseDto> {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlineOrderService.findOne(id, authenticatedUserMerchantId);
   }
 
@@ -353,10 +410,9 @@ export class OnlineOrderController {
     description: 'Online order update data (all fields optional)',
     examples: {
       example1: {
-        summary: 'Update payment status and total amount',
+        summary: 'Update payment status',
         value: {
           paymentStatus: OnlineOrderPaymentStatus.PAID,
-          totalAmount: 150.99,
         },
       },
       example2: {
@@ -371,9 +427,9 @@ export class OnlineOrderController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateOnlineOrderDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOnlineOrderResponseDto> {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlineOrderService.update(id, dto, authenticatedUserMerchantId);
   }
 
@@ -420,9 +476,9 @@ export class OnlineOrderController {
   })
   async remove(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOnlineOrderResponseDto> {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlineOrderService.remove(id, authenticatedUserMerchantId);
   }
 }

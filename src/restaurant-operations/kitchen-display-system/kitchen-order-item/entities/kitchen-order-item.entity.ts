@@ -14,6 +14,7 @@ import { OrderItem } from '../../../../restaurant-operations/pos/order-item/enti
 import { Product } from '../../../../inventory/products-inventory/products/entities/product.entity';
 import { Variant } from '../../../../inventory/products-inventory/variants/entities/variant.entity';
 import { KitchenOrderItemStatus } from '../constants/kitchen-order-item-status.enum';
+import { KitchenOrderItemPreparationStatus } from '../constants/kitchen-order-item-preparation-status.enum';
 
 @Entity('kitchen_order_item')
 @Index(['kitchen_order_id'])
@@ -40,7 +41,7 @@ export class KitchenOrderItem {
     type: () => KitchenOrder,
     description: 'Kitchen Order associated with this item',
   })
-  @ManyToOne(() => KitchenOrder, {
+  @ManyToOne(() => KitchenOrder, (ko) => ko.kitchenOrderItems, {
     nullable: false,
   })
   @JoinColumn({ name: 'kitchen_order_id' })
@@ -115,6 +116,20 @@ export class KitchenOrderItem {
   })
   @Column({ type: 'int', name: 'prepared_quantity', default: 0 })
   prepared_quantity: number;
+
+  @ApiProperty({
+    example: KitchenOrderItemPreparationStatus.PENDING,
+    enum: KitchenOrderItemPreparationStatus,
+    description:
+      'Preparation step in kitchen (pending → in_preparation → ready)',
+  })
+  @Column({
+    type: 'varchar',
+    length: 50,
+    name: 'preparation_status',
+    default: KitchenOrderItemPreparationStatus.PENDING,
+  })
+  preparation_status: KitchenOrderItemPreparationStatus;
 
   @ApiProperty({
     example: KitchenOrderItemStatus.ACTIVE,

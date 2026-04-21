@@ -5,7 +5,10 @@ export class BasicShiftInfoDto {
   @ApiProperty({ example: 1, description: 'Shift ID' })
   id: number;
 
-  @ApiProperty({ example: 1, description: 'Merchant ID associated with the shift' })
+  @ApiProperty({
+    example: 1,
+    description: 'Merchant ID associated with the shift',
+  })
   merchantId: number;
 
   @ApiProperty({ example: 'Restaurant Name', description: 'Merchant name' })
@@ -35,46 +38,55 @@ export class BasicCollaboratorInfoDto {
 }
 
 export class TableAssignmentResponseDto {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the table assignment' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the table assignment',
+  })
   id: number;
 
-  @ApiProperty({ example: 1, description: 'ID of the shift this assignment belongs to' })
+  @ApiProperty({
+    example: 1,
+    description: 'ID of the shift this assignment belongs to',
+  })
   shiftId: number;
 
   @ApiProperty({ example: 1, description: 'ID of the table being assigned' })
   tableId: number;
 
-  @ApiProperty({ example: 1, description: 'ID of the collaborator assigned to the table' })
+  @ApiProperty({
+    example: 1,
+    description: 'ID of the collaborator assigned to the table',
+  })
   collaboratorId: number;
 
-  @ApiProperty({ 
-    example: '2024-01-15T08:00:00Z', 
-    description: 'Timestamp when the table was assigned' 
+  @ApiProperty({
+    example: '2024-01-15T08:00:00Z',
+    description: 'Timestamp when the table was assigned',
   })
   assignedAt: Date;
 
-  @ApiProperty({ 
-    example: '2024-01-15T16:00:00Z', 
+  @ApiProperty({
+    example: '2024-01-15T16:00:00Z',
     description: 'Timestamp when the table was released',
-    required: false
+    required: false,
   })
   releasedAt?: Date;
 
-  @ApiProperty({ 
+  @ApiProperty({
     type: BasicShiftInfoDto,
-    description: 'Basic shift information'
+    description: 'Basic shift information',
   })
   shift?: BasicShiftInfoDto;
 
-  @ApiProperty({ 
+  @ApiProperty({
     type: BasicTableInfoDto,
-    description: 'Basic table information'
+    description: 'Basic table information',
   })
   table?: BasicTableInfoDto;
 
-  @ApiProperty({ 
+  @ApiProperty({
     type: BasicCollaboratorInfoDto,
-    description: 'Basic collaborator information'
+    description: 'Basic collaborator information',
   })
   collaborator?: BasicCollaboratorInfoDto;
 

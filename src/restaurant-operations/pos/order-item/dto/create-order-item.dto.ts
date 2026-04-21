@@ -1,5 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNumber, IsNotEmpty, IsPositive, IsOptional, IsString, Min, IsEnum } from 'class-validator';
+import {
+  IsNumber,
+  IsNotEmpty,
+  IsPositive,
+  IsOptional,
+  IsString,
+  Min,
+  IsEnum,
+} from 'class-validator';
 import { OrderItemKitchenStatus } from '../constants/order-item-kitchen-status.enum';
 
 export class CreateOrderItemDto {
@@ -40,7 +48,7 @@ export class CreateOrderItemDto {
   quantity: number;
 
   @ApiProperty({
-    example: 125.50,
+    example: 125.5,
     description: 'Price of the item',
   })
   @IsNumber()
@@ -49,7 +57,7 @@ export class CreateOrderItemDto {
   price: number;
 
   @ApiPropertyOptional({
-    example: 10.00,
+    example: 10.0,
     description: 'Discount applied to the item',
     default: 0,
   })

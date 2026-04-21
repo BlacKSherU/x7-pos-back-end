@@ -11,10 +11,10 @@ export class PayrollTaxDetailResponseDto {
   @ApiProperty({ example: 'Income tax' })
   tax_type: string;
 
-  @ApiProperty({ example: 19.00 })
+  @ApiProperty({ example: 19.0 })
   percentage: number;
 
-  @ApiProperty({ example: 15000.50 })
+  @ApiProperty({ example: 15000.5 })
   amount: number;
 
   @ApiProperty({ description: 'Creation timestamp' })

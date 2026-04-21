@@ -11,6 +11,7 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { Request as ExpressRequest } from 'express';
 import { OnlineMenuItemService } from './online-menu-item.service';
 import { CreateOnlineMenuItemDto } from './dto/create-online-menu-item.dto';
 import { UpdateOnlineMenuItemDto } from './dto/update-online-menu-item.dto';
@@ -30,6 +31,8 @@ import {
 } from '@nestjs/swagger';
 import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
 import { OneOnlineMenuItemResponseDto } from './dto/online-menu-item-response.dto';
+
+type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
 import { GetOnlineMenuItemQueryDto } from './dto/get-online-menu-item-query.dto';
 import { PaginatedOnlineMenuItemResponseDto } from './dto/paginated-online-menu-item-response.dto';
 import { Roles } from 'src/auth/decorators/roles.decorator';
@@ -121,9 +124,9 @@ export class OnlineMenuItemController {
   })
   async create(
     @Body() dto: CreateOnlineMenuItemDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOnlineMenuItemResponseDto> {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlineMenuItemService.create(dto, authenticatedUserMerchantId);
   }
 
@@ -232,9 +235,9 @@ export class OnlineMenuItemController {
   })
   async findAll(
     @Query() query: GetOnlineMenuItemQueryDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<PaginatedOnlineMenuItemResponseDto> {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlineMenuItemService.findAll(
       query,
       authenticatedUserMerchantId,
@@ -276,9 +279,9 @@ export class OnlineMenuItemController {
   })
   async findOne(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOnlineMenuItemResponseDto> {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlineMenuItemService.findOne(id, authenticatedUserMerchantId);
   }
 
@@ -345,9 +348,9 @@ export class OnlineMenuItemController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateOnlineMenuItemDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOnlineMenuItemResponseDto> {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlineMenuItemService.update(
       id,
       dto,
@@ -394,9 +397,9 @@ export class OnlineMenuItemController {
   })
   async remove(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOnlineMenuItemResponseDto> {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlineMenuItemService.remove(id, authenticatedUserMerchantId);
   }
 }

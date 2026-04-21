@@ -1,4 +1,11 @@
-import { IsNotEmpty, IsString, IsEnum, MaxLength, IsNumber, Min } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsEnum,
+  MaxLength,
+  IsNumber,
+  Min,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { MarketingSegmentRuleOperator } from '../constants/marketing-segment-rule-operator.enum';
 
@@ -14,7 +21,8 @@ export class CreateMarketingSegmentRuleDto {
 
   @ApiProperty({
     example: 'total_spent',
-    description: 'Field name to evaluate (e.g., total_spent, last_order_days, city, tier)',
+    description:
+      'Field name to evaluate (e.g., total_spent, last_order_days, city, tier)',
     examples: ['total_spent', 'last_order_days', 'city', 'tier', 'order_count'],
   })
   @IsNotEmpty({ message: 'Field is required' })
@@ -29,7 +37,8 @@ export class CreateMarketingSegmentRuleDto {
   })
   @IsNotEmpty({ message: 'Operator is required' })
   @IsEnum(MarketingSegmentRuleOperator, {
-    message: 'Operator must be a valid operator (=, >, <, >=, <=, IN, LIKE, etc.)',
+    message:
+      'Operator must be a valid operator (=, >, <, >=, <=, IN, LIKE, etc.)',
   })
   operator: MarketingSegmentRuleOperator;
 

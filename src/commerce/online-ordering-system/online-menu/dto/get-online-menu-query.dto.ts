@@ -1,4 +1,12 @@
-import { IsOptional, IsEnum, IsString, IsNumber, IsBoolean, Min, Max } from 'class-validator';
+import {
+  IsOptional,
+  IsEnum,
+  IsString,
+  IsNumber,
+  IsBoolean,
+  Min,
+  Max,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 
@@ -11,7 +19,7 @@ export enum OnlineMenuSortBy {
 }
 
 export class GetOnlineMenuQueryDto {
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 1,
     description: 'Filter by online store ID',
   })
@@ -20,7 +28,7 @@ export class GetOnlineMenuQueryDto {
   @IsNumber()
   storeId?: number;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 'Main Menu',
     description: 'Filter by menu name (partial match)',
   })
@@ -28,7 +36,7 @@ export class GetOnlineMenuQueryDto {
   @IsString()
   name?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: true,
     description: 'Filter by active status',
   })
@@ -37,7 +45,7 @@ export class GetOnlineMenuQueryDto {
   @IsBoolean()
   isActive?: boolean;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: '2024-01-15',
     description: 'Filter by creation date (YYYY-MM-DD format)',
   })
@@ -45,10 +53,10 @@ export class GetOnlineMenuQueryDto {
   @IsString()
   createdDate?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 1,
     description: 'Page number for pagination (minimum 1)',
-    minimum: 1
+    minimum: 1,
   })
   @IsOptional()
   @Transform(({ value }) => parseInt(value))
@@ -56,11 +64,11 @@ export class GetOnlineMenuQueryDto {
   @Min(1)
   page?: number = 1;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 10,
     description: 'Number of items per page (minimum 1, maximum 100)',
     minimum: 1,
-    maximum: 100
+    maximum: 100,
   })
   @IsOptional()
   @Transform(({ value }) => parseInt(value))
@@ -69,22 +77,21 @@ export class GetOnlineMenuQueryDto {
   @Max(100)
   limit?: number = 10;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: OnlineMenuSortBy.CREATED_AT,
     description: 'Field to sort by',
-    enum: OnlineMenuSortBy
+    enum: OnlineMenuSortBy,
   })
   @IsOptional()
   @IsEnum(OnlineMenuSortBy)
   sortBy?: OnlineMenuSortBy = OnlineMenuSortBy.CREATED_AT;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 'DESC',
     description: 'Sort order (ASC or DESC)',
-    enum: ['ASC', 'DESC']
+    enum: ['ASC', 'DESC'],
   })
   @IsOptional()
   @IsEnum(['ASC', 'DESC'])
   sortOrder?: 'ASC' | 'DESC' = 'DESC';
 }
-

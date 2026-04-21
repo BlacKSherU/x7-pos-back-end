@@ -5,7 +5,10 @@ import { MarketingMessageLogStatus } from '../constants/marketing-message-log-st
 import { MarketingMessageLogRecordStatus } from '../constants/marketing-message-log-record-status.enum';
 
 export class BasicCampaignInfoDto {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Marketing Campaign' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Marketing Campaign',
+  })
   id: number;
 
   @ApiProperty({ example: 'Summer Sale', description: 'Name of the campaign' })
@@ -13,10 +16,16 @@ export class BasicCampaignInfoDto {
 }
 
 export class BasicAutomationInfoDto {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Marketing Automation' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Marketing Automation',
+  })
   id: number;
 
-  @ApiProperty({ example: 'Welcome Email', description: 'Name of the automation' })
+  @ApiProperty({
+    example: 'Welcome Email',
+    description: 'Name of the automation',
+  })
   name: string;
 }
 
@@ -27,17 +36,24 @@ export class BasicCustomerInfoDto {
   @ApiProperty({ example: 'John Doe', description: 'Name of the customer' })
   name: string;
 
-  @ApiProperty({ example: 'john@example.com', description: 'Email of the customer' })
+  @ApiProperty({
+    example: 'john@example.com',
+    description: 'Email of the customer',
+  })
   email: string;
 }
 
 export class MarketingMessageLogResponseDto {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the marketing message log' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the marketing message log',
+  })
   id: number;
 
   @ApiProperty({
     example: 1,
-    description: 'Identifier of the Marketing Campaign (null if from automation)',
+    description:
+      'Identifier of the Marketing Campaign (null if from automation)',
     nullable: true,
   })
   campaignId: number | null;
@@ -51,7 +67,8 @@ export class MarketingMessageLogResponseDto {
 
   @ApiProperty({
     example: 1,
-    description: 'Identifier of the Marketing Automation (null if from campaign)',
+    description:
+      'Identifier of the Marketing Automation (null if from campaign)',
     nullable: true,
   })
   automationId: number | null;

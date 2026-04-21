@@ -12,7 +12,7 @@ import { LoyaltyRewardType } from '../constants/loyalty-reward-type.enum';
 import { ApiProperty } from '@nestjs/swagger';
 import { Product } from 'src/inventory/products-inventory/products/entities/product.entity';
 import { LoyaltyProgram } from 'src/growth/loyalty/loyalty-programs/entities/loyalty-program.entity';
-import { LoyaltyRewardsRedemtion } from 'src/growth/loyalty/loyalty-rewards-redemptions/entities/loyalty-rewards-redemption.entity';
+import { LoyaltyRewardsRedemption } from 'src/growth/loyalty/loyalty-rewards-redemptions/entities/loyalty-rewards-redemption.entity';
 import { LoyaltyCoupon } from 'src/growth/loyalty/loyalty-coupons/entities/loyalty-coupon.entity';
 
 @Entity('loyalty_reward')
@@ -120,14 +120,11 @@ export class LoyaltyReward {
   is_active: boolean;
 
   @OneToMany(
-    () => LoyaltyRewardsRedemtion,
-    (loyaltyRewardsRedemtion) => loyaltyRewardsRedemtion.reward,
+    () => LoyaltyRewardsRedemption,
+    (loyaltyRewardsRedemption) => loyaltyRewardsRedemption.reward,
   )
-  loyaltyRewardsRedemptions: LoyaltyRewardsRedemtion[];
+  loyaltyRewardsRedemptions: LoyaltyRewardsRedemption[];
 
-  @OneToMany(
-    () => LoyaltyCoupon,
-    (loyaltyCoupon) => loyaltyCoupon.reward,
-  )
+  @OneToMany(() => LoyaltyCoupon, (loyaltyCoupon) => loyaltyCoupon.reward)
   loyaltyCoupons: LoyaltyCoupon[];
 }

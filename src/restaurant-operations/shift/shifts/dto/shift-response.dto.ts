@@ -16,38 +16,41 @@ export class ShiftResponseDto {
   @ApiProperty({ example: 1, description: 'Unique identifier of the Shift' })
   id: number;
 
-  @ApiProperty({ example: 1, description: 'Merchant ID associated with the shift' })
+  @ApiProperty({
+    example: 1,
+    description: 'Merchant ID associated with the shift',
+  })
   merchantId: number;
 
-  @ApiProperty({ 
-    example: '2024-01-15T08:00:00Z', 
-    description: 'Start time of the shift' 
+  @ApiProperty({
+    example: '2024-01-15T08:00:00Z',
+    description: 'Start time of the shift',
   })
   startTime: Date;
 
-  @ApiProperty({ 
-    example: '2024-01-15T16:00:00Z', 
-    description: 'End time of the shift' 
+  @ApiProperty({
+    example: '2024-01-15T16:00:00Z',
+    description: 'End time of the shift',
   })
   endTime?: Date;
 
-  @ApiProperty({ 
+  @ApiProperty({
     enum: ShiftRole,
     example: ShiftRole.WAITER,
-    description: 'Role of the person working the shift' 
+    description: 'Role of the person working the shift',
   })
   role: ShiftRole;
 
-  @ApiProperty({ 
+  @ApiProperty({
     enum: ShiftStatus,
     example: ShiftStatus.ACTIVE,
-    description: 'Current status of the shift' 
+    description: 'Current status of the shift',
   })
   status: ShiftStatus;
 
-  @ApiProperty({ 
+  @ApiProperty({
     type: BasicMerchantInfoDto,
-    description: 'Basic merchant information' 
+    description: 'Basic merchant information',
   })
   merchant: BasicMerchantInfoDto;
 }
@@ -61,4 +64,3 @@ export class AllShiftsResponseDto extends SuccessResponse {
   @ApiProperty({ type: [ShiftResponseDto] })
   data: ShiftResponseDto[];
 }
-

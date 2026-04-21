@@ -4,7 +4,10 @@ import { MarketingCampaignChannel } from '../constants/marketing-campaign-channe
 import { MarketingCampaignStatus } from '../constants/marketing-campaign-status.enum';
 
 export class MarketingCampaignResponseDto {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Marketing Campaign' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Marketing Campaign',
+  })
   id: number;
 
   @ApiProperty({

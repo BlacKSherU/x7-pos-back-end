@@ -68,11 +68,10 @@ describe('SuppliersController', () => {
 
       const result = await controller.findAll(user, query);
 
-      expect(mockSuppliersService.getCompanyIdByMerchantId).toHaveBeenCalledWith(user.merchant.id);
-      expect(mockSuppliersService.findAll).toHaveBeenCalledWith(
-        query,
-        1,
-      );
+      expect(
+        mockSuppliersService.getCompanyIdByMerchantId,
+      ).toHaveBeenCalledWith(user.merchant.id);
+      expect(mockSuppliersService.findAll).toHaveBeenCalledWith(query, 1);
     });
   });
 
@@ -93,11 +92,10 @@ describe('SuppliersController', () => {
 
       const result = await controller.findOne(user, supplierId);
 
-      expect(mockSuppliersService.getCompanyIdByMerchantId).toHaveBeenCalledWith(user.merchant.id);
-      expect(mockSuppliersService.findOne).toHaveBeenCalledWith(
-        supplierId,
-        1,
-      );
+      expect(
+        mockSuppliersService.getCompanyIdByMerchantId,
+      ).toHaveBeenCalledWith(user.merchant.id);
+      expect(mockSuppliersService.findOne).toHaveBeenCalledWith(supplierId, 1);
     });
   });
 
@@ -122,7 +120,9 @@ describe('SuppliersController', () => {
       const result = await controller.create(user, createSupplierDto);
 
       expect(result).toEqual(expectedResult);
-      expect(mockSuppliersService.getCompanyIdByMerchantId).toHaveBeenCalledWith(user.merchant.id);
+      expect(
+        mockSuppliersService.getCompanyIdByMerchantId,
+      ).toHaveBeenCalledWith(user.merchant.id);
       expect(mockSuppliersService.create).toHaveBeenCalledWith(
         1,
         createSupplierDto,
@@ -155,7 +155,9 @@ describe('SuppliersController', () => {
       );
 
       expect(result).toEqual(expectedResult);
-      expect(mockSuppliersService.getCompanyIdByMerchantId).toHaveBeenCalledWith(user.merchant.id);
+      expect(
+        mockSuppliersService.getCompanyIdByMerchantId,
+      ).toHaveBeenCalledWith(user.merchant.id);
       expect(mockSuppliersService.update).toHaveBeenCalledWith(
         supplierId,
         1,
@@ -182,11 +184,10 @@ describe('SuppliersController', () => {
       const result = await controller.remove(user, supplierId);
 
       expect(result).toEqual(expectedResult);
-      expect(mockSuppliersService.getCompanyIdByMerchantId).toHaveBeenCalledWith(user.merchant.id);
-      expect(mockSuppliersService.remove).toHaveBeenCalledWith(
-        supplierId,
-        1,
-      );
+      expect(
+        mockSuppliersService.getCompanyIdByMerchantId,
+      ).toHaveBeenCalledWith(user.merchant.id);
+      expect(mockSuppliersService.remove).toHaveBeenCalledWith(supplierId, 1);
     });
   });
 
@@ -216,28 +217,21 @@ describe('SuppliersController', () => {
       await controller.update(user, supplierId, updateSupplierDto);
       await controller.remove(user, supplierId);
 
-      expect(mockSuppliersService.getCompanyIdByMerchantId).toHaveBeenCalledTimes(5);
+      expect(
+        mockSuppliersService.getCompanyIdByMerchantId,
+      ).toHaveBeenCalledTimes(5);
       expect(mockSuppliersService.create).toHaveBeenCalledWith(
         1,
         createSupplierDto,
       );
-      expect(mockSuppliersService.findAll).toHaveBeenCalledWith(
-        query,
-        1,
-      );
-      expect(mockSuppliersService.findOne).toHaveBeenCalledWith(
-        supplierId,
-        1,
-      );
+      expect(mockSuppliersService.findAll).toHaveBeenCalledWith(query, 1);
+      expect(mockSuppliersService.findOne).toHaveBeenCalledWith(supplierId, 1);
       expect(mockSuppliersService.update).toHaveBeenCalledWith(
         supplierId,
         1,
         updateSupplierDto,
       );
-      expect(mockSuppliersService.remove).toHaveBeenCalledWith(
-        supplierId,
-        1,
-      );
+      expect(mockSuppliersService.remove).toHaveBeenCalledWith(supplierId, 1);
     });
   });
 });

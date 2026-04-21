@@ -6,7 +6,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, type QueryDeepPartialEntity } from 'typeorm';
 import { MarketingCouponRedemption } from './entities/marketing-coupon-redemption.entity';
 import { MarketingCoupon } from '../marketing-coupons/entities/marketing-coupon.entity';
 import { Order } from '../../../restaurant-operations/pos/orders/entities/order.entity';
@@ -451,7 +451,7 @@ export class MarketingCouponRedemptionsService {
     }
 
     // Update marketing coupon redemption
-    const updateData: Partial<MarketingCouponRedemption> = {};
+    const updateData: QueryDeepPartialEntity<MarketingCouponRedemption> = {};
     if (updateMarketingCouponRedemptionDto.couponId !== undefined)
       updateData.coupon_id = updateMarketingCouponRedemptionDto.couponId;
     if (updateMarketingCouponRedemptionDto.orderId !== undefined)

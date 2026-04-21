@@ -1,4 +1,11 @@
-import { IsOptional, IsNumber, IsEnum, IsPositive, Min, Max } from 'class-validator';
+import {
+  IsOptional,
+  IsNumber,
+  IsEnum,
+  IsPositive,
+  Min,
+  Max,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { AdjustmentType } from '../constants/adjustment-type.enum';
@@ -17,7 +24,12 @@ export class GetPayrollAdjustmentsQueryDto {
   @Min(1)
   page?: number;
 
-  @ApiPropertyOptional({ example: 10, description: 'Items per page', minimum: 1, maximum: 100 })
+  @ApiPropertyOptional({
+    example: 10,
+    description: 'Items per page',
+    minimum: 1,
+    maximum: 100,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
@@ -25,14 +37,21 @@ export class GetPayrollAdjustmentsQueryDto {
   @Max(100)
   limit?: number;
 
-  @ApiPropertyOptional({ example: 1, description: 'Filter by payroll entry ID' })
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'Filter by payroll entry ID',
+  })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
   @IsPositive()
   payroll_entry_id?: number;
 
-  @ApiPropertyOptional({ example: AdjustmentType.BONUS, enum: AdjustmentType, description: 'Filter by adjustment type' })
+  @ApiPropertyOptional({
+    example: AdjustmentType.BONUS,
+    enum: AdjustmentType,
+    description: 'Filter by adjustment type',
+  })
   @IsOptional()
   @IsEnum(AdjustmentType)
   adjustment_type?: AdjustmentType;
@@ -46,7 +65,11 @@ export class GetPayrollAdjustmentsQueryDto {
   @IsEnum(PayrollAdjustmentSortBy)
   sortBy?: PayrollAdjustmentSortBy;
 
-  @ApiPropertyOptional({ example: 'DESC', enum: ['ASC', 'DESC'], description: 'Sort order' })
+  @ApiPropertyOptional({
+    example: 'DESC',
+    enum: ['ASC', 'DESC'],
+    description: 'Sort order',
+  })
   @IsOptional()
   sortOrder?: 'ASC' | 'DESC';
 }

@@ -71,7 +71,9 @@ describe('MarketingCouponsController', () => {
       ],
     }).compile();
 
-    controller = module.get<MarketingCouponsController>(MarketingCouponsController);
+    controller = module.get<MarketingCouponsController>(
+      MarketingCouponsController,
+    );
     service = module.get<MarketingCouponsService>(MarketingCouponsService);
   });
 

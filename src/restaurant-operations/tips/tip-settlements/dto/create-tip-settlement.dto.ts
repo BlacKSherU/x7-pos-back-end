@@ -36,7 +36,11 @@ export class CreateTipSettlementDto {
   })
   settlementMethod: SettlementMethod;
 
-  @ApiProperty({ example: 1, description: 'User ID who performs the settlement', required: false })
+  @ApiProperty({
+    example: 1,
+    description: 'User ID who performs the settlement',
+    required: false,
+  })
   @IsNotEmpty({ message: 'Settled by (user ID) is required' })
   @Type(() => Number)
   @IsNumber({}, { message: 'Settled by must be a number' })

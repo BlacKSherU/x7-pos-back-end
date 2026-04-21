@@ -15,7 +15,10 @@ import { CashDrawerStatus } from '../constants/cash-drawer-status.enum';
 
 @Entity('cash_drawer')
 export class CashDrawer {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Cash Drawer' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Cash Drawer',
+  })
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -54,21 +57,21 @@ export class CashDrawer {
   shift: Shift;
 
   @ApiProperty({
-    example: 100.00,
+    example: 100.0,
     description: 'Opening balance amount in the cash drawer',
   })
   @Column({ type: 'decimal', precision: 12, scale: 2 })
   opening_balance: number;
 
   @ApiProperty({
-    example: 125.50,
+    example: 125.5,
     description: 'Current balance amount in the cash drawer',
   })
   @Column({ type: 'decimal', precision: 12, scale: 2 })
   current_balance: number;
 
   @ApiProperty({
-    example: 150.50,
+    example: 150.5,
     description: 'Closing balance amount in the cash drawer',
     nullable: true,
   })

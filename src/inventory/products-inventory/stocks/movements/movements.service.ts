@@ -22,7 +22,7 @@ export class MovementsService {
     private readonly movementRepository: Repository<Movement>,
     @InjectRepository(Item)
     private readonly itemRepository: Repository<Item>,
-  ) { }
+  ) {}
 
   async create(
     merchant_id: number,
@@ -114,9 +114,9 @@ export class MovementsService {
           id: movement.id,
           item: movement.item
             ? ({
-              id: movement.item.id,
-              currentQty: movement.item.currentQty,
-            } as ItemLittleResponseDto)
+                id: movement.item.id,
+                currentQty: movement.item.currentQty,
+              } as ItemLittleResponseDto)
             : null,
           quantity: movement.quantity,
           type: movement.type,
@@ -124,9 +124,9 @@ export class MovementsService {
           reason: movement.reason,
           merchant: movement.merchant
             ? {
-              id: movement.merchant.id,
-              name: movement.merchant.name,
-            }
+                id: movement.merchant.id,
+                name: movement.merchant.name,
+              }
             : null,
           createdAt: movement.createdAt,
         };
@@ -195,9 +195,9 @@ export class MovementsService {
       id: movement.id,
       item: movement.item
         ? ({
-          id: movement.item.id,
-          currentQty: movement.item.currentQty,
-        } as ItemLittleResponseDto)
+            id: movement.item.id,
+            currentQty: movement.item.currentQty,
+          } as ItemLittleResponseDto)
         : null,
       quantity: movement.quantity,
       type: movement.type,
@@ -205,9 +205,9 @@ export class MovementsService {
       reason: movement.reason,
       merchant: movement.merchant
         ? {
-          id: movement.merchant.id,
-          name: movement.merchant.name,
-        }
+            id: movement.merchant.id,
+            name: movement.merchant.name,
+          }
         : null,
       createdAt: movement.createdAt,
     };

@@ -3,7 +3,10 @@ import { SuccessResponse } from '../../../../common/dtos/success-response.dto';
 import { MarketingCouponRedemptionStatus } from '../constants/marketing-coupon-redemption-status.enum';
 
 export class BasicCouponInfoDto {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Marketing Coupon' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Marketing Coupon',
+  })
   id: number;
 
   @ApiProperty({ example: 'SUMMER2024', description: 'Code of the coupon' })
@@ -22,12 +25,18 @@ export class BasicCustomerInfoDto {
   @ApiProperty({ example: 'John Doe', description: 'Name of the customer' })
   name: string;
 
-  @ApiProperty({ example: 'john@example.com', description: 'Email of the customer' })
+  @ApiProperty({
+    example: 'john@example.com',
+    description: 'Email of the customer',
+  })
   email: string;
 }
 
 export class MarketingCouponRedemptionResponseDto {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Marketing Coupon Redemption' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Marketing Coupon Redemption',
+  })
   id: number;
 
   @ApiProperty({
@@ -73,7 +82,7 @@ export class MarketingCouponRedemptionResponseDto {
   redeemedAt: Date;
 
   @ApiProperty({
-    example: 10.50,
+    example: 10.5,
     description: 'Discount amount that was applied to the order',
   })
   discountApplied: number;
@@ -93,7 +102,8 @@ export class MarketingCouponRedemptionResponseDto {
 
   @ApiProperty({
     example: '2023-10-01T12:00:00Z',
-    description: 'Last update timestamp of the Marketing Coupon Redemption record',
+    description:
+      'Last update timestamp of the Marketing Coupon Redemption record',
   })
   updatedAt: Date;
 }

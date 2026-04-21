@@ -17,7 +17,10 @@ import { MarketingCouponStatus } from '../constants/marketing-coupon-status.enum
 @Entity('marketing_coupons')
 @Index(['merchant_id', 'code', 'status', 'created_at'])
 export class MarketingCoupon {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the marketing coupon' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the marketing coupon',
+  })
   @PrimaryGeneratedColumn({ type: 'bigint' })
   id: number;
 
@@ -48,13 +51,14 @@ export class MarketingCoupon {
   @ApiProperty({
     example: MarketingCouponType.PERCENTAGE,
     enum: MarketingCouponType,
-    description: 'Type of the coupon (percentage, fixed, bogo, free_item, free_delivery)',
+    description:
+      'Type of the coupon (percentage, fixed, bogo, free_item, free_delivery)',
   })
   @Column({ type: 'varchar', length: 50 })
   type: MarketingCouponType;
 
   @ApiProperty({
-    example: 10.50,
+    example: 10.5,
     description: 'Fixed amount discount (for fixed type)',
     nullable: true,
   })
@@ -102,7 +106,7 @@ export class MarketingCoupon {
   valid_until: Date | null;
 
   @ApiProperty({
-    example: 50.00,
+    example: 50.0,
     description: 'Minimum order amount required to use the coupon',
     nullable: true,
   })

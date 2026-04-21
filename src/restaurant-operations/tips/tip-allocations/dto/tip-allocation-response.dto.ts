@@ -7,15 +7,21 @@ export class BasicTipInfoDto {
   @ApiProperty({ example: 1, description: 'Unique identifier of the Tip' })
   id: number;
 
-  @ApiProperty({ example: 5.50, description: 'Tip amount' })
+  @ApiProperty({ example: 5.5, description: 'Tip amount' })
   amount: number;
 }
 
 export class BasicCollaboratorInfoDto {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Collaborator' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Collaborator',
+  })
   id: number;
 
-  @ApiProperty({ example: 'Juan Pérez', description: 'Name of the collaborator' })
+  @ApiProperty({
+    example: 'Juan Pérez',
+    description: 'Name of the collaborator',
+  })
   name: string;
 }
 
@@ -23,12 +29,18 @@ export class BasicShiftInfoDto {
   @ApiProperty({ example: 1, description: 'Unique identifier of the Shift' })
   id: number;
 
-  @ApiProperty({ example: '2024-01-15T08:00:00Z', description: 'Shift start time' })
+  @ApiProperty({
+    example: '2024-01-15T08:00:00Z',
+    description: 'Shift start time',
+  })
   startTime: Date;
 }
 
 export class TipAllocationResponseDto {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the tip allocation' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the tip allocation',
+  })
   id: number;
 
   @ApiProperty({
@@ -75,7 +87,7 @@ export class TipAllocationResponseDto {
   role: TipAllocationRole;
 
   @ApiProperty({
-    example: 50.00,
+    example: 50.0,
     description: 'Percentage of the tip allocated',
   })
   percentage: number;

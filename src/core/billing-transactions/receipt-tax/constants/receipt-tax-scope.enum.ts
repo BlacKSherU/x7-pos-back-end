@@ -1,4 +1,4 @@
 export enum ReceiptTaxScope {
-    RECEIPT = 'RECEIPT',
-    ITEM = 'ITEM',
+  RECEIPT = 'RECEIPT',
+  ITEM = 'ITEM',
 }

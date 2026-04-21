@@ -1,5 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsNumber, IsOptional, IsPositive, IsString, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsPositive,
+  IsString,
+  Min,
+} from 'class-validator';
 import { CashTransactionStatus } from '../constants/cash-transaction-status.enum';
 import { CashTransactionType } from '../constants/cash-transaction-type.enum';
 
@@ -55,8 +62,3 @@ export class GetCashTransactionsQueryDto {
   @IsString()
   sortOrder?: 'ASC' | 'DESC';
 }
-
-
-
-
-

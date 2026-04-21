@@ -385,9 +385,7 @@ export class TipSettlementsService {
     };
   }
 
-  private formatResponse(
-    settlement: TipSettlement,
-  ): TipSettlementResponseDto {
+  private formatResponse(settlement: TipSettlement): TipSettlementResponseDto {
     return {
       id: settlement.id,
       companyId: settlement.company_id,
@@ -407,7 +405,10 @@ export class TipSettlementsService {
       settledBy: settlement.settledByUser
         ? {
             id: settlement.settledByUser.id,
-            name: settlement.settledByUser.username || settlement.settledByUser.email || '',
+            name:
+              settlement.settledByUser.username ||
+              settlement.settledByUser.email ||
+              '',
             email: settlement.settledByUser.email,
           }
         : null,

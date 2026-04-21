@@ -46,7 +46,7 @@ export class CreateTipDto {
   paymentId?: number | null;
 
   @ApiProperty({
-    example: 5.50,
+    example: 5.5,
     description: 'Tip amount',
   })
   @IsNotEmpty({ message: 'Amount is required' })
@@ -70,6 +70,8 @@ export class CreateTipDto {
     description: 'Tip status (pending, allocated, settled)',
   })
   @IsNotEmpty({ message: 'Status is required' })
-  @IsEnum(TipStatus, { message: 'Status must be one of: pending, allocated, settled' })
+  @IsEnum(TipStatus, {
+    message: 'Status must be one of: pending, allocated, settled',
+  })
   status: TipStatus;
 }

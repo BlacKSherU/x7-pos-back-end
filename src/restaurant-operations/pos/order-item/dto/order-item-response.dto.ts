@@ -3,7 +3,10 @@ import { SuccessResponse } from '../../../../common/dtos/success-response.dto';
 import { OrderItemStatus } from '../constants/order-item-status.enum';
 
 export class OrderItemResponseDto {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Order Item' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Order Item',
+  })
   id: number;
 
   @ApiProperty({
@@ -77,13 +80,13 @@ export class OrderItemResponseDto {
   quantity: number;
 
   @ApiProperty({
-    example: 125.50,
+    example: 125.5,
     description: 'Price of the item',
   })
   price: number;
 
   @ApiProperty({
-    example: 10.00,
+    example: 10.0,
     description: 'Discount applied to the item',
   })
   discount: number;
@@ -131,8 +134,3 @@ export class OneOrderItemResponseDto extends SuccessResponse {
   @ApiProperty({ type: OrderItemResponseDto })
   data: OrderItemResponseDto;
 }
-
-
-
-
-

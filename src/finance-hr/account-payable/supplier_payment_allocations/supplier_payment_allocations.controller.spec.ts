@@ -23,7 +23,9 @@ describe('SupplierPaymentAllocationsController', () => {
       ],
     }).compile();
 
-    controller = module.get<SupplierPaymentAllocationsController>(SupplierPaymentAllocationsController);
+    controller = module.get<SupplierPaymentAllocationsController>(
+      SupplierPaymentAllocationsController,
+    );
   });
 
   it('should be defined', () => {

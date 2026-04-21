@@ -1,9 +1,8 @@
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/unbound-method */
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, type DeepPartial, type SelectQueryBuilder } from 'typeorm';
 import {
   NotFoundException,
   ForbiddenException,
@@ -22,6 +21,8 @@ import { GetKitchenOrderItemQueryDto } from './dto/get-kitchen-order-item-query.
 import { KitchenOrderItemStatus } from './constants/kitchen-order-item-status.enum';
 import { KitchenOrderStatus } from '../kitchen-order/constants/kitchen-order-status.enum';
 import { OrderItemStatus } from '../../../restaurant-operations/pos/order-item/constants/order-item-status.enum';
+import { KitchenOrderSyncService } from '../kitchen-order/kitchen-order-sync.service';
+import { KitchenOrderItemPreparationStatus } from './constants/kitchen-order-item-preparation-status.enum';
 
 describe('KitchenOrderItemService', () => {
   let service: KitchenOrderItemService;
@@ -53,9 +54,15 @@ describe('KitchenOrderItemService', () => {
     findOne: jest.fn(),
   };
 
+  const mockKitchenOrderSyncService = {
+    syncPosOrderFromKitchenOrders: jest.fn().mockResolvedValue(undefined),
+    resetOrderLineIfNoActiveKoi: jest.fn().mockResolvedValue(undefined),
+  };
+
   const mockKitchenOrder = {
     id: 1,
     merchant_id: 1,
+    order_id: 1,
     status: KitchenOrderStatus.ACTIVE,
   };
 
@@ -82,6 +89,7 @@ describe('KitchenOrderItemService', () => {
     variant_id: null,
     quantity: 2,
     prepared_quantity: 0,
+    preparation_status: KitchenOrderItemPreparationStatus.PENDING,
     status: KitchenOrderItemStatus.ACTIVE,
     started_at: null,
     completed_at: null,
@@ -130,6 +138,10 @@ describe('KitchenOrderItemService', () => {
           provide: getRepositoryToken(Variant),
           useValue: mockVariantRepository,
         },
+        {
+          provide: KitchenOrderSyncService,
+          useValue: mockKitchenOrderSyncService,
+        },
       ],
     }).compile();
 
@@ -155,6 +167,12 @@ describe('KitchenOrderItemService', () => {
     jest.clearAllMocks();
     mockQueryBuilder.getOne.mockReset();
     mockQueryBuilder.getManyAndCount.mockReset();
+    mockKitchenOrderItem.preparation_status =
+      KitchenOrderItemPreparationStatus.PENDING;
+    mockKitchenOrderItem.kitchen_order_id = 1;
+    mockKitchenOrderItem.prepared_quantity = 0;
+    mockKitchenOrderItem.started_at = null;
+    mockKitchenOrderItem.completed_at = null;
   });
 
   it('should be defined', () => {
@@ -182,20 +200,20 @@ describe('KitchenOrderItemService', () => {
     it('should create a kitchen order item successfully', async () => {
       jest
         .spyOn(kitchenOrderRepository, 'findOne')
-        .mockResolvedValue(mockKitchenOrder as any);
+        .mockResolvedValue(mockKitchenOrder as unknown as KitchenOrder);
       jest
         .spyOn(orderItemRepository, 'findOne')
-        .mockResolvedValue(mockOrderItem as any);
+        .mockResolvedValue(mockOrderItem as unknown as OrderItem);
       jest
         .spyOn(productRepository, 'findOne')
-        .mockResolvedValue(mockProduct as any);
+        .mockResolvedValue(mockProduct as unknown as Product);
       const savedItem = { ...mockKitchenOrderItem, id: 1 };
       jest
         .spyOn(kitchenOrderItemRepository, 'save')
-        .mockResolvedValue(savedItem as any);
+        .mockResolvedValue(savedItem as unknown as KitchenOrderItem);
       jest
         .spyOn(kitchenOrderItemRepository, 'findOne')
-        .mockResolvedValue(mockKitchenOrderItem as any);
+        .mockResolvedValue(mockKitchenOrderItem as unknown as KitchenOrderItem);
 
       const result = await service.create(createDto, 1);
 
@@ -203,6 +221,9 @@ describe('KitchenOrderItemService', () => {
       expect(orderItemRepository.findOne).toHaveBeenCalled();
       expect(productRepository.findOne).toHaveBeenCalled();
       expect(kitchenOrderItemRepository.save).toHaveBeenCalled();
+      expect(
+        mockKitchenOrderSyncService.syncPosOrderFromKitchenOrders,
+      ).toHaveBeenCalledWith(1);
       expect(result.statusCode).toBe(201);
       expect(result.message).toBe('Kitchen order item created successfully');
       expect(result.data.kitchenOrderId).toBe(1);
@@ -212,16 +233,16 @@ describe('KitchenOrderItemService', () => {
       const dtoWithVariant = { ...createDto, variantId: 1 };
       jest
         .spyOn(kitchenOrderRepository, 'findOne')
-        .mockResolvedValue(mockKitchenOrder as any);
+        .mockResolvedValue(mockKitchenOrder as unknown as KitchenOrder);
       jest
         .spyOn(orderItemRepository, 'findOne')
-        .mockResolvedValue(mockOrderItem as any);
+        .mockResolvedValue(mockOrderItem as unknown as OrderItem);
       jest
         .spyOn(productRepository, 'findOne')
-        .mockResolvedValue(mockProduct as any);
+        .mockResolvedValue(mockProduct as unknown as Product);
       jest
         .spyOn(variantRepository, 'findOne')
-        .mockResolvedValue(mockVariant as any);
+        .mockResolvedValue(mockVariant as unknown as Variant);
       const savedItem = {
         ...mockKitchenOrderItem,
         variant_id: 1,
@@ -229,10 +250,10 @@ describe('KitchenOrderItemService', () => {
       };
       jest
         .spyOn(kitchenOrderItemRepository, 'save')
-        .mockResolvedValue(savedItem as any);
+        .mockResolvedValue(savedItem as unknown as KitchenOrderItem);
       jest
         .spyOn(kitchenOrderItemRepository, 'findOne')
-        .mockResolvedValue(savedItem as any);
+        .mockResolvedValue(savedItem as unknown as KitchenOrderItem);
 
       const result = await service.create(dtoWithVariant, 1);
 
@@ -241,10 +262,10 @@ describe('KitchenOrderItemService', () => {
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.create(createDto, undefined as any)).rejects.toThrow(
+      await expect(service.create(createDto, 0)).rejects.toThrow(
         ForbiddenException,
       );
-      await expect(service.create(createDto, undefined as any)).rejects.toThrow(
+      await expect(service.create(createDto, 0)).rejects.toThrow(
         'You must be associated with a merchant to create kitchen order items',
       );
     });
@@ -263,7 +284,7 @@ describe('KitchenOrderItemService', () => {
     it('should throw NotFoundException when order item not found', async () => {
       jest
         .spyOn(kitchenOrderRepository, 'findOne')
-        .mockResolvedValue(mockKitchenOrder as any);
+        .mockResolvedValue(mockKitchenOrder as unknown as KitchenOrder);
       jest.spyOn(orderItemRepository, 'findOne').mockResolvedValue(null);
 
       await expect(service.create(createDto, 1)).rejects.toThrow(
@@ -277,10 +298,10 @@ describe('KitchenOrderItemService', () => {
     it('should throw NotFoundException when product not found', async () => {
       jest
         .spyOn(kitchenOrderRepository, 'findOne')
-        .mockResolvedValue(mockKitchenOrder as any);
+        .mockResolvedValue(mockKitchenOrder as unknown as KitchenOrder);
       jest
         .spyOn(orderItemRepository, 'findOne')
-        .mockResolvedValue(mockOrderItem as any);
+        .mockResolvedValue(mockOrderItem as unknown as OrderItem);
       jest.spyOn(productRepository, 'findOne').mockResolvedValue(null);
 
       await expect(service.create(createDto, 1)).rejects.toThrow(
@@ -295,13 +316,13 @@ describe('KitchenOrderItemService', () => {
       const dtoWithVariant = { ...createDto, variantId: 1 };
       jest
         .spyOn(kitchenOrderRepository, 'findOne')
-        .mockResolvedValue(mockKitchenOrder as any);
+        .mockResolvedValue(mockKitchenOrder as unknown as KitchenOrder);
       jest
         .spyOn(orderItemRepository, 'findOne')
-        .mockResolvedValue(mockOrderItem as any);
+        .mockResolvedValue(mockOrderItem as unknown as OrderItem);
       jest
         .spyOn(productRepository, 'findOne')
-        .mockResolvedValue(mockProduct as any);
+        .mockResolvedValue(mockProduct as unknown as Product);
       jest.spyOn(variantRepository, 'findOne').mockResolvedValue(null);
 
       await expect(service.create(dtoWithVariant, 1)).rejects.toThrow(
@@ -316,13 +337,13 @@ describe('KitchenOrderItemService', () => {
       const dtoWithInvalidPrepared = { ...createDto, preparedQuantity: -1 };
       jest
         .spyOn(kitchenOrderRepository, 'findOne')
-        .mockResolvedValue(mockKitchenOrder as any);
+        .mockResolvedValue(mockKitchenOrder as unknown as KitchenOrder);
       jest
         .spyOn(orderItemRepository, 'findOne')
-        .mockResolvedValue(mockOrderItem as any);
+        .mockResolvedValue(mockOrderItem as unknown as OrderItem);
       jest
         .spyOn(productRepository, 'findOne')
-        .mockResolvedValue(mockProduct as any);
+        .mockResolvedValue(mockProduct as unknown as Product);
 
       await expect(service.create(dtoWithInvalidPrepared, 1)).rejects.toThrow(
         BadRequestException,
@@ -336,13 +357,13 @@ describe('KitchenOrderItemService', () => {
       const dtoWithInvalidPrepared = { ...createDto, preparedQuantity: 5 };
       jest
         .spyOn(kitchenOrderRepository, 'findOne')
-        .mockResolvedValue(mockKitchenOrder as any);
+        .mockResolvedValue(mockKitchenOrder as unknown as KitchenOrder);
       jest
         .spyOn(orderItemRepository, 'findOne')
-        .mockResolvedValue(mockOrderItem as any);
+        .mockResolvedValue(mockOrderItem as unknown as OrderItem);
       jest
         .spyOn(productRepository, 'findOne')
-        .mockResolvedValue(mockProduct as any);
+        .mockResolvedValue(mockProduct as unknown as Product);
 
       await expect(service.create(dtoWithInvalidPrepared, 1)).rejects.toThrow(
         BadRequestException,
@@ -356,10 +377,10 @@ describe('KitchenOrderItemService', () => {
       const dtoWithoutOrderItem = { ...createDto, orderItemId: undefined };
       jest
         .spyOn(kitchenOrderRepository, 'findOne')
-        .mockResolvedValue(mockKitchenOrder as any);
+        .mockResolvedValue(mockKitchenOrder as unknown as KitchenOrder);
       jest
         .spyOn(productRepository, 'findOne')
-        .mockResolvedValue(mockProduct as any);
+        .mockResolvedValue(mockProduct as unknown as Product);
       const savedItem = {
         ...mockKitchenOrderItem,
         order_item_id: null,
@@ -367,10 +388,10 @@ describe('KitchenOrderItemService', () => {
       };
       jest
         .spyOn(kitchenOrderItemRepository, 'save')
-        .mockResolvedValue(savedItem as any);
+        .mockResolvedValue(savedItem as unknown as KitchenOrderItem);
       jest
         .spyOn(kitchenOrderItemRepository, 'findOne')
-        .mockResolvedValue(savedItem as any);
+        .mockResolvedValue(savedItem as unknown as KitchenOrderItem);
 
       const result = await service.create(dtoWithoutOrderItem, 1);
 
@@ -388,9 +409,11 @@ describe('KitchenOrderItemService', () => {
     it('should return paginated list of kitchen order items', async () => {
       jest
         .spyOn(kitchenOrderItemRepository, 'createQueryBuilder')
-        .mockReturnValue(mockQueryBuilder as any);
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<KitchenOrderItem>,
+        );
       mockQueryBuilder.getManyAndCount.mockResolvedValue([
-        [mockKitchenOrderItem] as any,
+        [mockKitchenOrderItem] as unknown as KitchenOrderItem[],
         1,
       ]);
 
@@ -406,10 +429,10 @@ describe('KitchenOrderItemService', () => {
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.findAll(query, undefined as any)).rejects.toThrow(
+      await expect(service.findAll(query, 0)).rejects.toThrow(
         ForbiddenException,
       );
-      await expect(service.findAll(query, undefined as any)).rejects.toThrow(
+      await expect(service.findAll(query, 0)).rejects.toThrow(
         'You must be associated with a merchant to access kitchen order items',
       );
     });
@@ -448,9 +471,11 @@ describe('KitchenOrderItemService', () => {
       const queryWithFilter = { ...query, kitchenOrderId: 1 };
       jest
         .spyOn(kitchenOrderItemRepository, 'createQueryBuilder')
-        .mockReturnValue(mockQueryBuilder as any);
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<KitchenOrderItem>,
+        );
       mockQueryBuilder.getManyAndCount.mockResolvedValue([
-        [mockKitchenOrderItem] as any,
+        [mockKitchenOrderItem] as unknown as KitchenOrderItem[],
         1,
       ]);
 
@@ -466,9 +491,11 @@ describe('KitchenOrderItemService', () => {
       const queryWithFilter = { ...query, productId: 1 };
       jest
         .spyOn(kitchenOrderItemRepository, 'createQueryBuilder')
-        .mockReturnValue(mockQueryBuilder as any);
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<KitchenOrderItem>,
+        );
       mockQueryBuilder.getManyAndCount.mockResolvedValue([
-        [mockKitchenOrderItem] as any,
+        [mockKitchenOrderItem] as unknown as KitchenOrderItem[],
         1,
       ]);
 
@@ -495,8 +522,12 @@ describe('KitchenOrderItemService', () => {
     it('should return a kitchen order item successfully', async () => {
       jest
         .spyOn(kitchenOrderItemRepository, 'createQueryBuilder')
-        .mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(mockKitchenOrderItem as any);
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<KitchenOrderItem>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        mockKitchenOrderItem as unknown as KitchenOrderItem,
+      );
 
       const result = await service.findOne(1, 1);
 
@@ -515,7 +546,9 @@ describe('KitchenOrderItemService', () => {
     it('should throw NotFoundException if kitchen order item not found', async () => {
       jest
         .spyOn(kitchenOrderItemRepository, 'createQueryBuilder')
-        .mockReturnValue(mockQueryBuilder as any);
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<KitchenOrderItem>,
+        );
       mockQueryBuilder.getOne.mockResolvedValue(null);
 
       await expect(service.findOne(1, 1)).rejects.toThrow(NotFoundException);
@@ -534,20 +567,29 @@ describe('KitchenOrderItemService', () => {
     it('should update a kitchen order item successfully', async () => {
       jest
         .spyOn(kitchenOrderItemRepository, 'createQueryBuilder')
-        .mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne
-        .mockResolvedValueOnce(mockKitchenOrderItem as any)
-        .mockResolvedValueOnce({
-          ...mockKitchenOrderItem,
-          prepared_quantity: 1,
-        } as any);
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<KitchenOrderItem>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValueOnce(
+        mockKitchenOrderItem as unknown as KitchenOrderItem,
+      );
       jest
         .spyOn(kitchenOrderItemRepository, 'save')
-        .mockResolvedValue(mockKitchenOrderItem as any);
+        .mockResolvedValue(mockKitchenOrderItem as unknown as KitchenOrderItem);
+      jest.spyOn(kitchenOrderItemRepository, 'findOne').mockResolvedValue({
+        ...mockKitchenOrderItem,
+        prepared_quantity: 1,
+      } as unknown as KitchenOrderItem);
+      jest
+        .spyOn(kitchenOrderRepository, 'findOne')
+        .mockResolvedValue(mockKitchenOrder as unknown as KitchenOrder);
 
       const result = await service.update(1, updateDto, 1);
 
       expect(kitchenOrderItemRepository.save).toHaveBeenCalled();
+      expect(
+        mockKitchenOrderSyncService.syncPosOrderFromKitchenOrders,
+      ).toHaveBeenCalledWith(1);
       expect(result.statusCode).toBe(200);
       expect(result.message).toBe('Kitchen order item updated successfully');
     });
@@ -561,7 +603,9 @@ describe('KitchenOrderItemService', () => {
     it('should throw NotFoundException if kitchen order item not found', async () => {
       jest
         .spyOn(kitchenOrderItemRepository, 'createQueryBuilder')
-        .mockReturnValue(mockQueryBuilder as any);
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<KitchenOrderItem>,
+        );
       mockQueryBuilder.getOne.mockResolvedValue(null);
 
       await expect(service.update(1, updateDto, 1)).rejects.toThrow(
@@ -576,8 +620,12 @@ describe('KitchenOrderItemService', () => {
       };
       jest
         .spyOn(kitchenOrderItemRepository, 'createQueryBuilder')
-        .mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(deletedItem as any);
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<KitchenOrderItem>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        deletedItem as unknown as KitchenOrderItem,
+      );
 
       await expect(service.update(1, updateDto, 1)).rejects.toThrow(
         ConflictException,
@@ -591,8 +639,12 @@ describe('KitchenOrderItemService', () => {
       const updateWithInvalidPrepared = { ...updateDto, preparedQuantity: 10 };
       jest
         .spyOn(kitchenOrderItemRepository, 'createQueryBuilder')
-        .mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(mockKitchenOrderItem as any);
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<KitchenOrderItem>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        mockKitchenOrderItem as unknown as KitchenOrderItem,
+      );
 
       await expect(
         service.update(1, updateWithInvalidPrepared, 1),
@@ -606,19 +658,25 @@ describe('KitchenOrderItemService', () => {
       const updateWithKitchenOrder = { ...updateDto, kitchenOrderId: 2 };
       jest
         .spyOn(kitchenOrderItemRepository, 'createQueryBuilder')
-        .mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne
-        .mockResolvedValueOnce(mockKitchenOrderItem as any)
-        .mockResolvedValueOnce({
-          ...mockKitchenOrderItem,
-          kitchen_order_id: 2,
-        } as any);
-      jest
-        .spyOn(kitchenOrderRepository, 'findOne')
-        .mockResolvedValue({ ...mockKitchenOrder, id: 2 } as any);
-      jest
-        .spyOn(kitchenOrderItemRepository, 'save')
-        .mockResolvedValue(mockKitchenOrderItem as any);
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<KitchenOrderItem>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValueOnce(
+        mockKitchenOrderItem as unknown as KitchenOrderItem,
+      );
+      jest.spyOn(kitchenOrderRepository, 'findOne').mockResolvedValue({
+        ...mockKitchenOrder,
+        id: 2,
+        order_id: 1,
+      } as unknown as KitchenOrder);
+      jest.spyOn(kitchenOrderItemRepository, 'save').mockResolvedValue({
+        ...mockKitchenOrderItem,
+        kitchen_order_id: 2,
+      } as unknown as KitchenOrderItem);
+      jest.spyOn(kitchenOrderItemRepository, 'findOne').mockResolvedValue({
+        ...mockKitchenOrderItem,
+        kitchen_order_id: 2,
+      } as unknown as KitchenOrderItem);
 
       await service.update(1, updateWithKitchenOrder, 1);
 
@@ -626,24 +684,189 @@ describe('KitchenOrderItemService', () => {
     });
   });
 
+  describe('advancePreparationStatus', () => {
+    it('should advance from PENDING to IN_PREPARATION', async () => {
+      jest
+        .spyOn(kitchenOrderItemRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<KitchenOrderItem>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue({
+        ...mockKitchenOrderItem,
+      } as unknown as KitchenOrderItem);
+      jest
+        .spyOn(kitchenOrderItemRepository, 'save')
+        .mockImplementation((entity: DeepPartial<KitchenOrderItem>) =>
+          Promise.resolve(entity as KitchenOrderItem),
+        );
+      jest.spyOn(kitchenOrderItemRepository, 'findOne').mockImplementation(
+        async () =>
+          ({
+            ...mockKitchenOrderItem,
+            preparation_status:
+              KitchenOrderItemPreparationStatus.IN_PREPARATION,
+            started_at: new Date('2024-01-15T10:00:00Z'),
+          }) as unknown as KitchenOrderItem,
+      );
+      jest
+        .spyOn(kitchenOrderRepository, 'findOne')
+        .mockResolvedValue(mockKitchenOrder as unknown as KitchenOrder);
+
+      const result = await service.advancePreparationStatus(1, 1);
+
+      expect(kitchenOrderItemRepository.save).toHaveBeenCalled();
+      const saved = (kitchenOrderItemRepository.save as jest.Mock).mock
+        .calls[0][0];
+      expect(saved.preparation_status).toBe(
+        KitchenOrderItemPreparationStatus.IN_PREPARATION,
+      );
+      expect(result.statusCode).toBe(200);
+      expect(result.message).toBe(
+        'Kitchen order item preparation status advanced successfully',
+      );
+      expect(
+        mockKitchenOrderSyncService.syncPosOrderFromKitchenOrders,
+      ).toHaveBeenCalledWith(1);
+    });
+
+    it('should throw ConflictException when already READY', async () => {
+      const readyItem = {
+        ...mockKitchenOrderItem,
+        preparation_status: KitchenOrderItemPreparationStatus.READY,
+      };
+      jest
+        .spyOn(kitchenOrderItemRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<KitchenOrderItem>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        readyItem as unknown as KitchenOrderItem,
+      );
+
+      await expect(service.advancePreparationStatus(1, 1)).rejects.toThrow(
+        ConflictException,
+      );
+      await expect(service.advancePreparationStatus(1, 1)).rejects.toThrow(
+        'Kitchen order item is already at the final preparation status',
+      );
+    });
+
+    it('should throw BadRequestException when id is invalid', async () => {
+      await expect(service.advancePreparationStatus(0, 1)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw ForbiddenException when user has no merchant', async () => {
+      await expect(service.advancePreparationStatus(1, 0)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+  });
+
+  describe('revertPreparationStatus', () => {
+    it('should revert from READY clearing completed_at and prepared_quantity', async () => {
+      const readyItem = {
+        ...mockKitchenOrderItem,
+        preparation_status: KitchenOrderItemPreparationStatus.READY,
+        prepared_quantity: 2,
+        completed_at: new Date('2024-01-15T11:00:00Z'),
+        started_at: new Date('2024-01-15T10:00:00Z'),
+      };
+      jest
+        .spyOn(kitchenOrderItemRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<KitchenOrderItem>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        readyItem as unknown as KitchenOrderItem,
+      );
+      jest
+        .spyOn(kitchenOrderItemRepository, 'save')
+        .mockImplementation((entity: DeepPartial<KitchenOrderItem>) =>
+          Promise.resolve(entity as KitchenOrderItem),
+        );
+      jest.spyOn(kitchenOrderItemRepository, 'findOne').mockResolvedValue({
+        ...readyItem,
+        preparation_status: KitchenOrderItemPreparationStatus.IN_PREPARATION,
+        completed_at: null,
+        prepared_quantity: 0,
+      } as unknown as KitchenOrderItem);
+      jest
+        .spyOn(kitchenOrderRepository, 'findOne')
+        .mockResolvedValue(mockKitchenOrder as unknown as KitchenOrder);
+
+      const result = await service.revertPreparationStatus(1, 1);
+
+      const saved = (kitchenOrderItemRepository.save as jest.Mock).mock
+        .calls[0][0];
+      expect(saved.preparation_status).toBe(
+        KitchenOrderItemPreparationStatus.IN_PREPARATION,
+      );
+      expect(saved.completed_at).toBeNull();
+      expect(saved.prepared_quantity).toBe(0);
+      expect(result.statusCode).toBe(200);
+      expect(result.message).toBe(
+        'Kitchen order item preparation status reverted successfully',
+      );
+      expect(
+        mockKitchenOrderSyncService.syncPosOrderFromKitchenOrders,
+      ).toHaveBeenCalledWith(1);
+    });
+
+    it('should throw ConflictException when already PENDING', async () => {
+      jest
+        .spyOn(kitchenOrderItemRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<KitchenOrderItem>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        mockKitchenOrderItem as unknown as KitchenOrderItem,
+      );
+
+      await expect(service.revertPreparationStatus(1, 1)).rejects.toThrow(
+        ConflictException,
+      );
+      await expect(service.revertPreparationStatus(1, 1)).rejects.toThrow(
+        'Kitchen order item is already at the initial preparation status',
+      );
+    });
+
+    it('should throw BadRequestException when id is invalid', async () => {
+      await expect(service.revertPreparationStatus(0, 1)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
+
   describe('remove', () => {
     it('should delete a kitchen order item successfully', async () => {
       jest
         .spyOn(kitchenOrderItemRepository, 'createQueryBuilder')
-        .mockReturnValue(mockQueryBuilder as any);
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<KitchenOrderItem>,
+        );
       mockQueryBuilder.getOne
-        .mockResolvedValueOnce(mockKitchenOrderItem as any)
+        .mockResolvedValueOnce(
+          mockKitchenOrderItem as unknown as KitchenOrderItem,
+        )
         .mockResolvedValueOnce({
           ...mockKitchenOrderItem,
           status: KitchenOrderItemStatus.DELETED,
-        } as any);
+        } as unknown as KitchenOrderItem);
       jest
         .spyOn(kitchenOrderItemRepository, 'save')
-        .mockResolvedValue(mockKitchenOrderItem as any);
+        .mockResolvedValue(mockKitchenOrderItem as unknown as KitchenOrderItem);
 
       const result = await service.remove(1, 1);
 
       expect(kitchenOrderItemRepository.save).toHaveBeenCalled();
+      expect(
+        mockKitchenOrderSyncService.resetOrderLineIfNoActiveKoi,
+      ).toHaveBeenCalledWith(1);
+      expect(
+        mockKitchenOrderSyncService.syncPosOrderFromKitchenOrders,
+      ).toHaveBeenCalledWith(1);
       expect(result.statusCode).toBe(200);
       expect(result.message).toBe('Kitchen order item deleted successfully');
     });
@@ -655,7 +878,9 @@ describe('KitchenOrderItemService', () => {
     it('should throw NotFoundException if kitchen order item not found', async () => {
       jest
         .spyOn(kitchenOrderItemRepository, 'createQueryBuilder')
-        .mockReturnValue(mockQueryBuilder as any);
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<KitchenOrderItem>,
+        );
       mockQueryBuilder.getOne.mockResolvedValue(null);
 
       await expect(service.remove(1, 1)).rejects.toThrow(NotFoundException);
@@ -668,8 +893,12 @@ describe('KitchenOrderItemService', () => {
       };
       jest
         .spyOn(kitchenOrderItemRepository, 'createQueryBuilder')
-        .mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(deletedItem as any);
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<KitchenOrderItem>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        deletedItem as unknown as KitchenOrderItem,
+      );
 
       await expect(service.remove(1, 1)).rejects.toThrow(ConflictException);
       await expect(service.remove(1, 1)).rejects.toThrow(

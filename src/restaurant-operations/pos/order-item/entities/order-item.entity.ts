@@ -19,7 +19,10 @@ import { OrderItemModifier } from '../../order-item-modifiers/entities/order-ite
 @Entity('order_item')
 @Index(['order_id', 'status', 'created_at'])
 export class OrderItem {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Order Item' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Order Item',
+  })
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -129,7 +132,12 @@ export class OrderItem {
     description:
       'Kitchen workflow status for this line: pending, in_preparation, ready, served',
   })
-  @Column({ type: 'varchar', length: 50, default: 'pending', name: 'kitchen_status' })
+  @Column({
+    type: 'varchar',
+    length: 50,
+    default: 'pending',
+    name: 'kitchen_status',
+  })
   kitchen_status: string;
 
   @ApiProperty({

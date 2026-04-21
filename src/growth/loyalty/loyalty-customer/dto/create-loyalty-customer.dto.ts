@@ -54,4 +54,3 @@ export class CreateLoyaltyCustomerDto {
   @Type(() => Number)
   loyalty_tier_id?: number;
 }
-

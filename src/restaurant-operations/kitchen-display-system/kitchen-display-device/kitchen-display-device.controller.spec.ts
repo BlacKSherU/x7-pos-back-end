@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/unbound-method */
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { KitchenDisplayDeviceController } from './kitchen-display-device.controller';
 import { KitchenDisplayDeviceService } from './kitchen-display-device.service';
@@ -11,6 +7,10 @@ import { GetKitchenDisplayDeviceQueryDto } from './dto/get-kitchen-display-devic
 import { OneKitchenDisplayDeviceResponseDto } from './dto/kitchen-display-device-response.dto';
 import { PaginatedKitchenDisplayDeviceResponseDto } from './dto/paginated-kitchen-display-device-response.dto';
 import { KitchenDisplayDeviceStatus } from './constants/kitchen-display-device-status.enum';
+import { AuthenticatedUser } from '../../../auth/interfaces/authenticated-user.interface';
+import { Request as ExpressRequest } from 'express';
+
+type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
 
 describe('KitchenDisplayDeviceController', () => {
   let controller: KitchenDisplayDeviceController;
@@ -34,7 +34,7 @@ describe('KitchenDisplayDeviceController', () => {
 
   const mockRequest = {
     user: mockUser,
-  };
+  } as AuthenticatedRequest;
 
   const mockKitchenDisplayDeviceResponse: OneKitchenDisplayDeviceResponseDto = {
     statusCode: 201,
@@ -87,8 +87,12 @@ describe('KitchenDisplayDeviceController', () => {
       ],
     }).compile();
 
-    controller = module.get<KitchenDisplayDeviceController>(KitchenDisplayDeviceController);
-    service = module.get<KitchenDisplayDeviceService>(KitchenDisplayDeviceService);
+    controller = module.get<KitchenDisplayDeviceController>(
+      KitchenDisplayDeviceController,
+    );
+    service = module.get<KitchenDisplayDeviceService>(
+      KitchenDisplayDeviceService,
+    );
   });
 
   afterEach(() => {
@@ -117,7 +121,9 @@ describe('KitchenDisplayDeviceController', () => {
       expect(createSpy).toHaveBeenCalledWith(createDto, mockUser.merchant.id);
       expect(result).toEqual(mockKitchenDisplayDeviceResponse);
       expect(result.statusCode).toBe(201);
-      expect(result.message).toBe('Kitchen display device created successfully');
+      expect(result.message).toBe(
+        'Kitchen display device created successfully',
+      );
     });
 
     it('should handle service errors during creation', async () => {
@@ -209,10 +215,16 @@ describe('KitchenDisplayDeviceController', () => {
 
       const result = await controller.update(1, updateDto, mockRequest);
 
-      expect(updateSpy).toHaveBeenCalledWith(1, updateDto, mockUser.merchant.id);
+      expect(updateSpy).toHaveBeenCalledWith(
+        1,
+        updateDto,
+        mockUser.merchant.id,
+      );
       expect(result).toEqual(updatedResponse);
       expect(result.statusCode).toBe(200);
-      expect(result.message).toBe('Kitchen display device updated successfully');
+      expect(result.message).toBe(
+        'Kitchen display device updated successfully',
+      );
     });
 
     it('should handle service errors during update', async () => {
@@ -220,10 +232,14 @@ describe('KitchenDisplayDeviceController', () => {
       const updateSpy = jest.spyOn(service, 'update');
       updateSpy.mockRejectedValue(new Error(errorMessage));
 
-      await expect(controller.update(1, updateDto, mockRequest)).rejects.toThrow(
-        errorMessage,
+      await expect(
+        controller.update(1, updateDto, mockRequest),
+      ).rejects.toThrow(errorMessage);
+      expect(updateSpy).toHaveBeenCalledWith(
+        1,
+        updateDto,
+        mockUser.merchant.id,
       );
-      expect(updateSpy).toHaveBeenCalledWith(1, updateDto, mockUser.merchant.id);
     });
   });
 
@@ -242,7 +258,9 @@ describe('KitchenDisplayDeviceController', () => {
       expect(removeSpy).toHaveBeenCalledWith(1, mockUser.merchant.id);
       expect(result).toEqual(deletedResponse);
       expect(result.statusCode).toBe(200);
-      expect(result.message).toBe('Kitchen display device deleted successfully');
+      expect(result.message).toBe(
+        'Kitchen display device deleted successfully',
+      );
     });
 
     it('should handle service errors during remove', async () => {

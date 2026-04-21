@@ -1,4 +1,13 @@
-import { IsOptional, IsString, IsNumber, IsEnum, Min, Max, IsDateString, IsPositive } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsEnum,
+  Min,
+  Max,
+  IsDateString,
+  IsPositive,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { OrderItemStatus } from '../constants/order-item-status.enum';
@@ -13,10 +22,10 @@ export enum OrderItemSortBy {
 }
 
 export class GetOrderItemQueryDto {
-  @ApiPropertyOptional({ 
-    example: 1, 
+  @ApiPropertyOptional({
+    example: 1,
     description: 'Page number for pagination',
-    minimum: 1
+    minimum: 1,
   })
   @IsOptional()
   @Type(() => Number)
@@ -24,11 +33,11 @@ export class GetOrderItemQueryDto {
   @Min(1)
   page?: number;
 
-  @ApiPropertyOptional({ 
-    example: 10, 
+  @ApiPropertyOptional({
+    example: 10,
     description: 'Number of items per page',
     minimum: 1,
-    maximum: 100
+    maximum: 100,
   })
   @IsOptional()
   @Type(() => Number)
@@ -37,9 +46,9 @@ export class GetOrderItemQueryDto {
   @Max(100)
   limit?: number;
 
-  @ApiPropertyOptional({ 
-    example: 1, 
-    description: 'Filter by order ID'
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'Filter by order ID',
   })
   @IsOptional()
   @Type(() => Number)
@@ -47,9 +56,9 @@ export class GetOrderItemQueryDto {
   @IsPositive()
   orderId?: number;
 
-  @ApiPropertyOptional({ 
-    example: 1, 
-    description: 'Filter by product ID'
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'Filter by product ID',
   })
   @IsOptional()
   @Type(() => Number)
@@ -57,9 +66,9 @@ export class GetOrderItemQueryDto {
   @IsPositive()
   productId?: number;
 
-  @ApiPropertyOptional({ 
-    example: 1, 
-    description: 'Filter by variant ID'
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'Filter by variant ID',
   })
   @IsOptional()
   @Type(() => Number)
@@ -76,43 +85,38 @@ export class GetOrderItemQueryDto {
   @IsEnum(OrderItemKitchenStatus)
   kitchenStatus?: OrderItemKitchenStatus;
 
-  @ApiPropertyOptional({ 
-    example: OrderItemStatus.ACTIVE, 
+  @ApiPropertyOptional({
+    example: OrderItemStatus.ACTIVE,
     enum: OrderItemStatus,
-    description: 'Filter by status (active, deleted)'
+    description: 'Filter by status (active, deleted)',
   })
   @IsOptional()
   @IsEnum(OrderItemStatus)
   status?: OrderItemStatus;
 
-  @ApiPropertyOptional({ 
-    example: '2023-10-01', 
-    description: 'Filter by creation date (YYYY-MM-DD format)'
+  @ApiPropertyOptional({
+    example: '2023-10-01',
+    description: 'Filter by creation date (YYYY-MM-DD format)',
   })
   @IsOptional()
   @IsDateString()
   createdDate?: string;
 
-  @ApiPropertyOptional({ 
-    example: OrderItemSortBy.CREATED_AT, 
+  @ApiPropertyOptional({
+    example: OrderItemSortBy.CREATED_AT,
     enum: OrderItemSortBy,
-    description: 'Field to sort by'
+    description: 'Field to sort by',
   })
   @IsOptional()
   @IsEnum(OrderItemSortBy)
   sortBy?: OrderItemSortBy;
 
-  @ApiPropertyOptional({ 
-    example: 'DESC', 
+  @ApiPropertyOptional({
+    example: 'DESC',
     enum: ['ASC', 'DESC'],
-    description: 'Sort order'
+    description: 'Sort order',
   })
   @IsOptional()
   @IsString()
   sortOrder?: 'ASC' | 'DESC';
 }
-
-
-
-
-

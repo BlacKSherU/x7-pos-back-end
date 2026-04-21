@@ -3,6 +3,7 @@ import {
   PrimaryGeneratedColumn,
   Column,
   ManyToOne,
+  OneToMany,
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
@@ -15,6 +16,7 @@ import { OnlineOrder } from '../../../../commerce/online-ordering-system/online-
 import { KitchenStation } from '../../kitchen-station/entities/kitchen-station.entity';
 import { KitchenOrderStatus } from '../constants/kitchen-order-status.enum';
 import { KitchenOrderBusinessStatus } from '../constants/kitchen-order-business-status.enum';
+import { KitchenOrderItem } from '../../kitchen-order-item/entities/kitchen-order-item.entity';
 
 @Entity('kitchen_order')
 @Index(['merchant_id'])
@@ -63,7 +65,7 @@ export class KitchenOrder {
   @Column({ name: 'online_order_id', nullable: true })
   online_order_id: number | null;
 
-  @ManyToOne(() => OnlineOrder, {
+  @ManyToOne(() => OnlineOrder, (oo) => oo.kitchenOrders, {
     nullable: true,
   })
   @JoinColumn({ name: 'online_order_id' })
@@ -153,4 +155,7 @@ export class KitchenOrder {
   })
   @UpdateDateColumn({ type: 'timestamp', name: 'updated_at' })
   updated_at: Date;
+
+  @OneToMany(() => KitchenOrderItem, (item) => item.kitchenOrder)
+  kitchenOrderItems: KitchenOrderItem[];
 }

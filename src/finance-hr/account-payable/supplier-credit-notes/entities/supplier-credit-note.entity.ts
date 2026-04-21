@@ -83,6 +83,9 @@ export class SupplierCreditNote {
   @JoinColumn({ name: 'company_id' })
   company: Company;
 
-  @OneToMany(() => SupplierPaymentAllocation, (allocation) => allocation.credit_note)
+  @OneToMany(
+    () => SupplierPaymentAllocation,
+    (allocation) => allocation.credit_note,
+  )
   allocations: SupplierPaymentAllocation[];
 }

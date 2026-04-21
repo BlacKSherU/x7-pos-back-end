@@ -21,7 +21,7 @@ export class LocationsService {
     private readonly locationRepository: Repository<Location>,
     @InjectRepository(Merchant)
     private readonly merchantRepo: Repository<Merchant>,
-  ) { }
+  ) {}
 
   async create(
     merchant_id: number,
@@ -123,9 +123,9 @@ export class LocationsService {
           address: location.address,
           merchant: location.merchant
             ? {
-              id: location.merchant.id,
-              name: location.merchant.name,
-            }
+                id: location.merchant.id,
+                name: location.merchant.name,
+              }
             : null,
         };
         return result;
@@ -178,9 +178,9 @@ export class LocationsService {
       address: location.address,
       merchant: location.merchant
         ? {
-          id: location.merchant.id,
-          name: location.merchant.name,
-        }
+            id: location.merchant.id,
+            name: location.merchant.name,
+          }
         : null,
     };
 

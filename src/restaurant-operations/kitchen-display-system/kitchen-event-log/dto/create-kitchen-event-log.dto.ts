@@ -1,5 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNumber, IsNotEmpty, IsOptional, IsEnum, IsString, IsDateString, MaxLength } from 'class-validator';
+import {
+  IsNumber,
+  IsNotEmpty,
+  IsOptional,
+  IsEnum,
+  IsString,
+  IsDateString,
+  MaxLength,
+} from 'class-validator';
 import { KitchenEventLogEventType } from '../constants/kitchen-event-log-event-type.enum';
 
 export class CreateKitchenEventLogDto {
@@ -49,12 +57,15 @@ export class CreateKitchenEventLogDto {
     description: 'Type of event (inicio, listo, servido, cancelado)',
   })
   @IsNotEmpty({ message: 'Event type is required' })
-  @IsEnum(KitchenEventLogEventType, { message: 'Event type must be a valid event type' })
+  @IsEnum(KitchenEventLogEventType, {
+    message: 'Event type must be a valid event type',
+  })
   eventType: KitchenEventLogEventType;
 
   @ApiPropertyOptional({
     example: '2024-01-15T08:30:00Z',
-    description: 'Timestamp when the event occurred. If not provided, it will be automatically set to the current date and time.',
+    description:
+      'Timestamp when the event occurred. If not provided, it will be automatically set to the current date and time.',
   })
   @IsOptional()
   @IsDateString({}, { message: 'Event time must be a valid date string' })

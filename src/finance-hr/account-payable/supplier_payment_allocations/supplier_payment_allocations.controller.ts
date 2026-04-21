@@ -50,7 +50,9 @@ import { PaginatedSupplierPaymentAllocationsResponseDto } from './dto/paginated-
   PaginatedSupplierPaymentAllocationsResponseDto,
 )
 export class SupplierPaymentAllocationsController {
-  constructor(private readonly supplierPaymentAllocationsService: SupplierPaymentAllocationsService) {}
+  constructor(
+    private readonly supplierPaymentAllocationsService: SupplierPaymentAllocationsService,
+  ) {}
 
   @Post()
   @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
@@ -68,11 +70,18 @@ export class SupplierPaymentAllocationsController {
     type: OneSupplierPaymentAllocationResponseDto,
   })
   @ApiBadRequestResponse({ description: 'Invalid input' })
-  @ApiNotFoundResponse({ description: 'Supplier, payment or credit note not found' })
+  @ApiNotFoundResponse({
+    description: 'Supplier, payment or credit note not found',
+  })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiForbiddenResponse({ description: 'Forbidden' })
-  async create(@Body() createSupplierPaymentAllocationDto: CreateSupplierPaymentAllocationDto) {
-    return this.supplierPaymentAllocationsService.create(createSupplierPaymentAllocationDto);
+  async create(
+    @Body()
+    createSupplierPaymentAllocationDto: CreateSupplierPaymentAllocationDto,
+  ) {
+    return this.supplierPaymentAllocationsService.create(
+      createSupplierPaymentAllocationDto,
+    );
   }
 
   @Get()
@@ -151,9 +160,13 @@ export class SupplierPaymentAllocationsController {
   @ApiForbiddenResponse({ description: 'Forbidden' })
   async update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() updateSupplierPaymentAllocationDto: UpdateSupplierPaymentAllocationDto,
+    @Body()
+    updateSupplierPaymentAllocationDto: UpdateSupplierPaymentAllocationDto,
   ) {
-    return this.supplierPaymentAllocationsService.update(id, updateSupplierPaymentAllocationDto);
+    return this.supplierPaymentAllocationsService.update(
+      id,
+      updateSupplierPaymentAllocationDto,
+    );
   }
 
   @Delete(':id')
@@ -165,7 +178,9 @@ export class SupplierPaymentAllocationsController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ summary: 'Delete supplier payment allocation (logical delete)' })
+  @ApiOperation({
+    summary: 'Delete supplier payment allocation (logical delete)',
+  })
   @ApiParam({ name: 'id', type: Number })
   @ApiOkResponse({
     description: 'Supplier payment allocation deleted successfully',

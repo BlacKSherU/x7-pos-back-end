@@ -8,4 +8,3 @@ export enum ShiftRole {
   BUSSER = 'busser',
   DELIVERY = 'delivery',
 }
-

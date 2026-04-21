@@ -13,6 +13,7 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { Request as ExpressRequest } from 'express';
 import { OnlineOrderItemService } from './online-order-item.service';
 import { CreateOnlineOrderItemDto } from './dto/create-online-order-item.dto';
 import { UpdateOnlineOrderItemDto } from './dto/update-online-order-item.dto';
@@ -33,6 +34,8 @@ import {
 } from '@nestjs/swagger';
 import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
 import { OneOnlineOrderItemResponseDto } from './dto/online-order-item-response.dto';
+
+type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
 import { GetOnlineOrderItemQueryDto } from './dto/get-online-order-item-query.dto';
 import { PaginatedOnlineOrderItemResponseDto } from './dto/paginated-online-order-item-response.dto';
 import { Roles } from 'src/auth/decorators/roles.decorator';
@@ -98,7 +101,6 @@ export class OnlineOrderItemController {
           onlineOrderId: 1,
           productId: 5,
           quantity: 2,
-          unitPrice: 15.99,
           notes: 'Extra sauce on the side',
         },
       },
@@ -109,7 +111,6 @@ export class OnlineOrderItemController {
           productId: 5,
           variantId: 3,
           quantity: 1,
-          unitPrice: 18.99,
           modifiers: { extraSauce: true, size: 'large' },
           notes: 'Please make it spicy',
         },
@@ -118,9 +119,9 @@ export class OnlineOrderItemController {
   })
   async create(
     @Body() createOnlineOrderItemDto: CreateOnlineOrderItemDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ) {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlineOrderItemService.create(
       createOnlineOrderItemDto,
       authenticatedUserMerchantId,
@@ -199,7 +200,6 @@ export class OnlineOrderItemController {
       'productId',
       'variantId',
       'quantity',
-      'unitPrice',
       'createdAt',
       'updatedAt',
     ],
@@ -213,9 +213,9 @@ export class OnlineOrderItemController {
   })
   async findAll(
     @Query() query: GetOnlineOrderItemQueryDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ) {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlineOrderItemService.findAll(
       query,
       authenticatedUserMerchantId,
@@ -261,9 +261,9 @@ export class OnlineOrderItemController {
   })
   async findOne(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ) {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlineOrderItemService.findOne(id, authenticatedUserMerchantId);
   }
 
@@ -318,10 +318,9 @@ export class OnlineOrderItemController {
     description: 'Online order item update data',
     examples: {
       example1: {
-        summary: 'Update quantity and unit price',
+        summary: 'Update quantity',
         value: {
           quantity: 3,
-          unitPrice: 19.99,
         },
       },
       example2: {
@@ -336,9 +335,9 @@ export class OnlineOrderItemController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateOnlineOrderItemDto: UpdateOnlineOrderItemDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ) {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlineOrderItemService.update(
       id,
       updateOnlineOrderItemDto,
@@ -390,9 +389,9 @@ export class OnlineOrderItemController {
   })
   async remove(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ) {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlineOrderItemService.remove(id, authenticatedUserMerchantId);
   }
 }

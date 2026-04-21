@@ -1,4 +1,11 @@
-import { IsOptional, IsNumber, IsEnum, Min, Max, IsDateString } from 'class-validator';
+import {
+  IsOptional,
+  IsNumber,
+  IsEnum,
+  Min,
+  Max,
+  IsDateString,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { SettlementMethod } from '../constants/settlement-method.enum';
@@ -18,7 +25,12 @@ export class GetTipSettlementQueryDto {
   @Min(1)
   page?: number;
 
-  @ApiPropertyOptional({ example: 10, description: 'Items per page', minimum: 1, maximum: 100 })
+  @ApiPropertyOptional({
+    example: 10,
+    description: 'Items per page',
+    minimum: 1,
+    maximum: 100,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
@@ -40,17 +52,26 @@ export class GetTipSettlementQueryDto {
   @Min(1)
   shiftId?: number;
 
-  @ApiPropertyOptional({ example: SettlementMethod.CASH, enum: SettlementMethod })
+  @ApiPropertyOptional({
+    example: SettlementMethod.CASH,
+    enum: SettlementMethod,
+  })
   @IsOptional()
   @IsEnum(SettlementMethod)
   settlementMethod?: SettlementMethod;
 
-  @ApiPropertyOptional({ example: '2024-01-01', description: 'Filter by settled date (YYYY-MM-DD)' })
+  @ApiPropertyOptional({
+    example: '2024-01-01',
+    description: 'Filter by settled date (YYYY-MM-DD)',
+  })
   @IsOptional()
   @IsDateString()
   settledDate?: string;
 
-  @ApiPropertyOptional({ example: TipSettlementSortBy.SETTLED_AT, enum: TipSettlementSortBy })
+  @ApiPropertyOptional({
+    example: TipSettlementSortBy.SETTLED_AT,
+    enum: TipSettlementSortBy,
+  })
   @IsOptional()
   @IsEnum(TipSettlementSortBy)
   sortBy?: TipSettlementSortBy;

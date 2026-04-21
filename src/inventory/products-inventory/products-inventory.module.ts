@@ -58,4 +58,4 @@ import { PurchaseOrderItemModule } from './purchase-order-item/purchase-order-it
     PurchaseOrderItemModule,
   ],
 })
-export class ProductsInventoryModule { }
+export class ProductsInventoryModule {}

@@ -29,11 +29,17 @@ export class CreateTimeEntryDto {
   @IsPositive()
   shift_id: number;
 
-  @ApiProperty({ example: '2024-01-15T08:00:00.000Z', description: 'Clock in timestamp' })
+  @ApiProperty({
+    example: '2024-01-15T08:00:00.000Z',
+    description: 'Clock in timestamp',
+  })
   @IsDateString()
   clock_in: string;
 
-  @ApiPropertyOptional({ example: '2024-01-15T16:00:00.000Z', description: 'Clock out timestamp' })
+  @ApiPropertyOptional({
+    example: '2024-01-15T16:00:00.000Z',
+    description: 'Clock out timestamp',
+  })
   @IsOptional()
   @IsDateString()
   clock_out?: string | null;
@@ -44,19 +50,31 @@ export class CreateTimeEntryDto {
   @Min(0)
   regular_hours?: number;
 
-  @ApiPropertyOptional({ example: 0, description: 'Overtime hours', default: 0 })
+  @ApiPropertyOptional({
+    example: 0,
+    description: 'Overtime hours',
+    default: 0,
+  })
   @IsOptional()
   @IsNumber()
   @Min(0)
   overtime_hours?: number;
 
-  @ApiPropertyOptional({ example: 0, description: 'Double overtime hours', default: 0 })
+  @ApiPropertyOptional({
+    example: 0,
+    description: 'Double overtime hours',
+    default: 0,
+  })
   @IsOptional()
   @IsNumber()
   @Min(0)
   double_overtime_hours?: number;
 
-  @ApiPropertyOptional({ example: false, description: 'Approved', default: false })
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Approved',
+    default: false,
+  })
   @IsOptional()
   @IsBoolean()
   approved?: boolean;

@@ -39,7 +39,10 @@ export class CreateSupplierPaymentDto {
   @MaxLength(50)
   payment_method: string;
 
-  @ApiPropertyOptional({ example: 'TRX-998877', description: 'External reference' })
+  @ApiPropertyOptional({
+    example: 'TRX-998877',
+    description: 'External reference',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(100)

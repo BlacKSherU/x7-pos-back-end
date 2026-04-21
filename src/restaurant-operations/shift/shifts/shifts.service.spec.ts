@@ -5,7 +5,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Repository, EntityManager, Not } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException, ForbiddenException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { ShiftsService } from './shifts.service';
 import { Shift } from './entities/shift.entity';
 import { Merchant } from '../../../platform-saas/merchants/entities/merchant.entity';
@@ -81,8 +86,12 @@ describe('ShiftsService', () => {
 
     service = module.get<ShiftsService>(ShiftsService);
     shiftRepository = module.get<Repository<Shift>>(getRepositoryToken(Shift));
-    merchantRepository = module.get<Repository<Merchant>>(getRepositoryToken(Merchant));
-    shiftAssignmentRepository = module.get<Repository<ShiftAssignment>>(getRepositoryToken(ShiftAssignment));
+    merchantRepository = module.get<Repository<Merchant>>(
+      getRepositoryToken(Merchant),
+    );
+    shiftAssignmentRepository = module.get<Repository<ShiftAssignment>>(
+      getRepositoryToken(ShiftAssignment),
+    );
     entityManager = module.get<EntityManager>(EntityManager);
   });
 
@@ -104,13 +113,17 @@ describe('ShiftsService', () => {
     };
 
     it('should create a shift successfully', async () => {
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
       jest.spyOn(shiftRepository, 'create').mockReturnValue(mockShift as any);
       jest.spyOn(shiftRepository, 'save').mockResolvedValue(mockShift as any);
 
       const result = await service.create(createShiftDto, 1);
 
-      expect(merchantRepository.findOne).toHaveBeenCalledWith({ where: { id: 1 } });
+      expect(merchantRepository.findOne).toHaveBeenCalledWith({
+        where: { id: 1 },
+      });
       expect(shiftRepository.create).toHaveBeenCalled();
       expect(shiftRepository.save).toHaveBeenCalled();
       expect(result.statusCode).toBe(201);
@@ -119,10 +132,12 @@ describe('ShiftsService', () => {
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.create(createShiftDto, undefined as any)).rejects.toThrow(
-        ForbiddenException,
-      );
-      await expect(service.create(createShiftDto, undefined as any)).rejects.toThrow(
+      await expect(
+        service.create(createShiftDto, undefined as any),
+      ).rejects.toThrow(ForbiddenException);
+      await expect(
+        service.create(createShiftDto, undefined as any),
+      ).rejects.toThrow(
         'User must be associated with a merchant to create shifts',
       );
     });
@@ -148,8 +163,13 @@ describe('ShiftsService', () => {
     });
 
     it('should throw BadRequestException if start time is invalid', async () => {
-      const dtoWithInvalidStartTime = { ...createShiftDto, startTime: 'invalid-date' };
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      const dtoWithInvalidStartTime = {
+        ...createShiftDto,
+        startTime: 'invalid-date',
+      };
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
 
       await expect(service.create(dtoWithInvalidStartTime, 1)).rejects.toThrow(
         BadRequestException,
@@ -160,8 +180,13 @@ describe('ShiftsService', () => {
     });
 
     it('should throw BadRequestException if end time is invalid', async () => {
-      const dtoWithInvalidEndTime = { ...createShiftDto, endTime: 'invalid-date' };
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      const dtoWithInvalidEndTime = {
+        ...createShiftDto,
+        endTime: 'invalid-date',
+      };
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
 
       await expect(service.create(dtoWithInvalidEndTime, 1)).rejects.toThrow(
         BadRequestException,
@@ -177,7 +202,9 @@ describe('ShiftsService', () => {
         startTime: '2024-01-15T16:00:00Z',
         endTime: '2024-01-15T08:00:00Z',
       };
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
 
       await expect(service.create(dtoWithInvalidTimeOrder, 1)).rejects.toThrow(
         BadRequestException,
@@ -196,9 +223,15 @@ describe('ShiftsService', () => {
         ...mockShift,
         endTime: null,
       };
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(shiftRepository, 'create').mockReturnValue(shiftWithoutEndTime as any);
-      jest.spyOn(shiftRepository, 'save').mockResolvedValue(shiftWithoutEndTime as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(shiftRepository, 'create')
+        .mockReturnValue(shiftWithoutEndTime as any);
+      jest
+        .spyOn(shiftRepository, 'save')
+        .mockResolvedValue(shiftWithoutEndTime as any);
 
       const result = await service.create(dtoWithoutEndTime, 1);
 
@@ -216,9 +249,15 @@ describe('ShiftsService', () => {
         role: ShiftRole.WAITER,
         status: ShiftStatus.ACTIVE,
       };
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(shiftRepository, 'create').mockReturnValue(shiftWithDefaults as any);
-      jest.spyOn(shiftRepository, 'save').mockResolvedValue(shiftWithDefaults as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(shiftRepository, 'create')
+        .mockReturnValue(shiftWithDefaults as any);
+      jest
+        .spyOn(shiftRepository, 'save')
+        .mockResolvedValue(shiftWithDefaults as any);
 
       const result = await service.create(dtoWithoutDefaults, 1);
 
@@ -240,13 +279,17 @@ describe('ShiftsService', () => {
 
     it('should return paginated list of shifts', async () => {
       const mockShifts = [mockShift];
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
       jest.spyOn(shiftRepository, 'count').mockResolvedValue(1);
       jest.spyOn(shiftRepository, 'find').mockResolvedValue(mockShifts as any);
 
       const result = await service.findAll(query, 1);
 
-      expect(merchantRepository.findOne).toHaveBeenCalledWith({ where: { id: 1 } });
+      expect(merchantRepository.findOne).toHaveBeenCalledWith({
+        where: { id: 1 },
+      });
       expect(shiftRepository.count).toHaveBeenCalled();
       expect(shiftRepository.find).toHaveBeenCalled();
       expect(result.statusCode).toBe(200);
@@ -279,7 +322,9 @@ describe('ShiftsService', () => {
 
     it('should filter by role', async () => {
       const queryWithRole = { ...query, role: ShiftRole.COOK };
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
       jest.spyOn(shiftRepository, 'count').mockResolvedValue(0);
       jest.spyOn(shiftRepository, 'find').mockResolvedValue([]);
 
@@ -296,7 +341,9 @@ describe('ShiftsService', () => {
 
     it('should filter by status', async () => {
       const queryWithStatus = { ...query, status: ShiftStatus.COMPLETED };
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
       jest.spyOn(shiftRepository, 'count').mockResolvedValue(0);
       jest.spyOn(shiftRepository, 'find').mockResolvedValue([]);
 
@@ -317,7 +364,9 @@ describe('ShiftsService', () => {
         startDate: '2024-01-01',
         endDate: '2024-01-31',
       };
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
       jest.spyOn(shiftRepository, 'count').mockResolvedValue(0);
       jest.spyOn(shiftRepository, 'find').mockResolvedValue([]);
 
@@ -328,7 +377,9 @@ describe('ShiftsService', () => {
 
     it('should throw BadRequestException if startDate format is invalid', async () => {
       const queryWithInvalidDate = { ...query, startDate: 'invalid-date' };
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
 
       await expect(service.findAll(queryWithInvalidDate, 1)).rejects.toThrow(
         BadRequestException,
@@ -340,7 +391,9 @@ describe('ShiftsService', () => {
 
     it('should throw BadRequestException if endDate format is invalid', async () => {
       const queryWithInvalidDate = { ...query, endDate: 'invalid-date' };
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
 
       await expect(service.findAll(queryWithInvalidDate, 1)).rejects.toThrow(
         BadRequestException,
@@ -356,7 +409,9 @@ describe('ShiftsService', () => {
         startDate: '2024-01-31',
         endDate: '2024-01-01',
       };
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
 
       await expect(service.findAll(queryWithInvalidRange, 1)).rejects.toThrow(
         BadRequestException,
@@ -368,7 +423,9 @@ describe('ShiftsService', () => {
 
     it('should use default pagination values', async () => {
       const emptyQuery = {};
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
       jest.spyOn(shiftRepository, 'count').mockResolvedValue(0);
       jest.spyOn(shiftRepository, 'find').mockResolvedValue([]);
 
@@ -379,7 +436,9 @@ describe('ShiftsService', () => {
     });
 
     it('should calculate pagination metadata correctly', async () => {
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
       jest.spyOn(shiftRepository, 'count').mockResolvedValue(25);
       jest.spyOn(shiftRepository, 'find').mockResolvedValue([]);
 
@@ -393,7 +452,9 @@ describe('ShiftsService', () => {
 
     it('should handle last page correctly', async () => {
       const lastPageQuery = { ...query, page: 3 };
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
       jest.spyOn(shiftRepository, 'count').mockResolvedValue(25);
       jest.spyOn(shiftRepository, 'find').mockResolvedValue([]);
 
@@ -404,7 +465,9 @@ describe('ShiftsService', () => {
     });
 
     it('should return empty results', async () => {
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
       jest.spyOn(shiftRepository, 'count').mockResolvedValue(0);
       jest.spyOn(shiftRepository, 'find').mockResolvedValue([]);
 
@@ -417,7 +480,9 @@ describe('ShiftsService', () => {
 
   describe('findOne', () => {
     it('should return a shift successfully', async () => {
-      jest.spyOn(shiftRepository, 'findOne').mockResolvedValue(mockShift as any);
+      jest
+        .spyOn(shiftRepository, 'findOne')
+        .mockResolvedValue(mockShift as any);
 
       const result = await service.findOne(1, 1);
 
@@ -443,20 +508,14 @@ describe('ShiftsService', () => {
     });
 
     it('should throw BadRequestException if id is invalid', async () => {
-      await expect(service.findOne(0, 1)).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.findOne(0, 1)).rejects.toThrow(
-        'Invalid shift ID',
-      );
+      await expect(service.findOne(0, 1)).rejects.toThrow(BadRequestException);
+      await expect(service.findOne(0, 1)).rejects.toThrow('Invalid shift ID');
     });
 
     it('should throw NotFoundException if shift not found', async () => {
       jest.spyOn(shiftRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.findOne(999, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.findOne(999, 1)).rejects.toThrow(NotFoundException);
       await expect(service.findOne(999, 1)).rejects.toThrow(
         'Shift 999 not found',
       );
@@ -467,11 +526,11 @@ describe('ShiftsService', () => {
         ...mockShift,
         merchant: { id: 2, name: 'Other Merchant' },
       };
-      jest.spyOn(shiftRepository, 'findOne').mockResolvedValue(shiftFromDifferentMerchant as any);
+      jest
+        .spyOn(shiftRepository, 'findOne')
+        .mockResolvedValue(shiftFromDifferentMerchant as any);
 
-      await expect(service.findOne(1, 1)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.findOne(1, 1)).rejects.toThrow(ForbiddenException);
       await expect(service.findOne(1, 1)).rejects.toThrow(
         'You can only view shifts from your own merchant',
       );
@@ -490,8 +549,12 @@ describe('ShiftsService', () => {
         startTime: new Date('2024-01-15T09:00:00Z'),
         endTime: new Date('2024-01-15T17:00:00Z'),
       };
-      jest.spyOn(shiftRepository, 'findOne').mockResolvedValue(mockShift as any);
-      jest.spyOn(shiftRepository, 'save').mockResolvedValue(updatedShift as any);
+      jest
+        .spyOn(shiftRepository, 'findOne')
+        .mockResolvedValue(mockShift as any);
+      jest
+        .spyOn(shiftRepository, 'save')
+        .mockResolvedValue(updatedShift as any);
 
       const result = await service.update(1, updateShiftDto, 1);
 
@@ -502,10 +565,12 @@ describe('ShiftsService', () => {
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.update(1, updateShiftDto, undefined as any)).rejects.toThrow(
-        ForbiddenException,
-      );
-      await expect(service.update(1, updateShiftDto, undefined as any)).rejects.toThrow(
+      await expect(
+        service.update(1, updateShiftDto, undefined as any),
+      ).rejects.toThrow(ForbiddenException);
+      await expect(
+        service.update(1, updateShiftDto, undefined as any),
+      ).rejects.toThrow(
         'User must be associated with a merchant to update shifts',
       );
     });
@@ -521,7 +586,9 @@ describe('ShiftsService', () => {
 
     it('should throw BadRequestException if no fields provided for update', async () => {
       const emptyDto = {};
-      jest.spyOn(shiftRepository, 'findOne').mockResolvedValue(mockShift as any);
+      jest
+        .spyOn(shiftRepository, 'findOne')
+        .mockResolvedValue(mockShift as any);
 
       await expect(service.update(1, emptyDto, 1)).rejects.toThrow(
         BadRequestException,
@@ -547,7 +614,9 @@ describe('ShiftsService', () => {
         ...mockShift,
         merchant: { id: 2, name: 'Other Merchant' },
       };
-      jest.spyOn(shiftRepository, 'findOne').mockResolvedValue(shiftFromDifferentMerchant as any);
+      jest
+        .spyOn(shiftRepository, 'findOne')
+        .mockResolvedValue(shiftFromDifferentMerchant as any);
 
       await expect(service.update(1, updateShiftDto, 1)).rejects.toThrow(
         ForbiddenException,
@@ -559,19 +628,25 @@ describe('ShiftsService', () => {
 
     it('should throw BadRequestException if start time is invalid', async () => {
       const dtoWithInvalidStartTime = { startTime: 'invalid-date' };
-      jest.spyOn(shiftRepository, 'findOne').mockResolvedValue(mockShift as any);
+      jest
+        .spyOn(shiftRepository, 'findOne')
+        .mockResolvedValue(mockShift as any);
 
-      await expect(service.update(1, dtoWithInvalidStartTime, 1)).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.update(1, dtoWithInvalidStartTime, 1)).rejects.toThrow(
+      await expect(
+        service.update(1, dtoWithInvalidStartTime, 1),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.update(1, dtoWithInvalidStartTime, 1),
+      ).rejects.toThrow(
         'Invalid start time format. Please provide a valid date string',
       );
     });
 
     it('should throw BadRequestException if end time is invalid', async () => {
       const dtoWithInvalidEndTime = { endTime: 'invalid-date' };
-      jest.spyOn(shiftRepository, 'findOne').mockResolvedValue(mockShift as any);
+      jest
+        .spyOn(shiftRepository, 'findOne')
+        .mockResolvedValue(mockShift as any);
 
       await expect(service.update(1, dtoWithInvalidEndTime, 1)).rejects.toThrow(
         BadRequestException,
@@ -586,14 +661,16 @@ describe('ShiftsService', () => {
         startTime: '2024-01-15T16:00:00Z',
         endTime: '2024-01-15T08:00:00Z',
       };
-      jest.spyOn(shiftRepository, 'findOne').mockResolvedValue(mockShift as any);
+      jest
+        .spyOn(shiftRepository, 'findOne')
+        .mockResolvedValue(mockShift as any);
 
-      await expect(service.update(1, dtoWithInvalidTimeOrder, 1)).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.update(1, dtoWithInvalidTimeOrder, 1)).rejects.toThrow(
-        'End time must be after start time',
-      );
+      await expect(
+        service.update(1, dtoWithInvalidTimeOrder, 1),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.update(1, dtoWithInvalidTimeOrder, 1),
+      ).rejects.toThrow('End time must be after start time');
     });
 
     it('should update only provided fields', async () => {
@@ -602,8 +679,12 @@ describe('ShiftsService', () => {
         ...mockShift,
         role: ShiftRole.COOK,
       };
-      jest.spyOn(shiftRepository, 'findOne').mockResolvedValue(mockShift as any);
-      jest.spyOn(shiftRepository, 'save').mockResolvedValue(updatedShift as any);
+      jest
+        .spyOn(shiftRepository, 'findOne')
+        .mockResolvedValue(mockShift as any);
+      jest
+        .spyOn(shiftRepository, 'save')
+        .mockResolvedValue(updatedShift as any);
 
       const result = await service.update(1, partialDto, 1);
 
@@ -622,9 +703,13 @@ describe('ShiftsService', () => {
         ...mockShift,
         status: ShiftStatus.DELETED,
       };
-      jest.spyOn(shiftRepository, 'findOne').mockResolvedValue(mockShift as any);
+      jest
+        .spyOn(shiftRepository, 'findOne')
+        .mockResolvedValue(mockShift as any);
       jest.spyOn(shiftAssignmentRepository, 'find').mockResolvedValue([]);
-      jest.spyOn(shiftRepository, 'save').mockResolvedValue(deletedShift as any);
+      jest
+        .spyOn(shiftRepository, 'save')
+        .mockResolvedValue(deletedShift as any);
 
       const result = await service.remove(1, 1);
 
@@ -648,20 +733,14 @@ describe('ShiftsService', () => {
     });
 
     it('should throw BadRequestException if id is invalid', async () => {
-      await expect(service.remove(0, 1)).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.remove(0, 1)).rejects.toThrow(
-        'Invalid shift ID',
-      );
+      await expect(service.remove(0, 1)).rejects.toThrow(BadRequestException);
+      await expect(service.remove(0, 1)).rejects.toThrow('Invalid shift ID');
     });
 
     it('should throw NotFoundException if shift not found', async () => {
       jest.spyOn(shiftRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.remove(999, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.remove(999, 1)).rejects.toThrow(NotFoundException);
       await expect(service.remove(999, 1)).rejects.toThrow(
         'Shift with ID 999 not found',
       );
@@ -672,11 +751,11 @@ describe('ShiftsService', () => {
         ...mockShift,
         merchant: { id: 2, name: 'Other Merchant' },
       };
-      jest.spyOn(shiftRepository, 'findOne').mockResolvedValue(shiftFromDifferentMerchant as any);
+      jest
+        .spyOn(shiftRepository, 'findOne')
+        .mockResolvedValue(shiftFromDifferentMerchant as any);
 
-      await expect(service.remove(1, 1)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.remove(1, 1)).rejects.toThrow(ForbiddenException);
       await expect(service.remove(1, 1)).rejects.toThrow(
         'You can only delete shifts from your own merchant',
       );
@@ -687,12 +766,14 @@ describe('ShiftsService', () => {
         { id: 1, shiftId: 1 },
         { id: 2, shiftId: 1 },
       ];
-      jest.spyOn(shiftRepository, 'findOne').mockResolvedValue(mockShift as any);
-      jest.spyOn(shiftAssignmentRepository, 'find').mockResolvedValue(activeAssignments as any);
+      jest
+        .spyOn(shiftRepository, 'findOne')
+        .mockResolvedValue(mockShift as any);
+      jest
+        .spyOn(shiftAssignmentRepository, 'find')
+        .mockResolvedValue(activeAssignments as any);
 
-      await expect(service.remove(1, 1)).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.remove(1, 1)).rejects.toThrow(ConflictException);
       await expect(service.remove(1, 1)).rejects.toThrow(
         'Cannot delete shift. There are 2 active shift assignment(s) associated with this shift. Please remove the assignments first.',
       );

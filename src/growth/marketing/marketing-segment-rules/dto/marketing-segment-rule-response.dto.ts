@@ -4,15 +4,24 @@ import { MarketingSegmentRuleOperator } from '../constants/marketing-segment-rul
 import { MarketingSegmentRuleStatus } from '../constants/marketing-segment-rule-status.enum';
 
 export class BasicSegmentInfoDto {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Marketing Segment' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Marketing Segment',
+  })
   id: number;
 
-  @ApiProperty({ example: 'VIP Customers', description: 'Name of the marketing segment' })
+  @ApiProperty({
+    example: 'VIP Customers',
+    description: 'Name of the marketing segment',
+  })
   name: string;
 }
 
 export class MarketingSegmentRuleResponseDto {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Marketing Segment Rule' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Marketing Segment Rule',
+  })
   id: number;
 
   @ApiProperty({

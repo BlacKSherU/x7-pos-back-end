@@ -230,7 +230,7 @@ describe('PurchaseOrderItemService', () => {
     variantRepo = module.get(getRepositoryToken(Variant));
 
     jest.clearAllMocks();
-    jest.spyOn(console, 'error').mockImplementation(() => { });
+    jest.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {

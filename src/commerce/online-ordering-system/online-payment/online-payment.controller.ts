@@ -13,6 +13,7 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { Request as ExpressRequest } from 'express';
 import { OnlinePaymentService } from './online-payment.service';
 import { CreateOnlinePaymentDto } from './dto/create-online-payment.dto';
 import { UpdateOnlinePaymentDto } from './dto/update-online-payment.dto';
@@ -33,6 +34,8 @@ import {
 } from '@nestjs/swagger';
 import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
 import { OneOnlinePaymentResponseDto } from './dto/online-payment-response.dto';
+
+type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
 import { GetOnlinePaymentQueryDto } from './dto/get-online-payment-query.dto';
 import { PaginatedOnlinePaymentResponseDto } from './dto/paginated-online-payment-response.dto';
 import { Roles } from 'src/auth/decorators/roles.decorator';
@@ -105,9 +108,9 @@ export class OnlinePaymentController {
   })
   async create(
     @Body() createOnlinePaymentDto: CreateOnlinePaymentDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOnlinePaymentResponseDto> {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlinePaymentService.create(
       createOnlinePaymentDto,
       authenticatedUserMerchantId,
@@ -213,9 +216,9 @@ export class OnlinePaymentController {
   })
   async findAll(
     @Query() query: GetOnlinePaymentQueryDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ) {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlinePaymentService.findAll(
       query,
       authenticatedUserMerchantId,
@@ -261,9 +264,9 @@ export class OnlinePaymentController {
   })
   async findOne(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ) {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlinePaymentService.findOne(id, authenticatedUserMerchantId);
   }
 
@@ -334,9 +337,9 @@ export class OnlinePaymentController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateOnlinePaymentDto: UpdateOnlinePaymentDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ) {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlinePaymentService.update(
       id,
       updateOnlinePaymentDto,
@@ -388,9 +391,9 @@ export class OnlinePaymentController {
   })
   async remove(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ) {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlinePaymentService.remove(id, authenticatedUserMerchantId);
   }
 }

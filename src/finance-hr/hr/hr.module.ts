@@ -4,7 +4,15 @@ import { CollaboratorContractsModule } from './collaborator-contracts/collaborat
 import { CollaboratorTimeEntriesModule } from './collaborator-time-entries/collaborator-time-entries.module';
 
 @Module({
-  imports: [CollaboratorsModule, CollaboratorContractsModule, CollaboratorTimeEntriesModule],
-  exports: [CollaboratorsModule, CollaboratorContractsModule, CollaboratorTimeEntriesModule],
+  imports: [
+    CollaboratorsModule,
+    CollaboratorContractsModule,
+    CollaboratorTimeEntriesModule,
+  ],
+  exports: [
+    CollaboratorsModule,
+    CollaboratorContractsModule,
+    CollaboratorTimeEntriesModule,
+  ],
 })
 export class HrModule {}

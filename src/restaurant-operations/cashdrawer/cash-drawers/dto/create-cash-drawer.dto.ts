@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNumber, IsNotEmpty, IsOptional, IsPositive, Min } from 'class-validator';
+import {
+  IsNumber,
+  IsNotEmpty,
+  IsOptional,
+  IsPositive,
+  Min,
+} from 'class-validator';
 
 export class CreateCashDrawerDto {
   @ApiProperty({
@@ -12,7 +18,7 @@ export class CreateCashDrawerDto {
   shiftId: number;
 
   @ApiProperty({
-    example: 100.00,
+    example: 100.0,
     description: 'Opening balance amount in the cash drawer',
   })
   @IsNumber({}, { message: 'Opening balance must be a valid number' })
@@ -21,7 +27,7 @@ export class CreateCashDrawerDto {
   openingBalance: number;
 
   @ApiProperty({
-    example: 150.50,
+    example: 150.5,
     description: 'Closing balance amount in the cash drawer',
     required: false,
   })

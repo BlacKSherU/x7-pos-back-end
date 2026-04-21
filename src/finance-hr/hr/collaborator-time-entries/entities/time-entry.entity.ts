@@ -14,7 +14,10 @@ import { Shift } from 'src/restaurant-operations/shift/shifts/entities/shift.ent
 
 @Entity('time_entries')
 export class TimeEntry {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the time entry' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the time entry',
+  })
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -50,24 +53,49 @@ export class TimeEntry {
   @JoinColumn({ name: 'shift_id' })
   shift: Shift;
 
-  @ApiProperty({ example: '2024-01-15T08:00:00Z', description: 'Clock in timestamp' })
+  @ApiProperty({
+    example: '2024-01-15T08:00:00Z',
+    description: 'Clock in timestamp',
+  })
   @Column({ type: 'timestamp', name: 'clock_in' })
   clock_in: Date;
 
-  @ApiProperty({ example: '2024-01-15T16:00:00Z', description: 'Clock out timestamp', nullable: true })
+  @ApiProperty({
+    example: '2024-01-15T16:00:00Z',
+    description: 'Clock out timestamp',
+    nullable: true,
+  })
   @Column({ type: 'timestamp', name: 'clock_out', nullable: true })
   clock_out: Date | null;
 
   @ApiProperty({ example: 8, description: 'Regular hours worked' })
-  @Column({ type: 'decimal', precision: 6, scale: 2, name: 'regular_hours', default: 0 })
+  @Column({
+    type: 'decimal',
+    precision: 6,
+    scale: 2,
+    name: 'regular_hours',
+    default: 0,
+  })
   regular_hours: number;
 
   @ApiProperty({ example: 0, description: 'Overtime hours' })
-  @Column({ type: 'decimal', precision: 6, scale: 2, name: 'overtime_hours', default: 0 })
+  @Column({
+    type: 'decimal',
+    precision: 6,
+    scale: 2,
+    name: 'overtime_hours',
+    default: 0,
+  })
   overtime_hours: number;
 
   @ApiProperty({ example: 0, description: 'Double overtime hours' })
-  @Column({ type: 'decimal', precision: 6, scale: 2, name: 'double_overtime_hours', default: 0 })
+  @Column({
+    type: 'decimal',
+    precision: 6,
+    scale: 2,
+    name: 'double_overtime_hours',
+    default: 0,
+  })
   double_overtime_hours: number;
 
   @ApiProperty({ example: false, description: 'Whether the entry is approved' })

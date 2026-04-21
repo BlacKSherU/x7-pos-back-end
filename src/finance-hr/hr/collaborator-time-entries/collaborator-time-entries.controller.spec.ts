@@ -24,7 +24,9 @@ describe('CollaboratorTimeEntriesController', () => {
       ],
     }).compile();
 
-    controller = module.get<CollaboratorTimeEntriesController>(CollaboratorTimeEntriesController);
+    controller = module.get<CollaboratorTimeEntriesController>(
+      CollaboratorTimeEntriesController,
+    );
   });
 
   it('should be defined', () => {

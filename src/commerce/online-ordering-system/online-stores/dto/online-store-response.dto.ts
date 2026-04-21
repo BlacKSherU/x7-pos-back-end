@@ -3,7 +3,10 @@ import { SuccessResponse } from '../../../../common/dtos/success-response.dto';
 import { OnlineStoreStatus } from '../constants/online-store-status.enum';
 
 export class OnlineStoreResponseDto {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Online Store' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Online Store',
+  })
   id: number;
 
   @ApiProperty({
@@ -78,4 +81,3 @@ export class OneOnlineStoreResponseDto extends SuccessResponse {
   @ApiProperty({ type: OnlineStoreResponseDto })
   data: OnlineStoreResponseDto;
 }
-

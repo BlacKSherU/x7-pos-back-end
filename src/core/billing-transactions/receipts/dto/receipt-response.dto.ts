@@ -13,7 +13,11 @@ export class ReceiptResponseDto {
   @ApiProperty({ example: ReceiptType.INVOICE, enum: ReceiptType })
   type: ReceiptType;
 
-  @ApiProperty({ example: '{"tax_id": "12345678", "fiscal_number": "ABC123"}', required: false, nullable: true })
+  @ApiProperty({
+    example: '{"tax_id": "12345678", "fiscal_number": "ABC123"}',
+    required: false,
+    nullable: true,
+  })
   fiscal_data?: string | null;
 
   @ApiProperty({ example: 100.0 })
@@ -30,7 +34,6 @@ export class ReceiptResponseDto {
 
   @ApiProperty({ example: 'USD' })
   currency: string;
-
 
   @ApiProperty({ example: '2024-01-15T08:00:00Z' })
   created_at: Date;

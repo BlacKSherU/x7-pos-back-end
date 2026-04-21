@@ -13,53 +13,62 @@ import { ShiftAssignmentStatus } from '../constants/shift-assignment-status.enum
 
 @Entity()
 export class ShiftAssignment {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Shift Assignment' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Shift Assignment',
+  })
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ApiProperty({ example: 1, description: 'Shift ID associated with the assignment' })
+  @ApiProperty({
+    example: 1,
+    description: 'Shift ID associated with the assignment',
+  })
   @Column()
   shiftId: number;
 
-  @ApiProperty({ example: 1, description: 'Collaborator ID assigned to the shift' })
+  @ApiProperty({
+    example: 1,
+    description: 'Collaborator ID assigned to the shift',
+  })
   @Column()
   collaboratorId: number;
 
-  @ApiProperty({ 
+  @ApiProperty({
     enum: ShiftRole,
     example: ShiftRole.WAITER,
-    description: 'Role of the collaborator during this shift' 
+    description: 'Role of the collaborator during this shift',
   })
-  @Column({ 
-    type: 'enum', 
+  @Column({
+    type: 'enum',
     enum: ShiftRole,
-    default: ShiftRole.WAITER
+    default: ShiftRole.WAITER,
   })
   roleDuringShift: ShiftRole;
 
-  @ApiProperty({ 
-    example: '2024-01-15T08:00:00Z', 
-    description: 'Start time of the assignment' 
+  @ApiProperty({
+    example: '2024-01-15T08:00:00Z',
+    description: 'Start time of the assignment',
   })
   @Column({ type: 'timestamp' })
   startTime: Date;
 
-  @ApiProperty({ 
-    example: '2024-01-15T16:00:00Z', 
-    description: 'End time of the assignment' 
+  @ApiProperty({
+    example: '2024-01-15T16:00:00Z',
+    description: 'End time of the assignment',
   })
   @Column({ type: 'timestamp', nullable: true })
   endTime?: Date;
 
-  @ApiProperty({ 
+  @ApiProperty({
     enum: ShiftAssignmentStatus,
     example: ShiftAssignmentStatus.ACTIVE,
-    description: 'Current status of the shift assignment' 
+    description: 'Current status of the shift assignment',
   })
-  @Column({ 
-    type: 'enum', 
+  @Column({
+    type: 'enum',
     enum: ShiftAssignmentStatus,
-    default: ShiftAssignmentStatus.ACTIVE
+    default: ShiftAssignmentStatus.ACTIVE,
   })
   status: ShiftAssignmentStatus;
 
@@ -98,4 +107,3 @@ Table ShiftAssignment {
   }
 }
 */
-

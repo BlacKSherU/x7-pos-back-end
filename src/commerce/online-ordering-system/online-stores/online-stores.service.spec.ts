@@ -1,17 +1,23 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/unbound-method */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { Repository } from 'typeorm';
+import { Repository, UpdateResult } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException, ForbiddenException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { OnlineStoresService } from './online-stores.service';
 import { OnlineStore } from './entities/online-store.entity';
 import { Merchant } from '../../../platform-saas/merchants/entities/merchant.entity';
 import { CreateOnlineStoreDto } from './dto/create-online-store.dto';
 import { UpdateOnlineStoreDto } from './dto/update-online-store.dto';
-import { GetOnlineStoreQueryDto, OnlineStoreSortBy } from './dto/get-online-store-query.dto';
+import {
+  GetOnlineStoreQueryDto,
+  OnlineStoreSortBy,
+} from './dto/get-online-store-query.dto';
 import { OnlineStoreStatus } from './constants/online-store-status.enum';
 
 describe('OnlineStoresService', () => {
@@ -92,11 +98,16 @@ describe('OnlineStoresService', () => {
     };
 
     it('should create an online store successfully', async () => {
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(onlineStoreRepository, 'findOne')
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as unknown as Merchant);
+      jest
+        .spyOn(onlineStoreRepository, 'findOne')
         .mockResolvedValueOnce(null) // First call: check if subdomain exists
-        .mockResolvedValueOnce(mockOnlineStore as any); // Second call: get complete store after save
-      jest.spyOn(onlineStoreRepository, 'save').mockResolvedValue(mockOnlineStore as any);
+        .mockResolvedValueOnce(mockOnlineStore as unknown as OnlineStore); // Second call: get complete store after save
+      jest
+        .spyOn(onlineStoreRepository, 'save')
+        .mockResolvedValue(mockOnlineStore as unknown as OnlineStore);
 
       const result = await service.create(createOnlineStoreDto, 1);
 
@@ -111,10 +122,10 @@ describe('OnlineStoresService', () => {
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.create(createOnlineStoreDto, undefined as any)).rejects.toThrow(
+      await expect(service.create(createOnlineStoreDto, 0)).rejects.toThrow(
         ForbiddenException,
       );
-      await expect(service.create(createOnlineStoreDto, undefined as any)).rejects.toThrow(
+      await expect(service.create(createOnlineStoreDto, 0)).rejects.toThrow(
         'You must be associated with a merchant to create online stores',
       );
     });
@@ -132,7 +143,9 @@ describe('OnlineStoresService', () => {
 
     it('should throw BadRequestException if subdomain is empty', async () => {
       const dtoWithEmptySubdomain = { ...createOnlineStoreDto, subdomain: '' };
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as unknown as Merchant);
 
       await expect(service.create(dtoWithEmptySubdomain, 1)).rejects.toThrow(
         BadRequestException,
@@ -147,7 +160,9 @@ describe('OnlineStoresService', () => {
         ...createOnlineStoreDto,
         subdomain: 'a'.repeat(101),
       };
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as unknown as Merchant);
 
       await expect(service.create(dtoWithLongSubdomain, 1)).rejects.toThrow(
         BadRequestException,
@@ -158,8 +173,12 @@ describe('OnlineStoresService', () => {
     });
 
     it('should throw ConflictException if subdomain already exists', async () => {
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(onlineStoreRepository, 'findOne').mockResolvedValue(mockOnlineStore as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as unknown as Merchant);
+      jest
+        .spyOn(onlineStoreRepository, 'findOne')
+        .mockResolvedValue(mockOnlineStore as unknown as OnlineStore);
 
       await expect(service.create(createOnlineStoreDto, 1)).rejects.toThrow(
         ConflictException,
@@ -171,7 +190,9 @@ describe('OnlineStoresService', () => {
 
     it('should throw BadRequestException if theme is empty', async () => {
       const dtoWithEmptyTheme = { ...createOnlineStoreDto, theme: '' };
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as unknown as Merchant);
       jest.spyOn(onlineStoreRepository, 'findOne').mockResolvedValue(null);
 
       await expect(service.create(dtoWithEmptyTheme, 1)).rejects.toThrow(
@@ -184,7 +205,9 @@ describe('OnlineStoresService', () => {
 
     it('should throw BadRequestException if currency is empty', async () => {
       const dtoWithEmptyCurrency = { ...createOnlineStoreDto, currency: '' };
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as unknown as Merchant);
       jest.spyOn(onlineStoreRepository, 'findOne').mockResolvedValue(null);
 
       await expect(service.create(dtoWithEmptyCurrency, 1)).rejects.toThrow(
@@ -197,7 +220,9 @@ describe('OnlineStoresService', () => {
 
     it('should throw BadRequestException if timezone is empty', async () => {
       const dtoWithEmptyTimezone = { ...createOnlineStoreDto, timezone: '' };
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as unknown as Merchant);
       jest.spyOn(onlineStoreRepository, 'findOne').mockResolvedValue(null);
 
       await expect(service.create(dtoWithEmptyTimezone, 1)).rejects.toThrow(
@@ -213,11 +238,16 @@ describe('OnlineStoresService', () => {
         ...createOnlineStoreDto,
         subdomain: '  MY-STORE  ',
       };
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(onlineStoreRepository, 'findOne')
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as unknown as Merchant);
+      jest
+        .spyOn(onlineStoreRepository, 'findOne')
         .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(mockOnlineStore as any);
-      jest.spyOn(onlineStoreRepository, 'save').mockResolvedValue(mockOnlineStore as any);
+        .mockResolvedValueOnce(mockOnlineStore as unknown as OnlineStore);
+      jest
+        .spyOn(onlineStoreRepository, 'save')
+        .mockResolvedValue(mockOnlineStore as unknown as OnlineStore);
 
       await service.create(dtoWithSpaces, 1);
 
@@ -229,11 +259,16 @@ describe('OnlineStoresService', () => {
     });
 
     it('should always set is_active to true when creating', async () => {
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(onlineStoreRepository, 'findOne')
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as unknown as Merchant);
+      jest
+        .spyOn(onlineStoreRepository, 'findOne')
         .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(mockOnlineStore as any);
-      jest.spyOn(onlineStoreRepository, 'save').mockResolvedValue(mockOnlineStore as any);
+        .mockResolvedValueOnce(mockOnlineStore as unknown as OnlineStore);
+      jest
+        .spyOn(onlineStoreRepository, 'save')
+        .mockResolvedValue(mockOnlineStore as unknown as OnlineStore);
 
       await service.create(createOnlineStoreDto, 1);
 
@@ -249,11 +284,16 @@ describe('OnlineStoresService', () => {
         ...createOnlineStoreDto,
         currency: 'usd',
       };
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(onlineStoreRepository, 'findOne')
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as unknown as Merchant);
+      jest
+        .spyOn(onlineStoreRepository, 'findOne')
         .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(mockOnlineStore as any);
-      jest.spyOn(onlineStoreRepository, 'save').mockResolvedValue(mockOnlineStore as any);
+        .mockResolvedValueOnce(mockOnlineStore as unknown as OnlineStore);
+      jest
+        .spyOn(onlineStoreRepository, 'save')
+        .mockResolvedValue(mockOnlineStore as unknown as OnlineStore);
 
       await service.create(dtoWithLowercaseCurrency, 1);
 
@@ -272,7 +312,9 @@ describe('OnlineStoresService', () => {
     };
 
     it('should return paginated list of online stores', async () => {
-      jest.spyOn(onlineStoreRepository, 'findAndCount').mockResolvedValue([[mockOnlineStore] as any, 1]);
+      jest
+        .spyOn(onlineStoreRepository, 'findAndCount')
+        .mockResolvedValue([[mockOnlineStore] as unknown as OnlineStore[], 1]);
 
       const result = await service.findAll(query, 1);
 
@@ -297,10 +339,10 @@ describe('OnlineStoresService', () => {
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.findAll(query, undefined as any)).rejects.toThrow(
+      await expect(service.findAll(query, 0)).rejects.toThrow(
         ForbiddenException,
       );
-      await expect(service.findAll(query, undefined as any)).rejects.toThrow(
+      await expect(service.findAll(query, 0)).rejects.toThrow(
         'You must be associated with a merchant to access online stores',
       );
     });
@@ -365,7 +407,9 @@ describe('OnlineStoresService', () => {
         status: OnlineStoreStatus.ACTIVE,
         createdDate: '2023-10-01',
       };
-      jest.spyOn(onlineStoreRepository, 'findAndCount').mockResolvedValue([[mockOnlineStore] as any, 1]);
+      jest
+        .spyOn(onlineStoreRepository, 'findAndCount')
+        .mockResolvedValue([[mockOnlineStore] as unknown as OnlineStore[], 1]);
 
       await service.findAll(queryWithFilters, 1);
 
@@ -374,7 +418,9 @@ describe('OnlineStoresService', () => {
 
     it('should use default pagination values', async () => {
       const emptyQuery: GetOnlineStoreQueryDto = {};
-      jest.spyOn(onlineStoreRepository, 'findAndCount').mockResolvedValue([[] as any, 0]);
+      jest
+        .spyOn(onlineStoreRepository, 'findAndCount')
+        .mockResolvedValue([[], 0] as unknown as [OnlineStore[], number]);
 
       const result = await service.findAll(emptyQuery, 1);
 
@@ -383,7 +429,9 @@ describe('OnlineStoresService', () => {
     });
 
     it('should calculate pagination metadata correctly', async () => {
-      jest.spyOn(onlineStoreRepository, 'findAndCount').mockResolvedValue([[mockOnlineStore] as any, 25]);
+      jest
+        .spyOn(onlineStoreRepository, 'findAndCount')
+        .mockResolvedValue([[mockOnlineStore] as unknown as OnlineStore[], 25]);
 
       const result = await service.findAll({ page: 2, limit: 10 }, 1);
 
@@ -399,7 +447,9 @@ describe('OnlineStoresService', () => {
         sortBy: OnlineStoreSortBy.SUBDOMAIN,
         sortOrder: 'ASC',
       };
-      jest.spyOn(onlineStoreRepository, 'findAndCount').mockResolvedValue([[mockOnlineStore] as any, 1]);
+      jest
+        .spyOn(onlineStoreRepository, 'findAndCount')
+        .mockResolvedValue([[mockOnlineStore] as unknown as OnlineStore[], 1]);
 
       await service.findAll(queryWithSort, 1);
 
@@ -409,7 +459,9 @@ describe('OnlineStoresService', () => {
 
   describe('findOne', () => {
     it('should return an online store successfully', async () => {
-      jest.spyOn(onlineStoreRepository, 'findOne').mockResolvedValue(mockOnlineStore as any);
+      jest
+        .spyOn(onlineStoreRepository, 'findOne')
+        .mockResolvedValue(mockOnlineStore as unknown as OnlineStore);
 
       const result = await service.findOne(1, 1);
 
@@ -427,19 +479,15 @@ describe('OnlineStoresService', () => {
     });
 
     it('should throw BadRequestException if id is invalid', async () => {
-      await expect(service.findOne(0, 1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.findOne(0, 1)).rejects.toThrow(BadRequestException);
       await expect(service.findOne(0, 1)).rejects.toThrow(
         'Online store ID must be a valid positive number',
       );
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.findOne(1, undefined as any)).rejects.toThrow(
-        ForbiddenException,
-      );
-      await expect(service.findOne(1, undefined as any)).rejects.toThrow(
+      await expect(service.findOne(1, 0)).rejects.toThrow(ForbiddenException);
+      await expect(service.findOne(1, 0)).rejects.toThrow(
         'You must be associated with a merchant to access online stores',
       );
     });
@@ -447,9 +495,7 @@ describe('OnlineStoresService', () => {
     it('should throw NotFoundException if online store not found', async () => {
       jest.spyOn(onlineStoreRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.findOne(1, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.findOne(1, 1)).rejects.toThrow(NotFoundException);
       await expect(service.findOne(1, 1)).rejects.toThrow(
         'Online store not found',
       );
@@ -467,11 +513,16 @@ describe('OnlineStoresService', () => {
 
     it('should update an online store successfully', async () => {
       const updatedStore = { ...mockOnlineStore, ...updateOnlineStoreDto };
-      jest.spyOn(onlineStoreRepository, 'findOne')
-        .mockResolvedValueOnce(mockOnlineStore as any) // First call: find existing store (subdomain: 'my-store')
+      jest
+        .spyOn(onlineStoreRepository, 'findOne')
+        .mockResolvedValueOnce(mockOnlineStore as unknown as OnlineStore) // First call: find existing store (subdomain: 'my-store')
         .mockResolvedValueOnce(null) // Second call: check if subdomain 'updated-store' exists (it doesn't)
-        .mockResolvedValueOnce(updatedStore as any); // Third call: get updated store after update
-      jest.spyOn(onlineStoreRepository, 'update').mockResolvedValue(undefined as any);
+        .mockResolvedValueOnce(updatedStore as unknown as OnlineStore); // Third call: get updated store after update
+      jest.spyOn(onlineStoreRepository, 'update').mockResolvedValue({
+        affected: 1,
+        raw: [],
+        generatedMaps: [],
+      } as UpdateResult);
 
       const result = await service.update(1, updateOnlineStoreDto, 1);
 
@@ -488,7 +539,7 @@ describe('OnlineStoresService', () => {
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.update(1, updateOnlineStoreDto, undefined as any)).rejects.toThrow(
+      await expect(service.update(1, updateOnlineStoreDto, 0)).rejects.toThrow(
         ForbiddenException,
       );
     });
@@ -503,7 +554,9 @@ describe('OnlineStoresService', () => {
 
     it('should throw BadRequestException if subdomain is empty', async () => {
       const dtoWithEmptySubdomain = { ...updateOnlineStoreDto, subdomain: '' };
-      jest.spyOn(onlineStoreRepository, 'findOne').mockResolvedValue(mockOnlineStore as any);
+      jest
+        .spyOn(onlineStoreRepository, 'findOne')
+        .mockResolvedValue(mockOnlineStore as unknown as OnlineStore);
 
       await expect(service.update(1, dtoWithEmptySubdomain, 1)).rejects.toThrow(
         BadRequestException,
@@ -514,10 +567,15 @@ describe('OnlineStoresService', () => {
     });
 
     it('should throw ConflictException if subdomain already exists', async () => {
-      const existingStore = { ...mockOnlineStore, id: 2, subdomain: 'updated-store' };
-      jest.spyOn(onlineStoreRepository, 'findOne')
-        .mockResolvedValueOnce(mockOnlineStore as any) // First call: find existing store (subdomain: 'my-store')
-        .mockResolvedValueOnce(existingStore as any); // Second call: check if subdomain 'updated-store' exists (it does, different id)
+      const existingStore = {
+        ...mockOnlineStore,
+        id: 2,
+        subdomain: 'updated-store',
+      };
+      jest
+        .spyOn(onlineStoreRepository, 'findOne')
+        .mockResolvedValueOnce(mockOnlineStore as unknown as OnlineStore) // First call: find existing store (subdomain: 'my-store')
+        .mockResolvedValueOnce(existingStore as unknown as OnlineStore); // Second call: check if subdomain 'updated-store' exists (it does, different id)
 
       await expect(service.update(1, updateOnlineStoreDto, 1)).rejects.toThrow(
         ConflictException,
@@ -531,12 +589,20 @@ describe('OnlineStoresService', () => {
       const partialDto: UpdateOnlineStoreDto = {
         subdomain: 'only-subdomain-updated',
       };
-      const updatedStore = { ...mockOnlineStore, subdomain: 'only-subdomain-updated' };
-      jest.spyOn(onlineStoreRepository, 'findOne')
-        .mockResolvedValueOnce(mockOnlineStore as any) // First call: find existing store
+      const updatedStore = {
+        ...mockOnlineStore,
+        subdomain: 'only-subdomain-updated',
+      };
+      jest
+        .spyOn(onlineStoreRepository, 'findOne')
+        .mockResolvedValueOnce(mockOnlineStore as unknown as OnlineStore) // First call: find existing store
         .mockResolvedValueOnce(null) // Second call: check if subdomain exists (it doesn't)
-        .mockResolvedValueOnce(updatedStore as any); // Third call: get updated store after update
-      jest.spyOn(onlineStoreRepository, 'update').mockResolvedValue(undefined as any);
+        .mockResolvedValueOnce(updatedStore as unknown as OnlineStore); // Third call: get updated store after update
+      jest.spyOn(onlineStoreRepository, 'update').mockResolvedValue({
+        affected: 1,
+        raw: [],
+        generatedMaps: [],
+      } as UpdateResult);
 
       await service.update(1, partialDto, 1);
 
@@ -553,11 +619,16 @@ describe('OnlineStoresService', () => {
         subdomain: '  UPDATED-STORE  ',
       };
       const updatedStore = { ...mockOnlineStore, subdomain: 'updated-store' };
-      jest.spyOn(onlineStoreRepository, 'findOne')
-        .mockResolvedValueOnce(mockOnlineStore as any) // First call: find existing store
+      jest
+        .spyOn(onlineStoreRepository, 'findOne')
+        .mockResolvedValueOnce(mockOnlineStore as unknown as OnlineStore) // First call: find existing store
         .mockResolvedValueOnce(null) // Second call: check if subdomain exists (it doesn't)
-        .mockResolvedValueOnce(updatedStore as any); // Third call: get updated store after update
-      jest.spyOn(onlineStoreRepository, 'update').mockResolvedValue(undefined as any);
+        .mockResolvedValueOnce(updatedStore as unknown as OnlineStore); // Third call: get updated store after update
+      jest.spyOn(onlineStoreRepository, 'update').mockResolvedValue({
+        affected: 1,
+        raw: [],
+        generatedMaps: [],
+      } as UpdateResult);
 
       await service.update(1, dtoWithSpaces, 1);
 
@@ -574,10 +645,15 @@ describe('OnlineStoresService', () => {
         currency: 'eur',
       };
       const updatedStore = { ...mockOnlineStore, currency: 'EUR' };
-      jest.spyOn(onlineStoreRepository, 'findOne')
-        .mockResolvedValueOnce(mockOnlineStore as any) // First call: find existing store
-        .mockResolvedValueOnce(updatedStore as any); // Second call: get updated store after update
-      jest.spyOn(onlineStoreRepository, 'update').mockResolvedValue(undefined as any);
+      jest
+        .spyOn(onlineStoreRepository, 'findOne')
+        .mockResolvedValueOnce(mockOnlineStore as unknown as OnlineStore) // First call: find existing store
+        .mockResolvedValueOnce(updatedStore as unknown as OnlineStore); // Second call: get updated store after update
+      jest.spyOn(onlineStoreRepository, 'update').mockResolvedValue({
+        affected: 1,
+        raw: [],
+        generatedMaps: [],
+      } as UpdateResult);
 
       await service.update(1, dtoWithLowercaseCurrency, 1);
 
@@ -596,8 +672,12 @@ describe('OnlineStoresService', () => {
         ...mockOnlineStore,
         status: OnlineStoreStatus.DELETED,
       };
-      jest.spyOn(onlineStoreRepository, 'findOne').mockResolvedValue(mockOnlineStore as any);
-      jest.spyOn(onlineStoreRepository, 'save').mockResolvedValue(deletedStore as any);
+      jest
+        .spyOn(onlineStoreRepository, 'findOne')
+        .mockResolvedValue(mockOnlineStore as unknown as OnlineStore);
+      jest
+        .spyOn(onlineStoreRepository, 'save')
+        .mockResolvedValue(deletedStore as unknown as OnlineStore);
 
       const result = await service.remove(1, 1);
 
@@ -609,23 +689,17 @@ describe('OnlineStoresService', () => {
     });
 
     it('should throw BadRequestException if id is invalid', async () => {
-      await expect(service.remove(0, 1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.remove(0, 1)).rejects.toThrow(BadRequestException);
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.remove(1, undefined as any)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.remove(1, 0)).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw NotFoundException if online store not found', async () => {
       jest.spyOn(onlineStoreRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.remove(1, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.remove(1, 1)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ConflictException if online store is already deleted', async () => {
@@ -633,11 +707,11 @@ describe('OnlineStoresService', () => {
         ...mockOnlineStore,
         status: OnlineStoreStatus.DELETED,
       };
-      jest.spyOn(onlineStoreRepository, 'findOne').mockResolvedValue(deletedStore as any);
+      jest
+        .spyOn(onlineStoreRepository, 'findOne')
+        .mockResolvedValue(deletedStore as unknown as OnlineStore);
 
-      await expect(service.remove(1, 1)).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.remove(1, 1)).rejects.toThrow(ConflictException);
       await expect(service.remove(1, 1)).rejects.toThrow(
         'Online store is already deleted',
       );

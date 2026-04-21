@@ -29,7 +29,7 @@ export class CreateCashTipMovementDto {
   })
   movementType: CashTipMovementType;
 
-  @ApiProperty({ example: 25.50, description: 'Movement amount' })
+  @ApiProperty({ example: 25.5, description: 'Movement amount' })
   @IsNotEmpty({ message: 'Amount is required' })
   @Type(() => Number)
   @IsNumber({}, { message: 'Amount must be a number' })

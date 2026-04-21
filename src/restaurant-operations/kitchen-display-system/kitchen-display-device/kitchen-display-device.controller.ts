@@ -13,6 +13,7 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { Request as ExpressRequest } from 'express';
 import { KitchenDisplayDeviceService } from './kitchen-display-device.service';
 import { CreateKitchenDisplayDeviceDto } from './dto/create-kitchen-display-device.dto';
 import { UpdateKitchenDisplayDeviceDto } from './dto/update-kitchen-display-device.dto';
@@ -42,6 +43,8 @@ import { Scopes } from 'src/auth/decorators/scopes.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { ErrorResponse } from 'src/common/dtos/error-response.dto';
+
+type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
 
 @ApiTags('Kitchen Display Devices')
 @ApiBearerAuth()
@@ -105,9 +108,9 @@ export class KitchenDisplayDeviceController {
   })
   async create(
     @Body() createKitchenDisplayDeviceDto: CreateKitchenDisplayDeviceDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ) {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.kitchenDisplayDeviceService.create(
       createKitchenDisplayDeviceDto,
       authenticatedUserMerchantId,
@@ -213,9 +216,9 @@ export class KitchenDisplayDeviceController {
   })
   async findAll(
     @Query() query: GetKitchenDisplayDeviceQueryDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ) {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.kitchenDisplayDeviceService.findAll(
       query,
       authenticatedUserMerchantId,
@@ -261,9 +264,9 @@ export class KitchenDisplayDeviceController {
   })
   async findOne(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ) {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.kitchenDisplayDeviceService.findOne(
       id,
       authenticatedUserMerchantId,
@@ -338,9 +341,9 @@ export class KitchenDisplayDeviceController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateKitchenDisplayDeviceDto: UpdateKitchenDisplayDeviceDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ) {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.kitchenDisplayDeviceService.update(
       id,
       updateKitchenDisplayDeviceDto,
@@ -392,9 +395,9 @@ export class KitchenDisplayDeviceController {
   })
   async remove(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ) {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.kitchenDisplayDeviceService.remove(
       id,
       authenticatedUserMerchantId,

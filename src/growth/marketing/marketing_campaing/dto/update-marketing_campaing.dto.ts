@@ -4,7 +4,9 @@ import { IsEnum, IsOptional } from 'class-validator';
 import { CreateMarketingCampaignDto } from './create-marketing_campaing.dto';
 import { MarketingCampaignStatus } from '../constants/marketing-campaign-status.enum';
 
-export class UpdateMarketingCampaignDto extends PartialType(CreateMarketingCampaignDto) {
+export class UpdateMarketingCampaignDto extends PartialType(
+  CreateMarketingCampaignDto,
+) {
   @ApiPropertyOptional({
     example: MarketingCampaignStatus.SCHEDULED,
     enum: MarketingCampaignStatus,

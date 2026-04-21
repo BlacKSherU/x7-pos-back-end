@@ -13,6 +13,7 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { Request as ExpressRequest } from 'express';
 import { KitchenOrderService } from './kitchen-order.service';
 import { CreateKitchenOrderDto } from './dto/create-kitchen-order.dto';
 import { UpdateKitchenOrderDto } from './dto/update-kitchen-order.dto';
@@ -43,6 +44,8 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { ErrorResponse } from 'src/common/dtos/error-response.dto';
 import { KitchenOrderBusinessStatus } from './constants/kitchen-order-business-status.enum';
+
+type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
 
 @ApiTags('Kitchen Orders')
 @ApiBearerAuth()
@@ -111,9 +114,9 @@ export class KitchenOrderController {
   })
   async create(
     @Body() createKitchenOrderDto: CreateKitchenOrderDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ) {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.kitchenOrderService.create(
       createKitchenOrderDto,
       authenticatedUserMerchantId,
@@ -220,9 +223,9 @@ export class KitchenOrderController {
   })
   async findAll(
     @Query() query: GetKitchenOrderQueryDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ) {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.kitchenOrderService.findAll(query, authenticatedUserMerchantId);
   }
 
@@ -265,9 +268,9 @@ export class KitchenOrderController {
   })
   async findOne(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ) {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.kitchenOrderService.findOne(id, authenticatedUserMerchantId);
   }
 
@@ -339,9 +342,9 @@ export class KitchenOrderController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateKitchenOrderDto: UpdateKitchenOrderDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ) {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.kitchenOrderService.update(
       id,
       updateKitchenOrderDto,
@@ -393,9 +396,9 @@ export class KitchenOrderController {
   })
   async remove(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ) {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.kitchenOrderService.remove(id, authenticatedUserMerchantId);
   }
 }

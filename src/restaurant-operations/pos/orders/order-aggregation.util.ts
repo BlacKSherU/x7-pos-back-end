@@ -8,7 +8,9 @@ export function roundMoney(value: number): number {
   return Math.round((Number(value) + Number.EPSILON) * 100) / 100;
 }
 
-export function lineSubtotal(item: Pick<OrderItem, 'quantity' | 'price' | 'discount'>): number {
+export function lineSubtotal(
+  item: Pick<OrderItem, 'quantity' | 'price' | 'discount'>,
+): number {
   const qty = Number(item.quantity);
   const price = Number(item.price);
   const disc = Number(item.discount ?? 0);
@@ -20,9 +22,7 @@ export function computeTaxTotalFromOrderTaxes(
   taxes: Pick<OrderTax, 'amount'>[],
 ): number {
   if (taxes.length === 0) return 0;
-  return roundMoney(
-    taxes.reduce((sum, t) => sum + Number(t.amount), 0),
-  );
+  return roundMoney(taxes.reduce((sum, t) => sum + Number(t.amount), 0));
 }
 
 /** Sum of tip_amount per payment row (refunds subtract tips like amounts). */
@@ -129,6 +129,8 @@ export function applyPaidDerivedFields(order: {
   balance_due: number;
   is_paid: boolean;
 }): void {
-  order.balance_due = roundMoney(roundMoney(order.total) - roundMoney(order.paid_total));
+  order.balance_due = roundMoney(
+    roundMoney(order.total) - roundMoney(order.paid_total),
+  );
   order.is_paid = order.balance_due === 0;
 }

@@ -4,9 +4,3 @@ export enum KitchenOrderBusinessStatus {
   COMPLETED = 'completed',
   CANCELLED = 'cancelled',
 }
-
-
-
-
-
-

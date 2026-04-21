@@ -12,4 +12,4 @@ import { Merchant } from 'src/platform-saas/merchants/entities/merchant.entity';
   providers: [SuppliersService],
   exports: [SuppliersService],
 })
-export class SuppliersModule { }
+export class SuppliersModule {}

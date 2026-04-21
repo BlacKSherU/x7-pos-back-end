@@ -6,8 +6,5 @@ export enum ShiftRole {
   CASHIER = 'cashier',
   MANAGER = 'manager',
   BUSSER = 'busser',
-  DELIVERY = 'delivery'
-  
+  DELIVERY = 'delivery',
 }
-
-

@@ -15,11 +15,3 @@ import { Category } from '../../../inventory/products-inventory/category/entitie
   exports: [OnlineMenuCategoryService],
 })
 export class OnlineMenuCategoryModule {}
-
-
-
-
-
-
-
-

@@ -16,7 +16,10 @@ import { CashTipMovementType } from '../constants/cash-tip-movement-type.enum';
 @Index(['cash_drawer_id', 'created_at'])
 @Index(['tip_id'])
 export class CashTipMovement {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the cash tip movement' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the cash tip movement',
+  })
   @PrimaryGeneratedColumn({ type: 'bigint' })
   id: number;
 
@@ -24,7 +27,10 @@ export class CashTipMovement {
   @Column({ type: 'bigint', name: 'cash_drawer_id' })
   cash_drawer_id: number;
 
-  @ApiProperty({ type: () => CashDrawer, description: 'Cash drawer associated' })
+  @ApiProperty({
+    type: () => CashDrawer,
+    description: 'Cash drawer associated',
+  })
   @ManyToOne(() => CashDrawer, { nullable: false })
   @JoinColumn({ name: 'cash_drawer_id' })
   cashDrawer: CashDrawer;
@@ -46,11 +52,14 @@ export class CashTipMovement {
   @Column({ type: 'varchar', length: 50, name: 'movement_type' })
   movement_type: CashTipMovementType;
 
-  @ApiProperty({ example: 25.50, description: 'Movement amount' })
+  @ApiProperty({ example: 25.5, description: 'Movement amount' })
   @Column({ type: 'decimal', precision: 12, scale: 2 })
   amount: number;
 
-  @ApiProperty({ example: '2024-01-15T10:00:00Z', description: 'Creation timestamp' })
+  @ApiProperty({
+    example: '2024-01-15T10:00:00Z',
+    description: 'Creation timestamp',
+  })
   @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
   created_at: Date;
 }

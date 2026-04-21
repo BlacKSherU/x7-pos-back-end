@@ -16,7 +16,10 @@ import { MarketingSegmentRuleStatus } from '../constants/marketing-segment-rule-
 @Entity('marketing_segment_rules')
 @Index(['segment_id', 'status', 'created_at'])
 export class MarketingSegmentRule {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the marketing segment rule' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the marketing segment rule',
+  })
   @PrimaryGeneratedColumn({ type: 'bigint' })
   id: number;
 
@@ -39,7 +42,8 @@ export class MarketingSegmentRule {
 
   @ApiProperty({
     example: 'total_spent',
-    description: 'Field name to evaluate (e.g., total_spent, last_order_days, city, tier)',
+    description:
+      'Field name to evaluate (e.g., total_spent, last_order_days, city, tier)',
   })
   @Column({ type: 'varchar', length: 255 })
   field: string;
@@ -47,7 +51,8 @@ export class MarketingSegmentRule {
   @ApiProperty({
     example: MarketingSegmentRuleOperator.GREATER_THAN,
     enum: MarketingSegmentRuleOperator,
-    description: 'Operator to use for comparison (=, >, <, >=, <=, IN, LIKE, etc.)',
+    description:
+      'Operator to use for comparison (=, >, <, >=, <=, IN, LIKE, etc.)',
   })
   @Column({ type: 'varchar', length: 20 })
   operator: MarketingSegmentRuleOperator;

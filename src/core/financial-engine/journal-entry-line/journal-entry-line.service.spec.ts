@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/unbound-method, @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import { Test, TestingModule } from '@nestjs/testing';
 import { JournalEntryLineService } from './journal-entry-line.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -108,9 +108,15 @@ describe('JournalEntryLineService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         JournalEntryLineService,
-        { provide: getRepositoryToken(JournalEntryLine), useValue: mockLineRepo },
+        {
+          provide: getRepositoryToken(JournalEntryLine),
+          useValue: mockLineRepo,
+        },
         { provide: getRepositoryToken(JournalEntry), useValue: mockEntryRepo },
-        { provide: getRepositoryToken(LedgerAccount), useValue: mockLedgerRepo },
+        {
+          provide: getRepositoryToken(LedgerAccount),
+          useValue: mockLedgerRepo,
+        },
         { provide: getRepositoryToken(Company), useValue: mockCompanyRepo },
         { provide: getRepositoryToken(Merchant), useValue: mockMerchantRepo },
       ],
@@ -119,7 +125,7 @@ describe('JournalEntryLineService', () => {
     service = module.get<JournalEntryLineService>(JournalEntryLineService);
 
     jest.clearAllMocks();
-    jest.spyOn(console, 'error').mockImplementation(() => { });
+    jest.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => jest.restoreAllMocks());
@@ -137,11 +143,15 @@ describe('JournalEntryLineService', () => {
 
       jest.spyOn(merchantRepo, 'findOne').mockResolvedValueOnce(mockMerchant);
       jest.spyOn(entryRepo, 'findOne').mockResolvedValueOnce(mockDraftEntry);
-      jest.spyOn(ledgerRepo, 'findOneBy').mockResolvedValueOnce(mockLedgerAccount);
+      jest
+        .spyOn(ledgerRepo, 'findOneBy')
+        .mockResolvedValueOnce(mockLedgerAccount);
       jest.spyOn(lineRepo, 'create').mockReturnValueOnce(mockLine);
       jest.spyOn(lineRepo, 'save').mockResolvedValueOnce(mockLine);
       jest.spyOn(lineRepo, 'find').mockResolvedValueOnce([mockLine]);
-      jest.spyOn(entryRepo, 'update').mockResolvedValueOnce({ affected: 1 } as any);
+      jest
+        .spyOn(entryRepo, 'update')
+        .mockResolvedValueOnce({ affected: 1 } as any);
       jest.spyOn(lineRepo, 'findOne').mockResolvedValueOnce(mockLine);
 
       const result = await service.create(mockMerchant.id, 1, mockCreateDto);
@@ -158,7 +168,9 @@ describe('JournalEntryLineService', () => {
       jest.spyOn(merchantRepo, 'findOne').mockResolvedValueOnce(mockMerchant);
       jest.spyOn(entryRepo, 'findOne').mockResolvedValueOnce(null);
 
-      await expect(service.create(mockMerchant.id, 999, mockCreateDto)).rejects.toThrow();
+      await expect(
+        service.create(mockMerchant.id, 999, mockCreateDto),
+      ).rejects.toThrow();
     });
 
     it('should throw if journal entry is not DRAFT', async () => {
@@ -168,9 +180,9 @@ describe('JournalEntryLineService', () => {
       jest.spyOn(merchantRepo, 'findOne').mockResolvedValueOnce(mockMerchant);
       jest.spyOn(entryRepo, 'findOne').mockResolvedValueOnce(mockPostedEntry);
 
-      await expect(service.create(mockMerchant.id, 1, mockCreateDto)).rejects.toThrow(
-        /draft/i,
-      );
+      await expect(
+        service.create(mockMerchant.id, 1, mockCreateDto),
+      ).rejects.toThrow(/draft/i);
     });
 
     it('should throw if ledger account not found or inactive', async () => {
@@ -182,14 +194,18 @@ describe('JournalEntryLineService', () => {
       jest.spyOn(entryRepo, 'findOne').mockResolvedValueOnce(mockDraftEntry);
       jest.spyOn(ledgerRepo, 'findOneBy').mockResolvedValueOnce(null);
 
-      await expect(service.create(mockMerchant.id, 1, mockCreateDto)).rejects.toThrow(
-        /not found/i,
-      );
+      await expect(
+        service.create(mockMerchant.id, 1, mockCreateDto),
+      ).rejects.toThrow(/not found/i);
     });
 
     it('should throw BadRequestException for invalid entryId', async () => {
-      await expect(service.create(mockMerchant.id, 0, mockCreateDto)).rejects.toThrow();
-      await expect(service.create(mockMerchant.id, -1, mockCreateDto)).rejects.toThrow();
+      await expect(
+        service.create(mockMerchant.id, 0, mockCreateDto),
+      ).rejects.toThrow();
+      await expect(
+        service.create(mockMerchant.id, -1, mockCreateDto),
+      ).rejects.toThrow();
     });
   });
 
@@ -214,9 +230,15 @@ describe('JournalEntryLineService', () => {
         getMany: jest.fn().mockResolvedValue([mockLine]),
         getCount: jest.fn().mockResolvedValue(1),
       };
-      jest.spyOn(lineRepo, 'createQueryBuilder').mockReturnValueOnce(mockQb as any);
+      jest
+        .spyOn(lineRepo, 'createQueryBuilder')
+        .mockReturnValueOnce(mockQb as any);
 
-      const result = await service.findAllByEntry({ page: 1, limit: 10 }, mockMerchant.id, 1);
+      const result = await service.findAllByEntry(
+        { page: 1, limit: 10 },
+        mockMerchant.id,
+        1,
+      );
 
       expect(result.statusCode).toBe(200);
       expect(result.data).toHaveLength(1);
@@ -234,7 +256,9 @@ describe('JournalEntryLineService', () => {
       jest.spyOn(merchantRepo, 'findOne').mockResolvedValueOnce(mockMerchant);
       jest.spyOn(entryRepo, 'findOne').mockResolvedValueOnce(null);
 
-      await expect(service.findAllByEntry({ page: 1, limit: 10 }, mockMerchant.id, 999)).rejects.toThrow();
+      await expect(
+        service.findAllByEntry({ page: 1, limit: 10 }, mockMerchant.id, 999),
+      ).rejects.toThrow();
     });
   });
 
@@ -277,16 +301,22 @@ describe('JournalEntryLineService', () => {
       const merchantRepo = service['merchantRepository'];
       const lineRepo = service['lineRepository'];
 
-      const updatedLine: JournalEntryLine = { ...mockLine, description: 'Updated' };
+      const updatedLine: JournalEntryLine = {
+        ...mockLine,
+        description: 'Updated',
+      };
 
       jest.spyOn(merchantRepo, 'findOne').mockResolvedValue(mockMerchant);
-      jest.spyOn(lineRepo, 'findOne')
+      jest
+        .spyOn(lineRepo, 'findOne')
         .mockResolvedValueOnce(mockLine)
         .mockResolvedValueOnce(updatedLine);
       jest.spyOn(lineRepo, 'save').mockResolvedValueOnce(updatedLine);
       jest.spyOn(lineRepo, 'find').mockResolvedValueOnce([updatedLine]);
       const entryRepo = service['journalEntryRepository'];
-      jest.spyOn(entryRepo, 'update').mockResolvedValueOnce({ affected: 1 } as any);
+      jest
+        .spyOn(entryRepo, 'update')
+        .mockResolvedValueOnce({ affected: 1 } as any);
 
       const dto: UpdateJournalEntryLineDto = { description: 'Updated' };
       const result = await service.update(mockMerchant.id, 1, dto);
@@ -299,7 +329,10 @@ describe('JournalEntryLineService', () => {
       const merchantRepo = service['merchantRepository'];
       const lineRepo = service['lineRepository'];
 
-      const lineOnPostedEntry: JournalEntryLine = { ...mockLine, journal_entry: mockPostedEntry };
+      const lineOnPostedEntry: JournalEntryLine = {
+        ...mockLine,
+        journal_entry: mockPostedEntry,
+      };
       jest.spyOn(merchantRepo, 'findOne').mockResolvedValueOnce(mockMerchant);
       jest.spyOn(lineRepo, 'findOne').mockResolvedValueOnce(lineOnPostedEntry);
 
@@ -325,7 +358,9 @@ describe('JournalEntryLineService', () => {
       jest.spyOn(lineRepo, 'save').mockResolvedValueOnce(mockLine);
       jest.spyOn(lineRepo, 'find').mockResolvedValueOnce([]);
       const entryRepo = service['journalEntryRepository'];
-      jest.spyOn(entryRepo, 'update').mockResolvedValueOnce({ affected: 1 } as any);
+      jest
+        .spyOn(entryRepo, 'update')
+        .mockResolvedValueOnce({ affected: 1 } as any);
 
       const result = await service.remove(mockMerchant.id, 1);
 
@@ -337,11 +372,16 @@ describe('JournalEntryLineService', () => {
       const merchantRepo = service['merchantRepository'];
       const lineRepo = service['lineRepository'];
 
-      const lineOnPostedEntry: JournalEntryLine = { ...mockLine, journal_entry: mockPostedEntry };
+      const lineOnPostedEntry: JournalEntryLine = {
+        ...mockLine,
+        journal_entry: mockPostedEntry,
+      };
       jest.spyOn(merchantRepo, 'findOne').mockResolvedValueOnce(mockMerchant);
       jest.spyOn(lineRepo, 'findOne').mockResolvedValueOnce(lineOnPostedEntry);
 
-      await expect(service.remove(mockMerchant.id, 1)).rejects.toThrow(/draft/i);
+      await expect(service.remove(mockMerchant.id, 1)).rejects.toThrow(
+        /draft/i,
+      );
     });
 
     it('should throw if line not found', async () => {

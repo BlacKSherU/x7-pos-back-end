@@ -1,25 +1,32 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { KitchenOrderService } from './kitchen-order.service';
 import { KitchenOrderController } from './kitchen-order.controller';
+import { KitchenOrderSyncService } from './kitchen-order-sync.service';
 import { KitchenOrder } from './entities/kitchen-order.entity';
+import { KitchenOrderItem } from '../kitchen-order-item/entities/kitchen-order-item.entity';
 import { Merchant } from '../../../platform-saas/merchants/entities/merchant.entity';
 import { OnlineOrder } from '../../../commerce/online-ordering-system/online-order/entities/online-order.entity';
-import { Order } from '../../../restaurant-operations/pos/orders/entities/order.entity';
+import { Order } from '../../pos/orders/entities/order.entity';
+import { OrderItem } from '../../pos/order-item/entities/order-item.entity';
 import { KitchenStation } from '../kitchen-station/entities/kitchen-station.entity';
+import { OrdersModule } from '../../pos/orders/orders.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       KitchenOrder,
+      KitchenOrderItem,
+      OrderItem,
       Merchant,
       Order,
       OnlineOrder,
       KitchenStation,
     ]),
+    forwardRef(() => OrdersModule),
   ],
   controllers: [KitchenOrderController],
-  providers: [KitchenOrderService],
-  exports: [KitchenOrderService],
+  providers: [KitchenOrderService, KitchenOrderSyncService],
+  exports: [KitchenOrderService, KitchenOrderSyncService],
 })
 export class KitchenOrderModule {}

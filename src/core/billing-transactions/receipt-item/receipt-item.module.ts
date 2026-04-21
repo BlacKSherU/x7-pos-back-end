@@ -8,9 +8,12 @@ import { Order } from 'src/restaurant-operations/pos/orders/entities/order.entit
 import { ReceiptsModule } from '../receipts/receipts.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ReceiptItem, Receipt, Order]), ReceiptsModule],
+  imports: [
+    TypeOrmModule.forFeature([ReceiptItem, Receipt, Order]),
+    ReceiptsModule,
+  ],
   controllers: [ReceiptItemController],
   providers: [ReceiptItemService],
   exports: [ReceiptItemService],
 })
-export class ReceiptItemModule { }
+export class ReceiptItemModule {}

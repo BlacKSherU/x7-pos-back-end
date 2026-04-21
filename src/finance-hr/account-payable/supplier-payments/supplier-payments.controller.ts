@@ -39,18 +39,21 @@ import {
   SupplierPaymentSortBy,
 } from './dto/get-supplier-payments-query.dto';
 import { SupplierPaymentStatus } from './constants/supplier-payment-status.enum';
-import {
-  OneSupplierPaymentResponseDto,
-} from './dto/supplier-payment-response.dto';
+import { OneSupplierPaymentResponseDto } from './dto/supplier-payment-response.dto';
 import { PaginatedSupplierPaymentsResponseDto } from './dto/paginated-supplier-payments-response.dto';
 
 @ApiTags('Supplier payments (Account payable)')
 @ApiBearerAuth()
 @Controller('supplier-payments')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@ApiExtraModels(OneSupplierPaymentResponseDto, PaginatedSupplierPaymentsResponseDto)
+@ApiExtraModels(
+  OneSupplierPaymentResponseDto,
+  PaginatedSupplierPaymentsResponseDto,
+)
 export class SupplierPaymentsController {
-  constructor(private readonly supplierPaymentsService: SupplierPaymentsService) {}
+  constructor(
+    private readonly supplierPaymentsService: SupplierPaymentsService,
+  ) {}
 
   @Post()
   @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
@@ -148,7 +151,9 @@ export class SupplierPaymentsController {
     type: OneSupplierPaymentResponseDto,
   })
   @ApiBadRequestResponse({ description: 'Invalid input' })
-  @ApiNotFoundResponse({ description: 'Supplier payment, company or supplier not found' })
+  @ApiNotFoundResponse({
+    description: 'Supplier payment, company or supplier not found',
+  })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiForbiddenResponse({ description: 'Forbidden' })
   async update(

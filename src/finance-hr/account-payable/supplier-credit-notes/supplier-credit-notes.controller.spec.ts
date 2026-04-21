@@ -20,7 +20,9 @@ describe('SupplierCreditNotesController', () => {
       ],
     }).compile();
 
-    controller = module.get<SupplierCreditNotesController>(SupplierCreditNotesController);
+    controller = module.get<SupplierCreditNotesController>(
+      SupplierCreditNotesController,
+    );
   });
 
   it('should be defined', () => {

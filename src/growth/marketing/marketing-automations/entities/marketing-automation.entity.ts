@@ -17,7 +17,10 @@ import { MarketingAutomationStatus } from '../constants/marketing-automation-sta
 @Entity('marketing_automations')
 @Index(['merchant_id', 'trigger', 'active', 'status', 'created_at'])
 export class MarketingAutomation {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the marketing automation' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the marketing automation',
+  })
   @PrimaryGeneratedColumn({ type: 'bigint' })
   id: number;
 
@@ -48,7 +51,8 @@ export class MarketingAutomation {
   @ApiProperty({
     example: MarketingAutomationTrigger.ON_NEW_CUSTOMER,
     enum: MarketingAutomationTrigger,
-    description: 'Trigger that activates the automation (on_order_paid, on_new_customer, inactivity, birthday)',
+    description:
+      'Trigger that activates the automation (on_order_paid, on_new_customer, inactivity, birthday)',
   })
   @Column({ type: 'varchar', length: 100 })
   trigger: MarketingAutomationTrigger;
@@ -56,7 +60,8 @@ export class MarketingAutomation {
   @ApiProperty({
     example: MarketingAutomationAction.SEND_EMAIL,
     enum: MarketingAutomationAction,
-    description: 'Action to execute (send_email, send_sms, assign_coupon, move_segment)',
+    description:
+      'Action to execute (send_email, send_sms, assign_coupon, move_segment)',
   })
   @Column({ type: 'varchar', length: 100 })
   action: MarketingAutomationAction;

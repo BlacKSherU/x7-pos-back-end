@@ -6,6 +6,9 @@ import { OrderType } from '../constants/order-type.enum';
 import { OrderSource } from '../constants/order-source.enum';
 import { DeliveryStatus } from '../constants/delivery-status.enum';
 import { KitchenStatus } from '../constants/kitchen-status.enum';
+import { OrderItemResponseDto } from '../../order-item/dto/order-item-response.dto';
+import { KitchenOrderNestedInOrderDto } from '../../../kitchen-display-system/kitchen-order/dto/kitchen-order-response.dto';
+import { OnlineOrderResponseDto } from '../../../../commerce/online-ordering-system/online-order/dto/online-order-response.dto';
 
 export class OrderResponseDto {
   @ApiProperty({ example: 1 })
@@ -23,7 +26,10 @@ export class OrderResponseDto {
   @ApiProperty({ example: 1 })
   subscriptionId: number;
 
-  @ApiProperty({ example: OrderBusinessStatus.PENDING, enum: OrderBusinessStatus })
+  @ApiProperty({
+    example: OrderBusinessStatus.PENDING,
+    enum: OrderBusinessStatus,
+  })
   businessStatus: OrderBusinessStatus;
 
   @ApiProperty({ example: OrderType.DINE_IN, enum: OrderType })
@@ -97,6 +103,26 @@ export class OrderResponseDto {
 
   @ApiProperty({ example: '2024-01-15T09:00:00Z' })
   updatedAt: Date;
+
+  @ApiPropertyOptional({
+    type: () => [OrderItemResponseDto],
+    description: 'POS line items (included when relations are loaded)',
+  })
+  orderItems?: OrderItemResponseDto[];
+
+  @ApiPropertyOptional({
+    type: () => [KitchenOrderNestedInOrderDto],
+    description:
+      'Kitchen tickets linked to this order (included when relations are loaded)',
+  })
+  kitchenOrders?: KitchenOrderNestedInOrderDto[];
+
+  @ApiPropertyOptional({
+    type: () => [OnlineOrderResponseDto],
+    description:
+      'Online orders linked to this POS order (included when relations are loaded)',
+  })
+  onlineOrders?: OnlineOrderResponseDto[];
 }
 
 export class OneOrderResponseDto extends SuccessResponse {
@@ -109,7 +135,14 @@ export class PaginatedOrdersResponseDto extends SuccessResponse {
   data: OrderResponseDto[];
 
   @ApiProperty({
-    example: { page: 1, limit: 10, total: 1, totalPages: 1, hasNext: false, hasPrev: false },
+    example: {
+      page: 1,
+      limit: 10,
+      total: 1,
+      totalPages: 1,
+      hasNext: false,
+      hasPrev: false,
+    },
   })
   paginationMeta: {
     page: number;
@@ -125,6 +158,9 @@ export class OrderLittleResponseDto {
   @ApiProperty({ example: 1 })
   id: number;
 
-  @ApiProperty({ example: OrderBusinessStatus.PENDING, enum: OrderBusinessStatus })
+  @ApiProperty({
+    example: OrderBusinessStatus.PENDING,
+    enum: OrderBusinessStatus,
+  })
   businessStatus: OrderBusinessStatus | null;
 }

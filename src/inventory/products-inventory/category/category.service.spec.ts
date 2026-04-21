@@ -115,7 +115,7 @@ describe('CategoryService', () => {
 
     jest.clearAllMocks();
 
-    jest.spyOn(console, 'error').mockImplementation(() => { });
+    jest.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {

@@ -13,6 +13,7 @@ import {
   Query,
   Request,
 } from '@nestjs/common';
+import { Request as ExpressRequest } from 'express';
 import { OrderItemModifiersService } from './order-item-modifiers.service';
 import { CreateOrderItemModifierDto } from './dto/create-order-item-modifier.dto';
 import { UpdateOrderItemModifierDto } from './dto/update-order-item-modifier.dto';
@@ -45,6 +46,8 @@ import { OneOrderItemModifierResponseDto } from './dto/order-item-modifier-respo
 import { PaginatedOrderItemModifierResponseDto } from './dto/paginated-order-item-modifier-response.dto';
 import { ErrorResponse } from 'src/common/dtos/error-response.dto';
 
+type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
+
 @ApiTags('Order item modifiers')
 @ApiBearerAuth()
 @Controller('order-item-modifiers')
@@ -72,9 +75,9 @@ export class OrderItemModifiersController {
   @ApiNotFoundResponse({ type: ErrorResponse })
   async create(
     @Body() dto: CreateOrderItemModifierDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOrderItemModifierResponseDto> {
-    return this.orderItemModifiersService.create(dto, req.merchant?.id);
+    return this.orderItemModifiersService.create(dto, req.user?.merchant?.id);
   }
 
   @Get()
@@ -96,9 +99,12 @@ export class OrderItemModifiersController {
   @ApiOkResponse({ type: PaginatedOrderItemModifierResponseDto })
   async findAll(
     @Query() query: GetOrderItemModifierQueryDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<PaginatedOrderItemModifierResponseDto> {
-    return this.orderItemModifiersService.findAll(query, req.merchant?.id);
+    return this.orderItemModifiersService.findAll(
+      query,
+      req.user?.merchant?.id,
+    );
   }
 
   @Get(':id')
@@ -115,9 +121,9 @@ export class OrderItemModifiersController {
   @ApiOkResponse({ type: OneOrderItemModifierResponseDto })
   async findOne(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOrderItemModifierResponseDto> {
-    return this.orderItemModifiersService.findOne(id, req.merchant?.id);
+    return this.orderItemModifiersService.findOne(id, req.user?.merchant?.id);
   }
 
   @Put(':id')
@@ -136,9 +142,13 @@ export class OrderItemModifiersController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateOrderItemModifierDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOrderItemModifierResponseDto> {
-    return this.orderItemModifiersService.update(id, dto, req.merchant?.id);
+    return this.orderItemModifiersService.update(
+      id,
+      dto,
+      req.user?.merchant?.id,
+    );
   }
 
   @Delete(':id')
@@ -156,8 +166,8 @@ export class OrderItemModifiersController {
   @ApiOkResponse({ type: OneOrderItemModifierResponseDto })
   async remove(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOrderItemModifierResponseDto> {
-    return this.orderItemModifiersService.remove(id, req.merchant?.id);
+    return this.orderItemModifiersService.remove(id, req.user?.merchant?.id);
   }
 }

@@ -18,7 +18,10 @@ import { OnlinePaymentStatus } from '../constants/online-payment-status.enum';
 @Index(['status'])
 @Index(['logical_status'])
 export class OnlinePayment {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Online Payment' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Online Payment',
+  })
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -33,11 +36,17 @@ export class OnlinePayment {
   @JoinColumn({ name: 'online_order_id' })
   onlineOrder: OnlineOrder;
 
-  @ApiProperty({ example: 'stripe', description: 'Payment provider name (e.g., stripe, paypal, square)' })
+  @ApiProperty({
+    example: 'stripe',
+    description: 'Payment provider name (e.g., stripe, paypal, square)',
+  })
   @Column({ type: 'varchar', length: 50, name: 'payment_provider' })
   payment_provider: string;
 
-  @ApiProperty({ example: 'txn_1234567890', description: 'Transaction ID from the payment provider' })
+  @ApiProperty({
+    example: 'txn_1234567890',
+    description: 'Transaction ID from the payment provider',
+  })
   @Column({ type: 'varchar', length: 100, name: 'transaction_id' })
   transaction_id: string;
 
@@ -53,7 +62,11 @@ export class OnlinePayment {
   @Column({ type: 'varchar', length: 20 })
   status: OnlineOrderPaymentStatus;
 
-  @ApiProperty({ example: '2024-01-15T08:30:00Z', description: 'Timestamp when the payment was processed', nullable: true })
+  @ApiProperty({
+    example: '2024-01-15T08:30:00Z',
+    description: 'Timestamp when the payment was processed',
+    nullable: true,
+  })
   @Column({ type: 'timestamp', name: 'processed_at', nullable: true })
   processed_at: Date | null;
 
@@ -70,11 +83,17 @@ export class OnlinePayment {
   })
   logical_status: OnlinePaymentStatus;
 
-  @ApiProperty({ example: '2024-01-15T08:00:00Z', description: 'Creation timestamp' })
+  @ApiProperty({
+    example: '2024-01-15T08:00:00Z',
+    description: 'Creation timestamp',
+  })
   @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
   created_at: Date;
 
-  @ApiProperty({ example: '2024-01-15T09:00:00Z', description: 'Last update timestamp' })
+  @ApiProperty({
+    example: '2024-01-15T09:00:00Z',
+    description: 'Last update timestamp',
+  })
   @UpdateDateColumn({ type: 'timestamp', name: 'updated_at' })
   updated_at: Date;
 }

@@ -71,10 +71,16 @@ describe('TipSettlementsService', () => {
           provide: getRepositoryToken(TipSettlement),
           useValue: mockTipSettlementRepository,
         },
-        { provide: getRepositoryToken(Collaborator), useValue: mockCollaboratorRepository },
+        {
+          provide: getRepositoryToken(Collaborator),
+          useValue: mockCollaboratorRepository,
+        },
         { provide: getRepositoryToken(Shift), useValue: mockShiftRepository },
         { provide: getRepositoryToken(User), useValue: mockUserRepository },
-        { provide: getRepositoryToken(Merchant), useValue: mockMerchantRepository },
+        {
+          provide: getRepositoryToken(Merchant),
+          useValue: mockMerchantRepository,
+        },
       ],
     }).compile();
 

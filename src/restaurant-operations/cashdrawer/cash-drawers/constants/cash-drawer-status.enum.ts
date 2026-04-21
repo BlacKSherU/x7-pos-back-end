@@ -3,10 +3,3 @@ export enum CashDrawerStatus {
   CLOSE = 'Close',
   PAUSE = 'Pause',
 }
-
-
-
-
-
-
-

@@ -50,5 +50,4 @@ export class CreateLoyaltyProgramDto {
   @Min(0)
   @IsNotEmpty()
   min_points_to_redeem: number;
-
 }

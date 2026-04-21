@@ -1,5 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNumber, IsNotEmpty, IsOptional, IsString, IsBoolean, MaxLength } from 'class-validator';
+import {
+  IsNumber,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsBoolean,
+  MaxLength,
+} from 'class-validator';
 
 export class CreateKitchenDisplayDeviceDto {
   @ApiPropertyOptional({
@@ -12,16 +19,24 @@ export class CreateKitchenDisplayDeviceDto {
   @IsNumber({}, { message: 'Station ID must be a number' })
   stationId?: number | null;
 
-  @ApiProperty({ example: 'Kitchen Display 1', description: 'Name of the device' })
+  @ApiProperty({
+    example: 'Kitchen Display 1',
+    description: 'Name of the device',
+  })
   @IsString({ message: 'Name must be a string' })
   @IsNotEmpty({ message: 'Name is required' })
   @MaxLength(100, { message: 'Name must not exceed 100 characters' })
   name: string;
 
-  @ApiProperty({ example: 'DEV-001', description: 'Unique identifier for the device' })
+  @ApiProperty({
+    example: 'DEV-001',
+    description: 'Unique identifier for the device',
+  })
   @IsString({ message: 'Device identifier must be a string' })
   @IsNotEmpty({ message: 'Device identifier is required' })
-  @MaxLength(100, { message: 'Device identifier must not exceed 100 characters' })
+  @MaxLength(100, {
+    message: 'Device identifier must not exceed 100 characters',
+  })
   deviceIdentifier: string;
 
   @ApiPropertyOptional({

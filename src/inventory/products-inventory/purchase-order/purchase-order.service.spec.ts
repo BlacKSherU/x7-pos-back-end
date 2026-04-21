@@ -219,7 +219,7 @@ describe('PurchaseOrderService', () => {
     purchaseOrderItemRepo = module.get(getRepositoryToken(PurchaseOrderItem));
 
     jest.clearAllMocks();
-    jest.spyOn(console, 'error').mockImplementation(() => { });
+    jest.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {

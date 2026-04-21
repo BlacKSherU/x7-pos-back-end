@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Repository } from 'typeorm';
 import { CreateSupplierPaymentAllocationDto } from './dto/create-supplier_payment_allocation.dto';
@@ -55,26 +59,34 @@ export class SupplierPaymentAllocationsService {
         where: { id: paymentId, deleted_at: IsNull() },
       });
       if (!payment) {
-        throw new NotFoundException(`Supplier payment with ID ${paymentId} not found`);
+        throw new NotFoundException(
+          `Supplier payment with ID ${paymentId} not found`,
+        );
       }
     }
 
     const supplierId = dto.supplier_id ?? current?.supplier_id;
     if (supplierId != null) {
-      const supplier = await this.supplierRepo.findOne({ where: { id: supplierId } });
+      const supplier = await this.supplierRepo.findOne({
+        where: { id: supplierId },
+      });
       if (!supplier) {
         throw new NotFoundException(`Supplier with ID ${supplierId} not found`);
       }
     }
 
     const creditNoteId =
-      dto.credit_note_id !== undefined ? dto.credit_note_id : current?.credit_note_id;
+      dto.credit_note_id !== undefined
+        ? dto.credit_note_id
+        : current?.credit_note_id;
     if (creditNoteId != null) {
       const creditNote = await this.creditNoteRepo.findOne({
         where: { id: creditNoteId, deleted_at: IsNull() },
       });
       if (!creditNote) {
-        throw new NotFoundException(`Supplier credit note with ID ${creditNoteId} not found`);
+        throw new NotFoundException(
+          `Supplier credit note with ID ${creditNoteId} not found`,
+        );
       }
     }
   }
@@ -115,10 +127,14 @@ export class SupplierPaymentAllocationsService {
       .where('spa.deleted_at IS NULL');
 
     if (query.payment_id != null) {
-      qb.andWhere('spa.payment_id = :paymentId', { paymentId: query.payment_id });
+      qb.andWhere('spa.payment_id = :paymentId', {
+        paymentId: query.payment_id,
+      });
     }
     if (query.supplier_id != null) {
-      qb.andWhere('spa.supplier_id = :supplierId', { supplierId: query.supplier_id });
+      qb.andWhere('spa.supplier_id = :supplierId', {
+        supplierId: query.supplier_id,
+      });
     }
     if (query.credit_note_id != null) {
       qb.andWhere('spa.credit_note_id = :creditNoteId', {
@@ -164,7 +180,9 @@ export class SupplierPaymentAllocationsService {
       where: { id, deleted_at: IsNull() },
     });
     if (!row) {
-      throw new NotFoundException(`Supplier payment allocation with ID ${id} not found`);
+      throw new NotFoundException(
+        `Supplier payment allocation with ID ${id} not found`,
+      );
     }
 
     return {
@@ -186,17 +204,21 @@ export class SupplierPaymentAllocationsService {
       where: { id, deleted_at: IsNull() },
     });
     if (!row) {
-      throw new NotFoundException(`Supplier payment allocation with ID ${id} not found`);
+      throw new NotFoundException(
+        `Supplier payment allocation with ID ${id} not found`,
+      );
     }
 
     await this.validateRelations(dto, row);
 
     if (dto.payment_id != null) row.payment_id = dto.payment_id;
-    if (dto.credit_note_id !== undefined) row.credit_note_id = dto.credit_note_id ?? null;
+    if (dto.credit_note_id !== undefined)
+      row.credit_note_id = dto.credit_note_id ?? null;
     if (dto.supplier_id != null) row.supplier_id = dto.supplier_id;
     if (dto.document_number != null) row.document_number = dto.document_number;
     if (dto.document_type != null) row.document_type = dto.document_type;
-    if (dto.allocated_amount != null) row.allocated_amount = dto.allocated_amount as any;
+    if (dto.allocated_amount != null)
+      row.allocated_amount = dto.allocated_amount as any;
 
     const saved = await this.allocationRepo.save(row);
     return {
@@ -215,7 +237,9 @@ export class SupplierPaymentAllocationsService {
       where: { id, deleted_at: IsNull() },
     });
     if (!row) {
-      throw new NotFoundException(`Supplier payment allocation with ID ${id} not found`);
+      throw new NotFoundException(
+        `Supplier payment allocation with ID ${id} not found`,
+      );
     }
 
     row.deleted_at = new Date();

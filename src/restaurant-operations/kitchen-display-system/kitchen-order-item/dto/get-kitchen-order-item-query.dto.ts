@@ -1,7 +1,15 @@
-import { IsOptional, IsEnum, IsString, IsNumber, Min, Max } from 'class-validator';
+import {
+  IsOptional,
+  IsEnum,
+  IsString,
+  IsNumber,
+  Min,
+  Max,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { KitchenOrderItemStatus } from '../constants/kitchen-order-item-status.enum';
+import { KitchenOrderItemPreparationStatus } from '../constants/kitchen-order-item-preparation-status.enum';
 
 export enum KitchenOrderItemSortBy {
   ID = 'id',
@@ -62,6 +70,15 @@ export class GetKitchenOrderItemQueryDto {
   @IsOptional()
   @IsEnum(KitchenOrderItemStatus)
   status?: KitchenOrderItemStatus;
+
+  @ApiPropertyOptional({
+    example: KitchenOrderItemPreparationStatus.PENDING,
+    enum: KitchenOrderItemPreparationStatus,
+    description: 'Filter by preparation status',
+  })
+  @IsOptional()
+  @IsEnum(KitchenOrderItemPreparationStatus)
+  preparationStatus?: KitchenOrderItemPreparationStatus;
 
   @ApiPropertyOptional({
     example: '2024-01-15',

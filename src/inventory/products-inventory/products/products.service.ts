@@ -32,7 +32,7 @@ export class ProductsService {
     private readonly supplierRepository: Repository<Supplier>,
     private readonly modifiersService: ModifiersService,
     private readonly variantsService: VariantsService,
-  ) { }
+  ) {}
   async create(
     merchant_id: number,
     createProductDto: CreateProductDto,
@@ -169,30 +169,30 @@ export class ProductsService {
           basePrice: product.basePrice,
           merchant: product.merchant
             ? {
-              id: product.merchant.id,
-              name: product.merchant.name,
-            }
+                id: product.merchant.id,
+                name: product.merchant.name,
+              }
             : null,
           category: product.category
             ? {
-              id: product.category.id,
-              name: product.category.name,
-              parent: product.category.parent
-                ? ({
-                  id: product.category.parent.id,
-                  name: product.category.parent.name,
-                } as CategoryLittleResponseDto)
-                : null,
-            }
+                id: product.category.id,
+                name: product.category.name,
+                parent: product.category.parent
+                  ? ({
+                      id: product.category.parent.id,
+                      name: product.category.parent.name,
+                    } as CategoryLittleResponseDto)
+                  : null,
+              }
             : null,
           supplier: product.supplier
             ? {
-              id: product.supplier.id,
-              name: product.supplier.name,
-              tax_id: product.supplier.tax_id,
-              email: product.supplier.email,
-              company_id: product.supplier.company_id,
-            }
+                id: product.supplier.id,
+                name: product.supplier.name,
+                tax_id: product.supplier.tax_id,
+                email: product.supplier.email,
+                company_id: product.supplier.company_id,
+              }
             : null,
         };
         return result;
@@ -234,12 +234,7 @@ export class ProductsService {
 
     const product = await this.productRepository.findOne({
       where: whereCondition,
-      relations: [
-        'merchant',
-        'category',
-        'category.parent',
-        'supplier',
-      ],
+      relations: ['merchant', 'category', 'category.parent', 'supplier'],
     });
 
     if (!product) ErrorHandler.notFound(ErrorMessage.PRODUCT_NOT_FOUND);
@@ -251,30 +246,30 @@ export class ProductsService {
       basePrice: product.basePrice,
       merchant: product.merchant
         ? {
-          id: product.merchant.id,
-          name: product.merchant.name,
-        }
+            id: product.merchant.id,
+            name: product.merchant.name,
+          }
         : null,
       category: product.category
         ? {
-          id: product.category.id,
-          name: product.category.name,
-          parent: product.category.parent
-            ? ({
-              id: product.category.parent.id,
-              name: product.category.parent.name,
-            } as CategoryLittleResponseDto)
-            : null,
-        }
+            id: product.category.id,
+            name: product.category.name,
+            parent: product.category.parent
+              ? ({
+                  id: product.category.parent.id,
+                  name: product.category.parent.name,
+                } as CategoryLittleResponseDto)
+              : null,
+          }
         : null,
       supplier: product.supplier
         ? {
-          id: product.supplier.id,
-          name: product.supplier.name,
-          tax_id: product.supplier.tax_id,
-          email: product.supplier.email,
-          company_id: product.supplier.company_id,
-        }
+            id: product.supplier.id,
+            name: product.supplier.name,
+            tax_id: product.supplier.tax_id,
+            email: product.supplier.email,
+            company_id: product.supplier.company_id,
+          }
         : null,
     };
 

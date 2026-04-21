@@ -8,7 +8,12 @@ import { CreateMarketingSegmentRuleDto } from './dto/create-marketing-segment-ru
 import { UpdateMarketingSegmentRuleDto } from './dto/update-marketing-segment-rule.dto';
 import { MarketingSegmentRuleOperator } from './constants/marketing-segment-rule-operator.enum';
 import { MarketingSegmentRuleStatus } from './constants/marketing-segment-rule-status.enum';
-import { NotFoundException, BadRequestException, ForbiddenException, ConflictException } from '@nestjs/common';
+import {
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+  ConflictException,
+} from '@nestjs/common';
 import { MarketingSegmentType } from '../marketing-segments/constants/marketing-segment-type.enum';
 import { MarketingSegmentStatus } from '../marketing-segments/constants/marketing-segment-status.enum';
 
@@ -84,10 +89,12 @@ describe('MarketingSegmentRulesService', () => {
       ],
     }).compile();
 
-    service = module.get<MarketingSegmentRulesService>(MarketingSegmentRulesService);
-    marketingSegmentRuleRepository = module.get<Repository<MarketingSegmentRule>>(
-      getRepositoryToken(MarketingSegmentRule),
+    service = module.get<MarketingSegmentRulesService>(
+      MarketingSegmentRulesService,
     );
+    marketingSegmentRuleRepository = module.get<
+      Repository<MarketingSegmentRule>
+    >(getRepositoryToken(MarketingSegmentRule));
     marketingSegmentRepository = module.get<Repository<MarketingSegment>>(
       getRepositoryToken(MarketingSegment),
     );
@@ -114,19 +121,27 @@ describe('MarketingSegmentRulesService', () => {
         ...mockQueryBuilder,
         getOne: jest.fn().mockResolvedValue(mockSegment),
       });
-      mockMarketingSegmentRuleRepository.save.mockResolvedValue(mockMarketingSegmentRule);
-      mockMarketingSegmentRuleRepository.findOne.mockResolvedValue(mockMarketingSegmentRule);
+      mockMarketingSegmentRuleRepository.save.mockResolvedValue(
+        mockMarketingSegmentRule,
+      );
+      mockMarketingSegmentRuleRepository.findOne.mockResolvedValue(
+        mockMarketingSegmentRule,
+      );
 
       const result = await service.create(createDto, 1);
 
       expect(result.statusCode).toBe(201);
-      expect(result.message).toBe('Marketing segment rule created successfully');
+      expect(result.message).toBe(
+        'Marketing segment rule created successfully',
+      );
       expect(result.data.field).toBe('total_spent');
       expect(mockMarketingSegmentRuleRepository.save).toHaveBeenCalled();
     });
 
     it('should throw ForbiddenException when user has no merchant', async () => {
-      await expect(service.create(createDto, null)).rejects.toThrow(ForbiddenException);
+      await expect(service.create(createDto, null)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw NotFoundException when segment does not exist', async () => {
@@ -135,7 +150,9 @@ describe('MarketingSegmentRulesService', () => {
         getOne: jest.fn().mockResolvedValue(null),
       });
 
-      await expect(service.create(createDto, 1)).rejects.toThrow(NotFoundException);
+      await expect(service.create(createDto, 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw BadRequestException when field is empty', async () => {
@@ -145,7 +162,9 @@ describe('MarketingSegmentRulesService', () => {
         getOne: jest.fn().mockResolvedValue(mockSegment),
       });
 
-      await expect(service.create(invalidDto, 1)).rejects.toThrow(BadRequestException);
+      await expect(service.create(invalidDto, 1)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException when value is empty', async () => {
@@ -155,7 +174,9 @@ describe('MarketingSegmentRulesService', () => {
         getOne: jest.fn().mockResolvedValue(mockSegment),
       });
 
-      await expect(service.create(invalidDto, 1)).rejects.toThrow(BadRequestException);
+      await expect(service.create(invalidDto, 1)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -163,7 +184,7 @@ describe('MarketingSegmentRulesService', () => {
     it('should return paginated marketing segment rules', async () => {
       const query = { page: 1, limit: 10 };
       const mockRules = [mockMarketingSegmentRule];
-      
+
       mockMarketingSegmentRuleRepository.createQueryBuilder.mockReturnValue({
         ...mockQueryBuilder,
         getManyAndCount: jest.fn().mockResolvedValue([mockRules, 1]),
@@ -172,7 +193,9 @@ describe('MarketingSegmentRulesService', () => {
       const result = await service.findAll(query, 1);
 
       expect(result.statusCode).toBe(200);
-      expect(result.message).toBe('Marketing segment rules retrieved successfully');
+      expect(result.message).toBe(
+        'Marketing segment rules retrieved successfully',
+      );
       expect(result.data).toHaveLength(1);
       expect(result.paginationMeta).toBeDefined();
       expect(result.paginationMeta.page).toBe(1);
@@ -180,15 +203,21 @@ describe('MarketingSegmentRulesService', () => {
     });
 
     it('should throw ForbiddenException when user has no merchant', async () => {
-      await expect(service.findAll({}, null)).rejects.toThrow(ForbiddenException);
+      await expect(service.findAll({}, null)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw BadRequestException when page is less than 1', async () => {
-      await expect(service.findAll({ page: 0 }, 1)).rejects.toThrow(BadRequestException);
+      await expect(service.findAll({ page: 0 }, 1)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException when limit is out of range', async () => {
-      await expect(service.findAll({ limit: 101 }, 1)).rejects.toThrow(BadRequestException);
+      await expect(service.findAll({ limit: 101 }, 1)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -202,7 +231,9 @@ describe('MarketingSegmentRulesService', () => {
       const result = await service.findOne(1, 1);
 
       expect(result.statusCode).toBe(200);
-      expect(result.message).toBe('Marketing segment rule retrieved successfully');
+      expect(result.message).toBe(
+        'Marketing segment rule retrieved successfully',
+      );
       expect(result.data.id).toBe(1);
     });
 
@@ -243,7 +274,9 @@ describe('MarketingSegmentRulesService', () => {
       const result = await service.update(1, updateDto, 1);
 
       expect(result.statusCode).toBe(200);
-      expect(result.message).toBe('Marketing segment rule updated successfully');
+      expect(result.message).toBe(
+        'Marketing segment rule updated successfully',
+      );
       expect(mockMarketingSegmentRuleRepository.update).toHaveBeenCalled();
     });
 
@@ -253,7 +286,9 @@ describe('MarketingSegmentRulesService', () => {
         getOne: jest.fn().mockResolvedValue(null),
       });
 
-      await expect(service.update(999, updateDto, 1)).rejects.toThrow(NotFoundException);
+      await expect(service.update(999, updateDto, 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw BadRequestException when field is empty', async () => {
@@ -263,7 +298,9 @@ describe('MarketingSegmentRulesService', () => {
         getOne: jest.fn().mockResolvedValue(mockMarketingSegmentRule),
       });
 
-      await expect(service.update(1, invalidDto, 1)).rejects.toThrow(BadRequestException);
+      await expect(service.update(1, invalidDto, 1)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -283,7 +320,9 @@ describe('MarketingSegmentRulesService', () => {
       const result = await service.remove(1, 1);
 
       expect(result.statusCode).toBe(200);
-      expect(result.message).toBe('Marketing segment rule deleted successfully');
+      expect(result.message).toBe(
+        'Marketing segment rule deleted successfully',
+      );
       expect(result.data.status).toBe(MarketingSegmentRuleStatus.DELETED);
       expect(mockMarketingSegmentRuleRepository.save).toHaveBeenCalled();
     });

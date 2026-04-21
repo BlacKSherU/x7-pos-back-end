@@ -128,7 +128,9 @@ describe('LoyaltyCouponsService', () => {
     dataSource = module.get(DataSource);
 
     jest.clearAllMocks();
-    loyaltyCouponRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
+    loyaltyCouponRepo.createQueryBuilder.mockReturnValue(
+      mockQueryBuilder as any,
+    );
     dataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
     (dataSource.getRepository as jest.Mock).mockReturnValue(mockOrderRepo);
   });
@@ -175,28 +177,40 @@ describe('LoyaltyCouponsService', () => {
 
     it('should throw NotFoundException if customer not found', async () => {
       loyaltyCustomerRepo.findOne.mockResolvedValue(null);
-      await expect(service.create(merchantId, createDto)).rejects.toThrow(ErrorMessage.LOYALTY_CUSTOMER_NOT_FOUND);
+      await expect(service.create(merchantId, createDto)).rejects.toThrow(
+        ErrorMessage.LOYALTY_CUSTOMER_NOT_FOUND,
+      );
     });
 
     it('should throw NotFoundException if customer valid but wrong merchant', async () => {
       const customer = getMockLoyaltyCustomer();
       customer.loyaltyProgram.merchantId = 999;
       loyaltyCustomerRepo.findOne.mockResolvedValue(customer as any);
-      await expect(service.create(merchantId, createDto)).rejects.toThrow(ErrorMessage.LOYALTY_CUSTOMER_NOT_FOUND);
+      await expect(service.create(merchantId, createDto)).rejects.toThrow(
+        ErrorMessage.LOYALTY_CUSTOMER_NOT_FOUND,
+      );
     });
 
     it('should throw NotFoundException if reward not found', async () => {
-      loyaltyCustomerRepo.findOne.mockResolvedValue(getMockLoyaltyCustomer() as any);
+      loyaltyCustomerRepo.findOne.mockResolvedValue(
+        getMockLoyaltyCustomer() as any,
+      );
       loyaltyRewardRepo.findOne.mockResolvedValue(null);
-      await expect(service.create(merchantId, createDto)).rejects.toThrow(ErrorMessage.LOYALTY_REWARD_NOT_FOUND);
+      await expect(service.create(merchantId, createDto)).rejects.toThrow(
+        ErrorMessage.LOYALTY_REWARD_NOT_FOUND,
+      );
     });
 
     it('should throw NotFoundException if reward valid but wrong merchant', async () => {
-      loyaltyCustomerRepo.findOne.mockResolvedValue(getMockLoyaltyCustomer() as any);
+      loyaltyCustomerRepo.findOne.mockResolvedValue(
+        getMockLoyaltyCustomer() as any,
+      );
       const reward = getMockReward();
       reward.loyaltyProgram.merchantId = 999;
       loyaltyRewardRepo.findOne.mockResolvedValue(reward as any);
-      await expect(service.create(merchantId, createDto)).rejects.toThrow(ErrorMessage.LOYALTY_REWARD_NOT_FOUND);
+      await expect(service.create(merchantId, createDto)).rejects.toThrow(
+        ErrorMessage.LOYALTY_REWARD_NOT_FOUND,
+      );
     });
 
     it('should throw BadRequestException if customer and reward not in same program', async () => {
@@ -208,11 +222,15 @@ describe('LoyaltyCouponsService', () => {
       loyaltyCustomerRepo.findOne.mockResolvedValue(customer as any);
       loyaltyRewardRepo.findOne.mockResolvedValue(reward as any);
 
-      await expect(service.create(merchantId, createDto)).rejects.toThrow('Customer and Reward must belong to the same Loyalty Program');
+      await expect(service.create(merchantId, createDto)).rejects.toThrow(
+        'Customer and Reward must belong to the same Loyalty Program',
+      );
     });
 
     it('should rollback transaction on error', async () => {
-      loyaltyCustomerRepo.findOne.mockResolvedValue(getMockLoyaltyCustomer() as any);
+      loyaltyCustomerRepo.findOne.mockResolvedValue(
+        getMockLoyaltyCustomer() as any,
+      );
       loyaltyRewardRepo.findOne.mockResolvedValue(getMockReward() as any);
 
       mockQueryRunner.manager.save.mockRejectedValue(new Error('DB Error'));
@@ -231,21 +249,30 @@ describe('LoyaltyCouponsService', () => {
 
       expect(result.statusCode).toBe(200);
       expect(result.data).toHaveLength(1);
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith('program.merchantId = :merchantId', { merchantId });
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
+        'program.merchantId = :merchantId',
+        { merchantId },
+      );
     });
 
     it('should filter by optional parameters', async () => {
       mockQueryBuilder.getCount.mockResolvedValue(1);
       mockQueryBuilder.getMany.mockResolvedValue([getMockCoupon()]);
 
-      await service.findAll({
-        min_discount_value: 5,
-        max_discount_value: 20,
-        code: 'TEST',
-        status: LoyaltyCouponStatus.ACTIVE
-      }, merchantId);
+      await service.findAll(
+        {
+          min_discount_value: 5,
+          max_discount_value: 20,
+          code: 'TEST',
+          status: LoyaltyCouponStatus.ACTIVE,
+        },
+        merchantId,
+      );
 
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith('program.merchantId = :merchantId', { merchantId });
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
+        'program.merchantId = :merchantId',
+        { merchantId },
+      );
       // Multiple andWhere calls
       expect(mockQueryBuilder.andWhere).toHaveBeenCalled();
     });
@@ -259,17 +286,26 @@ describe('LoyaltyCouponsService', () => {
 
       expect(result.statusCode).toBe(200);
       expect(result.data.id).toBe(1);
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith('coupon.id = :id', { id: 1 });
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('program.merchantId = :merchantId', { merchantId });
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('coupon.id = :id', {
+        id: 1,
+      });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'program.merchantId = :merchantId',
+        { merchantId },
+      );
     });
 
     it('should throw invalidId error for id <= 0', async () => {
-      await expect(service.findOne(0, merchantId)).rejects.toThrow(BadRequestException);
+      await expect(service.findOne(0, merchantId)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw NotFoundException if coupon not found', async () => {
       mockQueryBuilder.getOne.mockResolvedValue(null);
-      await expect(service.findOne(1, merchantId)).rejects.toThrow(ErrorMessage.RESOURCE_NOT_FOUND);
+      await expect(service.findOne(1, merchantId)).rejects.toThrow(
+        ErrorMessage.RESOURCE_NOT_FOUND,
+      );
     });
   });
 
@@ -291,14 +327,21 @@ describe('LoyaltyCouponsService', () => {
       const result = await service.update(1, merchantId, updateDto);
 
       expect(result.statusCode).toBe(200);
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith('coupon.id = :id', { id: 1 });
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('program.merchantId = :merchantId', { merchantId });
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('coupon.id = :id', {
+        id: 1,
+      });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'program.merchantId = :merchantId',
+        { merchantId },
+      );
       expect(loyaltyCouponRepo.save).toHaveBeenCalled();
     });
 
     it('should throw NotFoundException if coupon not found (e.g. wrong merchant)', async () => {
       mockQueryBuilder.getOne.mockResolvedValue(null);
-      await expect(service.update(1, merchantId, updateDto)).rejects.toThrow(ErrorMessage.RESOURCE_NOT_FOUND);
+      await expect(service.update(1, merchantId, updateDto)).rejects.toThrow(
+        ErrorMessage.RESOURCE_NOT_FOUND,
+      );
     });
 
     it('should throw NotFoundException if updating with invalid customer', async () => {
@@ -306,7 +349,9 @@ describe('LoyaltyCouponsService', () => {
       mockQueryBuilder.getOne.mockResolvedValue(coupon as any);
       loyaltyCustomerRepo.findOne.mockResolvedValue(null);
 
-      await expect(service.update(1, merchantId, { loyalty_customer_id: 999 })).rejects.toThrow(ErrorMessage.LOYALTY_CUSTOMER_NOT_FOUND);
+      await expect(
+        service.update(1, merchantId, { loyalty_customer_id: 999 }),
+      ).rejects.toThrow(ErrorMessage.LOYALTY_CUSTOMER_NOT_FOUND);
     });
 
     it('should throw NotFoundException if updating with customer from another merchant', async () => {
@@ -316,7 +361,9 @@ describe('LoyaltyCouponsService', () => {
       customer.loyaltyProgram.merchantId = 999;
       loyaltyCustomerRepo.findOne.mockResolvedValue(customer as any);
 
-      await expect(service.update(1, merchantId, { loyalty_customer_id: 999 })).rejects.toThrow(ErrorMessage.LOYALTY_CUSTOMER_NOT_FOUND);
+      await expect(
+        service.update(1, merchantId, { loyalty_customer_id: 999 }),
+      ).rejects.toThrow(ErrorMessage.LOYALTY_CUSTOMER_NOT_FOUND);
     });
 
     it('should throw NotFoundException if updating with invalid reward', async () => {
@@ -324,7 +371,9 @@ describe('LoyaltyCouponsService', () => {
       mockQueryBuilder.getOne.mockResolvedValue(coupon as any);
       loyaltyRewardRepo.findOne.mockResolvedValue(null);
 
-      await expect(service.update(1, merchantId, { reward_id: 999 })).rejects.toThrow(ErrorMessage.LOYALTY_REWARD_NOT_FOUND);
+      await expect(
+        service.update(1, merchantId, { reward_id: 999 }),
+      ).rejects.toThrow(ErrorMessage.LOYALTY_REWARD_NOT_FOUND);
     });
   });
 
@@ -338,14 +387,21 @@ describe('LoyaltyCouponsService', () => {
       const result = await service.remove(1, merchantId);
 
       expect(result.statusCode).toBe(200);
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith('coupon.id = :id', { id: 1 });
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('program.merchantId = :merchantId', { merchantId });
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('coupon.id = :id', {
+        id: 1,
+      });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'program.merchantId = :merchantId',
+        { merchantId },
+      );
       expect(loyaltyCouponRepo.save).toHaveBeenCalled();
     });
 
     it('should throw NotFoundException if coupon not found (e.g. wrong merchant)', async () => {
       mockQueryBuilder.getOne.mockResolvedValue(null);
-      await expect(service.remove(1, merchantId)).rejects.toThrow(ErrorMessage.RESOURCE_NOT_FOUND);
+      await expect(service.remove(1, merchantId)).rejects.toThrow(
+        ErrorMessage.RESOURCE_NOT_FOUND,
+      );
     });
   });
 });

@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MarketingMessageLog } from './entities/marketing-message-log.entity';
@@ -29,44 +35,67 @@ export class MarketingMessageLogsService {
     private readonly marketingAutomationRepository: Repository<MarketingAutomation>,
     @InjectRepository(Customer)
     private readonly customerRepository: Repository<Customer>,
-  ) { }
+  ) {}
 
   async create(
     createMarketingMessageLogDto: CreateMarketingMessageLogDto,
     authenticatedUserMerchantId: number | null | undefined,
   ): Promise<OneMarketingMessageLogResponseDto> {
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to create marketing message logs');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to create marketing message logs',
+      );
     }
 
     const customer = await this.customerRepository.findOne({
-      where: { id: createMarketingMessageLogDto.customerId, merchantId: authenticatedUserMerchantId },
+      where: {
+        id: createMarketingMessageLogDto.customerId,
+        merchantId: authenticatedUserMerchantId,
+      },
     });
     if (!customer) {
-      throw new NotFoundException('Customer not found or you do not have access to it');
+      throw new NotFoundException(
+        'Customer not found or you do not have access to it',
+      );
     }
 
     if (createMarketingMessageLogDto.campaignId != null) {
       const campaign = await this.marketingCampaignRepository
         .createQueryBuilder('campaign')
-        .where('campaign.id = :campaignId', { campaignId: createMarketingMessageLogDto.campaignId })
-        .andWhere('campaign.merchant_id = :merchantId', { merchantId: authenticatedUserMerchantId })
-        .andWhere('campaign.status != :deletedStatus', { deletedStatus: 'deleted' })
+        .where('campaign.id = :campaignId', {
+          campaignId: createMarketingMessageLogDto.campaignId,
+        })
+        .andWhere('campaign.merchant_id = :merchantId', {
+          merchantId: authenticatedUserMerchantId,
+        })
+        .andWhere('campaign.status != :deletedStatus', {
+          deletedStatus: 'deleted',
+        })
         .getOne();
       if (!campaign) {
-        throw new NotFoundException('Marketing campaign not found or you do not have access to it');
+        throw new NotFoundException(
+          'Marketing campaign not found or you do not have access to it',
+        );
       }
     }
 
     if (createMarketingMessageLogDto.automationId != null) {
       const automation = await this.marketingAutomationRepository
         .createQueryBuilder('automation')
-        .where('automation.id = :automationId', { automationId: createMarketingMessageLogDto.automationId })
-        .andWhere('automation.merchant_id = :merchantId', { merchantId: authenticatedUserMerchantId })
-        .andWhere('automation.status != :deletedStatus', { deletedStatus: 'deleted' })
+        .where('automation.id = :automationId', {
+          automationId: createMarketingMessageLogDto.automationId,
+        })
+        .andWhere('automation.merchant_id = :merchantId', {
+          merchantId: authenticatedUserMerchantId,
+        })
+        .andWhere('automation.status != :deletedStatus', {
+          deletedStatus: 'deleted',
+        })
         .getOne();
       if (!automation) {
-        throw new NotFoundException('Marketing automation not found or you do not have access to it');
+        throw new NotFoundException(
+          'Marketing automation not found or you do not have access to it',
+        );
       }
     }
 
@@ -88,7 +117,9 @@ export class MarketingMessageLogsService {
       relations: ['campaign', 'automation', 'customer'],
     });
     if (!complete) {
-      throw new NotFoundException('Marketing message log not found after creation');
+      throw new NotFoundException(
+        'Marketing message log not found after creation',
+      );
     }
 
     return {
@@ -103,7 +134,9 @@ export class MarketingMessageLogsService {
     authenticatedUserMerchantId: number | null | undefined,
   ): Promise<PaginatedMarketingMessageLogResponseDto> {
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to access marketing message logs');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to access marketing message logs',
+      );
     }
 
     if (query.page !== undefined && query.page < 1) {
@@ -119,7 +152,9 @@ export class MarketingMessageLogsService {
     }
     if (query.createdDate) {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(query.createdDate)) {
-        throw new BadRequestException('Created date must be in YYYY-MM-DD format');
+        throw new BadRequestException(
+          'Created date must be in YYYY-MM-DD format',
+        );
       }
     }
 
@@ -132,17 +167,27 @@ export class MarketingMessageLogsService {
       .leftJoinAndSelect('log.campaign', 'campaign')
       .leftJoinAndSelect('log.automation', 'automation')
       .leftJoinAndSelect('log.customer', 'customer')
-      .where('customer.merchantId = :merchantId', { merchantId: authenticatedUserMerchantId })
-      .andWhere('log.record_status != :deletedStatus', { deletedStatus: MarketingMessageLogRecordStatus.DELETED });
+      .where('customer.merchantId = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
+      .andWhere('log.record_status != :deletedStatus', {
+        deletedStatus: MarketingMessageLogRecordStatus.DELETED,
+      });
 
     if (query.campaignId != null) {
-      qb.andWhere('log.campaign_id = :campaignId', { campaignId: query.campaignId });
+      qb.andWhere('log.campaign_id = :campaignId', {
+        campaignId: query.campaignId,
+      });
     }
     if (query.automationId != null) {
-      qb.andWhere('log.automation_id = :automationId', { automationId: query.automationId });
+      qb.andWhere('log.automation_id = :automationId', {
+        automationId: query.automationId,
+      });
     }
     if (query.customerId != null) {
-      qb.andWhere('log.customer_id = :customerId', { customerId: query.customerId });
+      qb.andWhere('log.customer_id = :customerId', {
+        customerId: query.customerId,
+      });
     }
     if (query.channel != null) {
       qb.andWhere('log.channel = :channel', { channel: query.channel });
@@ -161,7 +206,9 @@ export class MarketingMessageLogsService {
       const startDate = new Date(query.createdDate);
       const endDate = new Date(query.createdDate);
       endDate.setDate(endDate.getDate() + 1);
-      qb.andWhere('log.created_at >= :createdStart', { createdStart: startDate });
+      qb.andWhere('log.created_at >= :createdStart', {
+        createdStart: startDate,
+      });
       qb.andWhere('log.created_at < :createdEnd', { createdEnd: endDate });
     }
 
@@ -201,10 +248,14 @@ export class MarketingMessageLogsService {
     authenticatedUserMerchantId: number | null | undefined,
   ): Promise<OneMarketingMessageLogResponseDto> {
     if (!id || id <= 0) {
-      throw new BadRequestException('Marketing message log ID must be a valid positive number');
+      throw new BadRequestException(
+        'Marketing message log ID must be a valid positive number',
+      );
     }
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to access marketing message logs');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to access marketing message logs',
+      );
     }
 
     const log = await this.marketingMessageLogRepository
@@ -213,8 +264,12 @@ export class MarketingMessageLogsService {
       .leftJoinAndSelect('log.automation', 'automation')
       .leftJoinAndSelect('log.customer', 'customer')
       .where('log.id = :id', { id })
-      .andWhere('customer.merchantId = :merchantId', { merchantId: authenticatedUserMerchantId })
-      .andWhere('log.record_status != :deletedStatus', { deletedStatus: MarketingMessageLogRecordStatus.DELETED })
+      .andWhere('customer.merchantId = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
+      .andWhere('log.record_status != :deletedStatus', {
+        deletedStatus: MarketingMessageLogRecordStatus.DELETED,
+      })
       .getOne();
 
     if (!log) {
@@ -234,10 +289,14 @@ export class MarketingMessageLogsService {
     authenticatedUserMerchantId: number | null | undefined,
   ): Promise<OneMarketingMessageLogResponseDto> {
     if (!id || id <= 0) {
-      throw new BadRequestException('Marketing message log ID must be a valid positive number');
+      throw new BadRequestException(
+        'Marketing message log ID must be a valid positive number',
+      );
     }
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to update marketing message logs');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to update marketing message logs',
+      );
     }
 
     const existing = await this.marketingMessageLogRepository
@@ -246,8 +305,12 @@ export class MarketingMessageLogsService {
       .leftJoinAndSelect('log.automation', 'automation')
       .leftJoinAndSelect('log.customer', 'customer')
       .where('log.id = :id', { id })
-      .andWhere('customer.merchantId = :merchantId', { merchantId: authenticatedUserMerchantId })
-      .andWhere('log.record_status != :deletedStatus', { deletedStatus: MarketingMessageLogRecordStatus.DELETED })
+      .andWhere('customer.merchantId = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
+      .andWhere('log.record_status != :deletedStatus', {
+        deletedStatus: MarketingMessageLogRecordStatus.DELETED,
+      })
       .getOne();
 
     if (!existing) {
@@ -256,43 +319,79 @@ export class MarketingMessageLogsService {
 
     if (updateMarketingMessageLogDto.customerId !== undefined) {
       const customer = await this.customerRepository.findOne({
-        where: { id: updateMarketingMessageLogDto.customerId, merchantId: authenticatedUserMerchantId },
+        where: {
+          id: updateMarketingMessageLogDto.customerId,
+          merchantId: authenticatedUserMerchantId,
+        },
       });
       if (!customer) {
-        throw new NotFoundException('Customer not found or you do not have access to it');
+        throw new NotFoundException(
+          'Customer not found or you do not have access to it',
+        );
       }
     }
-    if (updateMarketingMessageLogDto.campaignId !== undefined && updateMarketingMessageLogDto.campaignId != null) {
+    if (
+      updateMarketingMessageLogDto.campaignId !== undefined &&
+      updateMarketingMessageLogDto.campaignId != null
+    ) {
       const campaign = await this.marketingCampaignRepository
         .createQueryBuilder('campaign')
-        .where('campaign.id = :campaignId', { campaignId: updateMarketingMessageLogDto.campaignId })
-        .andWhere('campaign.merchant_id = :merchantId', { merchantId: authenticatedUserMerchantId })
-        .andWhere('campaign.status != :deletedStatus', { deletedStatus: 'deleted' })
+        .where('campaign.id = :campaignId', {
+          campaignId: updateMarketingMessageLogDto.campaignId,
+        })
+        .andWhere('campaign.merchant_id = :merchantId', {
+          merchantId: authenticatedUserMerchantId,
+        })
+        .andWhere('campaign.status != :deletedStatus', {
+          deletedStatus: 'deleted',
+        })
         .getOne();
       if (!campaign) {
-        throw new NotFoundException('Marketing campaign not found or you do not have access to it');
+        throw new NotFoundException(
+          'Marketing campaign not found or you do not have access to it',
+        );
       }
     }
-    if (updateMarketingMessageLogDto.automationId !== undefined && updateMarketingMessageLogDto.automationId != null) {
+    if (
+      updateMarketingMessageLogDto.automationId !== undefined &&
+      updateMarketingMessageLogDto.automationId != null
+    ) {
       const automation = await this.marketingAutomationRepository
         .createQueryBuilder('automation')
-        .where('automation.id = :automationId', { automationId: updateMarketingMessageLogDto.automationId })
-        .andWhere('automation.merchant_id = :merchantId', { merchantId: authenticatedUserMerchantId })
-        .andWhere('automation.status != :deletedStatus', { deletedStatus: 'deleted' })
+        .where('automation.id = :automationId', {
+          automationId: updateMarketingMessageLogDto.automationId,
+        })
+        .andWhere('automation.merchant_id = :merchantId', {
+          merchantId: authenticatedUserMerchantId,
+        })
+        .andWhere('automation.status != :deletedStatus', {
+          deletedStatus: 'deleted',
+        })
         .getOne();
       if (!automation) {
-        throw new NotFoundException('Marketing automation not found or you do not have access to it');
+        throw new NotFoundException(
+          'Marketing automation not found or you do not have access to it',
+        );
       }
     }
 
     const updateData: Record<string, unknown> = {};
-    if (updateMarketingMessageLogDto.campaignId !== undefined) updateData.campaign_id = updateMarketingMessageLogDto.campaignId;
-    if (updateMarketingMessageLogDto.automationId !== undefined) updateData.automation_id = updateMarketingMessageLogDto.automationId;
-    if (updateMarketingMessageLogDto.customerId !== undefined) updateData.customer_id = updateMarketingMessageLogDto.customerId;
-    if (updateMarketingMessageLogDto.channel !== undefined) updateData.channel = updateMarketingMessageLogDto.channel;
-    if (updateMarketingMessageLogDto.status !== undefined) updateData.status = updateMarketingMessageLogDto.status;
-    if (updateMarketingMessageLogDto.sentAt !== undefined) updateData.sent_at = updateMarketingMessageLogDto.sentAt ? new Date(updateMarketingMessageLogDto.sentAt) : null;
-    if (updateMarketingMessageLogDto.metadata !== undefined) updateData.metadata = updateMarketingMessageLogDto.metadata;
+    if (updateMarketingMessageLogDto.campaignId !== undefined)
+      updateData.campaign_id = updateMarketingMessageLogDto.campaignId;
+    if (updateMarketingMessageLogDto.automationId !== undefined)
+      updateData.automation_id = updateMarketingMessageLogDto.automationId;
+    if (updateMarketingMessageLogDto.customerId !== undefined)
+      updateData.customer_id = updateMarketingMessageLogDto.customerId;
+    if (updateMarketingMessageLogDto.channel !== undefined)
+      updateData.channel = updateMarketingMessageLogDto.channel;
+    if (updateMarketingMessageLogDto.status !== undefined)
+      updateData.status = updateMarketingMessageLogDto.status;
+    if (updateMarketingMessageLogDto.sentAt !== undefined)
+      updateData.sent_at = updateMarketingMessageLogDto.sentAt
+        ? new Date(updateMarketingMessageLogDto.sentAt)
+        : null;
+    if (updateMarketingMessageLogDto.metadata !== undefined)
+      updateData.metadata = updateMarketingMessageLogDto.metadata;
 
     await this.marketingMessageLogRepository.update(id, updateData);
 
@@ -301,7 +400,9 @@ export class MarketingMessageLogsService {
       relations: ['campaign', 'automation', 'customer'],
     });
     if (!updated) {
-      throw new NotFoundException('Marketing message log not found after update');
+      throw new NotFoundException(
+        'Marketing message log not found after update',
+      );
     }
 
     return {
@@ -316,10 +417,14 @@ export class MarketingMessageLogsService {
     authenticatedUserMerchantId: number | null | undefined,
   ): Promise<OneMarketingMessageLogResponseDto> {
     if (!id || id <= 0) {
-      throw new BadRequestException('Marketing message log ID must be a valid positive number');
+      throw new BadRequestException(
+        'Marketing message log ID must be a valid positive number',
+      );
     }
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to delete marketing message logs');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to delete marketing message logs',
+      );
     }
 
     const existing = await this.marketingMessageLogRepository
@@ -328,8 +433,12 @@ export class MarketingMessageLogsService {
       .leftJoinAndSelect('log.automation', 'automation')
       .leftJoinAndSelect('log.customer', 'customer')
       .where('log.id = :id', { id })
-      .andWhere('customer.merchantId = :merchantId', { merchantId: authenticatedUserMerchantId })
-      .andWhere('log.record_status != :deletedStatus', { deletedStatus: MarketingMessageLogRecordStatus.DELETED })
+      .andWhere('customer.merchantId = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
+      .andWhere('log.record_status != :deletedStatus', {
+        deletedStatus: MarketingMessageLogRecordStatus.DELETED,
+      })
       .getOne();
 
     if (!existing) {
@@ -349,7 +458,9 @@ export class MarketingMessageLogsService {
     };
   }
 
-  private formatResponse(log: MarketingMessageLog): MarketingMessageLogResponseDto {
+  private formatResponse(
+    log: MarketingMessageLog,
+  ): MarketingMessageLogResponseDto {
     return {
       id: log.id,
       campaignId: log.campaign_id,

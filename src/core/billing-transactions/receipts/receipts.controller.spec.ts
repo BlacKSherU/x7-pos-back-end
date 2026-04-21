@@ -1,6 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/unbound-method */
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { ReceiptsController } from './receipts.controller';
@@ -8,7 +6,10 @@ import { ReceiptsService } from './receipts.service';
 import { CreateReceiptDto } from './dto/create-receipt.dto';
 import { UpdateReceiptDto } from './dto/update-receipt.dto';
 import { GetReceiptsQueryDto } from './dto/get-receipts-query.dto';
-import { OneReceiptResponseDto, ReceiptResponseDto } from './dto/receipt-response.dto';
+import {
+  OneReceiptResponseDto,
+  ReceiptResponseDto,
+} from './dto/receipt-response.dto';
 import { AllPaginatedReceipts } from './dto/all-paginated-receipts.dto';
 import { ForbiddenException } from '@nestjs/common';
 import { ReceiptType } from './constants/receipt-type.enum';
@@ -119,7 +120,9 @@ describe('ReceiptsController', () => {
       const createSpy = jest.spyOn(service, 'create');
       createSpy.mockRejectedValue(new Error(errorMessage));
 
-      await expect(controller.create(createDto, mockRequest as any)).rejects.toThrow(errorMessage);
+      await expect(
+        controller.create(createDto, mockRequest as any),
+      ).rejects.toThrow(errorMessage);
       expect(createSpy).toHaveBeenCalledWith(createDto, mockUser.merchant.id);
     });
 
@@ -131,11 +134,13 @@ describe('ReceiptsController', () => {
         },
       };
       const createSpy = jest.spyOn(service, 'create');
-      createSpy.mockRejectedValue(new ForbiddenException('You must be associated with a merchant'));
-
-      await expect(controller.create(createDto, requestWithoutMerchant as any)).rejects.toThrow(
-        ForbiddenException,
+      createSpy.mockRejectedValue(
+        new ForbiddenException('You must be associated with a merchant'),
       );
+
+      await expect(
+        controller.create(createDto, requestWithoutMerchant as any),
+      ).rejects.toThrow(ForbiddenException);
       expect(createSpy).toHaveBeenCalledWith(createDto, undefined);
     });
 
@@ -191,7 +196,10 @@ describe('ReceiptsController', () => {
 
       await controller.findAll(queryWithFilters, mockRequest as any);
 
-      expect(findAllSpy).toHaveBeenCalledWith(queryWithFilters, mockUser.merchant.id);
+      expect(findAllSpy).toHaveBeenCalledWith(
+        queryWithFilters,
+        mockUser.merchant.id,
+      );
     });
 
     it('should handle service errors during findAll', async () => {
@@ -199,7 +207,9 @@ describe('ReceiptsController', () => {
       const findAllSpy = jest.spyOn(service, 'findAll');
       findAllSpy.mockRejectedValue(new Error(errorMessage));
 
-      await expect(controller.findAll(query, mockRequest as any)).rejects.toThrow(errorMessage);
+      await expect(
+        controller.findAll(query, mockRequest as any),
+      ).rejects.toThrow(errorMessage);
       expect(findAllSpy).toHaveBeenCalledWith(query, mockUser.merchant.id);
     });
 
@@ -211,11 +221,13 @@ describe('ReceiptsController', () => {
         },
       };
       const findAllSpy = jest.spyOn(service, 'findAll');
-      findAllSpy.mockRejectedValue(new ForbiddenException('You must be associated with a merchant'));
-
-      await expect(controller.findAll(query, requestWithoutMerchant as any)).rejects.toThrow(
-        ForbiddenException,
+      findAllSpy.mockRejectedValue(
+        new ForbiddenException('You must be associated with a merchant'),
       );
+
+      await expect(
+        controller.findAll(query, requestWithoutMerchant as any),
+      ).rejects.toThrow(ForbiddenException);
       expect(findAllSpy).toHaveBeenCalledWith(query, undefined);
     });
   });
@@ -240,7 +252,9 @@ describe('ReceiptsController', () => {
       const findOneSpy = jest.spyOn(service, 'findOne');
       findOneSpy.mockRejectedValue(new Error(errorMessage));
 
-      await expect(controller.findOne(receiptId, mockRequest as any)).rejects.toThrow(errorMessage);
+      await expect(
+        controller.findOne(receiptId, mockRequest as any),
+      ).rejects.toThrow(errorMessage);
       expect(findOneSpy).toHaveBeenCalledWith(receiptId, mockUser.merchant.id);
     });
 
@@ -252,11 +266,13 @@ describe('ReceiptsController', () => {
         },
       };
       const findOneSpy = jest.spyOn(service, 'findOne');
-      findOneSpy.mockRejectedValue(new ForbiddenException('You must be associated with a merchant'));
-
-      await expect(controller.findOne(receiptId, requestWithoutMerchant as any)).rejects.toThrow(
-        ForbiddenException,
+      findOneSpy.mockRejectedValue(
+        new ForbiddenException('You must be associated with a merchant'),
       );
+
+      await expect(
+        controller.findOne(receiptId, requestWithoutMerchant as any),
+      ).rejects.toThrow(ForbiddenException);
       expect(findOneSpy).toHaveBeenCalledWith(receiptId, undefined);
     });
 
@@ -290,9 +306,17 @@ describe('ReceiptsController', () => {
       const updateSpy = jest.spyOn(service, 'update');
       updateSpy.mockResolvedValue(updatedResponse);
 
-      const result = await controller.update(receiptId, updateDto, mockRequest as any);
+      const result = await controller.update(
+        receiptId,
+        updateDto,
+        mockRequest as any,
+      );
 
-      expect(updateSpy).toHaveBeenCalledWith(receiptId, updateDto, mockUser.merchant.id);
+      expect(updateSpy).toHaveBeenCalledWith(
+        receiptId,
+        updateDto,
+        mockUser.merchant.id,
+      );
       expect(result).toEqual(updatedResponse);
       expect(result.statusCode).toBe(200);
       expect(result.message).toBe('Receipt updated successfully');
@@ -314,7 +338,11 @@ describe('ReceiptsController', () => {
 
       await controller.update(receiptId, partialDto, mockRequest as any);
 
-      expect(updateSpy).toHaveBeenCalledWith(receiptId, partialDto, mockUser.merchant.id);
+      expect(updateSpy).toHaveBeenCalledWith(
+        receiptId,
+        partialDto,
+        mockUser.merchant.id,
+      );
     });
 
     it('should handle service errors during update', async () => {
@@ -322,10 +350,14 @@ describe('ReceiptsController', () => {
       const updateSpy = jest.spyOn(service, 'update');
       updateSpy.mockRejectedValue(new Error(errorMessage));
 
-      await expect(controller.update(receiptId, updateDto, mockRequest as any)).rejects.toThrow(
-        errorMessage,
+      await expect(
+        controller.update(receiptId, updateDto, mockRequest as any),
+      ).rejects.toThrow(errorMessage);
+      expect(updateSpy).toHaveBeenCalledWith(
+        receiptId,
+        updateDto,
+        mockUser.merchant.id,
       );
-      expect(updateSpy).toHaveBeenCalledWith(receiptId, updateDto, mockUser.merchant.id);
     });
 
     it('should throw ForbiddenException if user has no merchant_id', async () => {
@@ -336,11 +368,13 @@ describe('ReceiptsController', () => {
         },
       };
       const updateSpy = jest.spyOn(service, 'update');
-      updateSpy.mockRejectedValue(new ForbiddenException('You must be associated with a merchant'));
-
-      await expect(controller.update(receiptId, updateDto, requestWithoutMerchant as any)).rejects.toThrow(
-        ForbiddenException,
+      updateSpy.mockRejectedValue(
+        new ForbiddenException('You must be associated with a merchant'),
       );
+
+      await expect(
+        controller.update(receiptId, updateDto, requestWithoutMerchant as any),
+      ).rejects.toThrow(ForbiddenException);
       expect(updateSpy).toHaveBeenCalledWith(receiptId, updateDto, undefined);
     });
 
@@ -355,7 +389,11 @@ describe('ReceiptsController', () => {
 
       await controller.update(999, updateDto, mockRequest as any);
 
-      expect(updateSpy).toHaveBeenCalledWith(999, updateDto, mockUser.merchant.id);
+      expect(updateSpy).toHaveBeenCalledWith(
+        999,
+        updateDto,
+        mockUser.merchant.id,
+      );
     });
   });
 
@@ -384,7 +422,9 @@ describe('ReceiptsController', () => {
       const removeSpy = jest.spyOn(service, 'remove');
       removeSpy.mockRejectedValue(new Error(errorMessage));
 
-      await expect(controller.remove(receiptId, mockRequest as any)).rejects.toThrow(errorMessage);
+      await expect(
+        controller.remove(receiptId, mockRequest as any),
+      ).rejects.toThrow(errorMessage);
       expect(removeSpy).toHaveBeenCalledWith(receiptId, mockUser.merchant.id);
     });
 
@@ -396,11 +436,13 @@ describe('ReceiptsController', () => {
         },
       };
       const removeSpy = jest.spyOn(service, 'remove');
-      removeSpy.mockRejectedValue(new ForbiddenException('You must be associated with a merchant'));
-
-      await expect(controller.remove(receiptId, requestWithoutMerchant as any)).rejects.toThrow(
-        ForbiddenException,
+      removeSpy.mockRejectedValue(
+        new ForbiddenException('You must be associated with a merchant'),
       );
+
+      await expect(
+        controller.remove(receiptId, requestWithoutMerchant as any),
+      ).rejects.toThrow(ForbiddenException);
       expect(removeSpy).toHaveBeenCalledWith(receiptId, undefined);
     });
 

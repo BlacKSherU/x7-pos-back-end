@@ -1,16 +1,25 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsBoolean, IsOptional, MaxLength, Matches } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsBoolean,
+  IsOptional,
+  MaxLength,
+  Matches,
+} from 'class-validator';
 
 export class CreateOnlineStoreDto {
   @ApiProperty({
     example: 'my-store',
-    description: 'Subdomain of the online store (alphanumeric and hyphens only)',
+    description:
+      'Subdomain of the online store (alphanumeric and hyphens only)',
   })
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
   @Matches(/^[a-z0-9-]+$/, {
-    message: 'Subdomain must contain only lowercase letters, numbers, and hyphens',
+    message:
+      'Subdomain must contain only lowercase letters, numbers, and hyphens',
   })
   subdomain: string;
 

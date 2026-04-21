@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/unbound-method */
 
 import { Test, TestingModule } from '@nestjs/testing';
@@ -9,7 +6,12 @@ import { CashDrawerHistoryService } from './cash-drawer-history.service';
 import { CreateCashDrawerHistoryDto } from './dto/create-cash-drawer-history.dto';
 import { UpdateCashDrawerHistoryDto } from './dto/update-cash-drawer-history.dto';
 import { GetCashDrawerHistoryQueryDto } from './dto/get-cash-drawer-history-query.dto';
-import { NotFoundException, ForbiddenException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { CashDrawerHistoryStatus } from './constants/cash-drawer-history-status.enum';
 
 describe('CashDrawerHistoryController', () => {
@@ -100,7 +102,9 @@ describe('CashDrawerHistoryController', () => {
       ],
     }).compile();
 
-    controller = module.get<CashDrawerHistoryController>(CashDrawerHistoryController);
+    controller = module.get<CashDrawerHistoryController>(
+      CashDrawerHistoryController,
+    );
     service = module.get<CashDrawerHistoryService>(CashDrawerHistoryService);
   });
 
@@ -136,12 +140,14 @@ describe('CashDrawerHistoryController', () => {
 
     it('should handle requests without merchant', async () => {
       mockCashDrawerHistoryService.create.mockRejectedValue(
-        new ForbiddenException('You must be associated with a merchant to create cash drawer history'),
+        new ForbiddenException(
+          'You must be associated with a merchant to create cash drawer history',
+        ),
       );
 
-      await expect(controller.create(createDto, mockRequestWithoutMerchant)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(
+        controller.create(createDto, mockRequestWithoutMerchant),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -181,12 +187,14 @@ describe('CashDrawerHistoryController', () => {
 
     it('should handle requests without merchant', async () => {
       mockCashDrawerHistoryService.findAll.mockRejectedValue(
-        new ForbiddenException('You must be associated with a merchant to access cash drawer history'),
+        new ForbiddenException(
+          'You must be associated with a merchant to access cash drawer history',
+        ),
       );
 
-      await expect(controller.findAll(query, mockRequestWithoutMerchant)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(
+        controller.findAll(query, mockRequestWithoutMerchant),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -218,12 +226,14 @@ describe('CashDrawerHistoryController', () => {
 
     it('should handle requests without merchant', async () => {
       mockCashDrawerHistoryService.findOne.mockRejectedValue(
-        new ForbiddenException('You must be associated with a merchant to access cash drawer history'),
+        new ForbiddenException(
+          'You must be associated with a merchant to access cash drawer history',
+        ),
       );
 
-      await expect(controller.findOne(1, mockRequestWithoutMerchant)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(
+        controller.findOne(1, mockRequestWithoutMerchant),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -252,19 +262,21 @@ describe('CashDrawerHistoryController', () => {
         new NotFoundException('Cash drawer history not found'),
       );
 
-      await expect(controller.update(999, updateDto, mockRequest)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        controller.update(999, updateDto, mockRequest),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should handle requests without merchant', async () => {
       mockCashDrawerHistoryService.update.mockRejectedValue(
-        new ForbiddenException('You must be associated with a merchant to update cash drawer history'),
+        new ForbiddenException(
+          'You must be associated with a merchant to update cash drawer history',
+        ),
       );
 
-      await expect(controller.update(1, updateDto, mockRequestWithoutMerchant)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(
+        controller.update(1, updateDto, mockRequestWithoutMerchant),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -309,12 +321,14 @@ describe('CashDrawerHistoryController', () => {
 
     it('should handle requests without merchant', async () => {
       mockCashDrawerHistoryService.remove.mockRejectedValue(
-        new ForbiddenException('You must be associated with a merchant to delete cash drawer history'),
+        new ForbiddenException(
+          'You must be associated with a merchant to delete cash drawer history',
+        ),
       );
 
-      await expect(controller.remove(1, mockRequestWithoutMerchant)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(
+        controller.remove(1, mockRequestWithoutMerchant),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 });

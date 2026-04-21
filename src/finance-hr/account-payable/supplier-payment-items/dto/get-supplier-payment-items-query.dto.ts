@@ -41,7 +41,10 @@ export class GetSupplierPaymentItemsQueryDto {
   @IsPositive()
   payment_id?: number;
 
-  @ApiPropertyOptional({ example: 'invoice', description: 'Filter by document type' })
+  @ApiPropertyOptional({
+    example: 'invoice',
+    description: 'Filter by document type',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(50)

@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/unbound-method */
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { KitchenOrderController } from './kitchen-order.controller';
 import { KitchenOrderService } from './kitchen-order.service';
@@ -12,6 +8,10 @@ import { OneKitchenOrderResponseDto } from './dto/kitchen-order-response.dto';
 import { PaginatedKitchenOrderResponseDto } from './dto/paginated-kitchen-order-response.dto';
 import { KitchenOrderBusinessStatus } from './constants/kitchen-order-business-status.enum';
 import { KitchenOrderStatus } from './constants/kitchen-order-status.enum';
+import { AuthenticatedUser } from '../../../auth/interfaces/authenticated-user.interface';
+import { Request as ExpressRequest } from 'express';
+
+type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
 
 describe('KitchenOrderController', () => {
   let controller: KitchenOrderController;
@@ -35,7 +35,7 @@ describe('KitchenOrderController', () => {
 
   const mockRequest = {
     user: mockUser,
-  };
+  } as AuthenticatedRequest;
 
   const mockKitchenOrderResponse: OneKitchenOrderResponseDto = {
     statusCode: 201,
@@ -182,7 +182,11 @@ describe('KitchenOrderController', () => {
 
       const result = await controller.update(1, updateDto, mockRequest);
 
-      expect(updateSpy).toHaveBeenCalledWith(1, updateDto, mockUser.merchant.id);
+      expect(updateSpy).toHaveBeenCalledWith(
+        1,
+        updateDto,
+        mockUser.merchant.id,
+      );
       expect(result).toEqual(updatedResponse);
       expect(result.statusCode).toBe(200);
       expect(result.message).toBe('Kitchen order updated successfully');

@@ -16,9 +16,3 @@ import { Variant } from '../../../inventory/products-inventory/variants/entities
   exports: [OnlineMenuItemService],
 })
 export class OnlineMenuItemModule {}
-
-
-
-
-
-

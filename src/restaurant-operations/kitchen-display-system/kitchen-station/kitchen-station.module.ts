@@ -6,9 +6,7 @@ import { KitchenStation } from './entities/kitchen-station.entity';
 import { Merchant } from '../../../platform-saas/merchants/entities/merchant.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([KitchenStation, Merchant]),
-  ],
+  imports: [TypeOrmModule.forFeature([KitchenStation, Merchant])],
   controllers: [KitchenStationController],
   providers: [KitchenStationService],
   exports: [KitchenStationService],

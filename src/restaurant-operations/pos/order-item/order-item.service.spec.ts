@@ -1,11 +1,20 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/unbound-method */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { Repository, Between, In } from 'typeorm';
+import {
+  Repository,
+  Between,
+  In,
+  UpdateResult,
+  type FindOneOptions,
+} from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { BadRequestException, ForbiddenException, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { OrderItemService } from './order-item.service';
 import { OrderItem } from './entities/order-item.entity';
 import { Order } from '../orders/entities/order.entity';
@@ -13,7 +22,10 @@ import { Product } from '../../../inventory/products-inventory/products/entities
 import { Variant } from '../../../inventory/products-inventory/variants/entities/variant.entity';
 import { CreateOrderItemDto } from './dto/create-order-item.dto';
 import { UpdateOrderItemDto } from './dto/update-order-item.dto';
-import { GetOrderItemQueryDto, OrderItemSortBy } from './dto/get-order-item-query.dto';
+import {
+  GetOrderItemQueryDto,
+  OrderItemSortBy,
+} from './dto/get-order-item-query.dto';
 import { OrderItemStatus } from './constants/order-item-status.enum';
 import { OrderStatus } from '../orders/constants/order-status.enum';
 import { OrderBusinessStatus } from '../orders/constants/order-business-status.enum';
@@ -130,10 +142,16 @@ describe('OrderItemService', () => {
     }).compile();
 
     service = module.get<OrderItemService>(OrderItemService);
-    orderItemRepository = module.get<Repository<OrderItem>>(getRepositoryToken(OrderItem));
+    orderItemRepository = module.get<Repository<OrderItem>>(
+      getRepositoryToken(OrderItem),
+    );
     orderRepository = module.get<Repository<Order>>(getRepositoryToken(Order));
-    productRepository = module.get<Repository<Product>>(getRepositoryToken(Product));
-    variantRepository = module.get<Repository<Variant>>(getRepositoryToken(Variant));
+    productRepository = module.get<Repository<Product>>(
+      getRepositoryToken(Product),
+    );
+    variantRepository = module.get<Repository<Variant>>(
+      getRepositoryToken(Variant),
+    );
   });
 
   afterEach(() => {
@@ -146,17 +164,27 @@ describe('OrderItemService', () => {
       productId: 1,
       variantId: 1,
       quantity: 2,
-      price: 125.50,
-      discount: 10.00,
+      price: 125.5,
+      discount: 10.0,
       notes: 'Extra sauce',
     };
 
     it('should create an order item successfully', async () => {
-      jest.spyOn(orderRepository, 'findOne').mockResolvedValue(mockOrder as any);
-      jest.spyOn(productRepository, 'findOne').mockResolvedValue(mockProduct as any);
-      jest.spyOn(variantRepository, 'findOne').mockResolvedValue(mockVariant as any);
-      jest.spyOn(orderItemRepository, 'save').mockResolvedValue(mockOrderItem as any);
-      jest.spyOn(orderItemRepository, 'findOne').mockResolvedValue(mockOrderItem as any);
+      jest
+        .spyOn(orderRepository, 'findOne')
+        .mockResolvedValue(mockOrder as unknown as Order);
+      jest
+        .spyOn(productRepository, 'findOne')
+        .mockResolvedValue(mockProduct as unknown as Product);
+      jest
+        .spyOn(variantRepository, 'findOne')
+        .mockResolvedValue(mockVariant as unknown as Variant);
+      jest
+        .spyOn(orderItemRepository, 'save')
+        .mockResolvedValue(mockOrderItem as unknown as OrderItem);
+      jest
+        .spyOn(orderItemRepository, 'findOne')
+        .mockResolvedValue(mockOrderItem as unknown as OrderItem);
 
       const result = await service.create(createOrderItemDto, 1);
 
@@ -169,8 +197,10 @@ describe('OrderItemService', () => {
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.create(createOrderItemDto, undefined as any)).rejects.toThrow(
-        new ForbiddenException('You must be associated with a merchant to create order items'),
+      await expect(service.create(createOrderItemDto, 0)).rejects.toThrow(
+        new ForbiddenException(
+          'You must be associated with a merchant to create order items',
+        ),
       );
     });
 
@@ -187,10 +217,14 @@ describe('OrderItemService', () => {
         ...mockOrder,
         merchant_id: 2,
       };
-      jest.spyOn(orderRepository, 'findOne').mockResolvedValue(orderFromDifferentMerchant as any);
+      jest
+        .spyOn(orderRepository, 'findOne')
+        .mockResolvedValue(orderFromDifferentMerchant as unknown as Order);
 
       await expect(service.create(createOrderItemDto, 1)).rejects.toThrow(
-        new ForbiddenException('You can only create order items for orders belonging to your merchant'),
+        new ForbiddenException(
+          'You can only create order items for orders belonging to your merchant',
+        ),
       );
     });
 
@@ -199,7 +233,9 @@ describe('OrderItemService', () => {
         ...mockOrder,
         logical_status: OrderStatus.DELETED,
       };
-      jest.spyOn(orderRepository, 'findOne').mockResolvedValue(deletedOrder as any);
+      jest
+        .spyOn(orderRepository, 'findOne')
+        .mockResolvedValue(deletedOrder as unknown as Order);
 
       await expect(service.create(createOrderItemDto, 1)).rejects.toThrow(
         new BadRequestException('Cannot add items to a deleted order'),
@@ -207,7 +243,9 @@ describe('OrderItemService', () => {
     });
 
     it('should throw NotFoundException if product not found', async () => {
-      jest.spyOn(orderRepository, 'findOne').mockResolvedValue(mockOrder as any);
+      jest
+        .spyOn(orderRepository, 'findOne')
+        .mockResolvedValue(mockOrder as unknown as Order);
       jest.spyOn(productRepository, 'findOne').mockResolvedValue(null);
 
       await expect(service.create(createOrderItemDto, 1)).rejects.toThrow(
@@ -220,8 +258,12 @@ describe('OrderItemService', () => {
         ...mockProduct,
         merchantId: 2,
       };
-      jest.spyOn(orderRepository, 'findOne').mockResolvedValue(mockOrder as any);
-      jest.spyOn(productRepository, 'findOne').mockResolvedValue(productFromDifferentMerchant as any);
+      jest
+        .spyOn(orderRepository, 'findOne')
+        .mockResolvedValue(mockOrder as unknown as Order);
+      jest
+        .spyOn(productRepository, 'findOne')
+        .mockResolvedValue(productFromDifferentMerchant as unknown as Product);
 
       await expect(service.create(createOrderItemDto, 1)).rejects.toThrow(
         new ForbiddenException('You can only use products from your merchant'),
@@ -229,8 +271,12 @@ describe('OrderItemService', () => {
     });
 
     it('should throw NotFoundException if variant not found', async () => {
-      jest.spyOn(orderRepository, 'findOne').mockResolvedValue(mockOrder as any);
-      jest.spyOn(productRepository, 'findOne').mockResolvedValue(mockProduct as any);
+      jest
+        .spyOn(orderRepository, 'findOne')
+        .mockResolvedValue(mockOrder as unknown as Order);
+      jest
+        .spyOn(productRepository, 'findOne')
+        .mockResolvedValue(mockProduct as unknown as Product);
       jest.spyOn(variantRepository, 'findOne').mockResolvedValue(null);
 
       await expect(service.create(createOrderItemDto, 1)).rejects.toThrow(
@@ -246,9 +292,15 @@ describe('OrderItemService', () => {
           merchantId: 2,
         },
       };
-      jest.spyOn(orderRepository, 'findOne').mockResolvedValue(mockOrder as any);
-      jest.spyOn(productRepository, 'findOne').mockResolvedValue(mockProduct as any);
-      jest.spyOn(variantRepository, 'findOne').mockResolvedValue(variantFromDifferentMerchant as any);
+      jest
+        .spyOn(orderRepository, 'findOne')
+        .mockResolvedValue(mockOrder as unknown as Order);
+      jest
+        .spyOn(productRepository, 'findOne')
+        .mockResolvedValue(mockProduct as unknown as Product);
+      jest
+        .spyOn(variantRepository, 'findOne')
+        .mockResolvedValue(variantFromDifferentMerchant as unknown as Variant);
 
       await expect(service.create(createOrderItemDto, 1)).rejects.toThrow(
         new ForbiddenException('You can only use variants from your merchant'),
@@ -260,12 +312,20 @@ describe('OrderItemService', () => {
         ...mockVariant,
         productId: 2,
       };
-      jest.spyOn(orderRepository, 'findOne').mockResolvedValue(mockOrder as any);
-      jest.spyOn(productRepository, 'findOne').mockResolvedValue(mockProduct as any);
-      jest.spyOn(variantRepository, 'findOne').mockResolvedValue(variantWithDifferentProduct as any);
+      jest
+        .spyOn(orderRepository, 'findOne')
+        .mockResolvedValue(mockOrder as unknown as Order);
+      jest
+        .spyOn(productRepository, 'findOne')
+        .mockResolvedValue(mockProduct as unknown as Product);
+      jest
+        .spyOn(variantRepository, 'findOne')
+        .mockResolvedValue(variantWithDifferentProduct as unknown as Variant);
 
       await expect(service.create(createOrderItemDto, 1)).rejects.toThrow(
-        new BadRequestException('Variant does not belong to the specified product'),
+        new BadRequestException(
+          'Variant does not belong to the specified product',
+        ),
       );
     });
 
@@ -274,11 +334,15 @@ describe('OrderItemService', () => {
         orderId: 1,
         productId: 1,
         quantity: 0,
-        price: 125.50,
-        discount: 10.00,
+        price: 125.5,
+        discount: 10.0,
       };
-      jest.spyOn(orderRepository, 'findOne').mockResolvedValue(mockOrder as any);
-      jest.spyOn(productRepository, 'findOne').mockResolvedValue(mockProduct as any);
+      jest
+        .spyOn(orderRepository, 'findOne')
+        .mockResolvedValue(mockOrder as unknown as Order);
+      jest
+        .spyOn(productRepository, 'findOne')
+        .mockResolvedValue(mockProduct as unknown as Product);
 
       await expect(service.create(dtoWithInvalidQuantity, 1)).rejects.toThrow(
         new BadRequestException('Quantity must be greater than 0'),
@@ -291,10 +355,14 @@ describe('OrderItemService', () => {
         productId: 1,
         quantity: 2,
         price: -1,
-        discount: 10.00,
+        discount: 10.0,
       };
-      jest.spyOn(orderRepository, 'findOne').mockResolvedValue(mockOrder as any);
-      jest.spyOn(productRepository, 'findOne').mockResolvedValue(mockProduct as any);
+      jest
+        .spyOn(orderRepository, 'findOne')
+        .mockResolvedValue(mockOrder as unknown as Order);
+      jest
+        .spyOn(productRepository, 'findOne')
+        .mockResolvedValue(mockProduct as unknown as Product);
 
       await expect(service.create(dtoWithNegativePrice, 1)).rejects.toThrow(
         new BadRequestException('Price must be non-negative'),
@@ -306,11 +374,15 @@ describe('OrderItemService', () => {
         orderId: 1,
         productId: 1,
         quantity: 2,
-        price: 125.50,
+        price: 125.5,
         discount: -1,
       };
-      jest.spyOn(orderRepository, 'findOne').mockResolvedValue(mockOrder as any);
-      jest.spyOn(productRepository, 'findOne').mockResolvedValue(mockProduct as any);
+      jest
+        .spyOn(orderRepository, 'findOne')
+        .mockResolvedValue(mockOrder as unknown as Order);
+      jest
+        .spyOn(productRepository, 'findOne')
+        .mockResolvedValue(mockProduct as unknown as Product);
 
       await expect(service.create(dtoWithNegativeDiscount, 1)).rejects.toThrow(
         new BadRequestException('Discount must be non-negative'),
@@ -322,18 +394,26 @@ describe('OrderItemService', () => {
         orderId: 1,
         productId: 1,
         quantity: 2,
-        price: 125.50,
-        discount: 10.00,
+        price: 125.5,
+        discount: 10.0,
       };
       const orderItemWithoutVariant = {
         ...mockOrderItem,
         variant_id: null,
         variant: null,
       };
-      jest.spyOn(orderRepository, 'findOne').mockResolvedValue(mockOrder as any);
-      jest.spyOn(productRepository, 'findOne').mockResolvedValue(mockProduct as any);
-      jest.spyOn(orderItemRepository, 'save').mockResolvedValue(orderItemWithoutVariant as any);
-      jest.spyOn(orderItemRepository, 'findOne').mockResolvedValue(orderItemWithoutVariant as any);
+      jest
+        .spyOn(orderRepository, 'findOne')
+        .mockResolvedValue(mockOrder as unknown as Order);
+      jest
+        .spyOn(productRepository, 'findOne')
+        .mockResolvedValue(mockProduct as unknown as Product);
+      jest
+        .spyOn(orderItemRepository, 'save')
+        .mockResolvedValue(orderItemWithoutVariant as unknown as OrderItem);
+      jest
+        .spyOn(orderItemRepository, 'findOne')
+        .mockResolvedValue(orderItemWithoutVariant as unknown as OrderItem);
 
       const result = await service.create(dtoWithoutVariant, 1);
 
@@ -343,10 +423,18 @@ describe('OrderItemService', () => {
     });
 
     it('should throw NotFoundException if order item not found after creation', async () => {
-      jest.spyOn(orderRepository, 'findOne').mockResolvedValue(mockOrder as any);
-      jest.spyOn(productRepository, 'findOne').mockResolvedValue(mockProduct as any);
-      jest.spyOn(variantRepository, 'findOne').mockResolvedValue(mockVariant as any);
-      jest.spyOn(orderItemRepository, 'save').mockResolvedValue(mockOrderItem as any);
+      jest
+        .spyOn(orderRepository, 'findOne')
+        .mockResolvedValue(mockOrder as unknown as Order);
+      jest
+        .spyOn(productRepository, 'findOne')
+        .mockResolvedValue(mockProduct as unknown as Product);
+      jest
+        .spyOn(variantRepository, 'findOne')
+        .mockResolvedValue(mockVariant as unknown as Variant);
+      jest
+        .spyOn(orderItemRepository, 'save')
+        .mockResolvedValue(mockOrderItem as unknown as OrderItem);
       jest.spyOn(orderItemRepository, 'findOne').mockResolvedValue(null);
 
       await expect(service.create(createOrderItemDto, 1)).rejects.toThrow(
@@ -362,8 +450,15 @@ describe('OrderItemService', () => {
     };
 
     it('should return paginated order items successfully', async () => {
-      jest.spyOn(orderRepository, 'find').mockResolvedValue([{ id: 1 }] as any);
-      jest.spyOn(orderItemRepository, 'findAndCount').mockResolvedValue([[mockOrderItem], 1] as any);
+      jest
+        .spyOn(orderRepository, 'find')
+        .mockResolvedValue([{ id: 1 }] as unknown as Order[]);
+      jest
+        .spyOn(orderItemRepository, 'findAndCount')
+        .mockResolvedValue([[mockOrderItem], 1] as unknown as [
+          OrderItem[],
+          number,
+        ]);
 
       const result = await service.findAll(query, 1);
 
@@ -376,8 +471,10 @@ describe('OrderItemService', () => {
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.findAll(query, undefined as any)).rejects.toThrow(
-        new ForbiddenException('You must be associated with a merchant to access order items'),
+      await expect(service.findAll(query, 0)).rejects.toThrow(
+        new ForbiddenException(
+          'You must be associated with a merchant to access order items',
+        ),
       );
     });
 
@@ -411,8 +508,15 @@ describe('OrderItemService', () => {
 
     it('should filter by orderId', async () => {
       const queryWithOrderId = { ...query, orderId: 1 };
-      jest.spyOn(orderRepository, 'findOne').mockResolvedValue(mockOrder as any);
-      jest.spyOn(orderItemRepository, 'findAndCount').mockResolvedValue([[mockOrderItem], 1] as any);
+      jest
+        .spyOn(orderRepository, 'findOne')
+        .mockResolvedValue(mockOrder as unknown as Order);
+      jest
+        .spyOn(orderItemRepository, 'findAndCount')
+        .mockResolvedValue([[mockOrderItem], 1] as unknown as [
+          OrderItem[],
+          number,
+        ]);
 
       const result = await service.findAll(queryWithOrderId, 1);
 
@@ -438,7 +542,9 @@ describe('OrderItemService', () => {
         ...mockOrder,
         merchant_id: 2,
       };
-      jest.spyOn(orderRepository, 'findOne').mockResolvedValue(orderFromDifferentMerchant as any);
+      jest
+        .spyOn(orderRepository, 'findOne')
+        .mockResolvedValue(orderFromDifferentMerchant as unknown as Order);
 
       await expect(service.findAll(queryWithOrderId, 1)).rejects.toThrow(
         new ForbiddenException('Order does not belong to your merchant'),
@@ -447,9 +553,18 @@ describe('OrderItemService', () => {
 
     it('should filter by productId', async () => {
       const queryWithProductId = { ...query, productId: 1 };
-      jest.spyOn(orderRepository, 'find').mockResolvedValue([{ id: 1 }] as any);
-      jest.spyOn(productRepository, 'findOne').mockResolvedValue(mockProduct as any);
-      jest.spyOn(orderItemRepository, 'findAndCount').mockResolvedValue([[mockOrderItem], 1] as any);
+      jest
+        .spyOn(orderRepository, 'find')
+        .mockResolvedValue([{ id: 1 }] as unknown as Order[]);
+      jest
+        .spyOn(productRepository, 'findOne')
+        .mockResolvedValue(mockProduct as unknown as Product);
+      jest
+        .spyOn(orderItemRepository, 'findAndCount')
+        .mockResolvedValue([[mockOrderItem], 1] as unknown as [
+          OrderItem[],
+          number,
+        ]);
 
       const result = await service.findAll(queryWithProductId, 1);
 
@@ -462,7 +577,9 @@ describe('OrderItemService', () => {
 
     it('should throw NotFoundException if product not found when filtering by productId', async () => {
       const queryWithProductId = { ...query, productId: 999 };
-      jest.spyOn(orderRepository, 'find').mockResolvedValue([{ id: 1 }] as any);
+      jest
+        .spyOn(orderRepository, 'find')
+        .mockResolvedValue([{ id: 1 }] as unknown as Order[]);
       jest.spyOn(productRepository, 'findOne').mockResolvedValue(null);
 
       await expect(service.findAll(queryWithProductId, 1)).rejects.toThrow(
@@ -476,8 +593,12 @@ describe('OrderItemService', () => {
         ...mockProduct,
         merchantId: 2,
       };
-      jest.spyOn(orderRepository, 'find').mockResolvedValue([{ id: 1 }] as any);
-      jest.spyOn(productRepository, 'findOne').mockResolvedValue(productFromDifferentMerchant as any);
+      jest
+        .spyOn(orderRepository, 'find')
+        .mockResolvedValue([{ id: 1 }] as unknown as Order[]);
+      jest
+        .spyOn(productRepository, 'findOne')
+        .mockResolvedValue(productFromDifferentMerchant as unknown as Product);
 
       await expect(service.findAll(queryWithProductId, 1)).rejects.toThrow(
         new ForbiddenException('Product does not belong to your merchant'),
@@ -486,8 +607,15 @@ describe('OrderItemService', () => {
 
     it('should filter by variantId', async () => {
       const queryWithVariantId = { ...query, variantId: 1 };
-      jest.spyOn(orderRepository, 'find').mockResolvedValue([{ id: 1 }] as any);
-      jest.spyOn(orderItemRepository, 'findAndCount').mockResolvedValue([[mockOrderItem], 1] as any);
+      jest
+        .spyOn(orderRepository, 'find')
+        .mockResolvedValue([{ id: 1 }] as unknown as Order[]);
+      jest
+        .spyOn(orderItemRepository, 'findAndCount')
+        .mockResolvedValue([[mockOrderItem], 1] as unknown as [
+          OrderItem[],
+          number,
+        ]);
 
       const result = await service.findAll(queryWithVariantId, 1);
 
@@ -499,8 +627,15 @@ describe('OrderItemService', () => {
         ...query,
         kitchenStatus: OrderItemKitchenStatus.READY,
       };
-      jest.spyOn(orderRepository, 'find').mockResolvedValue([{ id: 1 }] as any);
-      jest.spyOn(orderItemRepository, 'findAndCount').mockResolvedValue([[mockOrderItem], 1] as any);
+      jest
+        .spyOn(orderRepository, 'find')
+        .mockResolvedValue([{ id: 1 }] as unknown as Order[]);
+      jest
+        .spyOn(orderItemRepository, 'findAndCount')
+        .mockResolvedValue([[mockOrderItem], 1] as unknown as [
+          OrderItem[],
+          number,
+        ]);
 
       const result = await service.findAll(queryWithKitchen, 1);
 
@@ -509,8 +644,12 @@ describe('OrderItemService', () => {
 
     it('should filter by status', async () => {
       const queryWithStatus = { ...query, status: OrderItemStatus.DELETED };
-      jest.spyOn(orderRepository, 'find').mockResolvedValue([{ id: 1 }] as any);
-      jest.spyOn(orderItemRepository, 'findAndCount').mockResolvedValue([[], 0] as any);
+      jest
+        .spyOn(orderRepository, 'find')
+        .mockResolvedValue([{ id: 1 }] as unknown as Order[]);
+      jest
+        .spyOn(orderItemRepository, 'findAndCount')
+        .mockResolvedValue([[], 0] as unknown as [OrderItem[], number]);
 
       const result = await service.findAll(queryWithStatus, 1);
 
@@ -519,8 +658,15 @@ describe('OrderItemService', () => {
 
     it('should filter by createdDate', async () => {
       const queryWithDate = { ...query, createdDate: '2024-01-15' };
-      jest.spyOn(orderRepository, 'find').mockResolvedValue([{ id: 1 }] as any);
-      jest.spyOn(orderItemRepository, 'findAndCount').mockResolvedValue([[mockOrderItem], 1] as any);
+      jest
+        .spyOn(orderRepository, 'find')
+        .mockResolvedValue([{ id: 1 }] as unknown as Order[]);
+      jest
+        .spyOn(orderItemRepository, 'findAndCount')
+        .mockResolvedValue([[mockOrderItem], 1] as unknown as [
+          OrderItem[],
+          number,
+        ]);
 
       const result = await service.findAll(queryWithDate, 1);
 
@@ -528,9 +674,20 @@ describe('OrderItemService', () => {
     });
 
     it('should sort by quantity', async () => {
-      const queryWithSort: GetOrderItemQueryDto = { ...query, sortBy: OrderItemSortBy.QUANTITY, sortOrder: 'ASC' };
-      jest.spyOn(orderRepository, 'find').mockResolvedValue([{ id: 1 }] as any);
-      jest.spyOn(orderItemRepository, 'findAndCount').mockResolvedValue([[mockOrderItem], 1] as any);
+      const queryWithSort: GetOrderItemQueryDto = {
+        ...query,
+        sortBy: OrderItemSortBy.QUANTITY,
+        sortOrder: 'ASC',
+      };
+      jest
+        .spyOn(orderRepository, 'find')
+        .mockResolvedValue([{ id: 1 }] as unknown as Order[]);
+      jest
+        .spyOn(orderItemRepository, 'findAndCount')
+        .mockResolvedValue([[mockOrderItem], 1] as unknown as [
+          OrderItem[],
+          number,
+        ]);
 
       const result = await service.findAll(queryWithSort, 1);
 
@@ -549,8 +706,12 @@ describe('OrderItemService', () => {
 
     it('should handle pagination correctly', async () => {
       const queryPage2 = { ...query, page: 2, limit: 10 };
-      jest.spyOn(orderRepository, 'find').mockResolvedValue([{ id: 1 }] as any);
-      jest.spyOn(orderItemRepository, 'findAndCount').mockResolvedValue([[], 25] as any);
+      jest
+        .spyOn(orderRepository, 'find')
+        .mockResolvedValue([{ id: 1 }] as unknown as Order[]);
+      jest
+        .spyOn(orderItemRepository, 'findAndCount')
+        .mockResolvedValue([[], 25] as unknown as [OrderItem[], number]);
 
       const result = await service.findAll(queryPage2, 1);
 
@@ -564,7 +725,9 @@ describe('OrderItemService', () => {
 
   describe('findOne', () => {
     it('should return an order item successfully', async () => {
-      jest.spyOn(orderItemRepository, 'findOne').mockResolvedValue(mockOrderItem as any);
+      jest
+        .spyOn(orderItemRepository, 'findOne')
+        .mockResolvedValue(mockOrderItem as unknown as OrderItem);
 
       const result = await service.findOne(1, 1);
 
@@ -575,13 +738,17 @@ describe('OrderItemService', () => {
 
     it('should throw BadRequestException when id is invalid', async () => {
       await expect(service.findOne(0, 1)).rejects.toThrow(
-        new BadRequestException('Order item ID must be a valid positive number'),
+        new BadRequestException(
+          'Order item ID must be a valid positive number',
+        ),
       );
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.findOne(1, undefined as any)).rejects.toThrow(
-        new ForbiddenException('You must be associated with a merchant to access order items'),
+      await expect(service.findOne(1, 0)).rejects.toThrow(
+        new ForbiddenException(
+          'You must be associated with a merchant to access order items',
+        ),
       );
     });
 
@@ -601,10 +768,16 @@ describe('OrderItemService', () => {
           merchant_id: 2,
         },
       };
-      jest.spyOn(orderItemRepository, 'findOne').mockResolvedValue(orderItemFromDifferentMerchant as any);
+      jest
+        .spyOn(orderItemRepository, 'findOne')
+        .mockResolvedValue(
+          orderItemFromDifferentMerchant as unknown as OrderItem,
+        );
 
       await expect(service.findOne(1, 1)).rejects.toThrow(
-        new ForbiddenException('You can only access order items from your merchant'),
+        new ForbiddenException(
+          'You can only access order items from your merchant',
+        ),
       );
     });
   });
@@ -612,7 +785,7 @@ describe('OrderItemService', () => {
   describe('update', () => {
     const updateOrderItemDto: UpdateOrderItemDto = {
       quantity: 3,
-      price: 150.00,
+      price: 150.0,
     };
 
     it('should update an order item successfully', async () => {
@@ -621,10 +794,15 @@ describe('OrderItemService', () => {
         quantity: 3,
         price: '150.00',
       };
-      jest.spyOn(orderItemRepository, 'findOne')
-        .mockResolvedValueOnce(mockOrderItem as any)
-        .mockResolvedValueOnce(updatedOrderItem as any);
-      jest.spyOn(orderItemRepository, 'update').mockResolvedValue(undefined as any);
+      jest
+        .spyOn(orderItemRepository, 'findOne')
+        .mockResolvedValueOnce(mockOrderItem as unknown as OrderItem)
+        .mockResolvedValueOnce(updatedOrderItem as unknown as OrderItem);
+      jest.spyOn(orderItemRepository, 'update').mockResolvedValue({
+        affected: 1,
+        raw: [],
+        generatedMaps: [],
+      } as UpdateResult);
 
       const result = await service.update(1, updateOrderItemDto, 1);
 
@@ -636,13 +814,17 @@ describe('OrderItemService', () => {
 
     it('should throw BadRequestException when id is invalid', async () => {
       await expect(service.update(0, updateOrderItemDto, 1)).rejects.toThrow(
-        new BadRequestException('Order item ID must be a valid positive number'),
+        new BadRequestException(
+          'Order item ID must be a valid positive number',
+        ),
       );
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.update(1, updateOrderItemDto, undefined as any)).rejects.toThrow(
-        new ForbiddenException('You must be associated with a merchant to update order items'),
+      await expect(service.update(1, updateOrderItemDto, 0)).rejects.toThrow(
+        new ForbiddenException(
+          'You must be associated with a merchant to update order items',
+        ),
       );
     });
 
@@ -662,20 +844,33 @@ describe('OrderItemService', () => {
           merchant_id: 2,
         },
       };
-      jest.spyOn(orderItemRepository, 'findOne').mockResolvedValue(orderItemFromDifferentMerchant as any);
+      jest
+        .spyOn(orderItemRepository, 'findOne')
+        .mockResolvedValue(
+          orderItemFromDifferentMerchant as unknown as OrderItem,
+        );
 
       await expect(service.update(1, updateOrderItemDto, 1)).rejects.toThrow(
-        new ForbiddenException('You can only update order items from your merchant'),
+        new ForbiddenException(
+          'You can only update order items from your merchant',
+        ),
       );
     });
 
     it('should validate order if orderId is provided', async () => {
       const dtoWithOrderId = { ...updateOrderItemDto, orderId: 2 };
-      jest.spyOn(orderItemRepository, 'findOne')
-        .mockResolvedValueOnce(mockOrderItem as any)
-        .mockResolvedValueOnce(mockOrderItem as any);
-      jest.spyOn(orderRepository, 'findOne').mockResolvedValue(mockOrder as any);
-      jest.spyOn(orderItemRepository, 'update').mockResolvedValue(undefined as any);
+      jest
+        .spyOn(orderItemRepository, 'findOne')
+        .mockResolvedValueOnce(mockOrderItem as unknown as OrderItem)
+        .mockResolvedValueOnce(mockOrderItem as unknown as OrderItem);
+      jest
+        .spyOn(orderRepository, 'findOne')
+        .mockResolvedValue(mockOrder as unknown as Order);
+      jest.spyOn(orderItemRepository, 'update').mockResolvedValue({
+        affected: 1,
+        raw: [],
+        generatedMaps: [],
+      } as UpdateResult);
 
       await service.update(1, dtoWithOrderId, 1);
 
@@ -693,11 +888,18 @@ describe('OrderItemService', () => {
         order_id: 2,
         order: targetOrder,
       };
-      jest.spyOn(orderItemRepository, 'findOne')
-        .mockResolvedValueOnce(mockOrderItem as any)
-        .mockResolvedValueOnce(movedOrderItem as any);
-      jest.spyOn(orderRepository, 'findOne').mockResolvedValue(targetOrder as any);
-      jest.spyOn(orderItemRepository, 'update').mockResolvedValue(undefined as any);
+      jest
+        .spyOn(orderItemRepository, 'findOne')
+        .mockResolvedValueOnce(mockOrderItem as unknown as OrderItem)
+        .mockResolvedValueOnce(movedOrderItem as unknown as OrderItem);
+      jest
+        .spyOn(orderRepository, 'findOne')
+        .mockResolvedValue(targetOrder as unknown as Order);
+      jest.spyOn(orderItemRepository, 'update').mockResolvedValue({
+        affected: 1,
+        raw: [],
+        generatedMaps: [],
+      } as UpdateResult);
 
       await service.update(1, dtoWithOrderId, 1);
 
@@ -707,7 +909,9 @@ describe('OrderItemService', () => {
 
     it('should throw NotFoundException if new order not found', async () => {
       const dtoWithOrderId = { ...updateOrderItemDto, orderId: 999 };
-      jest.spyOn(orderItemRepository, 'findOne').mockResolvedValueOnce(mockOrderItem as any);
+      jest
+        .spyOn(orderItemRepository, 'findOne')
+        .mockResolvedValueOnce(mockOrderItem as unknown as OrderItem);
       jest.spyOn(orderRepository, 'findOne').mockResolvedValue(null);
 
       await expect(service.update(1, dtoWithOrderId, 1)).rejects.toThrow(
@@ -721,8 +925,12 @@ describe('OrderItemService', () => {
         ...mockOrder,
         merchant_id: 2,
       };
-      jest.spyOn(orderItemRepository, 'findOne').mockResolvedValueOnce(mockOrderItem as any);
-      jest.spyOn(orderRepository, 'findOne').mockResolvedValue(orderFromDifferentMerchant as any);
+      jest
+        .spyOn(orderItemRepository, 'findOne')
+        .mockResolvedValueOnce(mockOrderItem as unknown as OrderItem);
+      jest
+        .spyOn(orderRepository, 'findOne')
+        .mockResolvedValue(orderFromDifferentMerchant as unknown as Order);
 
       await expect(service.update(1, dtoWithOrderId, 1)).rejects.toThrow(
         new ForbiddenException('You can only assign orders from your merchant'),
@@ -731,11 +939,18 @@ describe('OrderItemService', () => {
 
     it('should validate product if productId is provided', async () => {
       const dtoWithProductId = { ...updateOrderItemDto, productId: 2 };
-      jest.spyOn(orderItemRepository, 'findOne')
-        .mockResolvedValueOnce(mockOrderItem as any)
-        .mockResolvedValueOnce(mockOrderItem as any);
-      jest.spyOn(productRepository, 'findOne').mockResolvedValue(mockProduct as any);
-      jest.spyOn(orderItemRepository, 'update').mockResolvedValue(undefined as any);
+      jest
+        .spyOn(orderItemRepository, 'findOne')
+        .mockResolvedValueOnce(mockOrderItem as unknown as OrderItem)
+        .mockResolvedValueOnce(mockOrderItem as unknown as OrderItem);
+      jest
+        .spyOn(productRepository, 'findOne')
+        .mockResolvedValue(mockProduct as unknown as Product);
+      jest.spyOn(orderItemRepository, 'update').mockResolvedValue({
+        affected: 1,
+        raw: [],
+        generatedMaps: [],
+      } as UpdateResult);
 
       await service.update(1, dtoWithProductId, 1);
 
@@ -747,7 +962,9 @@ describe('OrderItemService', () => {
 
     it('should throw NotFoundException if new product not found', async () => {
       const dtoWithProductId = { ...updateOrderItemDto, productId: 999 };
-      jest.spyOn(orderItemRepository, 'findOne').mockResolvedValueOnce(mockOrderItem as any);
+      jest
+        .spyOn(orderItemRepository, 'findOne')
+        .mockResolvedValueOnce(mockOrderItem as unknown as OrderItem);
       jest.spyOn(productRepository, 'findOne').mockResolvedValue(null);
 
       await expect(service.update(1, dtoWithProductId, 1)).rejects.toThrow(
@@ -761,8 +978,12 @@ describe('OrderItemService', () => {
         ...mockProduct,
         merchantId: 2,
       };
-      jest.spyOn(orderItemRepository, 'findOne').mockResolvedValueOnce(mockOrderItem as any);
-      jest.spyOn(productRepository, 'findOne').mockResolvedValue(productFromDifferentMerchant as any);
+      jest
+        .spyOn(orderItemRepository, 'findOne')
+        .mockResolvedValueOnce(mockOrderItem as unknown as OrderItem);
+      jest
+        .spyOn(productRepository, 'findOne')
+        .mockResolvedValue(productFromDifferentMerchant as unknown as Product);
 
       await expect(service.update(1, dtoWithProductId, 1)).rejects.toThrow(
         new ForbiddenException('You can only use products from your merchant'),
@@ -771,11 +992,18 @@ describe('OrderItemService', () => {
 
     it('should validate variant if variantId is provided', async () => {
       const dtoWithVariantId = { ...updateOrderItemDto, variantId: 2 };
-      jest.spyOn(orderItemRepository, 'findOne')
-        .mockResolvedValueOnce(mockOrderItem as any)
-        .mockResolvedValueOnce(mockOrderItem as any);
-      jest.spyOn(variantRepository, 'findOne').mockResolvedValue(mockVariant as any);
-      jest.spyOn(orderItemRepository, 'update').mockResolvedValue(undefined as any);
+      jest
+        .spyOn(orderItemRepository, 'findOne')
+        .mockResolvedValueOnce(mockOrderItem as unknown as OrderItem)
+        .mockResolvedValueOnce(mockOrderItem as unknown as OrderItem);
+      jest
+        .spyOn(variantRepository, 'findOne')
+        .mockResolvedValue(mockVariant as unknown as Variant);
+      jest.spyOn(orderItemRepository, 'update').mockResolvedValue({
+        affected: 1,
+        raw: [],
+        generatedMaps: [],
+      } as UpdateResult);
 
       await service.update(1, dtoWithVariantId, 1);
 
@@ -783,16 +1011,24 @@ describe('OrderItemService', () => {
     });
 
     it('should allow null variantId to remove variant', async () => {
-      const dtoWithNullVariantId = { ...updateOrderItemDto, variantId: null } as any;
+      const dtoWithNullVariantId = {
+        ...updateOrderItemDto,
+        variantId: null,
+      } as unknown as UpdateOrderItemDto;
       const orderItemWithoutVariant = {
         ...mockOrderItem,
         variant_id: null,
         variant: null,
       };
-      jest.spyOn(orderItemRepository, 'findOne')
-        .mockResolvedValueOnce(mockOrderItem as any)
-        .mockResolvedValueOnce(orderItemWithoutVariant as any);
-      jest.spyOn(orderItemRepository, 'update').mockResolvedValue(undefined as any);
+      jest
+        .spyOn(orderItemRepository, 'findOne')
+        .mockResolvedValueOnce(mockOrderItem as unknown as OrderItem)
+        .mockResolvedValueOnce(orderItemWithoutVariant as unknown as OrderItem);
+      jest.spyOn(orderItemRepository, 'update').mockResolvedValue({
+        affected: 1,
+        raw: [],
+        generatedMaps: [],
+      } as UpdateResult);
 
       const result = await service.update(1, dtoWithNullVariantId, 1);
 
@@ -805,7 +1041,9 @@ describe('OrderItemService', () => {
 
     it('should throw NotFoundException if new variant not found', async () => {
       const dtoWithVariantId = { ...updateOrderItemDto, variantId: 999 };
-      jest.spyOn(orderItemRepository, 'findOne').mockResolvedValueOnce(mockOrderItem as any);
+      jest
+        .spyOn(orderItemRepository, 'findOne')
+        .mockResolvedValueOnce(mockOrderItem as unknown as OrderItem);
       jest.spyOn(variantRepository, 'findOne').mockResolvedValue(null);
 
       await expect(service.update(1, dtoWithVariantId, 1)).rejects.toThrow(
@@ -819,26 +1057,38 @@ describe('OrderItemService', () => {
         ...mockVariant,
         productId: 2,
       };
-      jest.spyOn(orderItemRepository, 'findOne').mockResolvedValueOnce(mockOrderItem as any);
-      jest.spyOn(variantRepository, 'findOne').mockResolvedValue(variantWithDifferentProduct as any);
+      jest
+        .spyOn(orderItemRepository, 'findOne')
+        .mockResolvedValueOnce(mockOrderItem as unknown as OrderItem);
+      jest
+        .spyOn(variantRepository, 'findOne')
+        .mockResolvedValue(variantWithDifferentProduct as unknown as Variant);
 
       await expect(service.update(1, dtoWithVariantId, 1)).rejects.toThrow(
-        new BadRequestException('Variant does not belong to the specified product'),
+        new BadRequestException(
+          'Variant does not belong to the specified product',
+        ),
       );
     });
 
     it('should throw BadRequestException if quantity is less than or equal to 0', async () => {
       const dtoWithInvalidQuantity = { ...updateOrderItemDto, quantity: 0 };
-      jest.spyOn(orderItemRepository, 'findOne').mockResolvedValueOnce(mockOrderItem as any);
+      jest
+        .spyOn(orderItemRepository, 'findOne')
+        .mockResolvedValueOnce(mockOrderItem as unknown as OrderItem);
 
-      await expect(service.update(1, dtoWithInvalidQuantity, 1)).rejects.toThrow(
+      await expect(
+        service.update(1, dtoWithInvalidQuantity, 1),
+      ).rejects.toThrow(
         new BadRequestException('Quantity must be greater than 0'),
       );
     });
 
     it('should throw BadRequestException if price is negative', async () => {
       const dtoWithNegativePrice = { ...updateOrderItemDto, price: -1 };
-      jest.spyOn(orderItemRepository, 'findOne').mockResolvedValueOnce(mockOrderItem as any);
+      jest
+        .spyOn(orderItemRepository, 'findOne')
+        .mockResolvedValueOnce(mockOrderItem as unknown as OrderItem);
 
       await expect(service.update(1, dtoWithNegativePrice, 1)).rejects.toThrow(
         new BadRequestException('Price must be non-negative'),
@@ -847,26 +1097,40 @@ describe('OrderItemService', () => {
 
     it('should throw BadRequestException if discount is negative', async () => {
       const dtoWithNegativeDiscount = { ...updateOrderItemDto, discount: -1 };
-      jest.spyOn(orderItemRepository, 'findOne').mockResolvedValueOnce(mockOrderItem as any);
+      jest
+        .spyOn(orderItemRepository, 'findOne')
+        .mockResolvedValueOnce(mockOrderItem as unknown as OrderItem);
 
-      await expect(service.update(1, dtoWithNegativeDiscount, 1)).rejects.toThrow(
+      await expect(
+        service.update(1, dtoWithNegativeDiscount, 1),
+      ).rejects.toThrow(
         new BadRequestException('Discount must be non-negative'),
       );
     });
 
     it('should throw NotFoundException if order item not found after update', async () => {
-      jest.spyOn(orderItemRepository, 'findOne').mockImplementation((options: any) => {
-        // First call: existing order item (with status ACTIVE)
-        if (options.where.status === OrderItemStatus.ACTIVE) {
-          return Promise.resolve(mockOrderItem as any);
-        }
-        // Second call: order item not found after update (by id only, no status filter)
-        if (options.where.id === 1 && !options.where.status) {
+      jest
+        .spyOn(orderItemRepository, 'findOne')
+        .mockImplementation((options: FindOneOptions<OrderItem>) => {
+          const where = options.where as {
+            status?: OrderItemStatus;
+            id?: number;
+          };
+          // First call: existing order item (with status ACTIVE)
+          if (where.status === OrderItemStatus.ACTIVE) {
+            return Promise.resolve(mockOrderItem as unknown as OrderItem);
+          }
+          // Second call: order item not found after update (by id only, no status filter)
+          if (where.id === 1 && !where.status) {
+            return Promise.resolve(null);
+          }
           return Promise.resolve(null);
-        }
-        return Promise.resolve(null);
-      });
-      jest.spyOn(orderItemRepository, 'update').mockResolvedValue(undefined as any);
+        });
+      jest.spyOn(orderItemRepository, 'update').mockResolvedValue({
+        affected: 1,
+        raw: [],
+        generatedMaps: [],
+      } as UpdateResult);
 
       await expect(service.update(1, updateOrderItemDto, 1)).rejects.toThrow(
         new NotFoundException('Order item not found after update'),
@@ -880,8 +1144,12 @@ describe('OrderItemService', () => {
         ...mockOrderItem,
         status: OrderItemStatus.DELETED,
       };
-      jest.spyOn(orderItemRepository, 'findOne').mockResolvedValue(mockOrderItem as any);
-      jest.spyOn(orderItemRepository, 'save').mockResolvedValue(deletedOrderItem as any);
+      jest
+        .spyOn(orderItemRepository, 'findOne')
+        .mockResolvedValue(mockOrderItem as unknown as OrderItem);
+      jest
+        .spyOn(orderItemRepository, 'save')
+        .mockResolvedValue(deletedOrderItem as unknown as OrderItem);
 
       const result = await service.remove(1, 1);
 
@@ -895,13 +1163,17 @@ describe('OrderItemService', () => {
 
     it('should throw BadRequestException when id is invalid', async () => {
       await expect(service.remove(0, 1)).rejects.toThrow(
-        new BadRequestException('Order item ID must be a valid positive number'),
+        new BadRequestException(
+          'Order item ID must be a valid positive number',
+        ),
       );
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.remove(1, undefined as any)).rejects.toThrow(
-        new ForbiddenException('You must be associated with a merchant to delete order items'),
+      await expect(service.remove(1, 0)).rejects.toThrow(
+        new ForbiddenException(
+          'You must be associated with a merchant to delete order items',
+        ),
       );
     });
 
@@ -921,10 +1193,16 @@ describe('OrderItemService', () => {
           merchant_id: 2,
         },
       };
-      jest.spyOn(orderItemRepository, 'findOne').mockResolvedValue(orderItemFromDifferentMerchant as any);
+      jest
+        .spyOn(orderItemRepository, 'findOne')
+        .mockResolvedValue(
+          orderItemFromDifferentMerchant as unknown as OrderItem,
+        );
 
       await expect(service.remove(1, 1)).rejects.toThrow(
-        new ForbiddenException('You can only delete order items from your merchant'),
+        new ForbiddenException(
+          'You can only delete order items from your merchant',
+        ),
       );
     });
 
@@ -933,7 +1211,9 @@ describe('OrderItemService', () => {
         ...mockOrderItem,
         status: OrderItemStatus.DELETED,
       };
-      jest.spyOn(orderItemRepository, 'findOne').mockResolvedValue(deletedOrderItem as any);
+      jest
+        .spyOn(orderItemRepository, 'findOne')
+        .mockResolvedValue(deletedOrderItem as unknown as OrderItem);
 
       await expect(service.remove(1, 1)).rejects.toThrow(
         new ConflictException('Order item is already deleted'),
@@ -953,11 +1233,21 @@ describe('OrderItemService', () => {
         notes: 'test',
       };
 
-      jest.spyOn(orderRepository, 'findOne').mockResolvedValue(mockOrder as any);
-      jest.spyOn(productRepository, 'findOne').mockResolvedValue(mockProduct as any);
-      jest.spyOn(variantRepository, 'findOne').mockResolvedValue(mockVariant as any);
-      jest.spyOn(orderItemRepository, 'save').mockResolvedValue(mockOrderItem as any);
-      jest.spyOn(orderItemRepository, 'findOne').mockResolvedValue(mockOrderItem as any);
+      jest
+        .spyOn(orderRepository, 'findOne')
+        .mockResolvedValue(mockOrder as unknown as Order);
+      jest
+        .spyOn(productRepository, 'findOne')
+        .mockResolvedValue(mockProduct as unknown as Product);
+      jest
+        .spyOn(variantRepository, 'findOne')
+        .mockResolvedValue(mockVariant as unknown as Variant);
+      jest
+        .spyOn(orderItemRepository, 'save')
+        .mockResolvedValue(mockOrderItem as unknown as OrderItem);
+      jest
+        .spyOn(orderItemRepository, 'findOne')
+        .mockResolvedValue(mockOrderItem as unknown as OrderItem);
 
       await service.create(createOrderItemDto, 1);
 
@@ -966,8 +1256,14 @@ describe('OrderItemService', () => {
 
     it('should trigger order totals recalculation after update item', async () => {
       const updateOrderItemDto: UpdateOrderItemDto = { quantity: 3 };
-      jest.spyOn(orderItemRepository, 'findOne').mockResolvedValue(mockOrderItem as any);
-      jest.spyOn(orderItemRepository, 'update').mockResolvedValue(undefined as any);
+      jest
+        .spyOn(orderItemRepository, 'findOne')
+        .mockResolvedValue(mockOrderItem as unknown as OrderItem);
+      jest.spyOn(orderItemRepository, 'update').mockResolvedValue({
+        affected: 1,
+        raw: [],
+        generatedMaps: [],
+      } as UpdateResult);
 
       await service.update(1, updateOrderItemDto, 1);
 
@@ -978,11 +1274,11 @@ describe('OrderItemService', () => {
       jest.spyOn(orderItemRepository, 'findOne').mockResolvedValue({
         ...mockOrderItem,
         status: OrderItemStatus.ACTIVE,
-      } as any);
+      } as unknown as OrderItem);
       jest.spyOn(orderItemRepository, 'save').mockResolvedValue({
         ...mockOrderItem,
         status: OrderItemStatus.DELETED,
-      } as any);
+      } as unknown as OrderItem);
 
       await service.remove(1, 1);
 

@@ -1,4 +1,11 @@
-import { IsOptional, IsEnum, IsString, IsNumber, Min, Max } from 'class-validator';
+import {
+  IsOptional,
+  IsEnum,
+  IsString,
+  IsNumber,
+  Min,
+  Max,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { OnlineOrderType } from '../constants/online-order-type.enum';
@@ -12,7 +19,6 @@ export enum OnlineOrderSortBy {
   CUSTOMER_ID = 'customerId',
   TYPE = 'type',
   PAYMENT_STATUS = 'paymentStatus',
-  TOTAL_AMOUNT = 'totalAmount',
   PLACED_AT = 'placedAt',
   SCHEDULED_AT = 'scheduledAt',
   UPDATED_AT = 'updatedAt',
@@ -131,5 +137,3 @@ export class GetOnlineOrderQueryDto {
   @IsEnum(['ASC', 'DESC'])
   sortOrder?: 'ASC' | 'DESC' = 'DESC';
 }
-
-

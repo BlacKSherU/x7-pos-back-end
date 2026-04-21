@@ -49,7 +49,10 @@ export class GetSupplierPaymentsQueryDto {
   @IsPositive()
   supplier_id?: number;
 
-  @ApiPropertyOptional({ example: SupplierPaymentStatus.DRAFT, enum: SupplierPaymentStatus })
+  @ApiPropertyOptional({
+    example: SupplierPaymentStatus.DRAFT,
+    enum: SupplierPaymentStatus,
+  })
   @IsOptional()
   @IsEnum(SupplierPaymentStatus)
   status?: SupplierPaymentStatus;

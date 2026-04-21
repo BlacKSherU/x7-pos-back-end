@@ -1,9 +1,6 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/unbound-method */
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { type DeleteResult } from 'typeorm';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { OrderTaxesService } from './order-taxes.service';
 import { OrderTax } from './entities/order-tax.entity';
@@ -89,11 +86,15 @@ describe('OrderTaxesService', () => {
     };
 
     it('should create and sync order aggregates', async () => {
-      jest.spyOn(mockOrderRepository, 'findOne').mockResolvedValue(mockOrder as any);
-      jest.spyOn(mockOrderTaxRepository, 'save').mockResolvedValue({ id: 1 } as any);
+      jest
+        .spyOn(mockOrderRepository, 'findOne')
+        .mockResolvedValue(mockOrder as unknown as Order);
+      jest
+        .spyOn(mockOrderTaxRepository, 'save')
+        .mockResolvedValue({ id: 1 } as unknown as OrderTax);
       jest
         .spyOn(mockOrderTaxRepository, 'findOne')
-        .mockResolvedValue(mockTaxRow as any);
+        .mockResolvedValue(mockTaxRow as unknown as OrderTax);
 
       const result = await service.create(dto, 1);
 
@@ -102,9 +103,7 @@ describe('OrderTaxesService', () => {
     });
 
     it('should throw if no merchant', async () => {
-      await expect(service.create(dto, undefined as any)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.create(dto, 0)).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw if order not found', async () => {
@@ -117,8 +116,10 @@ describe('OrderTaxesService', () => {
     it('should delete and sync', async () => {
       jest
         .spyOn(mockOrderTaxRepository, 'findOne')
-        .mockResolvedValue(mockTaxRow as any);
-      jest.spyOn(mockOrderTaxRepository, 'delete').mockResolvedValue(undefined as any);
+        .mockResolvedValue(mockTaxRow as unknown as OrderTax);
+      jest
+        .spyOn(mockOrderTaxRepository, 'delete')
+        .mockResolvedValue({ raw: [], affected: 1 } as DeleteResult);
 
       const result = await service.remove(1, 1);
 

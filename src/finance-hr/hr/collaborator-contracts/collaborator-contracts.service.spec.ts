@@ -28,14 +28,19 @@ describe('CollaboratorContractsService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CollaboratorContractsService,
-        { provide: getRepositoryToken(CollaboratorContract), useValue: mockRepository },
+        {
+          provide: getRepositoryToken(CollaboratorContract),
+          useValue: mockRepository,
+        },
         { provide: getRepositoryToken(Company), useValue: mockRepository },
         { provide: getRepositoryToken(Merchant), useValue: mockRepository },
         { provide: getRepositoryToken(Collaborator), useValue: mockRepository },
       ],
     }).compile();
 
-    service = module.get<CollaboratorContractsService>(CollaboratorContractsService);
+    service = module.get<CollaboratorContractsService>(
+      CollaboratorContractsService,
+    );
   });
 
   it('should be defined', () => {

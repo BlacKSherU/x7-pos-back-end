@@ -1,12 +1,24 @@
 import { PartialType } from '@nestjs/swagger';
 import { CreateMarketingCouponDto } from './create-marketing-coupon.dto';
-import { IsOptional, IsString, IsEnum, IsNumber, MaxLength, Min, Max, IsDateString, MinLength } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsEnum,
+  IsNumber,
+  MaxLength,
+  Min,
+  Max,
+  IsDateString,
+  MinLength,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { MarketingCouponType } from '../constants/marketing-coupon-type.enum';
 import { MarketingCouponAppliesTo } from '../constants/marketing-coupon-applies-to.enum';
 import { Type } from 'class-transformer';
 
-export class UpdateMarketingCouponDto extends PartialType(CreateMarketingCouponDto) {
+export class UpdateMarketingCouponDto extends PartialType(
+  CreateMarketingCouponDto,
+) {
   @ApiPropertyOptional({
     example: 'SUMMER2024',
     description: 'Unique coupon code',
@@ -29,7 +41,7 @@ export class UpdateMarketingCouponDto extends PartialType(CreateMarketingCouponD
   type?: MarketingCouponType;
 
   @ApiPropertyOptional({
-    example: 10.50,
+    example: 10.5,
     description: 'Fixed amount discount',
   })
   @IsOptional()

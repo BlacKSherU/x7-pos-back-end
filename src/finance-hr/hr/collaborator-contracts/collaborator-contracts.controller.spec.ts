@@ -24,7 +24,9 @@ describe('CollaboratorContractsController', () => {
       ],
     }).compile();
 
-    controller = module.get<CollaboratorContractsController>(CollaboratorContractsController);
+    controller = module.get<CollaboratorContractsController>(
+      CollaboratorContractsController,
+    );
   });
 
   it('should be defined', () => {

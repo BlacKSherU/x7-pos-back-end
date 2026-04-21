@@ -8,7 +8,11 @@ import { Customer } from 'src/core/business-partners/customers/entities/customer
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([MarketingCampaignAudience, MarketingCampaign, Customer]),
+    TypeOrmModule.forFeature([
+      MarketingCampaignAudience,
+      MarketingCampaign,
+      Customer,
+    ]),
   ],
   controllers: [MarketingCampaingAudienceController],
   providers: [MarketingCampaingAudienceService],

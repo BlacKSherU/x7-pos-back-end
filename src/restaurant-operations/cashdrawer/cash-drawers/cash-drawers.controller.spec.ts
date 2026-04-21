@@ -1,6 +1,4 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/unbound-method */
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { CashDrawersController } from './cash-drawers.controller';
@@ -8,7 +6,10 @@ import { CashDrawersService } from './cash-drawers.service';
 import { CreateCashDrawerDto } from './dto/create-cash-drawer.dto';
 import { UpdateCashDrawerDto } from './dto/update-cash-drawer.dto';
 import { GetCashDrawersQueryDto } from './dto/get-cash-drawers-query.dto';
-import { OneCashDrawerResponseDto, CashDrawerResponseDto } from './dto/cash-drawer-response.dto';
+import {
+  OneCashDrawerResponseDto,
+  CashDrawerResponseDto,
+} from './dto/cash-drawer-response.dto';
 import { PaginatedCashDrawersResponseDto } from './dto/paginated-cash-drawers-response.dto';
 import { CashDrawerStatus } from './constants/cash-drawer-status.enum';
 import { ForbiddenException } from '@nestjs/common';
@@ -135,9 +136,9 @@ describe('CashDrawersController', () => {
       const createSpy = jest.spyOn(service, 'create');
       createSpy.mockRejectedValue(new Error(errorMessage));
 
-      await expect(controller.create(createDto, mockRequest as any)).rejects.toThrow(
-        errorMessage,
-      );
+      await expect(
+        controller.create(createDto, mockRequest as any),
+      ).rejects.toThrow(errorMessage);
       expect(createSpy).toHaveBeenCalledWith(createDto, mockUser.merchant.id);
     });
 
@@ -149,11 +150,15 @@ describe('CashDrawersController', () => {
         },
       };
       const createSpy = jest.spyOn(service, 'create');
-      createSpy.mockRejectedValue(new ForbiddenException('You must be associated with a merchant to create cash drawers'));
-
-      await expect(controller.create(createDto, requestWithoutMerchant as any)).rejects.toThrow(
-        ForbiddenException,
+      createSpy.mockRejectedValue(
+        new ForbiddenException(
+          'You must be associated with a merchant to create cash drawers',
+        ),
       );
+
+      await expect(
+        controller.create(createDto, requestWithoutMerchant as any),
+      ).rejects.toThrow(ForbiddenException);
       expect(createSpy).toHaveBeenCalledWith(createDto, undefined);
     });
   });
@@ -181,9 +186,9 @@ describe('CashDrawersController', () => {
       const findAllSpy = jest.spyOn(service, 'findAll');
       findAllSpy.mockRejectedValue(new Error(errorMessage));
 
-      await expect(controller.findAll(query, mockRequest as any)).rejects.toThrow(
-        errorMessage,
-      );
+      await expect(
+        controller.findAll(query, mockRequest as any),
+      ).rejects.toThrow(errorMessage);
       expect(findAllSpy).toHaveBeenCalledWith(query, mockUser.merchant.id);
     });
 
@@ -204,7 +209,10 @@ describe('CashDrawersController', () => {
 
       await controller.findAll(queryWithFilters, mockRequest as any);
 
-      expect(findAllSpy).toHaveBeenCalledWith(queryWithFilters, mockUser.merchant.id);
+      expect(findAllSpy).toHaveBeenCalledWith(
+        queryWithFilters,
+        mockUser.merchant.id,
+      );
     });
 
     it('should throw ForbiddenException if user has no merchant_id', async () => {
@@ -215,11 +223,15 @@ describe('CashDrawersController', () => {
         },
       };
       const findAllSpy = jest.spyOn(service, 'findAll');
-      findAllSpy.mockRejectedValue(new ForbiddenException('You must be associated with a merchant to access cash drawers'));
-
-      await expect(controller.findAll(query, requestWithoutMerchant as any)).rejects.toThrow(
-        ForbiddenException,
+      findAllSpy.mockRejectedValue(
+        new ForbiddenException(
+          'You must be associated with a merchant to access cash drawers',
+        ),
       );
+
+      await expect(
+        controller.findAll(query, requestWithoutMerchant as any),
+      ).rejects.toThrow(ForbiddenException);
       expect(findAllSpy).toHaveBeenCalledWith(query, undefined);
     });
   });
@@ -275,11 +287,15 @@ describe('CashDrawersController', () => {
         },
       };
       const findOneSpy = jest.spyOn(service, 'findOne');
-      findOneSpy.mockRejectedValue(new ForbiddenException('You must be associated with a merchant to access cash drawers'));
-
-      await expect(controller.findOne(1, requestWithoutMerchant as any)).rejects.toThrow(
-        ForbiddenException,
+      findOneSpy.mockRejectedValue(
+        new ForbiddenException(
+          'You must be associated with a merchant to access cash drawers',
+        ),
       );
+
+      await expect(
+        controller.findOne(1, requestWithoutMerchant as any),
+      ).rejects.toThrow(ForbiddenException);
       expect(findOneSpy).toHaveBeenCalledWith(1, undefined);
     });
   });
@@ -305,7 +321,11 @@ describe('CashDrawersController', () => {
 
       const result = await controller.update(1, updateDto, mockRequest as any);
 
-      expect(updateSpy).toHaveBeenCalledWith(1, updateDto, mockUser.merchant.id);
+      expect(updateSpy).toHaveBeenCalledWith(
+        1,
+        updateDto,
+        mockUser.merchant.id,
+      );
       expect(result).toEqual(updatedResponse);
       expect(result.statusCode).toBe(200);
       expect(result.message).toBe('Cash drawer updated successfully');
@@ -316,10 +336,14 @@ describe('CashDrawersController', () => {
       const updateSpy = jest.spyOn(service, 'update');
       updateSpy.mockRejectedValue(new Error(errorMessage));
 
-      await expect(controller.update(1, updateDto, mockRequest as any)).rejects.toThrow(
-        errorMessage,
+      await expect(
+        controller.update(1, updateDto, mockRequest as any),
+      ).rejects.toThrow(errorMessage);
+      expect(updateSpy).toHaveBeenCalledWith(
+        1,
+        updateDto,
+        mockUser.merchant.id,
       );
-      expect(updateSpy).toHaveBeenCalledWith(1, updateDto, mockUser.merchant.id);
     });
 
     it('should handle partial updates', async () => {
@@ -342,7 +366,11 @@ describe('CashDrawersController', () => {
 
       const result = await controller.update(1, partialDto, mockRequest as any);
 
-      expect(updateSpy).toHaveBeenCalledWith(1, partialDto, mockUser.merchant.id);
+      expect(updateSpy).toHaveBeenCalledWith(
+        1,
+        partialDto,
+        mockUser.merchant.id,
+      );
       expect(result.data.status).toBe(CashDrawerStatus.CLOSE);
     });
 
@@ -354,11 +382,15 @@ describe('CashDrawersController', () => {
         },
       };
       const updateSpy = jest.spyOn(service, 'update');
-      updateSpy.mockRejectedValue(new ForbiddenException('You must be associated with a merchant to update cash drawers'));
-
-      await expect(controller.update(1, updateDto, requestWithoutMerchant as any)).rejects.toThrow(
-        ForbiddenException,
+      updateSpy.mockRejectedValue(
+        new ForbiddenException(
+          'You must be associated with a merchant to update cash drawers',
+        ),
       );
+
+      await expect(
+        controller.update(1, updateDto, requestWithoutMerchant as any),
+      ).rejects.toThrow(ForbiddenException);
       expect(updateSpy).toHaveBeenCalledWith(1, updateDto, undefined);
     });
   });
@@ -414,11 +446,15 @@ describe('CashDrawersController', () => {
         },
       };
       const removeSpy = jest.spyOn(service, 'remove');
-      removeSpy.mockRejectedValue(new ForbiddenException('You must be associated with a merchant to delete cash drawers'));
-
-      await expect(controller.remove(1, requestWithoutMerchant as any)).rejects.toThrow(
-        ForbiddenException,
+      removeSpy.mockRejectedValue(
+        new ForbiddenException(
+          'You must be associated with a merchant to delete cash drawers',
+        ),
       );
+
+      await expect(
+        controller.remove(1, requestWithoutMerchant as any),
+      ).rejects.toThrow(ForbiddenException);
       expect(removeSpy).toHaveBeenCalledWith(1, undefined);
     });
   });

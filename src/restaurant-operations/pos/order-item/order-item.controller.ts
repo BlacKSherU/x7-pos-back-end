@@ -11,6 +11,7 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { Request as ExpressRequest } from 'express';
 import { OrderItemService } from './order-item.service';
 import { CreateOrderItemDto } from './dto/create-order-item.dto';
 import { UpdateOrderItemDto } from './dto/update-order-item.dto';
@@ -41,6 +42,8 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { ErrorResponse } from 'src/common/dtos/error-response.dto';
 import { OrderItemStatus } from './constants/order-item-status.enum';
+
+type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
 
 @ApiTags('Order Items')
 @ApiBearerAuth()
@@ -115,9 +118,9 @@ export class OrderItemController {
   })
   async create(
     @Body() dto: CreateOrderItemDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOrderItemResponseDto> {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.orderItemService.create(dto, authenticatedUserMerchantId);
   }
 
@@ -224,9 +227,9 @@ export class OrderItemController {
   })
   async findAll(
     @Query() query: GetOrderItemQueryDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<PaginatedOrderItemResponseDto> {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.orderItemService.findAll(query, authenticatedUserMerchantId);
   }
 
@@ -265,9 +268,9 @@ export class OrderItemController {
   })
   async findOne(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOrderItemResponseDto> {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.orderItemService.findOne(id, authenticatedUserMerchantId);
   }
 
@@ -335,9 +338,9 @@ export class OrderItemController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateOrderItemDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOrderItemResponseDto> {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.orderItemService.update(id, dto, authenticatedUserMerchantId);
   }
 
@@ -384,9 +387,9 @@ export class OrderItemController {
   })
   async remove(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: AuthenticatedUser,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOrderItemResponseDto> {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.orderItemService.remove(id, authenticatedUserMerchantId);
   }
 }

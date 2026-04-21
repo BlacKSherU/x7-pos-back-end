@@ -12,4 +12,4 @@ import { LoyaltyTier } from '../loyalty-tier/entities/loyalty-tier.entity';
   providers: [LoyaltyProgramsService],
   exports: [LoyaltyProgramsService],
 })
-export class LoyaltyProgramsModule { }
+export class LoyaltyProgramsModule {}

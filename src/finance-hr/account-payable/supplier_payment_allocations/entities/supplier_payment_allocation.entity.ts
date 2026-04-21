@@ -37,7 +37,12 @@ export class SupplierPaymentAllocation {
   document_type: string;
 
   @ApiProperty({ example: 350.0 })
-  @Column({ type: 'decimal', precision: 15, scale: 2, name: 'allocated_amount' })
+  @Column({
+    type: 'decimal',
+    precision: 15,
+    scale: 2,
+    name: 'allocated_amount',
+  })
   allocated_amount: number;
 
   @CreateDateColumn({ type: 'timestamp', name: 'created_at' })

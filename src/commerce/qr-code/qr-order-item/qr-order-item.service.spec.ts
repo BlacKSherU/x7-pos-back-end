@@ -394,7 +394,8 @@ describe('QROrderItemService', () => {
         qrOrder: mockUpdateQROrderItemDto.qrOrder as unknown as QROrder,
         product: mockUpdateQROrderItemDto.product as unknown as Product,
         variant: mockUpdateQROrderItemDto.variant as unknown as Variant,
-        total_price: mockUpdateQROrderItemDto.quantity * mockUpdateQROrderItemDto.price, // 3 * 15 = 45
+        total_price:
+          mockUpdateQROrderItemDto.quantity * mockUpdateQROrderItemDto.price, // 3 * 15 = 45
       };
 
       const findOneSpy = jest.spyOn(qrOrderItemRepository, 'findOne');

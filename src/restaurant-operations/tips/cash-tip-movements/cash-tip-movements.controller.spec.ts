@@ -46,12 +46,12 @@ describe('CashTipMovementsController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [CashTipMovementsController],
-      providers: [
-        { provide: CashTipMovementsService, useValue: mockService },
-      ],
+      providers: [{ provide: CashTipMovementsService, useValue: mockService }],
     }).compile();
 
-    controller = module.get<CashTipMovementsController>(CashTipMovementsController);
+    controller = module.get<CashTipMovementsController>(
+      CashTipMovementsController,
+    );
     service = module.get<CashTipMovementsService>(CashTipMovementsService);
   });
 

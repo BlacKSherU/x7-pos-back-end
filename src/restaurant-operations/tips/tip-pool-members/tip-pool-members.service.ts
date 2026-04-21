@@ -40,25 +40,36 @@ export class TipPoolMembersService {
     authenticatedUserMerchantId: number | null | undefined,
   ): Promise<OneTipPoolMemberResponseDto> {
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to create tip pool members');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to create tip pool members',
+      );
     }
 
     const tipPool = await this.tipPoolRepository.findOne({
       where: { id: dto.tipPoolId, merchant_id: authenticatedUserMerchantId },
     });
     if (!tipPool || tipPool.record_status === TipPoolRecordStatus.DELETED) {
-      throw new NotFoundException('Tip pool not found or you do not have access to it');
+      throw new NotFoundException(
+        'Tip pool not found or you do not have access to it',
+      );
     }
 
     const collaborator = await this.collaboratorRepository.findOne({
-      where: { id: dto.collaboratorId, merchant_id: authenticatedUserMerchantId },
+      where: {
+        id: dto.collaboratorId,
+        merchant_id: authenticatedUserMerchantId,
+      },
     });
     if (!collaborator) {
-      throw new NotFoundException('Collaborator not found or you do not have access to it');
+      throw new NotFoundException(
+        'Collaborator not found or you do not have access to it',
+      );
     }
 
     if (dto.weight < 0) {
-      throw new BadRequestException('Weight must be greater than or equal to 0');
+      throw new BadRequestException(
+        'Weight must be greater than or equal to 0',
+      );
     }
 
     const existingMember = await this.memberRepository.findOne({
@@ -90,7 +101,8 @@ export class TipPoolMembersService {
       where: { id: saved.id },
       relations: ['tip_pool', 'collaborator'],
     });
-    if (!complete) throw new NotFoundException('Tip pool member not found after creation');
+    if (!complete)
+      throw new NotFoundException('Tip pool member not found after creation');
 
     return {
       statusCode: 201,
@@ -104,7 +116,9 @@ export class TipPoolMembersService {
     authenticatedUserMerchantId: number | null | undefined,
   ): Promise<PaginatedTipPoolMemberResponseDto> {
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to access tip pool members');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to access tip pool members',
+      );
     }
     if (query.page !== undefined && query.page < 1) {
       throw new BadRequestException('Page number must be greater than 0');
@@ -121,15 +135,25 @@ export class TipPoolMembersService {
       .createQueryBuilder('member')
       .leftJoinAndSelect('member.tip_pool', 'tip_pool')
       .leftJoinAndSelect('member.collaborator', 'collaborator')
-      .where('tip_pool.merchant_id = :merchantId', { merchantId: authenticatedUserMerchantId })
-      .andWhere('tip_pool.record_status != :poolDeleted', { poolDeleted: TipPoolRecordStatus.DELETED })
-      .andWhere('member.record_status != :deleted', { deleted: TipPoolMemberRecordStatus.DELETED });
+      .where('tip_pool.merchant_id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
+      .andWhere('tip_pool.record_status != :poolDeleted', {
+        poolDeleted: TipPoolRecordStatus.DELETED,
+      })
+      .andWhere('member.record_status != :deleted', {
+        deleted: TipPoolMemberRecordStatus.DELETED,
+      });
 
     if (query.tipPoolId != null) {
-      qb.andWhere('member.tip_pool_id = :tipPoolId', { tipPoolId: query.tipPoolId });
+      qb.andWhere('member.tip_pool_id = :tipPoolId', {
+        tipPoolId: query.tipPoolId,
+      });
     }
     if (query.collaboratorId != null) {
-      qb.andWhere('member.collaborator_id = :collaboratorId', { collaboratorId: query.collaboratorId });
+      qb.andWhere('member.collaborator_id = :collaboratorId', {
+        collaboratorId: query.collaboratorId,
+      });
     }
     if (query.role != null) {
       qb.andWhere('member.role = :role', { role: query.role });
@@ -145,7 +169,9 @@ export class TipPoolMembersService {
             : query.sortBy === TipPoolMemberSortBy.UPDATED_AT
               ? 'member.updated_at'
               : 'member.id';
-    qb.orderBy(sortField, query.sortOrder || 'DESC').skip(skip).take(limit);
+    qb.orderBy(sortField, query.sortOrder || 'DESC')
+      .skip(skip)
+      .take(limit);
 
     const [members, total] = await qb.getManyAndCount();
     const totalPages = Math.ceil(total / limit);
@@ -169,9 +195,14 @@ export class TipPoolMembersService {
     id: number,
     authenticatedUserMerchantId: number | null | undefined,
   ): Promise<OneTipPoolMemberResponseDto> {
-    if (!id || id <= 0) throw new BadRequestException('Tip pool member ID must be a valid positive number');
+    if (!id || id <= 0)
+      throw new BadRequestException(
+        'Tip pool member ID must be a valid positive number',
+      );
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to access tip pool members');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to access tip pool members',
+      );
     }
 
     const member = await this.memberRepository
@@ -179,8 +210,12 @@ export class TipPoolMembersService {
       .leftJoinAndSelect('member.tip_pool', 'tip_pool')
       .leftJoinAndSelect('member.collaborator', 'collaborator')
       .where('member.id = :id', { id })
-      .andWhere('tip_pool.merchant_id = :merchantId', { merchantId: authenticatedUserMerchantId })
-      .andWhere('member.record_status != :deleted', { deleted: TipPoolMemberRecordStatus.DELETED })
+      .andWhere('tip_pool.merchant_id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
+      .andWhere('member.record_status != :deleted', {
+        deleted: TipPoolMemberRecordStatus.DELETED,
+      })
       .getOne();
 
     if (!member) throw new NotFoundException('Tip pool member not found');
@@ -197,9 +232,14 @@ export class TipPoolMembersService {
     dto: UpdateTipPoolMemberDto,
     authenticatedUserMerchantId: number | null | undefined,
   ): Promise<OneTipPoolMemberResponseDto> {
-    if (!id || id <= 0) throw new BadRequestException('Tip pool member ID must be a valid positive number');
+    if (!id || id <= 0)
+      throw new BadRequestException(
+        'Tip pool member ID must be a valid positive number',
+      );
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to update tip pool members');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to update tip pool members',
+      );
     }
 
     const existing = await this.memberRepository
@@ -207,26 +247,41 @@ export class TipPoolMembersService {
       .leftJoinAndSelect('member.tip_pool', 'tip_pool')
       .leftJoinAndSelect('member.collaborator', 'collaborator')
       .where('member.id = :id', { id })
-      .andWhere('tip_pool.merchant_id = :merchantId', { merchantId: authenticatedUserMerchantId })
-      .andWhere('member.record_status != :deleted', { deleted: TipPoolMemberRecordStatus.DELETED })
+      .andWhere('tip_pool.merchant_id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
+      .andWhere('member.record_status != :deleted', {
+        deleted: TipPoolMemberRecordStatus.DELETED,
+      })
       .getOne();
 
     if (!existing) throw new NotFoundException('Tip pool member not found');
 
     if (dto.weight !== undefined && dto.weight < 0) {
-      throw new BadRequestException('Weight must be greater than or equal to 0');
+      throw new BadRequestException(
+        'Weight must be greater than or equal to 0',
+      );
     }
     if (dto.tipPoolId !== undefined) {
       const pool = await this.tipPoolRepository.findOne({
         where: { id: dto.tipPoolId, merchant_id: authenticatedUserMerchantId },
       });
-      if (!pool) throw new NotFoundException('Tip pool not found or you do not have access to it');
+      if (!pool)
+        throw new NotFoundException(
+          'Tip pool not found or you do not have access to it',
+        );
     }
     if (dto.collaboratorId !== undefined) {
       const collab = await this.collaboratorRepository.findOne({
-        where: { id: dto.collaboratorId, merchant_id: authenticatedUserMerchantId },
+        where: {
+          id: dto.collaboratorId,
+          merchant_id: authenticatedUserMerchantId,
+        },
       });
-      if (!collab) throw new NotFoundException('Collaborator not found or you do not have access to it');
+      if (!collab)
+        throw new NotFoundException(
+          'Collaborator not found or you do not have access to it',
+        );
     }
 
     const poolId = dto.tipPoolId ?? existing.tip_pool_id;
@@ -247,7 +302,8 @@ export class TipPoolMembersService {
 
     const updateData: Record<string, unknown> = {};
     if (dto.tipPoolId !== undefined) updateData.tip_pool_id = dto.tipPoolId;
-    if (dto.collaboratorId !== undefined) updateData.collaborator_id = dto.collaboratorId;
+    if (dto.collaboratorId !== undefined)
+      updateData.collaborator_id = dto.collaboratorId;
     if (dto.role !== undefined) updateData.role = dto.role;
     if (dto.weight !== undefined) updateData.weight = dto.weight;
 
@@ -256,7 +312,8 @@ export class TipPoolMembersService {
       where: { id },
       relations: ['tip_pool', 'collaborator'],
     });
-    if (!updated) throw new NotFoundException('Tip pool member not found after update');
+    if (!updated)
+      throw new NotFoundException('Tip pool member not found after update');
 
     return {
       statusCode: 200,
@@ -269,9 +326,14 @@ export class TipPoolMembersService {
     id: number,
     authenticatedUserMerchantId: number | null | undefined,
   ): Promise<OneTipPoolMemberResponseDto> {
-    if (!id || id <= 0) throw new BadRequestException('Tip pool member ID must be a valid positive number');
+    if (!id || id <= 0)
+      throw new BadRequestException(
+        'Tip pool member ID must be a valid positive number',
+      );
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to delete tip pool members');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to delete tip pool members',
+      );
     }
 
     const existing = await this.memberRepository
@@ -279,8 +341,12 @@ export class TipPoolMembersService {
       .leftJoinAndSelect('member.tip_pool', 'tip_pool')
       .leftJoinAndSelect('member.collaborator', 'collaborator')
       .where('member.id = :id', { id })
-      .andWhere('tip_pool.merchant_id = :merchantId', { merchantId: authenticatedUserMerchantId })
-      .andWhere('member.record_status != :deleted', { deleted: TipPoolMemberRecordStatus.DELETED })
+      .andWhere('tip_pool.merchant_id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
+      .andWhere('member.record_status != :deleted', {
+        deleted: TipPoolMemberRecordStatus.DELETED,
+      })
       .getOne();
 
     if (!existing) throw new NotFoundException('Tip pool member not found');
@@ -304,7 +370,10 @@ export class TipPoolMembersService {
       tipPoolId: member.tip_pool_id,
       tipPool: { id: member.tip_pool.id, name: member.tip_pool.name },
       collaboratorId: member.collaborator_id,
-      collaborator: { id: member.collaborator.id, name: member.collaborator.name },
+      collaborator: {
+        id: member.collaborator.id,
+        name: member.collaborator.name,
+      },
       role: member.role,
       weight: Number(member.weight),
       recordStatus: member.record_status,

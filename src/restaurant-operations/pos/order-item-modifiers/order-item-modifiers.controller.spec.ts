@@ -16,10 +16,14 @@ describe('OrderItemModifiersController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [OrderItemModifiersController],
-      providers: [{ provide: OrderItemModifiersService, useValue: mockService }],
+      providers: [
+        { provide: OrderItemModifiersService, useValue: mockService },
+      ],
     }).compile();
 
-    controller = module.get<OrderItemModifiersController>(OrderItemModifiersController);
+    controller = module.get<OrderItemModifiersController>(
+      OrderItemModifiersController,
+    );
   });
 
   it('should be defined', () => {

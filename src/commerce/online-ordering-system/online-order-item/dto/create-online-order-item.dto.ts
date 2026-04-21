@@ -1,5 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNumber, IsNotEmpty, IsOptional, Min, IsObject, MaxLength } from 'class-validator';
+import {
+  IsNumber,
+  IsNotEmpty,
+  IsOptional,
+  Min,
+  IsObject,
+  MaxLength,
+} from 'class-validator';
 
 export class CreateOnlineOrderItemDto {
   @ApiProperty({ example: 1, description: 'Identifier of the Online Order' })
@@ -14,7 +21,8 @@ export class CreateOnlineOrderItemDto {
 
   @ApiPropertyOptional({
     example: 1,
-    description: 'Identifier of the Variant (optional - only needed if the product has variants)',
+    description:
+      'Identifier of the Variant (optional - only needed if the product has variants)',
     nullable: true,
     required: false,
   })
@@ -28,12 +36,6 @@ export class CreateOnlineOrderItemDto {
   @Min(1, { message: 'Quantity must be greater than 0' })
   quantity: number;
 
-  @ApiProperty({ example: 15.99, description: 'Unit price of the item' })
-  @IsNumber({}, { message: 'Unit price must be a number' })
-  @IsNotEmpty({ message: 'Unit price is required' })
-  @Min(0, { message: 'Unit price must be greater than or equal to 0' })
-  unitPrice: number;
-
   @ApiPropertyOptional({
     example: { extraSauce: true, size: 'large' },
     description: 'Modifiers applied to the item in JSON format',
@@ -42,7 +44,7 @@ export class CreateOnlineOrderItemDto {
   })
   @IsOptional()
   @IsObject({ message: 'Modifiers must be a valid JSON object' })
-  modifiers?: Record<string, any> | null;
+  modifiers?: Record<string, unknown> | null;
 
   @ApiPropertyOptional({
     example: 'Extra sauce on the side',

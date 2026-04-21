@@ -12,4 +12,4 @@ import { TypeOrmModule } from '@nestjs/typeorm';
   providers: [LedgerAccountsService],
   exports: [LedgerAccountsService],
 })
-export class LedgerAccountsModule { }
+export class LedgerAccountsModule {}

@@ -1,4 +1,15 @@
-import { IsNotEmpty, IsString, IsEnum, IsNumber, IsOptional, MaxLength, Min, Max, IsDateString, MinLength } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  MaxLength,
+  Min,
+  Max,
+  IsDateString,
+  MinLength,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { MarketingCouponType } from '../constants/marketing-coupon-type.enum';
 import { MarketingCouponAppliesTo } from '../constants/marketing-coupon-applies-to.enum';
@@ -22,12 +33,13 @@ export class CreateMarketingCouponDto {
   })
   @IsNotEmpty({ message: 'Type is required' })
   @IsEnum(MarketingCouponType, {
-    message: 'Type must be a valid coupon type (percentage, fixed, bogo, free_item, free_delivery)',
+    message:
+      'Type must be a valid coupon type (percentage, fixed, bogo, free_item, free_delivery)',
   })
   type: MarketingCouponType;
 
   @ApiPropertyOptional({
-    example: 10.50,
+    example: 10.5,
     description: 'Fixed amount discount (required for fixed type)',
   })
   @IsOptional()
@@ -84,7 +96,7 @@ export class CreateMarketingCouponDto {
   validUntil?: string;
 
   @ApiPropertyOptional({
-    example: 50.00,
+    example: 50.0,
     description: 'Minimum order amount required to use the coupon',
   })
   @IsOptional()

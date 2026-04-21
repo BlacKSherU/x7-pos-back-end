@@ -6,7 +6,12 @@ import { UpdateMarketingSegmentDto } from './dto/update-marketing-segment.dto';
 import { GetMarketingSegmentQueryDto } from './dto/get-marketing-segment-query.dto';
 import { MarketingSegmentType } from './constants/marketing-segment-type.enum';
 import { MarketingSegmentStatus } from './constants/marketing-segment-status.enum';
-import { NotFoundException, ForbiddenException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 
 describe('MarketingSegmentsController', () => {
   let controller: MarketingSegmentsController;
@@ -54,7 +59,9 @@ describe('MarketingSegmentsController', () => {
       ],
     }).compile();
 
-    controller = module.get<MarketingSegmentsController>(MarketingSegmentsController);
+    controller = module.get<MarketingSegmentsController>(
+      MarketingSegmentsController,
+    );
     service = module.get<MarketingSegmentsService>(MarketingSegmentsService);
   });
 
@@ -89,9 +96,13 @@ describe('MarketingSegmentsController', () => {
     });
 
     it('should handle service errors', async () => {
-      jest.spyOn(service, 'create').mockRejectedValue(new NotFoundException('Merchant not found'));
+      jest
+        .spyOn(service, 'create')
+        .mockRejectedValue(new NotFoundException('Merchant not found'));
 
-      await expect(controller.create(createDto, mockRequest as any)).rejects.toThrow(NotFoundException);
+      await expect(
+        controller.create(createDto, mockRequest as any),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -148,15 +159,21 @@ describe('MarketingSegmentsController', () => {
     });
 
     it('should handle service errors', async () => {
-      jest.spyOn(service, 'findAll').mockRejectedValue(new ForbiddenException('Forbidden'));
+      jest
+        .spyOn(service, 'findAll')
+        .mockRejectedValue(new ForbiddenException('Forbidden'));
 
-      await expect(controller.findAll(query, mockRequest as any)).rejects.toThrow(ForbiddenException);
+      await expect(
+        controller.findAll(query, mockRequest as any),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 
   describe('findOne', () => {
     it('should return a single segment', async () => {
-      jest.spyOn(service, 'findOne').mockResolvedValue(mockSegmentResponse as any);
+      jest
+        .spyOn(service, 'findOne')
+        .mockResolvedValue(mockSegmentResponse as any);
 
       const result = await controller.findOne(1, mockRequest as any);
 
@@ -166,9 +183,13 @@ describe('MarketingSegmentsController', () => {
     });
 
     it('should handle service errors', async () => {
-      jest.spyOn(service, 'findOne').mockRejectedValue(new NotFoundException('Segment not found'));
+      jest
+        .spyOn(service, 'findOne')
+        .mockRejectedValue(new NotFoundException('Segment not found'));
 
-      await expect(controller.findOne(999, mockRequest as any)).rejects.toThrow(NotFoundException);
+      await expect(controller.findOne(999, mockRequest as any)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -211,16 +232,24 @@ describe('MarketingSegmentsController', () => {
 
       jest.spyOn(service, 'update').mockResolvedValue(expectedResult as any);
 
-      const result = await controller.update(1, partialUpdate, mockRequest as any);
+      const result = await controller.update(
+        1,
+        partialUpdate,
+        mockRequest as any,
+      );
 
       expect(result).toEqual(expectedResult);
       expect(service.update).toHaveBeenCalledWith(1, partialUpdate, 1);
     });
 
     it('should handle service errors', async () => {
-      jest.spyOn(service, 'update').mockRejectedValue(new NotFoundException('Segment not found'));
+      jest
+        .spyOn(service, 'update')
+        .mockRejectedValue(new NotFoundException('Segment not found'));
 
-      await expect(controller.update(999, updateDto, mockRequest as any)).rejects.toThrow(NotFoundException);
+      await expect(
+        controller.update(999, updateDto, mockRequest as any),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -245,15 +274,23 @@ describe('MarketingSegmentsController', () => {
     });
 
     it('should handle service errors', async () => {
-      jest.spyOn(service, 'remove').mockRejectedValue(new NotFoundException('Segment not found'));
+      jest
+        .spyOn(service, 'remove')
+        .mockRejectedValue(new NotFoundException('Segment not found'));
 
-      await expect(controller.remove(999, mockRequest as any)).rejects.toThrow(NotFoundException);
+      await expect(controller.remove(999, mockRequest as any)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should handle conflict when already deleted', async () => {
-      jest.spyOn(service, 'remove').mockRejectedValue(new ConflictException('Already deleted'));
+      jest
+        .spyOn(service, 'remove')
+        .mockRejectedValue(new ConflictException('Already deleted'));
 
-      await expect(controller.remove(1, mockRequest as any)).rejects.toThrow(ConflictException);
+      await expect(controller.remove(1, mockRequest as any)).rejects.toThrow(
+        ConflictException,
+      );
     });
   });
 });
