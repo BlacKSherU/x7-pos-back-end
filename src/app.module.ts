@@ -123,6 +123,17 @@ import { Variant } from './inventory/products-inventory/variants/entities/varian
 import { FinanceHrModule } from './finance-hr/finance-hr.module';
 import { FloorZone } from './restaurant-operations/dining-system/floor-zone/entity/floor-zone.entity';
 import { FloorPlan } from './restaurant-operations/dining-system/floor-plan/entity/floor-plan.entity';
+import { DeliverySystemModule } from './commerce/delivery-system/delivery-system.module';
+import { DeliveryZoneModule } from './commerce/delivery-system/delivery-zone/delivery-zone.module';
+import { DeliveryFeeModule } from './commerce/delivery-system/delivery-fee/delivery-fee.module';
+import { DeliveryDriverModule } from './commerce/delivery-system/delivery-driver/delivery-driver.module';
+import { DeliveryTrackingModule } from './commerce/delivery-system/delivery-tracking/delivery-tracking.module';
+import { DeliveryAssignmentModule } from './commerce/delivery-system/delivery-assignment/delivery-assignment.module';
+import { DeliveryZone } from './commerce/delivery-system/delivery-zone/entity/delivery-zone.entity';
+import { DeliveryFee } from './commerce/delivery-system/delivery-fee/entity/delivery-fee.entity';
+import { DeliveryDriver } from './commerce/delivery-system/delivery-driver/entity/delivery-driver.entity';
+import { DeliveryAssignment } from './commerce/delivery-system/delivery-assignment/entity/delivery-assignment.entity';
+import { DeliveryTracking } from './commerce/delivery-system/delivery-tracking/entity/delivery-tracking.entity';
 
 @Module({
   imports: [
@@ -239,6 +250,11 @@ import { FloorPlan } from './restaurant-operations/dining-system/floor-plan/enti
           MerchantTaxRule,
           FloorZone,
           FloorPlan,
+          DeliveryZone,
+          DeliveryFee,
+          DeliveryDriver,
+          DeliveryAssignment,
+          DeliveryTracking,
         ],
         synchronize: true,
       }),
@@ -264,6 +280,12 @@ import { FloorPlan } from './restaurant-operations/dining-system/floor-plan/enti
     CommerceModule,
     GrowthModule,
     FinanceHrModule,
+    DeliverySystemModule,
+    DeliveryZoneModule,
+    DeliveryFeeModule,
+    DeliveryDriverModule,
+    DeliveryTrackingModule,
+    DeliveryAssignmentModule,
   ],
 })
 export class AppModule { }

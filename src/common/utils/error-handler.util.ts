@@ -225,6 +225,36 @@ export class ErrorHandler {
     throw new NotFoundException(message);
   }
 
+  static deliveryZoneNotFound(
+    message: string = ErrorMessage.DELIVERY_ZONE_NOT_FOUND,
+  ): never {
+    throw new NotFoundException(message);
+  }
+
+  static deliveryFeeNotFound(
+    message: string = ErrorMessage.DELIVERY_FEE_NOT_FOUND,
+  ): never {
+    throw new NotFoundException(message);
+  }
+
+  static deliveryDriverNotFound(
+    message: string = ErrorMessage.DELIVERY_DRIVER_NOT_FOUND,
+  ): never {
+    throw new NotFoundException(message);
+  }
+
+  static deliveryAssignmentNotFound(
+    message: string = ErrorMessage.DELIVERY_ASSIGNMENT_NOT_FOUND,
+  ): never {
+    throw new NotFoundException(message);
+  }
+
+  static deliveryTrackingNotFound(
+    message: string = ErrorMessage.DELIVERY_TRACKING_NOT_FOUND,
+  ): never {
+    throw new NotFoundException(message);
+  }
+
   static userNotFound(message: string = ErrorMessage.USER_NOT_FOUND): never {
     throw new NotFoundException(message);
   }

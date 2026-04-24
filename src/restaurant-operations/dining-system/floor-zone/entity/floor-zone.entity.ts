@@ -70,7 +70,7 @@ export class FloorZone {
 
   @ApiProperty({
     example: 'active',
-    description: 'Status of the configuration',
+    description: 'Status of the floor zone',
   })
   @Column({ type: 'varchar', length: 50 })
   status: string;
