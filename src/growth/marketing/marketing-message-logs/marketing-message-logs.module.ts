@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from 'src/auth/auth.module';
+
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MarketingMessageLogsService } from './marketing-message-logs.service';
 import { MarketingMessageLogsController } from './marketing-message-logs.controller';
@@ -8,7 +10,7 @@ import { MarketingAutomation } from '../marketing-automations/entities/marketing
 import { Customer } from 'src/core/business-partners/customers/entities/customer.entity';
 
 @Module({
-  imports: [
+  imports: [AuthModule,
     TypeOrmModule.forFeature([
       MarketingMessageLog,
       MarketingCampaign,

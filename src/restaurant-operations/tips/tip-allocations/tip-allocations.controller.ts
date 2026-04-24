@@ -11,6 +11,10 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { TipAllocationsService } from './tip-allocations.service';
 import { CreateTipAllocationDto } from './dto/create-tip-allocation.dto';
 import { UpdateTipAllocationDto } from './dto/update-tip-allocation.dto';
@@ -47,7 +51,8 @@ import { TipAllocationRole } from './constants/tip-allocation-role.enum';
 @ApiTags('Tip Allocations')
 @ApiBearerAuth()
 @Controller('tip-allocations')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.TIPS_ALLOCATIONS)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class TipAllocationsController {
   constructor(private readonly tipAllocationsService: TipAllocationsService) {}
 

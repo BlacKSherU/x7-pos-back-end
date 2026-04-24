@@ -11,6 +11,10 @@ import {
   Query,
   Request,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import {
   ApiTags,
   ApiOperation,
@@ -42,8 +46,9 @@ import { PaginatedTableAssignmentsResponseDto } from './dto/paginated-table-assi
 
 @ApiTags('Table Assignments')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 @Controller('table-assignments')
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.TABLE_ASSIGNMENTS)
 export class TableAssignmentsController {
   constructor(
     private readonly tableAssignmentsService: TableAssignmentsService,

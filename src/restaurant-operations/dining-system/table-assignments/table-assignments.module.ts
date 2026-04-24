@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from 'src/auth/auth.module';
+
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TableAssignmentsService } from './table-assignments.service';
 import { TableAssignmentsController } from './table-assignments.controller';
@@ -8,7 +10,7 @@ import { Table } from '../tables/entities/table.entity';
 import { Collaborator } from 'src/finance-hr/hr/collaborators/entities/collaborator.entity';
 
 @Module({
-  imports: [
+  imports: [AuthModule,
     TypeOrmModule.forFeature([TableAssignment, Shift, Table, Collaborator]),
   ],
   controllers: [TableAssignmentsController],

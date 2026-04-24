@@ -10,6 +10,10 @@ import {
   Query,
   ParseIntPipe,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { LoyaltyCouponsService } from './loyalty-coupons.service';
 import { CreateLoyaltyCouponDto } from './dto/create-loyalty-coupon.dto';
 import { UpdateLoyaltyCouponDto } from './dto/update-loyalty-coupon.dto';
@@ -43,7 +47,8 @@ import { ErrorResponse } from '../../../common/dtos/error-response.dto';
 @ApiTags('Loyalty Coupons')
 @ApiBearerAuth()
 @Controller('loyalty-coupons')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.LOYALTY_COUPONS)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class LoyaltyCouponsController {
   constructor(private readonly loyaltyCouponsService: LoyaltyCouponsService) {}
 

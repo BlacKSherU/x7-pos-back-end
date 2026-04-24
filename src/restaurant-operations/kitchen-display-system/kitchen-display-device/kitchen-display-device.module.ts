@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from 'src/auth/auth.module';
+
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { KitchenDisplayDeviceService } from './kitchen-display-device.service';
 import { KitchenDisplayDeviceController } from './kitchen-display-device.controller';
@@ -7,7 +9,7 @@ import { Merchant } from '../../../platform-saas/merchants/entities/merchant.ent
 import { KitchenStation } from '../kitchen-station/entities/kitchen-station.entity';
 
 @Module({
-  imports: [
+  imports: [AuthModule,
     TypeOrmModule.forFeature([KitchenDisplayDevice, Merchant, KitchenStation]),
   ],
   controllers: [KitchenDisplayDeviceController],

@@ -1,5 +1,7 @@
 //src/qr-code/qr-order/qr-order.module.ts
 import { Module } from '@nestjs/common';
+import { AuthModule } from 'src/auth/auth.module';
+
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { QROrder } from './entity/qr-order.entity';
 import { Merchant } from 'src/platform-saas/merchants/entities/merchant.entity';
@@ -11,7 +13,7 @@ import { QROrderController } from './qr-order.controller';
 import { QROrderService } from './qr-order.service';
 
 @Module({
-  imports: [
+  imports: [AuthModule,
     TypeOrmModule.forFeature([
       QROrder,
       Merchant,

@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from 'src/auth/auth.module';
+
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CollaboratorContract } from './entities/collaborator-contract.entity';
 import { CollaboratorContractsService } from './collaborator-contracts.service';
@@ -8,7 +10,7 @@ import { Merchant } from 'src/platform-saas/merchants/entities/merchant.entity';
 import { Collaborator } from '../collaborators/entities/collaborator.entity';
 
 @Module({
-  imports: [
+  imports: [AuthModule,
     TypeOrmModule.forFeature([
       CollaboratorContract,
       Company,

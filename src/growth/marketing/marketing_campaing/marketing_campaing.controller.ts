@@ -11,6 +11,10 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { MarketingCampaignService } from './marketing_campaing.service';
 import { CreateMarketingCampaignDto } from './dto/create-marketing_campaing.dto';
 import { UpdateMarketingCampaignDto } from './dto/update-marketing_campaing.dto';
@@ -46,7 +50,8 @@ import { MarketingCampaignChannel } from './constants/marketing-campaign-channel
 @ApiTags('Marketing Campaigns')
 @ApiBearerAuth()
 @Controller('marketing-campaigns')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.MARKETING_CAMPAIGN)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class MarketingCampaignController {
   constructor(
     private readonly marketingCampaignService: MarketingCampaignService,

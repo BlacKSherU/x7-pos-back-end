@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from 'src/auth/auth.module';
+
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { KitchenEventLogService } from './kitchen-event-log.service';
 import { KitchenEventLogController } from './kitchen-event-log.controller';
@@ -9,7 +11,7 @@ import { KitchenStation } from '../kitchen-station/entities/kitchen-station.enti
 import { User } from '../../../platform-saas/users/entities/user.entity';
 
 @Module({
-  imports: [
+  imports: [AuthModule,
     TypeOrmModule.forFeature([
       KitchenEventLog,
       KitchenOrder,

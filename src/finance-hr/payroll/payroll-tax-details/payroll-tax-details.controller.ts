@@ -10,6 +10,10 @@ import {
   UseGuards,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { PayrollTaxDetailsService } from './payroll-tax-details.service';
 import { CreatePayrollTaxDetailDto } from './dto/create-payroll-tax-detail.dto';
 import { UpdatePayrollTaxDetailDto } from './dto/update-payroll-tax-detail.dto';
@@ -42,7 +46,8 @@ import { PayrollTaxDetailSortBy } from './dto/get-payroll-tax-details-query.dto'
 @ApiTags('Payroll tax details')
 @ApiBearerAuth()
 @Controller('payroll-tax-details')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.PAYROLL_TAX_DETAIL)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 @ApiExtraModels(
   OnePayrollTaxDetailResponseDto,
   PaginatedPayrollTaxDetailsResponseDto,

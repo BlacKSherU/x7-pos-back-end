@@ -72,7 +72,6 @@ describe('OrderItemController', () => {
       orderId: 1,
       productId: 1,
       quantity: 2,
-      price: 125.5,
       discount: 10.0,
     };
 

@@ -13,6 +13,10 @@ import {
   Query,
   Request,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { Request as ExpressRequest } from 'express';
 import { OrderPaymentsService } from './order-payments.service';
 import { CreateOrderPaymentDto } from './dto/create-order-payment.dto';
@@ -51,7 +55,8 @@ type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
 @ApiTags('Order payments')
 @ApiBearerAuth()
 @Controller('order-payments')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.ORDER_PAYMENTS)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class OrderPaymentsController {
   constructor(private readonly orderPaymentsService: OrderPaymentsService) {}
 

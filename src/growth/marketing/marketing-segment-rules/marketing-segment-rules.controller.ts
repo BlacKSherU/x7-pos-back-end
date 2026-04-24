@@ -11,6 +11,10 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { MarketingSegmentRulesService } from './marketing-segment-rules.service';
 import { CreateMarketingSegmentRuleDto } from './dto/create-marketing-segment-rule.dto';
 import { UpdateMarketingSegmentRuleDto } from './dto/update-marketing-segment-rule.dto';
@@ -47,7 +51,8 @@ import { MarketingSegmentRuleOperator } from './constants/marketing-segment-rule
 @ApiTags('Marketing Segment Rules')
 @ApiBearerAuth()
 @Controller('marketing-segment-rules')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.MARKETING_SEGMENT_RULE)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class MarketingSegmentRulesController {
   constructor(
     private readonly marketingSegmentRulesService: MarketingSegmentRulesService,

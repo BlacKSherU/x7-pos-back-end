@@ -1,5 +1,5 @@
 // src/auth/jwt.strategy.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, ExtractJwt } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
@@ -9,14 +9,14 @@ import { User } from '../platform-saas/users/entities/user.entity';
 import { AuthenticatedUser } from './interfaces/authenticated-user.interface';
 import { UserRole } from '../platform-saas/users/constants/role.enum';
 import { Scope } from '../platform-saas/users/constants/scope.enum';
-import { Merchant } from 'src/platform-saas/merchants/entities/merchant.entity';
+import { SubscriptionAccessService } from './subscription-access.service';
+import { getAllSubscriptionFeatureIds } from 'src/common/subscription/subscription-feature-ids';
 
 interface JwtPayload {
-  sub: string;
+  sub: string | number;
   email: string;
   role: UserRole;
   scope: Scope;
-  merchant: Merchant;
 }
 
 @Injectable()
@@ -25,6 +25,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     private configService: ConfigService,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly subscriptionAccessService: SubscriptionAccessService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken() as (
@@ -36,20 +37,47 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload): Promise<AuthenticatedUser> {
-    const userId = parseInt(payload.sub, 10);
+    const userId =
+      typeof payload.sub === 'string'
+        ? parseInt(payload.sub, 10)
+        : payload.sub;
     const user = await this.userRepository.findOne({
       where: { id: userId },
       relations: ['merchant'],
     });
 
-    if (!user || !user.merchant) throw new Error('Invalid token');
+    if (!user) {
+      throw new UnauthorizedException('Invalid token');
+    }
+    if (!user.merchant) {
+      throw new UnauthorizedException('Invalid token');
+    }
+
+    const isPortalStaff =
+      user.role === UserRole.PORTAL_ADMIN || user.role === UserRole.PORTAL_USER;
+
+    let planId: number | undefined;
+    let authorizedFeatureIds: number[];
+    if (isPortalStaff) {
+      planId = undefined;
+      authorizedFeatureIds = getAllSubscriptionFeatureIds();
+    } else {
+      const access =
+        await this.subscriptionAccessService.getSubscriptionAccessForMerchant(
+          user.merchant.id,
+        );
+      planId = access.planId;
+      authorizedFeatureIds = access.authorizedFeatureIds;
+    }
 
     return {
       id: user.id,
       email: user.email,
       role: user.role,
       scope: user.scope,
-      merchant: user.merchant,
+      merchant: { id: user.merchant.id },
+      planId,
+      authorizedFeatureIds,
     };
   }
 }

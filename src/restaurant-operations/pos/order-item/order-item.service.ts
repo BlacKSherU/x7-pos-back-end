@@ -105,37 +105,43 @@ export class OrderItemService {
       );
     }
 
-    // Validate variant if provided
+    // Business rule validation: quantity must be positive
+    if (createOrderItemDto.quantity <= 0) {
+      throw new BadRequestException('Quantity must be greater than 0');
+    }
+
+    let resolvedVariant: Variant | null = null;
     if (createOrderItemDto.variantId) {
-      const variant = await this.variantRepository.findOne({
+      resolvedVariant = await this.variantRepository.findOne({
         where: { id: createOrderItemDto.variantId },
         relations: ['product', 'product.merchant'],
       });
 
-      if (!variant) {
+      if (!resolvedVariant) {
         throw new NotFoundException('Variant not found');
       }
 
-      if (variant.product.merchantId !== authenticatedUserMerchantId) {
+      if (resolvedVariant.product.merchantId !== authenticatedUserMerchantId) {
         throw new ForbiddenException(
           'You can only use variants from your merchant',
         );
       }
 
-      if (variant.productId !== createOrderItemDto.productId) {
+      if (resolvedVariant.productId !== createOrderItemDto.productId) {
         throw new BadRequestException(
           'Variant does not belong to the specified product',
         );
       }
     }
 
-    // Business rule validation: quantity must be positive
-    if (createOrderItemDto.quantity <= 0) {
-      throw new BadRequestException('Quantity must be greater than 0');
-    }
+    const unitPrice =
+      createOrderItemDto.price != null
+        ? Number(createOrderItemDto.price)
+        : resolvedVariant
+          ? Number(resolvedVariant.price)
+          : Number(product.basePrice);
 
-    // Business rule validation: price must be non-negative
-    if (createOrderItemDto.price < 0) {
+    if (Number.isNaN(unitPrice) || unitPrice < 0) {
       throw new BadRequestException('Price must be non-negative');
     }
 
@@ -151,7 +157,7 @@ export class OrderItemService {
     orderItem.product_id = createOrderItemDto.productId;
     orderItem.variant_id = createOrderItemDto.variantId || null;
     orderItem.quantity = createOrderItemDto.quantity;
-    orderItem.price = createOrderItemDto.price;
+    orderItem.price = unitPrice;
     orderItem.discount = discount;
     orderItem.notes = createOrderItemDto.notes || null;
     orderItem.status = OrderItemStatus.ACTIVE;

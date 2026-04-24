@@ -11,6 +11,10 @@ import {
   ParseIntPipe,
   Put,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { ReceiptsService } from './receipts.service';
 import { CreateReceiptDto } from './dto/create-receipt.dto';
 import { UpdateReceiptDto } from './dto/update-receipt.dto';
@@ -48,8 +52,9 @@ import { Scope } from 'src/platform-saas/users/constants/scope.enum';
 @ApiTags('Receipts')
 @ApiBearerAuth()
 @ApiExtraModels(ErrorResponse)
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 @Controller('receipts')
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.RECEIPTS)
 export class ReceiptsController {
   constructor(private readonly receiptsService: ReceiptsService) {}
 

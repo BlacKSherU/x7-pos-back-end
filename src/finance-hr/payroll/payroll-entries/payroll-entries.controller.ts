@@ -10,6 +10,10 @@ import {
   UseGuards,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { PayrollEntriesService } from './payroll-entries.service';
 import { CreatePayrollEntryDto } from './dto/create-payroll-entry.dto';
 import { UpdatePayrollEntryDto } from './dto/update-payroll-entry.dto';
@@ -42,7 +46,8 @@ import { PayrollEntrySortBy } from './dto/get-payroll-entries-query.dto';
 @ApiTags('Payroll entries')
 @ApiBearerAuth()
 @Controller('payroll-entries')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.PAYROLL_ENTRIES)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 @ApiExtraModels(OnePayrollEntryResponseDto, PaginatedPayrollEntriesResponseDto)
 export class PayrollEntriesController {
   constructor(private readonly payrollEntriesService: PayrollEntriesService) {}

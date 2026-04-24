@@ -12,6 +12,10 @@ import {
   Patch,
   Delete,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import {
   ApiBadRequestResponse,
   ApiBody,
@@ -43,10 +47,11 @@ import { UpdateQrLocationDto } from './dto/update-qr-location.dto';
 
 @ApiTags('QR Location')
 @Controller('qr-location')
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.QR_CODE_LOCATIONS)
 export class QRLocationController {
   constructor(private readonly qrLocationService: QRLocationService) {}
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
@@ -139,7 +144,7 @@ export class QRLocationController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Get All QR Location',
     description: 'Endpoint for get ALL of the QR Location.',
@@ -192,7 +197,7 @@ export class QRLocationController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Get a QR Location by ID',
     description: 'Endpoint to retrieve a specific QR Location using its ID.',
@@ -287,7 +292,7 @@ export class QRLocationController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Update a QR Location',
     description: 'Endpoint to update an existing QR Location by its ID.',
@@ -386,7 +391,7 @@ export class QRLocationController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Delete a QR Location',
     description: 'Endpoint to delete an existing QR Location by its ID.',

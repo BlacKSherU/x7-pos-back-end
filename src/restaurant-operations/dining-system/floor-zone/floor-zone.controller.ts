@@ -11,6 +11,10 @@ import {
   Patch,
   Delete,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import {
   ApiBadRequestResponse,
   ApiBody,
@@ -42,10 +46,11 @@ import { UpdateFloorZoneDto } from './dto/update-floor-zone.dto';
 
 @ApiTags('Floor Zone')
 @Controller('floor-zone')
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.TABLE_ZONES)
 export class FloorZoneController {
   constructor(private readonly floorZoneService: FloorZoneService) {}
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.MERCHANT_WEB,
@@ -129,7 +134,7 @@ export class FloorZoneController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Get a list of Merchant Tax Rules',
     description: 'Endpoint to retrieve a paginated list of Merchant Tax Rules.',
@@ -182,7 +187,7 @@ export class FloorZoneController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Get a Floor Zone by ID',
     description: 'Endpoint to retrieve a single Floor Zone by its ID.',
@@ -274,7 +279,7 @@ export class FloorZoneController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Update a Floor Zone by ID',
     description: 'Endpoint to update an existing Floor Zone.',
@@ -370,7 +375,7 @@ export class FloorZoneController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Delete a Floor Zone by ID',
     description: 'Endpoint to delete an existing Floor Zone.',

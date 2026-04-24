@@ -17,6 +17,9 @@ import { Company } from '../platform-saas/companies/entities/company.entity';
 import { Merchant } from '../platform-saas/merchants/entities/merchant.entity';
 import { LoginDto } from './dto/login.dto';
 import { JwtPayload } from 'src/auth/interfaces/JwtPayload.interface';
+import { SubscriptionAccessService } from './subscription-access.service';
+import { UserRole } from 'src/platform-saas/users/constants/role.enum';
+import { getAllSubscriptionFeatureIds } from 'src/common/subscription/subscription-feature-ids';
 
 @Injectable()
 export class AuthService {
@@ -32,6 +35,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
     private usersService: UsersService,
+    private readonly subscriptionAccessService: SubscriptionAccessService,
   ) {}
 
   async login(dto: LoginDto) {
@@ -49,6 +53,25 @@ export class AuthService {
         'User does not have an associated company',
       );
     }
+
+    const isPortalStaff =
+      user.role === UserRole.PORTAL_ADMIN || user.role === UserRole.PORTAL_USER;
+
+    let planId: number | undefined;
+    let authorizedFeatureIds: number[];
+    if (isPortalStaff) {
+      // Platform users are not limited by a merchant plan for login; they can access all catalog features.
+      planId = undefined;
+      authorizedFeatureIds = getAllSubscriptionFeatureIds();
+    } else {
+      const access =
+        await this.subscriptionAccessService.getSubscriptionAccessForMerchant(
+          user.merchant.id,
+        );
+      planId = access.planId;
+      authorizedFeatureIds = access.authorizedFeatureIds;
+    }
+
     console.log('User found:', user);
     const payload = {
       sub: user.id,
@@ -77,6 +100,8 @@ export class AuthService {
         role: user.role,
         scope: user.scope,
         merchant: { id: user.merchant.id },
+        planId,
+        authorizedFeatureIds,
       },
     };
   }

@@ -11,6 +11,10 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { Request as ExpressRequest } from 'express';
 import { OnlineStoresService } from './online-stores.service';
 import { CreateOnlineStoreDto } from './dto/create-online-store.dto';
@@ -48,7 +52,8 @@ import { OnlineStoreStatus } from './constants/online-store-status.enum';
 @ApiTags('Online Stores')
 @ApiBearerAuth()
 @Controller('online-stores')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.ONLINE_STORES)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class OnlineStoresController {
   constructor(private readonly onlineStoresService: OnlineStoresService) {}
 

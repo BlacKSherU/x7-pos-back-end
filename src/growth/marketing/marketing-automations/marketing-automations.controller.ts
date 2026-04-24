@@ -11,6 +11,10 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { MarketingAutomationsService } from './marketing-automations.service';
 import { CreateMarketingAutomationDto } from './dto/create-marketing-automation.dto';
 import { UpdateMarketingAutomationDto } from './dto/update-marketing-automation.dto';
@@ -48,7 +52,8 @@ import { MarketingAutomationAction } from './constants/marketing-automation-acti
 @ApiTags('Marketing Automations')
 @ApiBearerAuth()
 @Controller('marketing-automations')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.MARKETING_AUTOMATION)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class MarketingAutomationsController {
   constructor(
     private readonly marketingAutomationsService: MarketingAutomationsService,

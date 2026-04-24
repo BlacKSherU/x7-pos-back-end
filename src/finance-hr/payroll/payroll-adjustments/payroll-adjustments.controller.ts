@@ -10,6 +10,10 @@ import {
   UseGuards,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { PayrollAdjustmentsService } from './payroll-adjustments.service';
 import { CreatePayrollAdjustmentDto } from './dto/create-payroll-adjustment.dto';
 import { UpdatePayrollAdjustmentDto } from './dto/update-payroll-adjustment.dto';
@@ -43,7 +47,8 @@ import { PayrollAdjustmentSortBy } from './dto/get-payroll-adjustments-query.dto
 @ApiTags('Payroll adjustments')
 @ApiBearerAuth()
 @Controller('payroll-adjustments')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.PAYROLL_ADJUSTMENTS)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 @ApiExtraModels(
   OnePayrollAdjustmentResponseDto,
   PaginatedPayrollAdjustmentsResponseDto,

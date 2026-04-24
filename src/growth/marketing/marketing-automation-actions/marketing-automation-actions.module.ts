@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from 'src/auth/auth.module';
+
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MarketingAutomationActionsService } from './marketing-automation-actions.service';
 import { MarketingAutomationActionsController } from './marketing-automation-actions.controller';
@@ -6,7 +8,7 @@ import { MarketingAutomationAction } from './entities/marketing-automation-actio
 import { MarketingAutomation } from '../marketing-automations/entities/marketing-automation.entity';
 
 @Module({
-  imports: [
+  imports: [AuthModule,
     TypeOrmModule.forFeature([MarketingAutomationAction, MarketingAutomation]),
   ],
   controllers: [MarketingAutomationActionsController],

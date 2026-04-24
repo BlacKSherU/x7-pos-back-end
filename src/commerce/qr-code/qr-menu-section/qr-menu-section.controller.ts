@@ -12,6 +12,10 @@ import {
   Patch,
   Delete,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import {
   ApiBadRequestResponse,
   ApiBody,
@@ -43,10 +47,11 @@ import { UpdateQRMenuSectionDto } from './dto/update-qr-menu-section.dto';
 
 @ApiTags('QR Menu Section')
 @Controller('qr-menu-section')
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.QR_CODE_MENU_SECTIONS)
 export class QrMenuSectionController {
   constructor(private readonly qrMenuSectionService: QRMenuSectionService) {}
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
@@ -187,7 +192,7 @@ export class QrMenuSectionController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Get a QR Menu Section by ID',
     description:
@@ -281,7 +286,7 @@ export class QrMenuSectionController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Update a QR Menu Section',
     description: 'Endpoint to update an existing QR Menu Section by its ID.',
@@ -377,7 +382,7 @@ export class QrMenuSectionController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Delete a QR Menu Section',
     description: 'Endpoint to delete an existing QR Menu by its ID.',

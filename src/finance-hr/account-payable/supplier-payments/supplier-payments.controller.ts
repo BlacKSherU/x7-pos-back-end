@@ -10,6 +10,10 @@ import {
   UseGuards,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { SupplierPaymentsService } from './supplier-payments.service';
 import { CreateSupplierPaymentDto } from './dto/create-supplier-payment.dto';
 import { UpdateSupplierPaymentDto } from './dto/update-supplier-payment.dto';
@@ -45,7 +49,8 @@ import { PaginatedSupplierPaymentsResponseDto } from './dto/paginated-supplier-p
 @ApiTags('Supplier payments (Account payable)')
 @ApiBearerAuth()
 @Controller('supplier-payments')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.SUPPLIER_PAYMENTS)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 @ApiExtraModels(
   OneSupplierPaymentResponseDto,
   PaginatedSupplierPaymentsResponseDto,

@@ -13,6 +13,10 @@ import {
   Query,
   Request,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { Request as ExpressRequest } from 'express';
 import { OrderTaxesService } from './order-taxes.service';
 import { CreateOrderTaxDto } from './dto/create-order-tax.dto';
@@ -51,7 +55,8 @@ type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
 @ApiTags('Order taxes')
 @ApiBearerAuth()
 @Controller('order-taxes')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.ORDER_TAXES)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class OrderTaxesController {
   constructor(private readonly orderTaxesService: OrderTaxesService) {}
 

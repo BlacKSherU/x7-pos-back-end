@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from 'src/auth/auth.module';
+
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TipSettlementsService } from './tip-settlements.service';
 import { TipSettlementsController } from './tip-settlements.controller';
@@ -9,7 +11,7 @@ import { User } from '../../../platform-saas/users/entities/user.entity';
 import { Merchant } from '../../../platform-saas/merchants/entities/merchant.entity';
 
 @Module({
-  imports: [
+  imports: [AuthModule,
     TypeOrmModule.forFeature([
       TipSettlement,
       Collaborator,

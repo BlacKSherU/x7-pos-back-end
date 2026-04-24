@@ -12,6 +12,10 @@ import {
   Patch,
   Delete,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import {
   ApiBadRequestResponse,
   ApiBody,
@@ -43,10 +47,11 @@ import { UpdateQrOrderItemDto } from './dto/update-qr-order-item.dto';
 
 @ApiTags('QR Order Item')
 @Controller('qr-order-item')
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.QR_ORDER_ITEMS)
 export class QROrderItemController {
   constructor(private readonly qrOrderItemService: QROrderItemService) {}
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
@@ -137,7 +142,7 @@ export class QROrderItemController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Get a list of QR Order Items',
     description: 'Endpoint to retrieve a paginated list of QR Order Items.',
@@ -190,7 +195,7 @@ export class QROrderItemController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Get a QR Order Item by ID',
     description: 'Endpoint to retrieve a single QR Order Item by its ID.',
@@ -285,7 +290,7 @@ export class QROrderItemController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Update a QR Order Item by ID',
     description: 'Endpoint to update a single QR Order Item by its ID.',
@@ -384,7 +389,7 @@ export class QROrderItemController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Delete a QR Order Item by ID',
     description: 'Endpoint to delete a single QR Order Item by its ID.',

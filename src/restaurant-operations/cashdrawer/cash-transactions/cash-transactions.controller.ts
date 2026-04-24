@@ -11,6 +11,10 @@ import {
   ParseIntPipe,
   Put,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { CashTransactionsService } from './cash-transactions.service';
 import { CreateCashTransactionDto } from './dto/create-cash-transaction.dto';
 import { UpdateCashTransactionDto } from './dto/update-cash-transaction.dto';
@@ -51,8 +55,9 @@ import { CashTransactionStatus } from './constants/cash-transaction-status.enum'
 @ApiTags('Cash Transactions')
 @ApiBearerAuth()
 @ApiExtraModels(ErrorResponse)
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 @Controller('cash-transactions')
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.CASH_TRANSACTIONS)
 export class CashTransactionsController {
   constructor(
     private readonly cashTransactionsService: CashTransactionsService,

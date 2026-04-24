@@ -11,6 +11,10 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { Request as ExpressRequest } from 'express';
 import { KitchenStationService } from './kitchen-station.service';
 import { CreateKitchenStationDto } from './dto/create-kitchen-station.dto';
@@ -50,7 +54,8 @@ type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
 @ApiTags('Kitchen Stations')
 @ApiBearerAuth()
 @Controller('kitchen-station')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.KITCHEN_STATIONS)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class KitchenStationController {
   constructor(private readonly kitchenStationService: KitchenStationService) {}
 

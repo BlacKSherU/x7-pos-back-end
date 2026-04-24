@@ -9,4 +9,8 @@ export interface AuthenticatedUser {
   merchant: {
     id: number;
   };
+  /** `subscription_plan.id` for the merchant’s active subscription (set by login / JwtStrategy). */
+  planId?: number;
+  /** Feature entity IDs the merchant may manage under their current subscription plan (set by login / JwtStrategy). */
+  authorizedFeatureIds?: number[];
 }

@@ -1,4 +1,5 @@
 import { forwardRef, Module } from '@nestjs/common';
+import { AuthModule } from 'src/auth/auth.module';
 import { ModifiersService } from './modifiers.service';
 import { ModifiersController } from './modifiers.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -7,7 +8,7 @@ import { Product } from '../products/entities/product.entity';
 import { ProductsModule } from '../products/products.module';
 
 @Module({
-  imports: [
+  imports: [AuthModule,
     TypeOrmModule.forFeature([Modifier, Product]),
     forwardRef(() => ProductsModule),
   ],

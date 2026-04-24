@@ -12,6 +12,10 @@ import {
   ForbiddenException,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { ShiftsService } from './shifts.service';
 import { CreateShiftDto } from './dto/create-shift.dto';
 import { UpdateShiftDto } from './dto/update-shift.dto';
@@ -47,7 +51,8 @@ import { ErrorResponse } from '../../../common/dtos/error-response.dto';
 @ApiExtraModels(ErrorResponse)
 @ApiBearerAuth()
 @Controller('shifts')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.SHIFTS)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class ShiftsController {
   constructor(private readonly shiftsService: ShiftsService) {}
 

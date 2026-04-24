@@ -11,6 +11,10 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { CashTipMovementsService } from './cash-tip-movements.service';
 import { CreateCashTipMovementDto } from './dto/create-cash-tip-movement.dto';
 import { UpdateCashTipMovementDto } from './dto/update-cash-tip-movement.dto';
@@ -49,7 +53,8 @@ import { CashTipMovementType } from './constants/cash-tip-movement-type.enum';
 @ApiTags('Cash Tip Movements')
 @ApiBearerAuth()
 @Controller('cash-tip-movements')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.TIP_MOVEMENTS)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class CashTipMovementsController {
   constructor(
     private readonly cashTipMovementsService: CashTipMovementsService,

@@ -10,6 +10,10 @@ import {
   Patch,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -47,7 +51,8 @@ import { OneLocationResponse } from './dto/location-response.dto';
 @ApiBearerAuth()
 @ApiTags('Stock Locations')
 @Controller('locations')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.STOCK_AND_STOCK_MOVEMENTS)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class LocationsController {
   constructor(private readonly locationsService: LocationsService) {}
 

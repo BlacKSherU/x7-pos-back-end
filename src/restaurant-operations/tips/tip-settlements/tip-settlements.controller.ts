@@ -11,6 +11,10 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { TipSettlementsService } from './tip-settlements.service';
 import { CreateTipSettlementDto } from './dto/create-tip-settlement.dto';
 import { UpdateTipSettlementDto } from './dto/update-tip-settlement.dto';
@@ -49,7 +53,8 @@ import {
 @ApiTags('Tip Settlements')
 @ApiBearerAuth()
 @Controller('tip-settlements')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.TIP_SETTLEMENTS)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class TipSettlementsController {
   constructor(private readonly tipSettlementsService: TipSettlementsService) {}
 

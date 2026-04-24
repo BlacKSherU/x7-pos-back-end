@@ -10,6 +10,10 @@ import {
   Patch,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -44,7 +48,8 @@ import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interf
 @ApiExtraModels(ErrorResponse)
 @ApiBearerAuth()
 @Controller('category')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.CATEGORY_MANAGEMENT)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 

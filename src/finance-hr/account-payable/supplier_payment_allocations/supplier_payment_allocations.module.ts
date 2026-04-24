@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from 'src/auth/auth.module';
+
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SupplierPaymentAllocationsService } from './supplier_payment_allocations.service';
 import { SupplierPaymentAllocationsController } from './supplier_payment_allocations.controller';
@@ -8,7 +10,7 @@ import { Supplier } from 'src/core/business-partners/suppliers/entities/supplier
 import { SupplierCreditNote } from '../supplier-credit-notes/entities/supplier-credit-note.entity';
 
 @Module({
-  imports: [
+  imports: [AuthModule,
     TypeOrmModule.forFeature([
       SupplierPaymentAllocation,
       SupplierPayment,

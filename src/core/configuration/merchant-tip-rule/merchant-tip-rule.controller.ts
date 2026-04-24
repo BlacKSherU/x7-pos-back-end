@@ -11,6 +11,10 @@ import {
   Patch,
   Delete,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import {
   ApiBody,
   ApiCreatedResponse,
@@ -42,12 +46,13 @@ import { UpdateMerchantTipRuleDto } from './dto/update-merchant-tip-rule.dto';
 
 @ApiTags('Merchant Tip Rule')
 @Controller('merchant-tip-rule')
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.MERCHANT_TIPS_RULES)
 export class MerchantTipRuleController {
   constructor(
     private readonly merchantTipRuleService: MerchantTipRuleService,
   ) {}
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
@@ -144,7 +149,7 @@ export class MerchantTipRuleController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Get a list of Merchant Tip Rules',
     description: 'Endpoint to retrieve a paginated list of Merchant Tip Rules.',
@@ -198,7 +203,7 @@ export class MerchantTipRuleController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Get a Merchant Tip Rule by ID',
     description: 'Endpoint to retrieve a single Merchant Tip Rule by its ID.',
@@ -302,7 +307,7 @@ export class MerchantTipRuleController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Update a Merchant Tip Rule by ID',
     description: 'Endpoint to update an existing Merchant Tip Rule.',
@@ -409,7 +414,7 @@ export class MerchantTipRuleController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Delete a Merchant Tip Rule by ID',
     description: 'Endpoint to delete an existing Merchant Tip Rule.',

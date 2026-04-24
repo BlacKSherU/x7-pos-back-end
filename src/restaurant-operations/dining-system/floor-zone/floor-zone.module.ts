@@ -1,5 +1,7 @@
 //src/restaurant-operations/dining-system/floor-zone/floor-zone.module.ts
 import { Module } from '@nestjs/common';
+import { AuthModule } from 'src/auth/auth.module';
+
 import { FloorZoneController } from './floor-zone.controller';
 import { FloorZoneService } from './floor-zone.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -9,7 +11,7 @@ import { FloorPlan } from '../floor-plan/entity/floor-plan.entity';
 import { Table } from '../tables/entities/table.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Merchant, FloorZone, FloorPlan, Table])],
+  imports: [AuthModule,TypeOrmModule.forFeature([Merchant, FloorZone, FloorPlan, Table])],
   controllers: [FloorZoneController],
   providers: [FloorZoneService],
 })

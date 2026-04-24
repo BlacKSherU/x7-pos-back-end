@@ -10,6 +10,10 @@ import {
   Patch,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -44,7 +48,8 @@ import { SupplierResponseDto } from './dto/supplier-response.dto';
 @ApiExtraModels(ErrorResponse)
 @ApiBearerAuth()
 @Controller('suppliers')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.SUPPLIERS)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class SuppliersController {
   constructor(private readonly suppliersService: SuppliersService) {}
 

@@ -10,6 +10,10 @@ import {
   ParseIntPipe,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { LedgerAccountsService } from './ledger-accounts.service';
 import { CreateLedgerAccountDto } from './dto/create-ledger-account.dto';
 import { UpdateLedgerAccountDto } from './dto/update-ledger-account.dto';
@@ -44,7 +48,8 @@ import {
 @ApiExtraModels(ErrorResponse)
 @ApiBearerAuth()
 @Controller('ledger-accounts')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.LEDGER_ACCOUNTS)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class LedgerAccountsController {
   constructor(private readonly ledgerAccountsService: LedgerAccountsService) {}
 

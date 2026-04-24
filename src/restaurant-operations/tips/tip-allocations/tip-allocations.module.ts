@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from 'src/auth/auth.module';
+
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TipAllocationsService } from './tip-allocations.service';
 import { TipAllocationsController } from './tip-allocations.controller';
@@ -8,7 +10,7 @@ import { Collaborator } from 'src/finance-hr/hr/collaborators/entities/collabora
 import { Shift } from '../../shift/shifts/entities/shift.entity';
 
 @Module({
-  imports: [
+  imports: [AuthModule,
     TypeOrmModule.forFeature([TipAllocation, Tip, Collaborator, Shift]),
   ],
   controllers: [TipAllocationsController],

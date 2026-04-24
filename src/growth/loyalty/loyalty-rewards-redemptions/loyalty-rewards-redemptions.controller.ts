@@ -10,6 +10,10 @@ import {
   ParseIntPipe,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -46,7 +50,8 @@ import { OneLoyaltyRewardsRedemptionResponse } from './dto/loyalty-rewards-redem
 @ApiBearerAuth()
 @ApiTags('Loyalty Rewards Redemptions')
 @Controller('loyalty-rewards-redemptions')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.LOYALTY_REWARDS_REDEMPTIONS)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class LoyaltyRewardsRedemptionsController {
   constructor(
     private readonly loyaltyRewardsRedemptionsService: LoyaltyRewardsRedemptionsService,

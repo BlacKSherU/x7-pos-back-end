@@ -11,6 +11,10 @@ import {
   Patch,
   Delete,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import {
   ApiBadRequestResponse,
   ApiBody,
@@ -42,10 +46,11 @@ import { UpdateFloorPlanDto } from './dto/update-floor-plan.dto';
 
 @ApiTags('Floor Plan')
 @Controller('floor-plan')
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.FLOOR_PLANS)
 export class FloorPlanController {
   constructor(private readonly floorPlanService: FloorPlanService) {}
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.MERCHANT_WEB,
@@ -130,7 +135,7 @@ export class FloorPlanController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Get a list of Floor Plans',
     description: 'Endpoint to retrieve a paginated list of Floor Plans.',
@@ -183,7 +188,7 @@ export class FloorPlanController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Get a Floor Plan by ID',
     description: 'Endpoint to retrieve a single Floor Plan by its ID.',
@@ -275,7 +280,7 @@ export class FloorPlanController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Update a Floor Plan by ID',
     description: 'Endpoint to update an existing Floor Plan.',
@@ -371,7 +376,7 @@ export class FloorPlanController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Delete a Floor Plan by ID',
     description: 'Endpoint to delete an existing Floor Plan.',

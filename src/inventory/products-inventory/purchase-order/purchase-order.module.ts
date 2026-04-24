@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from 'src/auth/auth.module';
+
 import { PurchaseOrderService } from './purchase-order.service';
 import { PurchaseOrderController } from './purchase-order.controller';
 import { Merchant } from 'src/platform-saas/merchants/entities/merchant.entity';
@@ -8,7 +10,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { PurchaseOrderItem } from '../purchase-order-item/entities/purchase-order-item.entity';
 
 @Module({
-  imports: [
+  imports: [AuthModule,
     TypeOrmModule.forFeature([
       PurchaseOrder,
       PurchaseOrderItem,

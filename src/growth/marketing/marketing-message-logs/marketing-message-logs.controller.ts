@@ -11,6 +11,10 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { MarketingMessageLogsService } from './marketing-message-logs.service';
 import { CreateMarketingMessageLogDto } from './dto/create-marketing-message-log.dto';
 import { UpdateMarketingMessageLogDto } from './dto/update-marketing-message-log.dto';
@@ -48,7 +52,8 @@ import { MarketingMessageLogStatus } from './constants/marketing-message-log-sta
 @ApiTags('Marketing Message Logs')
 @ApiBearerAuth()
 @Controller('marketing-message-logs')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.MARKETING_MESSAGE_LOG)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class MarketingMessageLogsController {
   constructor(
     private readonly marketingMessageLogsService: MarketingMessageLogsService,

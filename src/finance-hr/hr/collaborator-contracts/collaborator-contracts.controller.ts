@@ -11,6 +11,10 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { CollaboratorContractsService } from './collaborator-contracts.service';
 import { CreateCollaboratorContractDto } from './dto/create-collaborator-contract.dto';
 import { UpdateCollaboratorContractDto } from './dto/update-collaborator-contract.dto';
@@ -42,7 +46,8 @@ import { RolesGuard } from 'src/auth/guards/roles.guard';
 @ApiTags('Collaborator contracts')
 @ApiBearerAuth()
 @Controller('collaborator-contracts')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.COLLABORATOR_CONTRACTS)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class CollaboratorContractsController {
   constructor(
     private readonly collaboratorContractsService: CollaboratorContractsService,
