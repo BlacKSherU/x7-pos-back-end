@@ -11,14 +11,24 @@ import { UpdateMarketingMessageLogDto } from './dto/update-marketing-message-log
 import { MarketingMessageLogRecordStatus } from './constants/marketing-message-log-record-status.enum';
 import { MarketingMessageLogChannel } from './constants/marketing-message-log-channel.enum';
 import { MarketingMessageLogStatus } from './constants/marketing-message-log-status.enum';
-import { NotFoundException, BadRequestException, ForbiddenException, ConflictException } from '@nestjs/common';
+import {
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+  ConflictException,
+} from '@nestjs/common';
 
 describe('MarketingMessageLogsService', () => {
   let service: MarketingMessageLogsService;
 
   const mockCampaign = { id: 1, name: 'Summer Sale', merchant_id: 1 };
   const mockAutomation = { id: 1, name: 'Welcome Email', merchant_id: 1 };
-  const mockCustomer = { id: 1, name: 'John Doe', email: 'john@example.com', merchantId: 1 };
+  const mockCustomer = {
+    id: 1,
+    name: 'John Doe',
+    email: 'john@example.com',
+    merchantId: 1,
+  };
 
   const mockMarketingMessageLog = {
     id: 1,
@@ -71,14 +81,28 @@ describe('MarketingMessageLogsService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MarketingMessageLogsService,
-        { provide: getRepositoryToken(MarketingMessageLog), useValue: mockMarketingMessageLogRepository },
-        { provide: getRepositoryToken(MarketingCampaign), useValue: mockMarketingCampaignRepository },
-        { provide: getRepositoryToken(MarketingAutomation), useValue: mockMarketingAutomationRepository },
-        { provide: getRepositoryToken(Customer), useValue: mockCustomerRepository },
+        {
+          provide: getRepositoryToken(MarketingMessageLog),
+          useValue: mockMarketingMessageLogRepository,
+        },
+        {
+          provide: getRepositoryToken(MarketingCampaign),
+          useValue: mockMarketingCampaignRepository,
+        },
+        {
+          provide: getRepositoryToken(MarketingAutomation),
+          useValue: mockMarketingAutomationRepository,
+        },
+        {
+          provide: getRepositoryToken(Customer),
+          useValue: mockCustomerRepository,
+        },
       ],
     }).compile();
 
-    service = module.get<MarketingMessageLogsService>(MarketingMessageLogsService);
+    service = module.get<MarketingMessageLogsService>(
+      MarketingMessageLogsService,
+    );
   });
 
   afterEach(() => {
@@ -103,8 +127,12 @@ describe('MarketingMessageLogsService', () => {
         ...mockQueryBuilder,
         getOne: jest.fn().mockResolvedValue(mockCampaign),
       });
-      mockMarketingMessageLogRepository.save.mockResolvedValue(mockMarketingMessageLog);
-      mockMarketingMessageLogRepository.findOne.mockResolvedValue(mockMarketingMessageLog);
+      mockMarketingMessageLogRepository.save.mockResolvedValue(
+        mockMarketingMessageLog,
+      );
+      mockMarketingMessageLogRepository.findOne.mockResolvedValue(
+        mockMarketingMessageLog,
+      );
 
       const result = await service.create(createDto, 1);
 
@@ -115,13 +143,17 @@ describe('MarketingMessageLogsService', () => {
     });
 
     it('should throw ForbiddenException when user has no merchant', async () => {
-      await expect(service.create(createDto, null)).rejects.toThrow(ForbiddenException);
+      await expect(service.create(createDto, null)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw NotFoundException when customer does not exist', async () => {
       mockCustomerRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.create(createDto, 1)).rejects.toThrow(NotFoundException);
+      await expect(service.create(createDto, 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw NotFoundException when campaign does not exist when campaignId provided', async () => {
@@ -131,7 +163,9 @@ describe('MarketingMessageLogsService', () => {
         getOne: jest.fn().mockResolvedValue(null),
       });
 
-      await expect(service.create(createDto, 1)).rejects.toThrow(NotFoundException);
+      await expect(service.create(createDto, 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -140,19 +174,25 @@ describe('MarketingMessageLogsService', () => {
       const query = { page: 1, limit: 10 };
       mockMarketingMessageLogRepository.createQueryBuilder.mockReturnValue({
         ...mockQueryBuilder,
-        getManyAndCount: jest.fn().mockResolvedValue([[mockMarketingMessageLog], 1]),
+        getManyAndCount: jest
+          .fn()
+          .mockResolvedValue([[mockMarketingMessageLog], 1]),
       });
 
       const result = await service.findAll(query, 1);
 
       expect(result.statusCode).toBe(200);
-      expect(result.message).toBe('Marketing message logs retrieved successfully');
+      expect(result.message).toBe(
+        'Marketing message logs retrieved successfully',
+      );
       expect(result.data).toHaveLength(1);
       expect(result.paginationMeta).toBeDefined();
     });
 
     it('should throw ForbiddenException when user has no merchant', async () => {
-      await expect(service.findAll({}, null)).rejects.toThrow(ForbiddenException);
+      await expect(service.findAll({}, null)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -166,7 +206,9 @@ describe('MarketingMessageLogsService', () => {
       const result = await service.findOne(1, 1);
 
       expect(result.statusCode).toBe(200);
-      expect(result.message).toBe('Marketing message log retrieved successfully');
+      expect(result.message).toBe(
+        'Marketing message log retrieved successfully',
+      );
       expect(result.data.id).toBe(1);
     });
 
@@ -181,10 +223,15 @@ describe('MarketingMessageLogsService', () => {
   });
 
   describe('update', () => {
-    const updateDto: UpdateMarketingMessageLogDto = { status: MarketingMessageLogStatus.DELIVERED };
+    const updateDto: UpdateMarketingMessageLogDto = {
+      status: MarketingMessageLogStatus.DELIVERED,
+    };
 
     it('should update a marketing message log successfully', async () => {
-      const updatedLog = { ...mockMarketingMessageLog, status: MarketingMessageLogStatus.DELIVERED };
+      const updatedLog = {
+        ...mockMarketingMessageLog,
+        status: MarketingMessageLogStatus.DELIVERED,
+      };
       mockMarketingMessageLogRepository.createQueryBuilder.mockReturnValue({
         ...mockQueryBuilder,
         getOne: jest.fn().mockResolvedValue(mockMarketingMessageLog),
@@ -205,7 +252,9 @@ describe('MarketingMessageLogsService', () => {
         getOne: jest.fn().mockResolvedValue(null),
       });
 
-      await expect(service.update(999, updateDto, 1)).rejects.toThrow(NotFoundException);
+      await expect(service.update(999, updateDto, 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -225,7 +274,9 @@ describe('MarketingMessageLogsService', () => {
 
       expect(result.statusCode).toBe(200);
       expect(result.message).toBe('Marketing message log deleted successfully');
-      expect(result.data.recordStatus).toBe(MarketingMessageLogRecordStatus.DELETED);
+      expect(result.data.recordStatus).toBe(
+        MarketingMessageLogRecordStatus.DELETED,
+      );
       expect(mockMarketingMessageLogRepository.save).toHaveBeenCalled();
     });
 

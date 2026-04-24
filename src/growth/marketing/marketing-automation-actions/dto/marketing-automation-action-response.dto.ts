@@ -4,20 +4,30 @@ import { MarketingAutomationActionType } from '../constants/marketing-automation
 import { MarketingAutomationActionStatus } from '../constants/marketing-automation-action-status.enum';
 
 export class BasicAutomationInfoDto {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Marketing Automation' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Marketing Automation',
+  })
   id: number;
 
-  @ApiProperty({ example: 'Welcome Email Campaign', description: 'Name of the automation' })
+  @ApiProperty({
+    example: 'Welcome Email Campaign',
+    description: 'Name of the automation',
+  })
   name: string;
 }
 
 export class MarketingAutomationActionResponseDto {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Marketing Automation Action' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Marketing Automation Action',
+  })
   id: number;
 
   @ApiProperty({
     example: 1,
-    description: 'Identifier of the Marketing Automation this action belongs to',
+    description:
+      'Identifier of the Marketing Automation this action belongs to',
   })
   automationId: number;
 

@@ -27,7 +27,7 @@ export class CustomersService {
     private readonly userRepo: Repository<User>,
     @InjectRepository(Company)
     private readonly companyRepo: Repository<Company>,
-  ) { }
+  ) {}
 
   async create(dto: CreateCustomerDto, user: AuthenticatedUser) {
     const userData = await this.userRepo.findOneBy({ id: user.id });
@@ -85,7 +85,6 @@ export class CustomersService {
     if (!customer) throw new NotFoundException();
     if (customer.merchantId !== user.merchant.id)
       throw new ForbiddenException();
-    console.log('Customer: ', customer);
     return {
       id: customer.id,
       name: customer.name,

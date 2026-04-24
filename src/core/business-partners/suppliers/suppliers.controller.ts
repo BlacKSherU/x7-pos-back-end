@@ -46,7 +46,7 @@ import { SupplierResponseDto } from './dto/supplier-response.dto';
 @Controller('suppliers')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class SuppliersController {
-  constructor(private readonly suppliersService: SuppliersService) { }
+  constructor(private readonly suppliersService: SuppliersService) {}
 
   @Post()
   @Roles(UserRole.MERCHANT_ADMIN)
@@ -80,7 +80,9 @@ export class SuppliersController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() createSupplierDto: CreateSupplierDto,
   ) {
-    const companyId = await this.suppliersService.getCompanyIdByMerchantId(user.merchant.id);
+    const companyId = await this.suppliersService.getCompanyIdByMerchantId(
+      user.merchant.id,
+    );
     return this.suppliersService.create(companyId, createSupplierDto);
   }
 
@@ -207,7 +209,9 @@ export class SuppliersController {
     @CurrentUser() user: AuthenticatedUser,
     @Query() query: GetSuppliersQueryDto,
   ): Promise<AllPaginatedSuppliers> {
-    const companyId = await this.suppliersService.getCompanyIdByMerchantId(user.merchant.id);
+    const companyId = await this.suppliersService.getCompanyIdByMerchantId(
+      user.merchant.id,
+    );
     return this.suppliersService.findAll(query, companyId);
   }
 
@@ -253,7 +257,9 @@ export class SuppliersController {
     @CurrentUser() user: AuthenticatedUser,
     @Param('id', ParseIntPipe) id: number,
   ) {
-    const companyId = await this.suppliersService.getCompanyIdByMerchantId(user.merchant.id);
+    const companyId = await this.suppliersService.getCompanyIdByMerchantId(
+      user.merchant.id,
+    );
     return this.suppliersService.findOne(id, companyId);
   }
 
@@ -305,7 +311,9 @@ export class SuppliersController {
     @Param('id', ParseIntPipe) id: number,
     @Body() updateSupplierDto: UpdateSupplierDto,
   ) {
-    const companyId = await this.suppliersService.getCompanyIdByMerchantId(user.merchant.id);
+    const companyId = await this.suppliersService.getCompanyIdByMerchantId(
+      user.merchant.id,
+    );
     return this.suppliersService.update(id, companyId, updateSupplierDto);
   }
 
@@ -352,7 +360,9 @@ export class SuppliersController {
     @CurrentUser() user: AuthenticatedUser,
     @Param('id', ParseIntPipe) id: number,
   ) {
-    const companyId = await this.suppliersService.getCompanyIdByMerchantId(user.merchant.id);
+    const companyId = await this.suppliersService.getCompanyIdByMerchantId(
+      user.merchant.id,
+    );
     return this.suppliersService.remove(id, companyId);
   }
 }

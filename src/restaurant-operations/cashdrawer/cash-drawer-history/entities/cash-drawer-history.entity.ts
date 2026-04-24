@@ -16,13 +16,17 @@ import { CashDrawerHistoryStatus } from '../constants/cash-drawer-history-status
 @Entity('cash_drawer_history')
 @Index(['cash_drawer_id', 'status', 'created_at'])
 export class CashDrawerHistory {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Cash Drawer History' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Cash Drawer History',
+  })
   @PrimaryGeneratedColumn()
   id: number;
 
   @ApiProperty({
     example: 1,
-    description: 'Identifier of the Cash Drawer associated with this history record',
+    description:
+      'Identifier of the Cash Drawer associated with this history record',
   })
   @Column({ name: 'cash_drawer_id' })
   cash_drawer_id: number;
@@ -38,14 +42,14 @@ export class CashDrawerHistory {
   cashDrawer: CashDrawer;
 
   @ApiProperty({
-    example: 100.00,
+    example: 100.0,
     description: 'Opening balance amount in the cash drawer',
   })
   @Column({ type: 'decimal', precision: 12, scale: 2 })
   opening_balance: number;
 
   @ApiProperty({
-    example: 150.50,
+    example: 150.5,
     description: 'Closing balance amount in the cash drawer',
   })
   @Column({ type: 'decimal', precision: 12, scale: 2 })

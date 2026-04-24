@@ -219,7 +219,7 @@ describe('PurchaseOrderService', () => {
     purchaseOrderItemRepo = module.get(getRepositoryToken(PurchaseOrderItem));
 
     jest.clearAllMocks();
-    jest.spyOn(console, 'error').mockImplementation(() => { });
+    jest.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -549,7 +549,7 @@ describe('PurchaseOrderService', () => {
         relations: ['merchant', 'supplier'],
       });
       expect(result).toEqual({
-        statusCode: 201,
+        statusCode: 200,
         message: 'Purchase Order Updated successfully',
         data: {
           id: updatedPurchaseOrder.id,
@@ -631,7 +631,7 @@ describe('PurchaseOrderService', () => {
         relations: ['merchant', 'supplier'],
       });
       expect(result).toEqual({
-        statusCode: 201,
+        statusCode: 200,
         message: 'Purchase Order Updated successfully',
         data: {
           id: updatedPurchaseOrderWithNewSupplier.id,
@@ -780,7 +780,7 @@ describe('PurchaseOrderService', () => {
         where: { purchaseOrderId: mockPurchaseOrder.id, isActive: true },
       });
       expect(result).toEqual({
-        statusCode: 201,
+        statusCode: 200,
         message: 'Purchase Order Deleted successfully',
         data: {
           id: inactivePurchaseOrder.id,
@@ -870,7 +870,7 @@ describe('PurchaseOrderService', () => {
         mockPurchaseOrderItem2WithRelations,
       );
       expect(result).toEqual({
-        statusCode: 201,
+        statusCode: 200,
         message: 'Purchase Order Deleted successfully',
         data: {
           id: inactivePurchaseOrder.id,

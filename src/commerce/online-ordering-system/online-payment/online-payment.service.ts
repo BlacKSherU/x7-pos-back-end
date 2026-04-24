@@ -1,12 +1,24 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { OnlinePayment } from './entities/online-payment.entity';
 import { OnlineOrder } from '../online-order/entities/online-order.entity';
 import { CreateOnlinePaymentDto } from './dto/create-online-payment.dto';
 import { UpdateOnlinePaymentDto } from './dto/update-online-payment.dto';
-import { GetOnlinePaymentQueryDto, OnlinePaymentSortBy } from './dto/get-online-payment-query.dto';
-import { OnlinePaymentResponseDto, OneOnlinePaymentResponseDto } from './dto/online-payment-response.dto';
+import {
+  GetOnlinePaymentQueryDto,
+  OnlinePaymentSortBy,
+} from './dto/get-online-payment-query.dto';
+import {
+  OnlinePaymentResponseDto,
+  OneOnlinePaymentResponseDto,
+} from './dto/online-payment-response.dto';
 import { PaginatedOnlinePaymentResponseDto } from './dto/paginated-online-payment-response.dto';
 import { OnlineStoreStatus } from '../online-stores/constants/online-store-status.enum';
 import { OnlineOrderStatus } from '../online-order/constants/online-order-status.enum';
@@ -21,27 +33,42 @@ export class OnlinePaymentService {
     private readonly onlineOrderRepository: Repository<OnlineOrder>,
   ) {}
 
-  async create(createOnlinePaymentDto: CreateOnlinePaymentDto, authenticatedUserMerchantId: number): Promise<OneOnlinePaymentResponseDto> {
+  async create(
+    createOnlinePaymentDto: CreateOnlinePaymentDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneOnlinePaymentResponseDto> {
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to create online payments');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to create online payments',
+      );
     }
 
     const onlineOrder = await this.onlineOrderRepository
       .createQueryBuilder('onlineOrder')
       .leftJoinAndSelect('onlineOrder.store', 'store')
       .leftJoin('store.merchant', 'merchant')
-      .where('onlineOrder.id = :orderId', { orderId: createOnlinePaymentDto.onlineOrderId })
-      .andWhere('merchant.id = :merchantId', { merchantId: authenticatedUserMerchantId })
+      .where('onlineOrder.id = :orderId', {
+        orderId: createOnlinePaymentDto.onlineOrderId,
+      })
+      .andWhere('merchant.id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
       .andWhere('store.status = :status', { status: OnlineStoreStatus.ACTIVE })
-      .andWhere('onlineOrder.status != :deletedStatus', { deletedStatus: OnlineOrderStatus.DELETED })
+      .andWhere('onlineOrder.status != :deletedStatus', {
+        deletedStatus: OnlineOrderStatus.DELETED,
+      })
       .getOne();
 
     if (!onlineOrder) {
-      throw new NotFoundException('Online order not found or you do not have access to it');
+      throw new NotFoundException(
+        'Online order not found or you do not have access to it',
+      );
     }
 
     if (createOnlinePaymentDto.amount < 0) {
-      throw new BadRequestException('Amount must be greater than or equal to 0');
+      throw new BadRequestException(
+        'Amount must be greater than or equal to 0',
+      );
     }
 
     const existingPayment = await this.onlinePaymentRepository.findOne({
@@ -52,7 +79,9 @@ export class OnlinePaymentService {
     });
 
     if (existingPayment) {
-      throw new BadRequestException('A payment with this transaction ID already exists');
+      throw new BadRequestException(
+        'A payment with this transaction ID already exists',
+      );
     }
 
     const onlinePayment = new OnlinePayment();
@@ -63,7 +92,8 @@ export class OnlinePaymentService {
     onlinePayment.status = createOnlinePaymentDto.status;
     onlinePayment.processed_at = createOnlinePaymentDto.processedAt || null;
 
-    const savedOnlinePayment = await this.onlinePaymentRepository.save(onlinePayment);
+    const savedOnlinePayment =
+      await this.onlinePaymentRepository.save(onlinePayment);
 
     const completeOnlinePayment = await this.onlinePaymentRepository.findOne({
       where: { id: savedOnlinePayment.id },
@@ -81,9 +111,14 @@ export class OnlinePaymentService {
     };
   }
 
-  async findAll(query: GetOnlinePaymentQueryDto, authenticatedUserMerchantId: number): Promise<PaginatedOnlinePaymentResponseDto> {
+  async findAll(
+    query: GetOnlinePaymentQueryDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<PaginatedOnlinePaymentResponseDto> {
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to access online payments');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to access online payments',
+      );
     }
 
     if (query.page !== undefined && query.page < 1) {
@@ -97,14 +132,18 @@ export class OnlinePaymentService {
     if (query.createdDate) {
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
       if (!dateRegex.test(query.createdDate)) {
-        throw new BadRequestException('Created date must be in YYYY-MM-DD format');
+        throw new BadRequestException(
+          'Created date must be in YYYY-MM-DD format',
+        );
       }
     }
 
     if (query.processedDate) {
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
       if (!dateRegex.test(query.processedDate)) {
-        throw new BadRequestException('Processed date must be in YYYY-MM-DD format');
+        throw new BadRequestException(
+          'Processed date must be in YYYY-MM-DD format',
+        );
       }
     }
 
@@ -117,32 +156,48 @@ export class OnlinePaymentService {
       .leftJoinAndSelect('onlinePayment.onlineOrder', 'onlineOrder')
       .leftJoin('onlineOrder.store', 'store')
       .leftJoin('store.merchant', 'merchant')
-      .where('merchant.id = :merchantId', { merchantId: authenticatedUserMerchantId })
+      .where('merchant.id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
       .andWhere('store.status = :status', { status: OnlineStoreStatus.ACTIVE })
-      .andWhere('onlineOrder.status != :deletedStatus', { deletedStatus: OnlineOrderStatus.DELETED })
-      .andWhere('onlinePayment.logical_status != :itemDeletedStatus', { itemDeletedStatus: OnlinePaymentStatus.DELETED });
+      .andWhere('onlineOrder.status != :deletedStatus', {
+        deletedStatus: OnlineOrderStatus.DELETED,
+      })
+      .andWhere('onlinePayment.logical_status != :itemDeletedStatus', {
+        itemDeletedStatus: OnlinePaymentStatus.DELETED,
+      });
 
     if (query.onlineOrderId) {
-      queryBuilder.andWhere('onlinePayment.online_order_id = :onlineOrderId', { onlineOrderId: query.onlineOrderId });
+      queryBuilder.andWhere('onlinePayment.online_order_id = :onlineOrderId', {
+        onlineOrderId: query.onlineOrderId,
+      });
     }
 
     if (query.paymentProvider) {
-      queryBuilder.andWhere('onlinePayment.payment_provider = :paymentProvider', { paymentProvider: query.paymentProvider });
+      queryBuilder.andWhere(
+        'onlinePayment.payment_provider = :paymentProvider',
+        { paymentProvider: query.paymentProvider },
+      );
     }
 
     if (query.transactionId) {
-      queryBuilder.andWhere('onlinePayment.transaction_id = :transactionId', { transactionId: query.transactionId });
+      queryBuilder.andWhere('onlinePayment.transaction_id = :transactionId', {
+        transactionId: query.transactionId,
+      });
     }
 
     if (query.status) {
-      queryBuilder.andWhere('onlinePayment.status = :status', { status: query.status });
+      queryBuilder.andWhere('onlinePayment.status = :status', {
+        status: query.status,
+      });
     }
 
     if (query.createdDate) {
       const startDate = new Date(query.createdDate);
       const endDate = new Date(query.createdDate);
       endDate.setDate(endDate.getDate() + 1);
-      queryBuilder.andWhere('onlinePayment.created_at >= :startDate', { startDate })
+      queryBuilder
+        .andWhere('onlinePayment.created_at >= :startDate', { startDate })
         .andWhere('onlinePayment.created_at < :endDate', { endDate });
     }
 
@@ -150,19 +205,29 @@ export class OnlinePaymentService {
       const startDate = new Date(query.processedDate);
       const endDate = new Date(query.processedDate);
       endDate.setDate(endDate.getDate() + 1);
-      queryBuilder.andWhere('onlinePayment.processed_at >= :startDate', { startDate })
+      queryBuilder
+        .andWhere('onlinePayment.processed_at >= :startDate', { startDate })
         .andWhere('onlinePayment.processed_at < :endDate', { endDate });
     }
 
-    const sortField = query.sortBy === OnlinePaymentSortBy.ONLINE_ORDER_ID ? 'onlinePayment.online_order_id' :
-                     query.sortBy === OnlinePaymentSortBy.PAYMENT_PROVIDER ? 'onlinePayment.payment_provider' :
-                     query.sortBy === OnlinePaymentSortBy.TRANSACTION_ID ? 'onlinePayment.transaction_id' :
-                     query.sortBy === OnlinePaymentSortBy.AMOUNT ? 'onlinePayment.amount' :
-                     query.sortBy === OnlinePaymentSortBy.STATUS ? 'onlinePayment.status' :
-                     query.sortBy === OnlinePaymentSortBy.PROCESSED_AT ? 'onlinePayment.processed_at' :
-                     query.sortBy === OnlinePaymentSortBy.UPDATED_AT ? 'onlinePayment.updated_at' :
-                     query.sortBy === OnlinePaymentSortBy.ID ? 'onlinePayment.id' :
-                     'onlinePayment.created_at';
+    const sortField =
+      query.sortBy === OnlinePaymentSortBy.ONLINE_ORDER_ID
+        ? 'onlinePayment.online_order_id'
+        : query.sortBy === OnlinePaymentSortBy.PAYMENT_PROVIDER
+          ? 'onlinePayment.payment_provider'
+          : query.sortBy === OnlinePaymentSortBy.TRANSACTION_ID
+            ? 'onlinePayment.transaction_id'
+            : query.sortBy === OnlinePaymentSortBy.AMOUNT
+              ? 'onlinePayment.amount'
+              : query.sortBy === OnlinePaymentSortBy.STATUS
+                ? 'onlinePayment.status'
+                : query.sortBy === OnlinePaymentSortBy.PROCESSED_AT
+                  ? 'onlinePayment.processed_at'
+                  : query.sortBy === OnlinePaymentSortBy.UPDATED_AT
+                    ? 'onlinePayment.updated_at'
+                    : query.sortBy === OnlinePaymentSortBy.ID
+                      ? 'onlinePayment.id'
+                      : 'onlinePayment.created_at';
     const sortOrder = query.sortOrder || 'DESC';
     queryBuilder.orderBy(sortField, sortOrder);
 
@@ -186,18 +251,27 @@ export class OnlinePaymentService {
     return {
       statusCode: 200,
       message: 'Online payments retrieved successfully',
-      data: onlinePayments.map(item => this.formatOnlinePaymentResponse(item)),
+      data: onlinePayments.map((item) =>
+        this.formatOnlinePaymentResponse(item),
+      ),
       paginationMeta,
     };
   }
 
-  async findOne(id: number, authenticatedUserMerchantId: number): Promise<OneOnlinePaymentResponseDto> {
+  async findOne(
+    id: number,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneOnlinePaymentResponseDto> {
     if (!id || id <= 0) {
-      throw new BadRequestException('Online payment ID must be a valid positive number');
+      throw new BadRequestException(
+        'Online payment ID must be a valid positive number',
+      );
     }
 
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to access online payments');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to access online payments',
+      );
     }
 
     const onlinePayment = await this.onlinePaymentRepository
@@ -206,10 +280,16 @@ export class OnlinePaymentService {
       .leftJoin('onlineOrder.store', 'store')
       .leftJoin('store.merchant', 'merchant')
       .where('onlinePayment.id = :id', { id })
-      .andWhere('merchant.id = :merchantId', { merchantId: authenticatedUserMerchantId })
+      .andWhere('merchant.id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
       .andWhere('store.status = :status', { status: OnlineStoreStatus.ACTIVE })
-      .andWhere('onlineOrder.status != :deletedStatus', { deletedStatus: OnlineOrderStatus.DELETED })
-      .andWhere('onlinePayment.logical_status != :itemDeletedStatus', { itemDeletedStatus: OnlinePaymentStatus.DELETED })
+      .andWhere('onlineOrder.status != :deletedStatus', {
+        deletedStatus: OnlineOrderStatus.DELETED,
+      })
+      .andWhere('onlinePayment.logical_status != :itemDeletedStatus', {
+        itemDeletedStatus: OnlinePaymentStatus.DELETED,
+      })
       .getOne();
 
     if (!onlinePayment) {
@@ -223,13 +303,21 @@ export class OnlinePaymentService {
     };
   }
 
-  async update(id: number, updateOnlinePaymentDto: UpdateOnlinePaymentDto, authenticatedUserMerchantId: number): Promise<OneOnlinePaymentResponseDto> {
+  async update(
+    id: number,
+    updateOnlinePaymentDto: UpdateOnlinePaymentDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneOnlinePaymentResponseDto> {
     if (!id || id <= 0) {
-      throw new BadRequestException('Online payment ID must be a valid positive number');
+      throw new BadRequestException(
+        'Online payment ID must be a valid positive number',
+      );
     }
 
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to update online payments');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to update online payments',
+      );
     }
 
     const existingOnlinePayment = await this.onlinePaymentRepository
@@ -238,10 +326,16 @@ export class OnlinePaymentService {
       .leftJoin('onlineOrder.store', 'store')
       .leftJoin('store.merchant', 'merchant')
       .where('onlinePayment.id = :id', { id })
-      .andWhere('merchant.id = :merchantId', { merchantId: authenticatedUserMerchantId })
+      .andWhere('merchant.id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
       .andWhere('store.status = :status', { status: OnlineStoreStatus.ACTIVE })
-      .andWhere('onlineOrder.status != :deletedStatus', { deletedStatus: OnlineOrderStatus.DELETED })
-      .andWhere('onlinePayment.logical_status != :itemDeletedStatus', { itemDeletedStatus: OnlinePaymentStatus.DELETED })
+      .andWhere('onlineOrder.status != :deletedStatus', {
+        deletedStatus: OnlineOrderStatus.DELETED,
+      })
+      .andWhere('onlinePayment.logical_status != :itemDeletedStatus', {
+        itemDeletedStatus: OnlinePaymentStatus.DELETED,
+      })
       .getOne();
 
     if (!existingOnlinePayment) {
@@ -257,21 +351,33 @@ export class OnlinePaymentService {
         .createQueryBuilder('onlineOrder')
         .leftJoinAndSelect('onlineOrder.store', 'store')
         .leftJoin('store.merchant', 'merchant')
-        .where('onlineOrder.id = :orderId', { orderId: updateOnlinePaymentDto.onlineOrderId })
-        .andWhere('merchant.id = :merchantId', { merchantId: authenticatedUserMerchantId })
-        .andWhere('store.status = :status', { status: OnlineStoreStatus.ACTIVE })
-        .andWhere('onlineOrder.status != :deletedStatus', { deletedStatus: OnlineOrderStatus.DELETED })
+        .where('onlineOrder.id = :orderId', {
+          orderId: updateOnlinePaymentDto.onlineOrderId,
+        })
+        .andWhere('merchant.id = :merchantId', {
+          merchantId: authenticatedUserMerchantId,
+        })
+        .andWhere('store.status = :status', {
+          status: OnlineStoreStatus.ACTIVE,
+        })
+        .andWhere('onlineOrder.status != :deletedStatus', {
+          deletedStatus: OnlineOrderStatus.DELETED,
+        })
         .getOne();
 
       if (!onlineOrder) {
-        throw new NotFoundException('Online order not found or you do not have access to it');
+        throw new NotFoundException(
+          'Online order not found or you do not have access to it',
+        );
       }
 
-      existingOnlinePayment.online_order_id = updateOnlinePaymentDto.onlineOrderId;
+      existingOnlinePayment.online_order_id =
+        updateOnlinePaymentDto.onlineOrderId;
     }
 
     if (updateOnlinePaymentDto.paymentProvider !== undefined) {
-      existingOnlinePayment.payment_provider = updateOnlinePaymentDto.paymentProvider;
+      existingOnlinePayment.payment_provider =
+        updateOnlinePaymentDto.paymentProvider;
     }
 
     if (updateOnlinePaymentDto.transactionId !== undefined) {
@@ -283,15 +389,20 @@ export class OnlinePaymentService {
       });
 
       if (existingPayment && existingPayment.id !== id) {
-        throw new BadRequestException('A payment with this transaction ID already exists');
+        throw new BadRequestException(
+          'A payment with this transaction ID already exists',
+        );
       }
 
-      existingOnlinePayment.transaction_id = updateOnlinePaymentDto.transactionId;
+      existingOnlinePayment.transaction_id =
+        updateOnlinePaymentDto.transactionId;
     }
 
     if (updateOnlinePaymentDto.amount !== undefined) {
       if (updateOnlinePaymentDto.amount < 0) {
-        throw new BadRequestException('Amount must be greater than or equal to 0');
+        throw new BadRequestException(
+          'Amount must be greater than or equal to 0',
+        );
       }
       existingOnlinePayment.amount = updateOnlinePaymentDto.amount;
     }
@@ -301,10 +412,13 @@ export class OnlinePaymentService {
     }
 
     if (updateOnlinePaymentDto.processedAt !== undefined) {
-      existingOnlinePayment.processed_at = updateOnlinePaymentDto.processedAt || null;
+      existingOnlinePayment.processed_at =
+        updateOnlinePaymentDto.processedAt || null;
     }
 
-    const updatedOnlinePayment = await this.onlinePaymentRepository.save(existingOnlinePayment);
+    const updatedOnlinePayment = await this.onlinePaymentRepository.save(
+      existingOnlinePayment,
+    );
 
     const completeOnlinePayment = await this.onlinePaymentRepository.findOne({
       where: { id: updatedOnlinePayment.id },
@@ -322,13 +436,20 @@ export class OnlinePaymentService {
     };
   }
 
-  async remove(id: number, authenticatedUserMerchantId: number): Promise<OneOnlinePaymentResponseDto> {
+  async remove(
+    id: number,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneOnlinePaymentResponseDto> {
     if (!id || id <= 0) {
-      throw new BadRequestException('Online payment ID must be a valid positive number');
+      throw new BadRequestException(
+        'Online payment ID must be a valid positive number',
+      );
     }
 
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to delete online payments');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to delete online payments',
+      );
     }
 
     const existingOnlinePayment = await this.onlinePaymentRepository
@@ -337,10 +458,16 @@ export class OnlinePaymentService {
       .leftJoin('onlineOrder.store', 'store')
       .leftJoin('store.merchant', 'merchant')
       .where('onlinePayment.id = :id', { id })
-      .andWhere('merchant.id = :merchantId', { merchantId: authenticatedUserMerchantId })
+      .andWhere('merchant.id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
       .andWhere('store.status = :status', { status: OnlineStoreStatus.ACTIVE })
-      .andWhere('onlineOrder.status != :deletedStatus', { deletedStatus: OnlineOrderStatus.DELETED })
-      .andWhere('onlinePayment.logical_status != :itemDeletedStatus', { itemDeletedStatus: OnlinePaymentStatus.DELETED })
+      .andWhere('onlineOrder.status != :deletedStatus', {
+        deletedStatus: OnlineOrderStatus.DELETED,
+      })
+      .andWhere('onlinePayment.logical_status != :itemDeletedStatus', {
+        itemDeletedStatus: OnlinePaymentStatus.DELETED,
+      })
       .getOne();
 
     if (!existingOnlinePayment) {
@@ -352,7 +479,9 @@ export class OnlinePaymentService {
     }
 
     existingOnlinePayment.logical_status = OnlinePaymentStatus.DELETED;
-    const updatedOnlinePayment = await this.onlinePaymentRepository.save(existingOnlinePayment);
+    const updatedOnlinePayment = await this.onlinePaymentRepository.save(
+      existingOnlinePayment,
+    );
 
     return {
       statusCode: 200,
@@ -361,13 +490,17 @@ export class OnlinePaymentService {
     };
   }
 
-  private formatOnlinePaymentResponse(onlinePayment: OnlinePayment): OnlinePaymentResponseDto {
+  private formatOnlinePaymentResponse(
+    onlinePayment: OnlinePayment,
+  ): OnlinePaymentResponseDto {
     return {
       id: onlinePayment.id,
       onlineOrderId: onlinePayment.online_order_id,
       paymentProvider: onlinePayment.payment_provider,
       transactionId: onlinePayment.transaction_id,
-      amount: onlinePayment.amount ? parseFloat(onlinePayment.amount.toString()) : 0,
+      amount: onlinePayment.amount
+        ? parseFloat(onlinePayment.amount.toString())
+        : 0,
       status: onlinePayment.status,
       processedAt: onlinePayment.processed_at,
       logicalStatus: onlinePayment.logical_status,

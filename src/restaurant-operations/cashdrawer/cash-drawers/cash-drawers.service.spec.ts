@@ -1,15 +1,19 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/unbound-method */
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { Repository, Between } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException, ForbiddenException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { CashDrawersService } from './cash-drawers.service';
 import { CashDrawer } from './entities/cash-drawer.entity';
 import { Shift } from '../../shift/shifts/entities/shift.entity';
-import { Collaborator } from '../../../hr/collaborators/entities/collaborator.entity';
+import { Collaborator } from '../../../finance-hr/hr/collaborators/entities/collaborator.entity';
 import { CreateCashDrawerDto } from './dto/create-cash-drawer.dto';
 import { UpdateCashDrawerDto } from './dto/update-cash-drawer.dto';
 import { GetCashDrawersQueryDto } from './dto/get-cash-drawers-query.dto';
@@ -105,9 +109,13 @@ describe('CashDrawersService', () => {
     }).compile();
 
     service = module.get<CashDrawersService>(CashDrawersService);
-    cashDrawerRepository = module.get<Repository<CashDrawer>>(getRepositoryToken(CashDrawer));
+    cashDrawerRepository = module.get<Repository<CashDrawer>>(
+      getRepositoryToken(CashDrawer),
+    );
     shiftRepository = module.get<Repository<Shift>>(getRepositoryToken(Shift));
-    collaboratorRepository = module.get<Repository<Collaborator>>(getRepositoryToken(Collaborator));
+    collaboratorRepository = module.get<Repository<Collaborator>>(
+      getRepositoryToken(Collaborator),
+    );
   });
 
   afterEach(() => {
@@ -126,11 +134,20 @@ describe('CashDrawersService', () => {
     };
 
     it('should create a cash drawer successfully', async () => {
-      jest.spyOn(shiftRepository, 'findOne').mockResolvedValue(mockShift as any);
-      jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(mockCollaborator as any);
+      jest
+        .spyOn(shiftRepository, 'findOne')
+        .mockResolvedValue(mockShift as any);
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
+        .mockResolvedValue(mockCollaborator as any);
       jest.spyOn(cashDrawerRepository, 'findOne').mockResolvedValue(null);
-      jest.spyOn(cashDrawerRepository, 'save').mockResolvedValue(mockCashDrawer as any);
-      jest.spyOn(cashDrawerRepository, 'findOne').mockResolvedValueOnce(null).mockResolvedValueOnce(mockCashDrawer as any);
+      jest
+        .spyOn(cashDrawerRepository, 'save')
+        .mockResolvedValue(mockCashDrawer as any);
+      jest
+        .spyOn(cashDrawerRepository, 'findOne')
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(mockCashDrawer as any);
 
       const result = await service.create(createCashDrawerDto, 1);
 
@@ -148,10 +165,12 @@ describe('CashDrawersService', () => {
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.create(createCashDrawerDto, undefined as any)).rejects.toThrow(
-        ForbiddenException,
-      );
-      await expect(service.create(createCashDrawerDto, undefined as any)).rejects.toThrow(
+      await expect(
+        service.create(createCashDrawerDto, undefined as any),
+      ).rejects.toThrow(ForbiddenException);
+      await expect(
+        service.create(createCashDrawerDto, undefined as any),
+      ).rejects.toThrow(
         'You must be associated with a merchant to create cash drawers',
       );
     });
@@ -172,7 +191,9 @@ describe('CashDrawersService', () => {
         ...mockShift,
         merchant: { id: 2, name: 'Other Merchant' },
       };
-      jest.spyOn(shiftRepository, 'findOne').mockResolvedValue(shiftFromDifferentMerchant as any);
+      jest
+        .spyOn(shiftRepository, 'findOne')
+        .mockResolvedValue(shiftFromDifferentMerchant as any);
 
       await expect(service.create(createCashDrawerDto, 1)).rejects.toThrow(
         ForbiddenException,
@@ -183,7 +204,9 @@ describe('CashDrawersService', () => {
     });
 
     it('should throw NotFoundException if openedBy collaborator not found', async () => {
-      jest.spyOn(shiftRepository, 'findOne').mockResolvedValue(mockShift as any);
+      jest
+        .spyOn(shiftRepository, 'findOne')
+        .mockResolvedValue(mockShift as any);
       jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(null);
 
       await expect(service.create(createCashDrawerDto, 1)).rejects.toThrow(
@@ -199,8 +222,12 @@ describe('CashDrawersService', () => {
         ...mockCollaborator,
         merchant_id: 2,
       };
-      jest.spyOn(shiftRepository, 'findOne').mockResolvedValue(mockShift as any);
-      jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(collaboratorFromDifferentMerchant as any);
+      jest
+        .spyOn(shiftRepository, 'findOne')
+        .mockResolvedValue(mockShift as any);
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
+        .mockResolvedValue(collaboratorFromDifferentMerchant as any);
 
       await expect(service.create(createCashDrawerDto, 1)).rejects.toThrow(
         ForbiddenException,
@@ -216,9 +243,12 @@ describe('CashDrawersService', () => {
         closedBy: 2,
       };
       jest.clearAllMocks();
-      jest.spyOn(shiftRepository, 'findOne').mockResolvedValue(mockShift as any);
+      jest
+        .spyOn(shiftRepository, 'findOne')
+        .mockResolvedValue(mockShift as any);
       // Mock collaboratorRepository.findOne to return openedBy collaborator first, then null for closedBy
-      jest.spyOn(collaboratorRepository, 'findOne')
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
         .mockImplementation((options: any) => {
           // First call: openedBy (id: 1)
           if (options?.where?.id === 1) {
@@ -232,7 +262,9 @@ describe('CashDrawersService', () => {
         });
       jest.spyOn(cashDrawerRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.create(dtoWithClosedBy, 1)).rejects.toThrow(NotFoundException);
+      await expect(service.create(dtoWithClosedBy, 1)).rejects.toThrow(
+        NotFoundException,
+      );
       await expect(service.create(dtoWithClosedBy, 1)).rejects.toThrow(
         'Closed by collaborator not found',
       );
@@ -243,8 +275,12 @@ describe('CashDrawersService', () => {
         ...createCashDrawerDto,
         openingBalance: -10,
       };
-      jest.spyOn(shiftRepository, 'findOne').mockResolvedValue(mockShift as any);
-      jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(mockCollaborator as any);
+      jest
+        .spyOn(shiftRepository, 'findOne')
+        .mockResolvedValue(mockShift as any);
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
+        .mockResolvedValue(mockCollaborator as any);
 
       await expect(service.create(dtoWithNegativeBalance, 1)).rejects.toThrow(
         BadRequestException,
@@ -260,15 +296,19 @@ describe('CashDrawersService', () => {
         closingBalance: -10,
         closedBy: 1,
       };
-      jest.spyOn(shiftRepository, 'findOne').mockResolvedValue(mockShift as any);
-      jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(mockCollaborator as any);
+      jest
+        .spyOn(shiftRepository, 'findOne')
+        .mockResolvedValue(mockShift as any);
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
+        .mockResolvedValue(mockCollaborator as any);
 
-      await expect(service.create(dtoWithNegativeClosingBalance, 1)).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.create(dtoWithNegativeClosingBalance, 1)).rejects.toThrow(
-        'Closing balance must be non-negative',
-      );
+      await expect(
+        service.create(dtoWithNegativeClosingBalance, 1),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.create(dtoWithNegativeClosingBalance, 1),
+      ).rejects.toThrow('Closing balance must be non-negative');
     });
 
     it('should throw BadRequestException if closingBalance provided without closedBy', async () => {
@@ -276,14 +316,20 @@ describe('CashDrawersService', () => {
         ...createCashDrawerDto,
         closingBalance: 150.0,
       };
-      jest.spyOn(shiftRepository, 'findOne').mockResolvedValue(mockShift as any);
-      jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(mockCollaborator as any);
+      jest
+        .spyOn(shiftRepository, 'findOne')
+        .mockResolvedValue(mockShift as any);
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
+        .mockResolvedValue(mockCollaborator as any);
       jest.spyOn(cashDrawerRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.create(dtoWithOnlyClosingBalance, 1)).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.create(dtoWithOnlyClosingBalance, 1)).rejects.toThrow(
+      await expect(
+        service.create(dtoWithOnlyClosingBalance, 1),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.create(dtoWithOnlyClosingBalance, 1),
+      ).rejects.toThrow(
         'Closing balance and closed by must be provided together to close the cash drawer',
       );
     });
@@ -293,9 +339,15 @@ describe('CashDrawersService', () => {
         ...mockCashDrawer,
         id: 2,
       };
-      jest.spyOn(shiftRepository, 'findOne').mockResolvedValue(mockShift as any);
-      jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(mockCollaborator as any);
-      jest.spyOn(cashDrawerRepository, 'findOne').mockResolvedValue(existingOpenCashDrawer as any);
+      jest
+        .spyOn(shiftRepository, 'findOne')
+        .mockResolvedValue(mockShift as any);
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
+        .mockResolvedValue(mockCollaborator as any);
+      jest
+        .spyOn(cashDrawerRepository, 'findOne')
+        .mockResolvedValue(existingOpenCashDrawer as any);
 
       await expect(service.create(createCashDrawerDto, 1)).rejects.toThrow(
         ConflictException,
@@ -318,11 +370,20 @@ describe('CashDrawersService', () => {
         status: CashDrawerStatus.CLOSE,
         closedByCollaborator: mockCollaborator,
       };
-      jest.spyOn(shiftRepository, 'findOne').mockResolvedValue(mockShift as any);
-      jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(mockCollaborator as any);
+      jest
+        .spyOn(shiftRepository, 'findOne')
+        .mockResolvedValue(mockShift as any);
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
+        .mockResolvedValue(mockCollaborator as any);
       jest.spyOn(cashDrawerRepository, 'findOne').mockResolvedValue(null);
-      jest.spyOn(cashDrawerRepository, 'save').mockResolvedValue(closedCashDrawer as any);
-      jest.spyOn(cashDrawerRepository, 'findOne').mockResolvedValueOnce(null).mockResolvedValueOnce(closedCashDrawer as any);
+      jest
+        .spyOn(cashDrawerRepository, 'save')
+        .mockResolvedValue(closedCashDrawer as any);
+      jest
+        .spyOn(cashDrawerRepository, 'findOne')
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(closedCashDrawer as any);
 
       const result = await service.create(dtoWithClosing, 1);
 
@@ -338,7 +399,9 @@ describe('CashDrawersService', () => {
     };
 
     it('should return paginated list of cash drawers', async () => {
-      jest.spyOn(cashDrawerRepository, 'findAndCount').mockResolvedValue([[mockCashDrawer] as any, 1]);
+      jest
+        .spyOn(cashDrawerRepository, 'findAndCount')
+        .mockResolvedValue([[mockCashDrawer] as any, 1]);
 
       const result = await service.findAll(query, 1);
 
@@ -361,8 +424,12 @@ describe('CashDrawersService', () => {
 
     it('should filter by shiftId', async () => {
       const queryWithShiftId = { ...query, shiftId: 1 };
-      jest.spyOn(shiftRepository, 'findOne').mockResolvedValue(mockShift as any);
-      jest.spyOn(cashDrawerRepository, 'findAndCount').mockResolvedValue([[mockCashDrawer] as any, 1]);
+      jest
+        .spyOn(shiftRepository, 'findOne')
+        .mockResolvedValue(mockShift as any);
+      jest
+        .spyOn(cashDrawerRepository, 'findAndCount')
+        .mockResolvedValue([[mockCashDrawer] as any, 1]);
 
       await service.findAll(queryWithShiftId, 1);
 
@@ -374,8 +441,12 @@ describe('CashDrawersService', () => {
 
     it('should filter by openedBy', async () => {
       const queryWithOpenedBy = { ...query, openedBy: 1 };
-      jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(mockCollaborator as any);
-      jest.spyOn(cashDrawerRepository, 'findAndCount').mockResolvedValue([[mockCashDrawer] as any, 1]);
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
+        .mockResolvedValue(mockCollaborator as any);
+      jest
+        .spyOn(cashDrawerRepository, 'findAndCount')
+        .mockResolvedValue([[mockCashDrawer] as any, 1]);
 
       await service.findAll(queryWithOpenedBy, 1);
 
@@ -386,7 +457,9 @@ describe('CashDrawersService', () => {
 
     it('should filter by status', async () => {
       const queryWithStatus = { ...query, status: CashDrawerStatus.OPEN };
-      jest.spyOn(cashDrawerRepository, 'findAndCount').mockResolvedValue([[mockCashDrawer] as any, 1]);
+      jest
+        .spyOn(cashDrawerRepository, 'findAndCount')
+        .mockResolvedValue([[mockCashDrawer] as any, 1]);
 
       await service.findAll(queryWithStatus, 1);
 
@@ -396,7 +469,7 @@ describe('CashDrawersService', () => {
     it('should throw BadRequestException if page is invalid', async () => {
       // Use negative value since 0 is treated as falsy and defaults to 1
       const queryWithInvalidPage = { ...query, page: -1 };
-      
+
       await expect(service.findAll(queryWithInvalidPage, 1)).rejects.toThrow(
         BadRequestException,
       );
@@ -407,7 +480,7 @@ describe('CashDrawersService', () => {
 
     it('should throw BadRequestException if limit is invalid', async () => {
       const queryWithInvalidLimit = { ...query, limit: 101 };
-      
+
       await expect(service.findAll(queryWithInvalidLimit, 1)).rejects.toThrow(
         BadRequestException,
       );
@@ -418,7 +491,7 @@ describe('CashDrawersService', () => {
 
     it('should throw BadRequestException if createdDate format is invalid', async () => {
       const queryWithInvalidDate = { ...query, createdDate: 'invalid-date' };
-      
+
       await expect(service.findAll(queryWithInvalidDate, 1)).rejects.toThrow(
         BadRequestException,
       );
@@ -429,7 +502,9 @@ describe('CashDrawersService', () => {
 
     it('should handle pagination correctly', async () => {
       const queryPage2 = { page: 2, limit: 5 };
-      jest.spyOn(cashDrawerRepository, 'findAndCount').mockResolvedValue([[mockCashDrawer] as any, 15]);
+      jest
+        .spyOn(cashDrawerRepository, 'findAndCount')
+        .mockResolvedValue([[mockCashDrawer] as any, 15]);
 
       const result = await service.findAll(queryPage2, 1);
 
@@ -444,16 +519,24 @@ describe('CashDrawersService', () => {
 
   describe('findOne', () => {
     it('should return a cash drawer successfully', async () => {
-      jest.spyOn(cashDrawerRepository, 'findOne').mockResolvedValue(mockCashDrawer as any);
+      jest
+        .spyOn(cashDrawerRepository, 'findOne')
+        .mockResolvedValue(mockCashDrawer as any);
 
       const result = await service.findOne(1, 1);
 
       expect(cashDrawerRepository.findOne).toHaveBeenCalledWith({
-        where: { 
+        where: {
           id: 1,
           merchant_id: 1,
         },
-        relations: ['merchant', 'shift', 'shift.merchant', 'openedByCollaborator', 'closedByCollaborator'],
+        relations: [
+          'merchant',
+          'shift',
+          'shift.merchant',
+          'openedByCollaborator',
+          'closedByCollaborator',
+        ],
       });
       expect(result.statusCode).toBe(200);
       expect(result.message).toBe('Cash drawer retrieved successfully');
@@ -461,9 +544,7 @@ describe('CashDrawersService', () => {
     });
 
     it('should throw BadRequestException if id is invalid', async () => {
-      await expect(service.findOne(0, 1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.findOne(0, 1)).rejects.toThrow(BadRequestException);
       await expect(service.findOne(0, 1)).rejects.toThrow(
         'Cash drawer ID must be a valid positive number',
       );
@@ -481,9 +562,7 @@ describe('CashDrawersService', () => {
     it('should throw NotFoundException if cash drawer not found', async () => {
       jest.spyOn(cashDrawerRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.findOne(999, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.findOne(999, 1)).rejects.toThrow(NotFoundException);
       await expect(service.findOne(999, 1)).rejects.toThrow(
         'Cash drawer not found',
       );
@@ -495,11 +574,11 @@ describe('CashDrawersService', () => {
         merchant_id: 2,
         merchant: { id: 2, name: 'Other Merchant' },
       };
-      jest.spyOn(cashDrawerRepository, 'findOne').mockResolvedValue(cashDrawerFromDifferentMerchant as any);
+      jest
+        .spyOn(cashDrawerRepository, 'findOne')
+        .mockResolvedValue(cashDrawerFromDifferentMerchant as any);
 
-      await expect(service.findOne(1, 1)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.findOne(1, 1)).rejects.toThrow(ForbiddenException);
       await expect(service.findOne(1, 1)).rejects.toThrow(
         'You can only access cash drawers from your merchant',
       );
@@ -517,10 +596,13 @@ describe('CashDrawersService', () => {
         opening_balance: 150.0,
         current_balance: 150.0,
       };
-      jest.spyOn(cashDrawerRepository, 'findOne')
+      jest
+        .spyOn(cashDrawerRepository, 'findOne')
         .mockResolvedValueOnce(mockCashDrawer as any) // Find existing
         .mockResolvedValueOnce(updatedCashDrawer as any); // Get updated
-      jest.spyOn(cashDrawerRepository, 'update').mockResolvedValue(undefined as any);
+      jest
+        .spyOn(cashDrawerRepository, 'update')
+        .mockResolvedValue(undefined as any);
 
       const result = await service.update(1, updateCashDrawerDto, 1);
 
@@ -537,9 +619,9 @@ describe('CashDrawersService', () => {
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.update(1, updateCashDrawerDto, undefined as any)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(
+        service.update(1, updateCashDrawerDto, undefined as any),
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw NotFoundException if cash drawer not found', async () => {
@@ -557,12 +639,16 @@ describe('CashDrawersService', () => {
       const dtoWithOnlyClosingBalance = {
         closingBalance: 200.0,
       };
-      jest.spyOn(cashDrawerRepository, 'findOne').mockResolvedValue(mockCashDrawer as any);
+      jest
+        .spyOn(cashDrawerRepository, 'findOne')
+        .mockResolvedValue(mockCashDrawer as any);
 
-      await expect(service.update(1, dtoWithOnlyClosingBalance, 1)).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.update(1, dtoWithOnlyClosingBalance, 1)).rejects.toThrow(
+      await expect(
+        service.update(1, dtoWithOnlyClosingBalance, 1),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.update(1, dtoWithOnlyClosingBalance, 1),
+      ).rejects.toThrow(
         'Closing balance and closed by must be provided together to close the cash drawer',
       );
     });
@@ -579,11 +665,16 @@ describe('CashDrawersService', () => {
         status: CashDrawerStatus.CLOSE,
         closedByCollaborator: mockCollaborator,
       };
-      jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(mockCollaborator as any);
-      jest.spyOn(cashDrawerRepository, 'findOne')
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
+        .mockResolvedValue(mockCollaborator as any);
+      jest
+        .spyOn(cashDrawerRepository, 'findOne')
         .mockResolvedValueOnce(mockCashDrawer as any) // Find existing
         .mockResolvedValueOnce(closedCashDrawer as any); // Get updated
-      jest.spyOn(cashDrawerRepository, 'update').mockResolvedValue(undefined as any);
+      jest
+        .spyOn(cashDrawerRepository, 'update')
+        .mockResolvedValue(undefined as any);
 
       const result = await service.update(1, dtoWithClosing, 1);
 
@@ -594,8 +685,12 @@ describe('CashDrawersService', () => {
 
   describe('remove', () => {
     it('should remove a cash drawer successfully', async () => {
-      jest.spyOn(cashDrawerRepository, 'findOne').mockResolvedValue(mockCashDrawer as any);
-      jest.spyOn(cashDrawerRepository, 'remove').mockResolvedValue(mockCashDrawer as any);
+      jest
+        .spyOn(cashDrawerRepository, 'findOne')
+        .mockResolvedValue(mockCashDrawer as any);
+      jest
+        .spyOn(cashDrawerRepository, 'remove')
+        .mockResolvedValue(mockCashDrawer as any);
 
       const result = await service.remove(1, 1);
 
@@ -606,9 +701,7 @@ describe('CashDrawersService', () => {
     });
 
     it('should throw BadRequestException if id is invalid', async () => {
-      await expect(service.remove(0, 1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.remove(0, 1)).rejects.toThrow(BadRequestException);
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
@@ -620,9 +713,7 @@ describe('CashDrawersService', () => {
     it('should throw NotFoundException if cash drawer not found', async () => {
       jest.spyOn(cashDrawerRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.remove(999, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.remove(999, 1)).rejects.toThrow(NotFoundException);
       await expect(service.remove(999, 1)).rejects.toThrow(
         'Cash drawer not found',
       );
@@ -634,11 +725,11 @@ describe('CashDrawersService', () => {
         merchant_id: 2,
         merchant: { id: 2, name: 'Other Merchant' },
       };
-      jest.spyOn(cashDrawerRepository, 'findOne').mockResolvedValue(cashDrawerFromDifferentMerchant as any);
+      jest
+        .spyOn(cashDrawerRepository, 'findOne')
+        .mockResolvedValue(cashDrawerFromDifferentMerchant as any);
 
-      await expect(service.remove(1, 1)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.remove(1, 1)).rejects.toThrow(ForbiddenException);
       await expect(service.remove(1, 1)).rejects.toThrow(
         'You can only delete cash drawers from your merchant',
       );

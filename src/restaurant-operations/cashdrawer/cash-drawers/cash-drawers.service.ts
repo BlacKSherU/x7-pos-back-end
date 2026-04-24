@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, Like, IsNull } from 'typeorm';
 import { CashDrawer } from './entities/cash-drawer.entity';
@@ -7,7 +13,11 @@ import { Collaborator } from 'src/finance-hr/hr/collaborators/entities/collabora
 import { CreateCashDrawerDto } from './dto/create-cash-drawer.dto';
 import { UpdateCashDrawerDto } from './dto/update-cash-drawer.dto';
 import { GetCashDrawersQueryDto } from './dto/get-cash-drawers-query.dto';
-import { CashDrawerResponseDto, OneCashDrawerResponseDto, AllCashDrawersResponseDto } from './dto/cash-drawer-response.dto';
+import {
+  CashDrawerResponseDto,
+  OneCashDrawerResponseDto,
+  AllCashDrawersResponseDto,
+} from './dto/cash-drawer-response.dto';
 import { PaginatedCashDrawersResponseDto } from './dto/paginated-cash-drawers-response.dto';
 import { CashDrawerStatus } from './constants/cash-drawer-status.enum';
 
@@ -22,11 +32,15 @@ export class CashDrawersService {
     private readonly collaboratorRepository: Repository<Collaborator>,
   ) {}
 
-  async create(createCashDrawerDto: CreateCashDrawerDto, authenticatedUserMerchantId: number): Promise<OneCashDrawerResponseDto> {
-
+  async create(
+    createCashDrawerDto: CreateCashDrawerDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneCashDrawerResponseDto> {
     // Validate user permissions - must be associated with a merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to create cash drawers');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to create cash drawers',
+      );
     }
 
     // Validate shift exists and belongs to merchant
@@ -40,7 +54,9 @@ export class CashDrawersService {
     }
 
     if (shift.merchant.id !== authenticatedUserMerchantId) {
-      throw new ForbiddenException('You can only create cash drawers for shifts belonging to your merchant');
+      throw new ForbiddenException(
+        'You can only create cash drawers for shifts belonging to your merchant',
+      );
     }
 
     // Validate opened by collaborator exists and belongs to merchant
@@ -53,7 +69,9 @@ export class CashDrawersService {
     }
 
     if (openedByCollaborator.merchant_id !== authenticatedUserMerchantId) {
-      throw new ForbiddenException('You can only assign collaborators from your merchant');
+      throw new ForbiddenException(
+        'You can only assign collaborators from your merchant',
+      );
     }
 
     // Validate closed by collaborator if provided
@@ -67,7 +85,9 @@ export class CashDrawersService {
       }
 
       if (closedByCollaborator.merchant_id !== authenticatedUserMerchantId) {
-        throw new ForbiddenException('You can only assign collaborators from your merchant');
+        throw new ForbiddenException(
+          'You can only assign collaborators from your merchant',
+        );
       }
     }
 
@@ -80,7 +100,9 @@ export class CashDrawersService {
     });
 
     if (existingOpenCashDrawer) {
-      throw new ConflictException('There is already an open cash drawer for this shift');
+      throw new ConflictException(
+        'There is already an open cash drawer for this shift',
+      );
     }
 
     // Business rule validation: Opening balance must be non-negative
@@ -89,15 +111,24 @@ export class CashDrawersService {
     }
 
     // Business rule validation: Closing balance must be non-negative if provided
-    if (createCashDrawerDto.closingBalance !== undefined && createCashDrawerDto.closingBalance < 0) {
-     throw new BadRequestException('Closing balance must be non-negative');
+    if (
+      createCashDrawerDto.closingBalance !== undefined &&
+      createCashDrawerDto.closingBalance < 0
+    ) {
+      throw new BadRequestException('Closing balance must be non-negative');
     }
 
     // If one of closingBalance/closedBy is provided without the other, it's invalid
-    const providedClosingBalance = createCashDrawerDto.closingBalance !== undefined;
+    const providedClosingBalance =
+      createCashDrawerDto.closingBalance !== undefined;
     const providedClosedBy = createCashDrawerDto.closedBy !== undefined;
-    if ((providedClosingBalance && !providedClosedBy) || (!providedClosingBalance && providedClosedBy)) {
-      throw new BadRequestException('Closing balance and closed by must be provided together to close the cash drawer');
+    if (
+      (providedClosingBalance && !providedClosedBy) ||
+      (!providedClosingBalance && providedClosedBy)
+    ) {
+      throw new BadRequestException(
+        'Closing balance and closed by must be provided together to close the cash drawer',
+      );
     }
 
     // Create cash drawer
@@ -109,14 +140,23 @@ export class CashDrawersService {
     cashDrawer.closing_balance = createCashDrawerDto.closingBalance || null;
     cashDrawer.opened_by = createCashDrawerDto.openedBy;
     cashDrawer.closed_by = createCashDrawerDto.closedBy || null;
-    cashDrawer.status = providedClosingBalance && providedClosedBy ? CashDrawerStatus.CLOSE : CashDrawerStatus.OPEN;
+    cashDrawer.status =
+      providedClosingBalance && providedClosedBy
+        ? CashDrawerStatus.CLOSE
+        : CashDrawerStatus.OPEN;
 
     const savedCashDrawer = await this.cashDrawerRepository.save(cashDrawer);
 
     // Fetch the complete cash drawer with relations
     const completeCashDrawer = await this.cashDrawerRepository.findOne({
       where: { id: savedCashDrawer.id },
-      relations: ['merchant', 'shift', 'shift.merchant', 'openedByCollaborator', 'closedByCollaborator'],
+      relations: [
+        'merchant',
+        'shift',
+        'shift.merchant',
+        'openedByCollaborator',
+        'closedByCollaborator',
+      ],
     });
 
     if (!completeCashDrawer) {
@@ -130,11 +170,15 @@ export class CashDrawersService {
     };
   }
 
-  async findAll(query: GetCashDrawersQueryDto, authenticatedUserMerchantId: number): Promise<PaginatedCashDrawersResponseDto> {
-
+  async findAll(
+    query: GetCashDrawersQueryDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<PaginatedCashDrawersResponseDto> {
     // Validate user has merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to access cash drawers');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to access cash drawers',
+      );
     }
 
     // Validate pagination parameters
@@ -150,7 +194,9 @@ export class CashDrawersService {
     if (query.createdDate) {
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
       if (!dateRegex.test(query.createdDate)) {
-        throw new BadRequestException('Created date must be in YYYY-MM-DD format');
+        throw new BadRequestException(
+          'Created date must be in YYYY-MM-DD format',
+        );
       }
     }
 
@@ -184,10 +230,14 @@ export class CashDrawersService {
         where: { id: query.openedBy },
       });
       if (!collaborator) {
-        throw new NotFoundException(`Collaborator with ID ${query.openedBy} not found`);
+        throw new NotFoundException(
+          `Collaborator with ID ${query.openedBy} not found`,
+        );
       }
       if (collaborator.merchant_id !== authenticatedUserMerchantId) {
-        throw new ForbiddenException('Collaborator does not belong to your merchant');
+        throw new ForbiddenException(
+          'Collaborator does not belong to your merchant',
+        );
       }
       whereConditions.opened_by = query.openedBy;
     }
@@ -198,10 +248,14 @@ export class CashDrawersService {
         where: { id: query.closedBy },
       });
       if (!collaborator) {
-        throw new NotFoundException(`Collaborator with ID ${query.closedBy} not found`);
+        throw new NotFoundException(
+          `Collaborator with ID ${query.closedBy} not found`,
+        );
       }
       if (collaborator.merchant_id !== authenticatedUserMerchantId) {
-        throw new ForbiddenException('Collaborator does not belong to your merchant');
+        throw new ForbiddenException(
+          'Collaborator does not belong to your merchant',
+        );
       }
       whereConditions.closed_by = query.closedBy;
     }
@@ -221,25 +275,35 @@ export class CashDrawersService {
     // Build order conditions
     const orderConditions: any = {};
     if (query.sortBy) {
-      const sortField = query.sortBy === 'openingBalance' ? 'opening_balance' :
-                       query.sortBy === 'closingBalance' ? 'closing_balance' :
-                       query.sortBy === 'createdAt' ? 'created_at' :
-                       query.sortBy === 'updatedAt' ? 'updated_at' : 'id';
+      const sortField =
+        query.sortBy === 'openingBalance'
+          ? 'opening_balance'
+          : query.sortBy === 'closingBalance'
+            ? 'closing_balance'
+            : query.sortBy === 'createdAt'
+              ? 'created_at'
+              : query.sortBy === 'updatedAt'
+                ? 'updated_at'
+                : 'id';
       orderConditions[sortField] = query.sortOrder || 'DESC';
     } else {
       orderConditions.created_at = 'DESC';
     }
 
-
     // Execute query
     const [cashDrawers, total] = await this.cashDrawerRepository.findAndCount({
       where: whereConditions,
-      relations: ['merchant', 'shift', 'shift.merchant', 'openedByCollaborator', 'closedByCollaborator'],
+      relations: [
+        'merchant',
+        'shift',
+        'shift.merchant',
+        'openedByCollaborator',
+        'closedByCollaborator',
+      ],
       order: orderConditions,
       skip,
       take: limit,
     });
-
 
     // Calculate pagination metadata
     const totalPages = Math.ceil(total / limit);
@@ -258,30 +322,44 @@ export class CashDrawersService {
     return {
       statusCode: 200,
       message: 'Cash drawers retrieved successfully',
-      data: cashDrawers.map(cashDrawer => this.formatCashDrawerResponse(cashDrawer)),
+      data: cashDrawers.map((cashDrawer) =>
+        this.formatCashDrawerResponse(cashDrawer),
+      ),
       paginationMeta,
     };
   }
 
-  async findOne(id: number, authenticatedUserMerchantId: number): Promise<OneCashDrawerResponseDto> {
-
+  async findOne(
+    id: number,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneCashDrawerResponseDto> {
     // Validate ID
     if (!id || id <= 0) {
-      throw new BadRequestException('Cash drawer ID must be a valid positive number');
+      throw new BadRequestException(
+        'Cash drawer ID must be a valid positive number',
+      );
     }
 
     // Validate user has merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to access cash drawers');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to access cash drawers',
+      );
     }
 
     // Find cash drawer (show all cash drawers regardless of status)
     const cashDrawer = await this.cashDrawerRepository.findOne({
-      where: { 
+      where: {
         id,
         merchant_id: authenticatedUserMerchantId,
       },
-      relations: ['merchant', 'shift', 'shift.merchant', 'openedByCollaborator', 'closedByCollaborator'],
+      relations: [
+        'merchant',
+        'shift',
+        'shift.merchant',
+        'openedByCollaborator',
+        'closedByCollaborator',
+      ],
     });
 
     if (!cashDrawer) {
@@ -290,9 +368,10 @@ export class CashDrawersService {
 
     // Validate merchant ownership
     if (cashDrawer.merchant_id !== authenticatedUserMerchantId) {
-      throw new ForbiddenException('You can only access cash drawers from your merchant');
+      throw new ForbiddenException(
+        'You can only access cash drawers from your merchant',
+      );
     }
-
 
     return {
       statusCode: 200,
@@ -301,22 +380,35 @@ export class CashDrawersService {
     };
   }
 
-  async update(id: number, updateCashDrawerDto: UpdateCashDrawerDto, authenticatedUserMerchantId: number): Promise<OneCashDrawerResponseDto> {
-
+  async update(
+    id: number,
+    updateCashDrawerDto: UpdateCashDrawerDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneCashDrawerResponseDto> {
     // Validate ID
     if (!id || id <= 0) {
-      throw new BadRequestException('Cash drawer ID must be a valid positive number');
+      throw new BadRequestException(
+        'Cash drawer ID must be a valid positive number',
+      );
     }
 
     // Validate user has merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to update cash drawers');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to update cash drawers',
+      );
     }
 
     // Find existing cash drawer
     const existingCashDrawer = await this.cashDrawerRepository.findOne({
       where: { id },
-      relations: ['merchant', 'shift', 'shift.merchant', 'openedByCollaborator', 'closedByCollaborator'],
+      relations: [
+        'merchant',
+        'shift',
+        'shift.merchant',
+        'openedByCollaborator',
+        'closedByCollaborator',
+      ],
     });
 
     if (!existingCashDrawer) {
@@ -325,7 +417,9 @@ export class CashDrawersService {
 
     // Validate merchant ownership
     if (existingCashDrawer.merchant_id !== authenticatedUserMerchantId) {
-      throw new ForbiddenException('You can only update cash drawers from your merchant');
+      throw new ForbiddenException(
+        'You can only update cash drawers from your merchant',
+      );
     }
 
     // Validate shift if provided
@@ -340,7 +434,9 @@ export class CashDrawersService {
       }
 
       if (shift.merchant.id !== authenticatedUserMerchantId) {
-        throw new ForbiddenException('You can only assign shifts from your merchant');
+        throw new ForbiddenException(
+          'You can only assign shifts from your merchant',
+        );
       }
     }
 
@@ -355,7 +451,9 @@ export class CashDrawersService {
       }
 
       if (openedByCollaborator.merchant_id !== authenticatedUserMerchantId) {
-        throw new ForbiddenException('You can only assign collaborators from your merchant');
+        throw new ForbiddenException(
+          'You can only assign collaborators from your merchant',
+        );
       }
     }
 
@@ -370,32 +468,51 @@ export class CashDrawersService {
       }
 
       if (closedByCollaborator.merchant_id !== authenticatedUserMerchantId) {
-        throw new ForbiddenException('You can only assign collaborators from your merchant');
+        throw new ForbiddenException(
+          'You can only assign collaborators from your merchant',
+        );
       }
     }
 
     // If one of closingBalance/closedBy is provided without the other, it's invalid
-    const providedClosingBalanceU = updateCashDrawerDto.closingBalance !== undefined;
+    const providedClosingBalanceU =
+      updateCashDrawerDto.closingBalance !== undefined;
     const providedClosedByU = updateCashDrawerDto.closedBy !== undefined;
-    if ((providedClosingBalanceU && !providedClosedByU) || (!providedClosingBalanceU && providedClosedByU)) {
-      throw new BadRequestException('Closing balance and closed by must be provided together to close the cash drawer');
+    if (
+      (providedClosingBalanceU && !providedClosedByU) ||
+      (!providedClosingBalanceU && providedClosedByU)
+    ) {
+      throw new BadRequestException(
+        'Closing balance and closed by must be provided together to close the cash drawer',
+      );
     }
 
     // Business rule validation: amounts
-    if (updateCashDrawerDto.openingBalance !== undefined && updateCashDrawerDto.openingBalance < 0) {
+    if (
+      updateCashDrawerDto.openingBalance !== undefined &&
+      updateCashDrawerDto.openingBalance < 0
+    ) {
       throw new BadRequestException('Opening balance must be non-negative');
     }
-    if (updateCashDrawerDto.closingBalance !== undefined && updateCashDrawerDto.closingBalance < 0) {
+    if (
+      updateCashDrawerDto.closingBalance !== undefined &&
+      updateCashDrawerDto.closingBalance < 0
+    ) {
       throw new BadRequestException('Closing balance must be non-negative');
     }
 
     // Update cash drawer
     const updateData: any = {};
-    if (updateCashDrawerDto.shiftId !== undefined) updateData.shift_id = updateCashDrawerDto.shiftId;
-    if (updateCashDrawerDto.openingBalance !== undefined) updateData.opening_balance = updateCashDrawerDto.openingBalance;
-    if (updateCashDrawerDto.closingBalance !== undefined) updateData.closing_balance = updateCashDrawerDto.closingBalance;
-    if (updateCashDrawerDto.openedBy !== undefined) updateData.opened_by = updateCashDrawerDto.openedBy;
-    if (updateCashDrawerDto.closedBy !== undefined) updateData.closed_by = updateCashDrawerDto.closedBy;
+    if (updateCashDrawerDto.shiftId !== undefined)
+      updateData.shift_id = updateCashDrawerDto.shiftId;
+    if (updateCashDrawerDto.openingBalance !== undefined)
+      updateData.opening_balance = updateCashDrawerDto.openingBalance;
+    if (updateCashDrawerDto.closingBalance !== undefined)
+      updateData.closing_balance = updateCashDrawerDto.closingBalance;
+    if (updateCashDrawerDto.openedBy !== undefined)
+      updateData.opened_by = updateCashDrawerDto.openedBy;
+    if (updateCashDrawerDto.closedBy !== undefined)
+      updateData.closed_by = updateCashDrawerDto.closedBy;
 
     // If both closing fields provided, set status to CLOSE automatically
     if (providedClosingBalanceU && providedClosedByU) {
@@ -407,7 +524,13 @@ export class CashDrawersService {
     // Fetch updated cash drawer
     const updatedCashDrawer = await this.cashDrawerRepository.findOne({
       where: { id },
-      relations: ['merchant', 'shift', 'shift.merchant', 'openedByCollaborator', 'closedByCollaborator'],
+      relations: [
+        'merchant',
+        'shift',
+        'shift.merchant',
+        'openedByCollaborator',
+        'closedByCollaborator',
+      ],
     });
 
     if (!updatedCashDrawer) {
@@ -421,24 +544,36 @@ export class CashDrawersService {
     };
   }
 
-  async remove(id: number, authenticatedUserMerchantId: number): Promise<OneCashDrawerResponseDto> {
-
+  async remove(
+    id: number,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneCashDrawerResponseDto> {
     // Validate ID
     if (!id || id <= 0) {
-      throw new BadRequestException('Cash drawer ID must be a valid positive number');
+      throw new BadRequestException(
+        'Cash drawer ID must be a valid positive number',
+      );
     }
 
     // Validate user has merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to delete cash drawers');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to delete cash drawers',
+      );
     }
 
     // Find existing cash drawer
     const existingCashDrawer = await this.cashDrawerRepository.findOne({
-      where: { 
+      where: {
         id,
       },
-      relations: ['merchant', 'shift', 'shift.merchant', 'openedByCollaborator', 'closedByCollaborator'],
+      relations: [
+        'merchant',
+        'shift',
+        'shift.merchant',
+        'openedByCollaborator',
+        'closedByCollaborator',
+      ],
     });
 
     if (!existingCashDrawer) {
@@ -447,7 +582,9 @@ export class CashDrawersService {
 
     // Validate merchant ownership
     if (existingCashDrawer.merchant_id !== authenticatedUserMerchantId) {
-      throw new ForbiddenException('You can only delete cash drawers from your merchant');
+      throw new ForbiddenException(
+        'You can only delete cash drawers from your merchant',
+      );
     }
 
     // Perform physical deletion (or you can implement soft delete with a different field)
@@ -460,7 +597,9 @@ export class CashDrawersService {
     };
   }
 
-  private formatCashDrawerResponse(cashDrawer: CashDrawer): CashDrawerResponseDto {
+  private formatCashDrawerResponse(
+    cashDrawer: CashDrawer,
+  ): CashDrawerResponseDto {
     return {
       id: cashDrawer.id,
       openingBalance: cashDrawer.opening_balance,
@@ -489,11 +628,13 @@ export class CashDrawersService {
         name: cashDrawer.openedByCollaborator.name,
         role: cashDrawer.openedByCollaborator.role,
       },
-      closedByCollaborator: cashDrawer.closedByCollaborator ? {
-        id: cashDrawer.closedByCollaborator.id,
-        name: cashDrawer.closedByCollaborator.name,
-        role: cashDrawer.closedByCollaborator.role,
-      } : null,
+      closedByCollaborator: cashDrawer.closedByCollaborator
+        ? {
+            id: cashDrawer.closedByCollaborator.id,
+            name: cashDrawer.closedByCollaborator.name,
+            role: cashDrawer.closedByCollaborator.role,
+          }
+        : null,
     };
   }
 }

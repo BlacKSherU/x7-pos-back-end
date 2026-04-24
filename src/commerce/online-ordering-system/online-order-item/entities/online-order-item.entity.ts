@@ -13,14 +13,20 @@ import { OnlineOrder } from '../../online-order/entities/online-order.entity';
 import { Product } from '../../../../inventory/products-inventory/products/entities/product.entity';
 import { Variant } from '../../../../inventory/products-inventory/variants/entities/variant.entity';
 import { OnlineOrderItemStatus } from '../constants/online-order-item-status.enum';
+import { OrderItem } from '../../../../restaurant-operations/pos/order-item/entities/order-item.entity';
+import { OrderItemKitchenStatus } from '../../../../restaurant-operations/pos/order-item/constants/order-item-kitchen-status.enum';
 
 @Entity('online_order_item')
 @Index(['online_order_id'])
 @Index(['product_id'])
 @Index(['variant_id'])
 @Index(['status'])
+@Index(['order_item_id'])
 export class OnlineOrderItem {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Online Order Item' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Online Order Item',
+  })
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -28,7 +34,7 @@ export class OnlineOrderItem {
   @Column({ name: 'online_order_id' })
   online_order_id: number;
 
-  @ManyToOne(() => OnlineOrder, {
+  @ManyToOne(() => OnlineOrder, (oo) => oo.onlineOrderItems, {
     onDelete: 'CASCADE',
     nullable: false,
   })
@@ -46,7 +52,11 @@ export class OnlineOrderItem {
   @JoinColumn({ name: 'product_id' })
   product: Product;
 
-  @ApiProperty({ example: 1, description: 'Identifier of the Variant', nullable: true })
+  @ApiProperty({
+    example: 1,
+    description: 'Identifier of the Variant',
+    nullable: true,
+  })
   @Column({ name: 'variant_id', nullable: true })
   variant_id: number | null;
 
@@ -61,19 +71,19 @@ export class OnlineOrderItem {
   @Column({ type: 'int' })
   quantity: number;
 
-  @ApiProperty({ example: 15.99, description: 'Unit price of the item' })
-  @Column({ type: 'decimal', precision: 10, scale: 2, name: 'unit_price' })
-  unit_price: number;
-
   @ApiProperty({
     example: { extraSauce: true, size: 'large' },
     description: 'Modifiers applied to the item in JSON format',
     nullable: true,
   })
   @Column({ type: 'jsonb', nullable: true })
-  modifiers: Record<string, any> | null;
+  modifiers: Record<string, unknown> | null;
 
-  @ApiProperty({ example: 'Extra sauce on the side', description: 'Notes about the item', nullable: true })
+  @ApiProperty({
+    example: 'Extra sauce on the side',
+    description: 'Notes about the item',
+    nullable: true,
+  })
   @Column({ type: 'text', nullable: true })
   notes: string | null;
 
@@ -89,11 +99,45 @@ export class OnlineOrderItem {
   })
   status: OnlineOrderItemStatus;
 
-  @ApiProperty({ example: '2024-01-15T08:00:00Z', description: 'Creation timestamp' })
+  @ApiProperty({
+    example: 1,
+    description: 'POS order line after acceptance',
+    nullable: true,
+  })
+  @Column({ name: 'order_item_id', nullable: true })
+  order_item_id: number | null;
+
+  @ManyToOne(() => OrderItem, {
+    onDelete: 'SET NULL',
+    nullable: true,
+  })
+  @JoinColumn({ name: 'order_item_id' })
+  orderItem: OrderItem | null;
+
+  @ApiProperty({
+    enum: OrderItemKitchenStatus,
+    description: 'Mirror of POS line kitchen status for the storefront',
+    nullable: true,
+  })
+  @Column({
+    type: 'varchar',
+    length: 32,
+    name: 'kitchen_line_status',
+    nullable: true,
+  })
+  kitchen_line_status: OrderItemKitchenStatus | null;
+
+  @ApiProperty({
+    example: '2024-01-15T08:00:00Z',
+    description: 'Creation timestamp',
+  })
   @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
   created_at: Date;
 
-  @ApiProperty({ example: '2024-01-15T09:00:00Z', description: 'Last update timestamp' })
+  @ApiProperty({
+    example: '2024-01-15T09:00:00Z',
+    description: 'Last update timestamp',
+  })
   @UpdateDateColumn({ type: 'timestamp', name: 'updated_at' })
   updated_at: Date;
 }

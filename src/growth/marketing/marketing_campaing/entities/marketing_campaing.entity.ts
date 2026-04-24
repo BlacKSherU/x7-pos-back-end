@@ -16,7 +16,10 @@ import { MarketingCampaignStatus } from '../constants/marketing-campaign-status.
 @Entity('marketing_campaigns')
 @Index(['merchant_id', 'status', 'created_at'])
 export class MarketingCampaign {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Marketing Campaign' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Marketing Campaign',
+  })
   @PrimaryGeneratedColumn()
   id: number;
 

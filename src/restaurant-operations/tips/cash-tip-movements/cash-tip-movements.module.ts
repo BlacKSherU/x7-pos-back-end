@@ -7,9 +7,7 @@ import { CashDrawer } from '../../cashdrawer/cash-drawers/entities/cash-drawer.e
 import { Tip } from '../tips/entities/tip.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([CashTipMovement, CashDrawer, Tip]),
-  ],
+  imports: [TypeOrmModule.forFeature([CashTipMovement, CashDrawer, Tip])],
   controllers: [CashTipMovementsController],
   providers: [CashTipMovementsService],
   exports: [CashTipMovementsService],

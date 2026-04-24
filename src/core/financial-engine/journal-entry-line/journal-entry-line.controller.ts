@@ -48,7 +48,9 @@ import {
 @Scopes(Scope.MERCHANT_WEB)
 @Controller('journal-entries/:entryId/lines')
 export class JournalEntryLineController {
-  constructor(private readonly journalEntryLineService: JournalEntryLineService) { }
+  constructor(
+    private readonly journalEntryLineService: JournalEntryLineService,
+  ) {}
 
   // ─── POST /journal-entries/:entryId/lines ─────────────────────────────────
 
@@ -56,7 +58,10 @@ export class JournalEntryLineController {
   @ApiOperation({ summary: 'Add a new line to a DRAFT journal entry' })
   @ApiParam({ name: 'entryId', type: Number, description: 'Journal Entry ID' })
   @ApiCreatedResponse({ type: OneJournalEntryLineResponse })
-  @ApiBadRequestResponse({ type: ErrorResponse, description: 'Entry not in DRAFT or validation error' })
+  @ApiBadRequestResponse({
+    type: ErrorResponse,
+    description: 'Entry not in DRAFT or validation error',
+  })
   @ApiNotFoundResponse({ type: ErrorResponse })
   @ApiUnauthorizedResponse({ type: ErrorResponse })
   @ApiForbiddenResponse({ type: ErrorResponse })
@@ -82,7 +87,11 @@ export class JournalEntryLineController {
     @Param('entryId', ParseIntPipe) entryId: number,
     @Query() query: GetJournalEntryLinesQueryDto,
   ) {
-    return this.journalEntryLineService.findAllByEntry(query, user.merchant.id, entryId);
+    return this.journalEntryLineService.findAllByEntry(
+      query,
+      user.merchant.id,
+      entryId,
+    );
   }
 
   // ─── GET /journal-entries/:entryId/lines/:id ──────────────────────────────
@@ -107,12 +116,16 @@ export class JournalEntryLineController {
   @Patch(':id')
   @ApiOperation({
     summary: 'Update a journal entry line',
-    description: 'Only lines belonging to DRAFT journal entries can be updated.',
+    description:
+      'Only lines belonging to DRAFT journal entries can be updated.',
   })
   @ApiParam({ name: 'entryId', type: Number })
   @ApiParam({ name: 'id', type: Number })
   @ApiCreatedResponse({ type: OneJournalEntryLineResponse })
-  @ApiBadRequestResponse({ type: ErrorResponse, description: 'Entry not in DRAFT' })
+  @ApiBadRequestResponse({
+    type: ErrorResponse,
+    description: 'Entry not in DRAFT',
+  })
   @ApiNotFoundResponse({ type: ErrorResponse })
   @ApiUnauthorizedResponse({ type: ErrorResponse })
   @ApiForbiddenResponse({ type: ErrorResponse })
@@ -129,12 +142,16 @@ export class JournalEntryLineController {
   @Delete(':id')
   @ApiOperation({
     summary: 'Delete a journal entry line',
-    description: 'Only lines belonging to DRAFT journal entries can be deleted.',
+    description:
+      'Only lines belonging to DRAFT journal entries can be deleted.',
   })
   @ApiParam({ name: 'entryId', type: Number })
   @ApiParam({ name: 'id', type: Number })
   @ApiCreatedResponse({ type: OneJournalEntryLineResponse })
-  @ApiBadRequestResponse({ type: ErrorResponse, description: 'Entry not in DRAFT' })
+  @ApiBadRequestResponse({
+    type: ErrorResponse,
+    description: 'Entry not in DRAFT',
+  })
   @ApiNotFoundResponse({ type: ErrorResponse })
   @ApiUnauthorizedResponse({ type: ErrorResponse })
   @ApiForbiddenResponse({ type: ErrorResponse })

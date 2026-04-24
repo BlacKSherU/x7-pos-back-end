@@ -1,4 +1,12 @@
-import { IsOptional, IsEnum, IsString, IsNumber, IsBoolean, Min, Max } from 'class-validator';
+import {
+  IsOptional,
+  IsEnum,
+  IsString,
+  IsNumber,
+  IsBoolean,
+  Min,
+  Max,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 
@@ -14,7 +22,7 @@ export enum OnlineMenuItemSortBy {
 }
 
 export class GetOnlineMenuItemQueryDto {
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 1,
     description: 'Filter by online menu ID',
   })
@@ -23,7 +31,7 @@ export class GetOnlineMenuItemQueryDto {
   @IsNumber()
   menuId?: number;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 1,
     description: 'Filter by product ID',
   })
@@ -32,7 +40,7 @@ export class GetOnlineMenuItemQueryDto {
   @IsNumber()
   productId?: number;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 1,
     description: 'Filter by variant ID',
   })
@@ -41,7 +49,7 @@ export class GetOnlineMenuItemQueryDto {
   @IsNumber()
   variantId?: number;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: true,
     description: 'Filter by availability status',
   })
@@ -50,7 +58,7 @@ export class GetOnlineMenuItemQueryDto {
   @IsBoolean()
   isAvailable?: boolean;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: '2024-01-15',
     description: 'Filter by creation date (YYYY-MM-DD format)',
   })
@@ -58,10 +66,10 @@ export class GetOnlineMenuItemQueryDto {
   @IsString()
   createdDate?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 1,
     description: 'Page number for pagination (minimum 1)',
-    minimum: 1
+    minimum: 1,
   })
   @IsOptional()
   @Transform(({ value }) => parseInt(value))
@@ -69,11 +77,11 @@ export class GetOnlineMenuItemQueryDto {
   @Min(1)
   page?: number = 1;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 10,
     description: 'Number of items per page (minimum 1, maximum 100)',
     minimum: 1,
-    maximum: 100
+    maximum: 100,
   })
   @IsOptional()
   @Transform(({ value }) => parseInt(value))
@@ -82,27 +90,21 @@ export class GetOnlineMenuItemQueryDto {
   @Max(100)
   limit?: number = 10;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: OnlineMenuItemSortBy.CREATED_AT,
     description: 'Field to sort by',
-    enum: OnlineMenuItemSortBy
+    enum: OnlineMenuItemSortBy,
   })
   @IsOptional()
   @IsEnum(OnlineMenuItemSortBy)
   sortBy?: OnlineMenuItemSortBy = OnlineMenuItemSortBy.CREATED_AT;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 'DESC',
     description: 'Sort order (ASC or DESC)',
-    enum: ['ASC', 'DESC']
+    enum: ['ASC', 'DESC'],
   })
   @IsOptional()
   @IsEnum(['ASC', 'DESC'])
   sortOrder?: 'ASC' | 'DESC' = 'DESC';
 }
-
-
-
-
-
-

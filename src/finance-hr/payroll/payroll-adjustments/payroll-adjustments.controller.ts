@@ -44,9 +44,14 @@ import { PayrollAdjustmentSortBy } from './dto/get-payroll-adjustments-query.dto
 @ApiBearerAuth()
 @Controller('payroll-adjustments')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@ApiExtraModels(OnePayrollAdjustmentResponseDto, PaginatedPayrollAdjustmentsResponseDto)
+@ApiExtraModels(
+  OnePayrollAdjustmentResponseDto,
+  PaginatedPayrollAdjustmentsResponseDto,
+)
 export class PayrollAdjustmentsController {
-  constructor(private readonly payrollAdjustmentsService: PayrollAdjustmentsService) {}
+  constructor(
+    private readonly payrollAdjustmentsService: PayrollAdjustmentsService,
+  ) {}
 
   @Post()
   @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
@@ -143,7 +148,9 @@ export class PayrollAdjustmentsController {
     type: OnePayrollAdjustmentResponseDto,
   })
   @ApiBadRequestResponse({ description: 'Invalid input or validation error' })
-  @ApiNotFoundResponse({ description: 'Payroll adjustment or payroll entry not found' })
+  @ApiNotFoundResponse({
+    description: 'Payroll adjustment or payroll entry not found',
+  })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiForbiddenResponse({ description: 'Forbidden' })
   async update(

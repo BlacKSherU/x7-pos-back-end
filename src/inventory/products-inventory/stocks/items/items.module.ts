@@ -15,5 +15,6 @@ import { Location } from '../locations/entities/location.entity';
   ],
   controllers: [ItemsController],
   providers: [ItemsService],
+  exports: [ItemsService],
 })
 export class ItemsModule {}

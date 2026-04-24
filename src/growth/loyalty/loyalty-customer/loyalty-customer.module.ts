@@ -5,7 +5,7 @@ import { LoyaltyCustomerController } from './loyalty-customer.controller';
 import { LoyaltyCustomer } from './entities/loyalty-customer.entity';
 import { LoyaltyProgram } from '../loyalty-programs/entities/loyalty-program.entity';
 import { LoyaltyTier } from '../loyalty-tier/entities/loyalty-tier.entity';
-import { CustomersModule } from 'src/core/business-partners/customers/customers.module';
+
 import { Customer } from 'src/core/business-partners/customers/entities/customer.entity';
 
 @Module({
@@ -21,4 +21,4 @@ import { Customer } from 'src/core/business-partners/customers/entities/customer
   providers: [LoyaltyCustomerService],
   exports: [LoyaltyCustomerService],
 })
-export class LoyaltyCustomerModule { }
+export class LoyaltyCustomerModule {}

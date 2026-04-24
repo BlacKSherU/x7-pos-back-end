@@ -2,8 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { PayrollRunsService } from './payroll-runs.service';
 import { PayrollRun } from './entities/payroll-run.entity';
-import { Company } from '../../platform-saas/companies/entities/company.entity';
-import { Merchant } from '../../platform-saas/merchants/entities/merchant.entity';
+import { Company } from '../../../platform-saas/companies/entities/company.entity';
+import { Merchant } from '../../../platform-saas/merchants/entities/merchant.entity';
 import { PayrollRunStatus } from './constants/payroll-run-status.enum';
 
 describe('PayrollRunsService', () => {

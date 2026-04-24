@@ -1,12 +1,24 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MarketingSegment } from './entities/marketing-segment.entity';
 import { Merchant } from '../../../platform-saas/merchants/entities/merchant.entity';
 import { CreateMarketingSegmentDto } from './dto/create-marketing-segment.dto';
 import { UpdateMarketingSegmentDto } from './dto/update-marketing-segment.dto';
-import { GetMarketingSegmentQueryDto, MarketingSegmentSortBy } from './dto/get-marketing-segment-query.dto';
-import { MarketingSegmentResponseDto, OneMarketingSegmentResponseDto } from './dto/marketing-segment-response.dto';
+import {
+  GetMarketingSegmentQueryDto,
+  MarketingSegmentSortBy,
+} from './dto/get-marketing-segment-query.dto';
+import {
+  MarketingSegmentResponseDto,
+  OneMarketingSegmentResponseDto,
+} from './dto/marketing-segment-response.dto';
 import { PaginatedMarketingSegmentResponseDto } from './dto/paginated-marketing-segment-response.dto';
 import { MarketingSegmentStatus } from './constants/marketing-segment-status.enum';
 
@@ -19,10 +31,15 @@ export class MarketingSegmentsService {
     private readonly merchantRepository: Repository<Merchant>,
   ) {}
 
-  async create(createMarketingSegmentDto: CreateMarketingSegmentDto, authenticatedUserMerchantId: number): Promise<OneMarketingSegmentResponseDto> {
+  async create(
+    createMarketingSegmentDto: CreateMarketingSegmentDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneMarketingSegmentResponseDto> {
     // Validate user permissions - must be associated with a merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to create marketing segments');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to create marketing segments',
+      );
     }
 
     // Validate merchant exists
@@ -35,7 +52,10 @@ export class MarketingSegmentsService {
     }
 
     // Business rule validation: name must not be empty
-    if (!createMarketingSegmentDto.name || createMarketingSegmentDto.name.trim().length === 0) {
+    if (
+      !createMarketingSegmentDto.name ||
+      createMarketingSegmentDto.name.trim().length === 0
+    ) {
       throw new BadRequestException('Name cannot be empty');
     }
 
@@ -50,13 +70,15 @@ export class MarketingSegmentsService {
     marketingSegment.type = createMarketingSegmentDto.type;
     marketingSegment.status = MarketingSegmentStatus.ACTIVE;
 
-    const savedMarketingSegment = await this.marketingSegmentRepository.save(marketingSegment);
+    const savedMarketingSegment =
+      await this.marketingSegmentRepository.save(marketingSegment);
 
     // Fetch the complete marketing segment with relations
-    const completeMarketingSegment = await this.marketingSegmentRepository.findOne({
-      where: { id: savedMarketingSegment.id },
-      relations: ['merchant'],
-    });
+    const completeMarketingSegment =
+      await this.marketingSegmentRepository.findOne({
+        where: { id: savedMarketingSegment.id },
+        relations: ['merchant'],
+      });
 
     if (!completeMarketingSegment) {
       throw new NotFoundException('Marketing segment not found after creation');
@@ -69,10 +91,15 @@ export class MarketingSegmentsService {
     };
   }
 
-  async findAll(query: GetMarketingSegmentQueryDto, authenticatedUserMerchantId: number): Promise<PaginatedMarketingSegmentResponseDto> {
+  async findAll(
+    query: GetMarketingSegmentQueryDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<PaginatedMarketingSegmentResponseDto> {
     // Validate user has merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to access marketing segments');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to access marketing segments',
+      );
     }
 
     // Validate pagination parameters
@@ -88,7 +115,9 @@ export class MarketingSegmentsService {
     if (query.createdDate) {
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
       if (!dateRegex.test(query.createdDate)) {
-        throw new BadRequestException('Created date must be in YYYY-MM-DD format');
+        throw new BadRequestException(
+          'Created date must be in YYYY-MM-DD format',
+        );
       }
     }
 
@@ -100,33 +129,51 @@ export class MarketingSegmentsService {
     const queryBuilder = this.marketingSegmentRepository
       .createQueryBuilder('marketingSegment')
       .leftJoinAndSelect('marketingSegment.merchant', 'merchant')
-      .where('marketingSegment.merchant_id = :merchantId', { merchantId: authenticatedUserMerchantId });
+      .where('marketingSegment.merchant_id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      });
 
     // Exclude deleted segments by default
-    queryBuilder.andWhere('marketingSegment.status != :deletedStatus', { deletedStatus: MarketingSegmentStatus.DELETED });
+    queryBuilder.andWhere('marketingSegment.status != :deletedStatus', {
+      deletedStatus: MarketingSegmentStatus.DELETED,
+    });
 
     if (query.type) {
-      queryBuilder.andWhere('marketingSegment.type = :type', { type: query.type });
+      queryBuilder.andWhere('marketingSegment.type = :type', {
+        type: query.type,
+      });
     }
 
     if (query.name) {
-      queryBuilder.andWhere('marketingSegment.name ILIKE :name', { name: `%${query.name}%` });
+      queryBuilder.andWhere('marketingSegment.name ILIKE :name', {
+        name: `%${query.name}%`,
+      });
     }
 
     if (query.createdDate) {
       const startDate = new Date(query.createdDate);
       const endDate = new Date(query.createdDate);
       endDate.setDate(endDate.getDate() + 1);
-      queryBuilder.andWhere('marketingSegment.created_at >= :startDate', { startDate });
-      queryBuilder.andWhere('marketingSegment.created_at < :endDate', { endDate });
+      queryBuilder.andWhere('marketingSegment.created_at >= :startDate', {
+        startDate,
+      });
+      queryBuilder.andWhere('marketingSegment.created_at < :endDate', {
+        endDate,
+      });
     }
 
     // Build order conditions
     if (query.sortBy) {
-      const sortField = query.sortBy === MarketingSegmentSortBy.NAME ? 'marketingSegment.name' :
-                       query.sortBy === MarketingSegmentSortBy.TYPE ? 'marketingSegment.type' :
-                       query.sortBy === MarketingSegmentSortBy.CREATED_AT ? 'marketingSegment.created_at' :
-                       query.sortBy === MarketingSegmentSortBy.UPDATED_AT ? 'marketingSegment.updated_at' : 'marketingSegment.id';
+      const sortField =
+        query.sortBy === MarketingSegmentSortBy.NAME
+          ? 'marketingSegment.name'
+          : query.sortBy === MarketingSegmentSortBy.TYPE
+            ? 'marketingSegment.type'
+            : query.sortBy === MarketingSegmentSortBy.CREATED_AT
+              ? 'marketingSegment.created_at'
+              : query.sortBy === MarketingSegmentSortBy.UPDATED_AT
+                ? 'marketingSegment.updated_at'
+                : 'marketingSegment.id';
       queryBuilder.orderBy(sortField, query.sortOrder || 'DESC');
     } else {
       queryBuilder.orderBy('marketingSegment.created_at', 'DESC');
@@ -154,20 +201,29 @@ export class MarketingSegmentsService {
     return {
       statusCode: 200,
       message: 'Marketing segments retrieved successfully',
-      data: marketingSegments.map(segment => this.formatMarketingSegmentResponse(segment)),
+      data: marketingSegments.map((segment) =>
+        this.formatMarketingSegmentResponse(segment),
+      ),
       paginationMeta,
     };
   }
 
-  async findOne(id: number, authenticatedUserMerchantId: number): Promise<OneMarketingSegmentResponseDto> {
+  async findOne(
+    id: number,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneMarketingSegmentResponseDto> {
     // Validate ID
     if (!id || id <= 0) {
-      throw new BadRequestException('Marketing segment ID must be a valid positive number');
+      throw new BadRequestException(
+        'Marketing segment ID must be a valid positive number',
+      );
     }
 
     // Validate user has merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to access marketing segments');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to access marketing segments',
+      );
     }
 
     // Find marketing segment
@@ -175,8 +231,12 @@ export class MarketingSegmentsService {
       .createQueryBuilder('marketingSegment')
       .leftJoinAndSelect('marketingSegment.merchant', 'merchant')
       .where('marketingSegment.id = :id', { id })
-      .andWhere('marketingSegment.merchant_id = :merchantId', { merchantId: authenticatedUserMerchantId })
-      .andWhere('marketingSegment.status != :deletedStatus', { deletedStatus: MarketingSegmentStatus.DELETED })
+      .andWhere('marketingSegment.merchant_id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
+      .andWhere('marketingSegment.status != :deletedStatus', {
+        deletedStatus: MarketingSegmentStatus.DELETED,
+      })
       .getOne();
 
     if (!marketingSegment) {
@@ -190,15 +250,23 @@ export class MarketingSegmentsService {
     };
   }
 
-  async update(id: number, updateMarketingSegmentDto: UpdateMarketingSegmentDto, authenticatedUserMerchantId: number): Promise<OneMarketingSegmentResponseDto> {
+  async update(
+    id: number,
+    updateMarketingSegmentDto: UpdateMarketingSegmentDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneMarketingSegmentResponseDto> {
     // Validate ID
     if (!id || id <= 0) {
-      throw new BadRequestException('Marketing segment ID must be a valid positive number');
+      throw new BadRequestException(
+        'Marketing segment ID must be a valid positive number',
+      );
     }
 
     // Validate user has merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to update marketing segments');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to update marketing segments',
+      );
     }
 
     // Find existing marketing segment
@@ -206,8 +274,12 @@ export class MarketingSegmentsService {
       .createQueryBuilder('marketingSegment')
       .leftJoinAndSelect('marketingSegment.merchant', 'merchant')
       .where('marketingSegment.id = :id', { id })
-      .andWhere('marketingSegment.merchant_id = :merchantId', { merchantId: authenticatedUserMerchantId })
-      .andWhere('marketingSegment.status != :deletedStatus', { deletedStatus: MarketingSegmentStatus.DELETED })
+      .andWhere('marketingSegment.merchant_id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
+      .andWhere('marketingSegment.status != :deletedStatus', {
+        deletedStatus: MarketingSegmentStatus.DELETED,
+      })
       .getOne();
 
     if (!existingMarketingSegment) {
@@ -216,7 +288,10 @@ export class MarketingSegmentsService {
 
     // Business rule validation: name must not be empty if provided
     if (updateMarketingSegmentDto.name !== undefined) {
-      if (!updateMarketingSegmentDto.name || updateMarketingSegmentDto.name.trim().length === 0) {
+      if (
+        !updateMarketingSegmentDto.name ||
+        updateMarketingSegmentDto.name.trim().length === 0
+      ) {
         throw new BadRequestException('Name cannot be empty');
       }
       if (updateMarketingSegmentDto.name.length > 255) {
@@ -226,16 +301,19 @@ export class MarketingSegmentsService {
 
     // Update marketing segment
     const updateData: any = {};
-    if (updateMarketingSegmentDto.name !== undefined) updateData.name = updateMarketingSegmentDto.name.trim();
-    if (updateMarketingSegmentDto.type !== undefined) updateData.type = updateMarketingSegmentDto.type;
+    if (updateMarketingSegmentDto.name !== undefined)
+      updateData.name = updateMarketingSegmentDto.name.trim();
+    if (updateMarketingSegmentDto.type !== undefined)
+      updateData.type = updateMarketingSegmentDto.type;
 
     await this.marketingSegmentRepository.update(id, updateData);
 
     // Fetch updated marketing segment
-    const updatedMarketingSegment = await this.marketingSegmentRepository.findOne({
-      where: { id },
-      relations: ['merchant'],
-    });
+    const updatedMarketingSegment =
+      await this.marketingSegmentRepository.findOne({
+        where: { id },
+        relations: ['merchant'],
+      });
 
     if (!updatedMarketingSegment) {
       throw new NotFoundException('Marketing segment not found after update');
@@ -248,15 +326,22 @@ export class MarketingSegmentsService {
     };
   }
 
-  async remove(id: number, authenticatedUserMerchantId: number): Promise<OneMarketingSegmentResponseDto> {
+  async remove(
+    id: number,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneMarketingSegmentResponseDto> {
     // Validate ID
     if (!id || id <= 0) {
-      throw new BadRequestException('Marketing segment ID must be a valid positive number');
+      throw new BadRequestException(
+        'Marketing segment ID must be a valid positive number',
+      );
     }
 
     // Validate user has merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to delete marketing segments');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to delete marketing segments',
+      );
     }
 
     // Find existing marketing segment
@@ -264,8 +349,12 @@ export class MarketingSegmentsService {
       .createQueryBuilder('marketingSegment')
       .leftJoinAndSelect('marketingSegment.merchant', 'merchant')
       .where('marketingSegment.id = :id', { id })
-      .andWhere('marketingSegment.merchant_id = :merchantId', { merchantId: authenticatedUserMerchantId })
-      .andWhere('marketingSegment.status != :deletedStatus', { deletedStatus: MarketingSegmentStatus.DELETED })
+      .andWhere('marketingSegment.merchant_id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
+      .andWhere('marketingSegment.status != :deletedStatus', {
+        deletedStatus: MarketingSegmentStatus.DELETED,
+      })
       .getOne();
 
     if (!existingMarketingSegment) {
@@ -288,7 +377,9 @@ export class MarketingSegmentsService {
     };
   }
 
-  private formatMarketingSegmentResponse(marketingSegment: MarketingSegment): MarketingSegmentResponseDto {
+  private formatMarketingSegmentResponse(
+    marketingSegment: MarketingSegment,
+  ): MarketingSegmentResponseDto {
     return {
       id: marketingSegment.id,
       merchantId: marketingSegment.merchant_id,

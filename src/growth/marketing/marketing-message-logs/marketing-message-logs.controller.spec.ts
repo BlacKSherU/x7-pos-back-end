@@ -66,8 +66,12 @@ describe('MarketingMessageLogsController', () => {
       ],
     }).compile();
 
-    controller = module.get<MarketingMessageLogsController>(MarketingMessageLogsController);
-    service = module.get<MarketingMessageLogsService>(MarketingMessageLogsService);
+    controller = module.get<MarketingMessageLogsController>(
+      MarketingMessageLogsController,
+    );
+    service = module.get<MarketingMessageLogsService>(
+      MarketingMessageLogsService,
+    );
   });
 
   afterEach(() => {
@@ -128,7 +132,9 @@ describe('MarketingMessageLogsController', () => {
 
   describe('update', () => {
     it('should update a marketing message log', async () => {
-      const updateDto: UpdateMarketingMessageLogDto = { status: MarketingMessageLogStatus.DELIVERED };
+      const updateDto: UpdateMarketingMessageLogDto = {
+        status: MarketingMessageLogStatus.DELIVERED,
+      };
       const updatedResponse = {
         ...mockResponse,
         statusCode: 200,

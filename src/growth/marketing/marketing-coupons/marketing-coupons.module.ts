@@ -6,9 +6,7 @@ import { MarketingCoupon } from './entities/marketing-coupon.entity';
 import { Merchant } from '../../../platform-saas/merchants/entities/merchant.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([MarketingCoupon, Merchant]),
-  ],
+  imports: [TypeOrmModule.forFeature([MarketingCoupon, Merchant])],
   controllers: [MarketingCouponsController],
   providers: [MarketingCouponsService],
   exports: [MarketingCouponsService],

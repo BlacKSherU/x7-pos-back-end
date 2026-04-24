@@ -18,14 +18,23 @@ export class PaginationMetaDto {
   @ApiProperty({ example: true, description: 'Whether there is a next page' })
   hasNext: boolean;
 
-  @ApiProperty({ example: false, description: 'Whether there is a previous page' })
+  @ApiProperty({
+    example: false,
+    description: 'Whether there is a previous page',
+  })
   hasPrev: boolean;
 }
 
 export class PaginatedMarketingSegmentResponseDto extends SuccessResponse {
-  @ApiProperty({ type: () => [MarketingSegmentResponseDto], description: 'List of marketing segments' })
+  @ApiProperty({
+    type: () => [MarketingSegmentResponseDto],
+    description: 'List of marketing segments',
+  })
   data: MarketingSegmentResponseDto[];
 
-  @ApiProperty({ type: () => PaginationMetaDto, description: 'Pagination metadata' })
+  @ApiProperty({
+    type: () => PaginationMetaDto,
+    description: 'Pagination metadata',
+  })
   paginationMeta: PaginationMetaDto;
 }

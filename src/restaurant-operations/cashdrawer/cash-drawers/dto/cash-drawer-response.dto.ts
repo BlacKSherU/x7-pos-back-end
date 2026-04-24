@@ -17,16 +17,25 @@ export class BasicShiftInfoDto {
   @ApiProperty({ example: 'Morning Shift', description: 'Shift name' })
   name: string;
 
-  @ApiProperty({ example: '2023-10-01T08:00:00Z', description: 'Shift start time' })
+  @ApiProperty({
+    example: '2023-10-01T08:00:00Z',
+    description: 'Shift start time',
+  })
   startTime: Date;
 
-  @ApiProperty({ example: '2023-10-01T16:00:00Z', description: 'Shift end time' })
+  @ApiProperty({
+    example: '2023-10-01T16:00:00Z',
+    description: 'Shift end time',
+  })
   endTime: Date;
 
   @ApiProperty({ example: 'ACTIVE', description: 'Shift status' })
   status: string;
 
-  @ApiProperty({ type: () => BasicMerchantInfoDto, description: 'Merchant information' })
+  @ApiProperty({
+    type: () => BasicMerchantInfoDto,
+    description: 'Merchant information',
+  })
   merchant: BasicMerchantInfoDto;
 }
 
@@ -42,46 +51,82 @@ export class BasicCollaboratorInfoDto {
 }
 
 export class CashDrawerResponseDto {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Cash Drawer' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Cash Drawer',
+  })
   id: number;
 
-  @ApiProperty({ example: 100.00, description: 'Opening balance amount' })
+  @ApiProperty({ example: 100.0, description: 'Opening balance amount' })
   openingBalance: number;
 
-  @ApiProperty({ example: 125.50, description: 'Current balance amount' })
+  @ApiProperty({ example: 125.5, description: 'Current balance amount' })
   currentBalance: number;
 
-  @ApiProperty({ example: 150.50, description: 'Closing balance amount', nullable: true })
+  @ApiProperty({
+    example: 150.5,
+    description: 'Closing balance amount',
+    nullable: true,
+  })
   closingBalance: number | null;
 
-  @ApiProperty({ example: '2023-10-01T12:00:00Z', description: 'Creation timestamp' })
+  @ApiProperty({
+    example: '2023-10-01T12:00:00Z',
+    description: 'Creation timestamp',
+  })
   createdAt: Date;
 
-  @ApiProperty({ example: '2023-10-01T12:00:00Z', description: 'Last update timestamp' })
+  @ApiProperty({
+    example: '2023-10-01T12:00:00Z',
+    description: 'Last update timestamp',
+  })
   updatedAt: Date;
 
-  @ApiProperty({ example: CashDrawerStatus.OPEN, enum: CashDrawerStatus, description: 'Status of the cash drawer' })
+  @ApiProperty({
+    example: CashDrawerStatus.OPEN,
+    enum: CashDrawerStatus,
+    description: 'Status of the cash drawer',
+  })
   status: CashDrawerStatus;
 
-  @ApiProperty({ type: () => BasicMerchantInfoDto, description: 'Merchant information' })
+  @ApiProperty({
+    type: () => BasicMerchantInfoDto,
+    description: 'Merchant information',
+  })
   merchant: BasicMerchantInfoDto;
 
-  @ApiProperty({ type: () => BasicShiftInfoDto, description: 'Shift information' })
+  @ApiProperty({
+    type: () => BasicShiftInfoDto,
+    description: 'Shift information',
+  })
   shift: BasicShiftInfoDto;
 
-  @ApiProperty({ type: () => BasicCollaboratorInfoDto, description: 'Collaborator who opened the drawer' })
+  @ApiProperty({
+    type: () => BasicCollaboratorInfoDto,
+    description: 'Collaborator who opened the drawer',
+  })
   openedByCollaborator: BasicCollaboratorInfoDto;
 
-  @ApiProperty({ type: () => BasicCollaboratorInfoDto, description: 'Collaborator who closed the drawer', nullable: true })
+  @ApiProperty({
+    type: () => BasicCollaboratorInfoDto,
+    description: 'Collaborator who closed the drawer',
+    nullable: true,
+  })
   closedByCollaborator: BasicCollaboratorInfoDto | null;
 }
 
 export class OneCashDrawerResponseDto extends SuccessResponse {
-  @ApiProperty({ type: () => CashDrawerResponseDto, description: 'Cash drawer data' })
+  @ApiProperty({
+    type: () => CashDrawerResponseDto,
+    description: 'Cash drawer data',
+  })
   data: CashDrawerResponseDto;
 }
 
 export class AllCashDrawersResponseDto extends SuccessResponse {
-  @ApiProperty({ type: () => [CashDrawerResponseDto], description: 'List of cash drawers' })
+  @ApiProperty({
+    type: () => [CashDrawerResponseDto],
+    description: 'List of cash drawers',
+  })
   data: CashDrawerResponseDto[];
 }

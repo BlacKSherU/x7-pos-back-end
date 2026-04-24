@@ -29,7 +29,7 @@ export class SuppliersService {
     private readonly companyRepo: Repository<Company>,
     @InjectRepository(Merchant)
     private readonly merchantRepo: Repository<Merchant>,
-  ) { }
+  ) {}
 
   async getCompanyIdByMerchantId(merchantId: number): Promise<number> {
     const merchant = await this.merchantRepo.findOne({
@@ -68,7 +68,12 @@ export class SuppliersService {
 
       if (existingButIsNotActive) {
         existingButIsNotActive.isActive = true;
-        Object.assign(existingButIsNotActive, { tax_id, email, phone, address });
+        Object.assign(existingButIsNotActive, {
+          tax_id,
+          email,
+          phone,
+          address,
+        });
         await this.supplierRepository.save(existingButIsNotActive);
         return this.findOne(existingButIsNotActive.id, company_id, 'Created');
       } else {

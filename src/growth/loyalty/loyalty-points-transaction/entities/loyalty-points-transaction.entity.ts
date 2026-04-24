@@ -7,9 +7,9 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
-import { LoyaltyCustomer } from 'src/growth/loyalty/loyalty-customer/entities/loyalty-customer.entity';
-import { Order } from 'src/orders/entities/order.entity';
-import { CashTransaction } from 'src/restaurant-operations/cashdrawer/cash-transactions/entities/cash-transaction.entity';
+import { Order } from '../../../../restaurant-operations/pos/orders/entities/order.entity';
+import { LoyaltyCustomer } from '../../../../growth/loyalty/loyalty-customer/entities/loyalty-customer.entity';
+import { CashTransaction } from '../../../../restaurant-operations/cashdrawer/cash-transactions/entities/cash-transaction.entity';
 import { LoyaltyPointsSource } from '../constants/loyalty-points-source.enum';
 
 @Entity('loyalty_point_transactions')

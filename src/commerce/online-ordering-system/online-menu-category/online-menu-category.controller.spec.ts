@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/unbound-method */
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { OnlineMenuCategoryController } from './online-menu-category.controller';
 import { OnlineMenuCategoryService } from './online-menu-category.service';
@@ -11,6 +7,10 @@ import { GetOnlineMenuCategoryQueryDto } from './dto/get-online-menu-category-qu
 import { OneOnlineMenuCategoryResponseDto } from './dto/online-menu-category-response.dto';
 import { PaginatedOnlineMenuCategoryResponseDto } from './dto/paginated-online-menu-category-response.dto';
 import { OnlineMenuCategoryStatus } from './constants/online-menu-category-status.enum';
+import { AuthenticatedUser } from '../../../auth/interfaces/authenticated-user.interface';
+import { Request as ExpressRequest } from 'express';
+
+type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
 
 describe('OnlineMenuCategoryController', () => {
   let controller: OnlineMenuCategoryController;
@@ -34,7 +34,7 @@ describe('OnlineMenuCategoryController', () => {
 
   const mockRequest = {
     user: mockUser,
-  };
+  } as AuthenticatedRequest;
 
   const mockOnlineMenuCategoryResponse: OneOnlineMenuCategoryResponseDto = {
     statusCode: 201,
@@ -83,7 +83,9 @@ describe('OnlineMenuCategoryController', () => {
       ],
     }).compile();
 
-    controller = module.get<OnlineMenuCategoryController>(OnlineMenuCategoryController);
+    controller = module.get<OnlineMenuCategoryController>(
+      OnlineMenuCategoryController,
+    );
     service = module.get<OnlineMenuCategoryService>(OnlineMenuCategoryService);
   });
 
@@ -115,7 +117,8 @@ describe('OnlineMenuCategoryController', () => {
     });
 
     it('should handle service errors during creation', async () => {
-      const errorMessage = 'Online menu not found or you do not have access to it';
+      const errorMessage =
+        'Online menu not found or you do not have access to it';
       const createSpy = jest.spyOn(service, 'create');
       createSpy.mockRejectedValue(new Error(errorMessage));
 
@@ -166,7 +169,10 @@ describe('OnlineMenuCategoryController', () => {
 
       await controller.findAll(queryWithFilters, mockRequest);
 
-      expect(findAllSpy).toHaveBeenCalledWith(queryWithFilters, mockUser.merchant.id);
+      expect(findAllSpy).toHaveBeenCalledWith(
+        queryWithFilters,
+        mockUser.merchant.id,
+      );
     });
   });
 
@@ -224,7 +230,11 @@ describe('OnlineMenuCategoryController', () => {
 
       const result = await controller.update(1, updateDto, mockRequest);
 
-      expect(updateSpy).toHaveBeenCalledWith(1, updateDto, mockUser.merchant.id);
+      expect(updateSpy).toHaveBeenCalledWith(
+        1,
+        updateDto,
+        mockUser.merchant.id,
+      );
       expect(result).toEqual(updatedResponse);
       expect(result.statusCode).toBe(200);
       expect(result.message).toBe('Online menu category updated successfully');
@@ -235,10 +245,14 @@ describe('OnlineMenuCategoryController', () => {
       const updateSpy = jest.spyOn(service, 'update');
       updateSpy.mockRejectedValue(new Error(errorMessage));
 
-      await expect(controller.update(1, updateDto, mockRequest)).rejects.toThrow(
-        errorMessage,
+      await expect(
+        controller.update(1, updateDto, mockRequest),
+      ).rejects.toThrow(errorMessage);
+      expect(updateSpy).toHaveBeenCalledWith(
+        1,
+        updateDto,
+        mockUser.merchant.id,
       );
-      expect(updateSpy).toHaveBeenCalledWith(1, updateDto, mockUser.merchant.id);
     });
 
     it('should handle partial updates', async () => {
@@ -259,7 +273,11 @@ describe('OnlineMenuCategoryController', () => {
 
       const result = await controller.update(1, partialDto, mockRequest);
 
-      expect(updateSpy).toHaveBeenCalledWith(1, partialDto, mockUser.merchant.id);
+      expect(updateSpy).toHaveBeenCalledWith(
+        1,
+        partialDto,
+        mockUser.merchant.id,
+      );
       expect(result.data.menuId).toBe(2);
     });
   });
@@ -326,16 +344,13 @@ describe('OnlineMenuCategoryController', () => {
       const createSpy = jest.spyOn(service, 'create');
       createSpy.mockResolvedValue(mockOnlineMenuCategoryResponse);
 
-      const result = await controller.create(createDto, requestWithoutMerchant as any);
+      const result = await controller.create(
+        createDto,
+        requestWithoutMerchant as unknown as AuthenticatedRequest,
+      );
 
       expect(createSpy).toHaveBeenCalledWith(createDto, undefined);
       expect(result).toEqual(mockOnlineMenuCategoryResponse);
     });
   });
 });
-
-
-
-
-
-

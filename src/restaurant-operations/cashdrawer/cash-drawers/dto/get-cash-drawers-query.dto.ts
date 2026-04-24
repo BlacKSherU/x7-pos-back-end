@@ -1,5 +1,13 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsNumber, IsString, IsDateString, IsEnum, Min, Max } from 'class-validator';
+import {
+  IsOptional,
+  IsNumber,
+  IsString,
+  IsDateString,
+  IsEnum,
+  Min,
+  Max,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
 import { CashDrawerStatus } from '../constants/cash-drawer-status.enum';
 
@@ -51,7 +59,9 @@ export class GetCashDrawersQueryDto {
     description: 'Filter by cash drawer status',
   })
   @IsOptional()
-  @IsEnum(CashDrawerStatus, { message: 'Status must be a valid CashDrawerStatus value' })
+  @IsEnum(CashDrawerStatus, {
+    message: 'Status must be a valid CashDrawerStatus value',
+  })
   status?: CashDrawerStatus;
 
   @ApiPropertyOptional({
@@ -59,7 +69,10 @@ export class GetCashDrawersQueryDto {
     description: 'Filter by creation date (YYYY-MM-DD format)',
   })
   @IsOptional()
-  @IsDateString({}, { message: 'Created date must be a valid date in YYYY-MM-DD format' })
+  @IsDateString(
+    {},
+    { message: 'Created date must be a valid date in YYYY-MM-DD format' },
+  )
   createdDate?: string;
 
   @ApiPropertyOptional({

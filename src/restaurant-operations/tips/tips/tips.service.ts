@@ -10,7 +10,7 @@ import { Repository } from 'typeorm';
 import { Tip } from './entities/tip.entity';
 import { Company } from '../../../platform-saas/companies/entities/company.entity';
 import { Merchant } from '../../../platform-saas/merchants/entities/merchant.entity';
-import { Order } from '../../../orders/entities/order.entity';
+import { Order } from '../../../restaurant-operations/pos/orders/entities/order.entity';
 import { CreateTipDto } from './dto/create-tip.dto';
 import { UpdateTipDto } from './dto/update-tip.dto';
 import { GetTipQueryDto, TipSortBy } from './dto/get-tip-query.dto';
@@ -39,11 +39,15 @@ export class TipsService {
     authenticatedUserMerchantId: number | null | undefined,
   ): Promise<OneTipResponseDto> {
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to create tips');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to create tips',
+      );
     }
 
     if (createTipDto.merchantId !== authenticatedUserMerchantId) {
-      throw new ForbiddenException('You can only create tips for your own merchant');
+      throw new ForbiddenException(
+        'You can only create tips for your own merchant',
+      );
     }
 
     const company = await this.companyRepository.findOne({
@@ -58,18 +62,24 @@ export class TipsService {
       relations: ['company'],
     });
     if (!merchant || merchant.companyId !== createTipDto.companyId) {
-      throw new BadRequestException('Merchant not found or does not belong to the specified company');
+      throw new BadRequestException(
+        'Merchant not found or does not belong to the specified company',
+      );
     }
 
     const order = await this.orderRepository.findOne({
       where: { id: createTipDto.orderId, merchant_id: createTipDto.merchantId },
     });
     if (!order) {
-      throw new NotFoundException('Order not found or does not belong to this merchant');
+      throw new NotFoundException(
+        'Order not found or does not belong to this merchant',
+      );
     }
 
     if (createTipDto.amount < 0) {
-      throw new BadRequestException('Amount must be greater than or equal to 0');
+      throw new BadRequestException(
+        'Amount must be greater than or equal to 0',
+      );
     }
 
     const tip = new Tip();
@@ -103,7 +113,9 @@ export class TipsService {
     authenticatedUserMerchantId: number | null | undefined,
   ): Promise<PaginatedTipResponseDto> {
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to access tips');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to access tips',
+      );
     }
 
     if (query.page !== undefined && query.page < 1) {
@@ -113,7 +125,9 @@ export class TipsService {
       throw new BadRequestException('Limit must be between 1 and 100');
     }
     if (query.createdDate && !/^\d{4}-\d{2}-\d{2}$/.test(query.createdDate)) {
-      throw new BadRequestException('Created date must be in YYYY-MM-DD format');
+      throw new BadRequestException(
+        'Created date must be in YYYY-MM-DD format',
+      );
     }
 
     const page = query.page || 1;
@@ -125,17 +139,25 @@ export class TipsService {
       .leftJoinAndSelect('tip.company', 'company')
       .leftJoinAndSelect('tip.merchant', 'merchant')
       .leftJoinAndSelect('tip.order', 'order')
-      .where('tip.merchant_id = :merchantId', { merchantId: authenticatedUserMerchantId })
-      .andWhere('tip.record_status != :deletedStatus', { deletedStatus: TipRecordStatus.DELETED });
+      .where('tip.merchant_id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
+      .andWhere('tip.record_status != :deletedStatus', {
+        deletedStatus: TipRecordStatus.DELETED,
+      });
 
     if (query.companyId != null) {
-      qb.andWhere('tip.company_id = :companyId', { companyId: query.companyId });
+      qb.andWhere('tip.company_id = :companyId', {
+        companyId: query.companyId,
+      });
     }
     if (query.orderId != null) {
       qb.andWhere('tip.order_id = :orderId', { orderId: query.orderId });
     }
     if (query.paymentId != null) {
-      qb.andWhere('tip.payment_id = :paymentId', { paymentId: query.paymentId });
+      qb.andWhere('tip.payment_id = :paymentId', {
+        paymentId: query.paymentId,
+      });
     }
     if (query.method != null) {
       qb.andWhere('tip.method = :method', { method: query.method });
@@ -147,7 +169,9 @@ export class TipsService {
       const startDate = new Date(query.createdDate);
       const endDate = new Date(query.createdDate);
       endDate.setDate(endDate.getDate() + 1);
-      qb.andWhere('tip.created_at >= :createdStart', { createdStart: startDate });
+      qb.andWhere('tip.created_at >= :createdStart', {
+        createdStart: startDate,
+      });
       qb.andWhere('tip.created_at < :createdEnd', { createdEnd: endDate });
     }
 
@@ -190,7 +214,9 @@ export class TipsService {
       throw new BadRequestException('Tip ID must be a valid positive number');
     }
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to access tips');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to access tips',
+      );
     }
 
     const tip = await this.tipRepository.findOne({
@@ -217,7 +243,9 @@ export class TipsService {
       throw new BadRequestException('Tip ID must be a valid positive number');
     }
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to update tips');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to update tips',
+      );
     }
 
     const existing = await this.tipRepository.findOne({
@@ -228,40 +256,63 @@ export class TipsService {
       throw new NotFoundException('Tip not found');
     }
 
-    if (updateTipDto.merchantId !== undefined && updateTipDto.merchantId !== authenticatedUserMerchantId) {
-      throw new ForbiddenException('You cannot assign a tip to another merchant');
+    if (
+      updateTipDto.merchantId !== undefined &&
+      updateTipDto.merchantId !== authenticatedUserMerchantId
+    ) {
+      throw new ForbiddenException(
+        'You cannot assign a tip to another merchant',
+      );
     }
     if (updateTipDto.companyId !== undefined) {
-      const company = await this.companyRepository.findOne({ where: { id: updateTipDto.companyId } });
+      const company = await this.companyRepository.findOne({
+        where: { id: updateTipDto.companyId },
+      });
       if (!company) throw new NotFoundException('Company not found');
       const merchant = await this.merchantRepository.findOne({
         where: { id: authenticatedUserMerchantId },
         relations: ['company'],
       });
       if (!merchant || merchant.companyId !== updateTipDto.companyId) {
-        throw new BadRequestException('Company not found or your merchant does not belong to that company');
+        throw new BadRequestException(
+          'Company not found or your merchant does not belong to that company',
+        );
       }
     }
     if (updateTipDto.orderId !== undefined) {
       const order = await this.orderRepository.findOne({
-        where: { id: updateTipDto.orderId, merchant_id: authenticatedUserMerchantId },
+        where: {
+          id: updateTipDto.orderId,
+          merchant_id: authenticatedUserMerchantId,
+        },
       });
       if (!order) {
-        throw new NotFoundException('Order not found or does not belong to this merchant');
+        throw new NotFoundException(
+          'Order not found or does not belong to this merchant',
+        );
       }
     }
     if (updateTipDto.amount !== undefined && updateTipDto.amount < 0) {
-      throw new BadRequestException('Amount must be greater than or equal to 0');
+      throw new BadRequestException(
+        'Amount must be greater than or equal to 0',
+      );
     }
 
     const updateData: Record<string, unknown> = {};
-    if (updateTipDto.companyId !== undefined) updateData.company_id = updateTipDto.companyId;
-    if (updateTipDto.merchantId !== undefined) updateData.merchant_id = updateTipDto.merchantId;
-    if (updateTipDto.orderId !== undefined) updateData.order_id = updateTipDto.orderId;
-    if (updateTipDto.paymentId !== undefined) updateData.payment_id = updateTipDto.paymentId;
-    if (updateTipDto.amount !== undefined) updateData.amount = updateTipDto.amount;
-    if (updateTipDto.method !== undefined) updateData.method = updateTipDto.method;
-    if (updateTipDto.status !== undefined) updateData.status = updateTipDto.status;
+    if (updateTipDto.companyId !== undefined)
+      updateData.company_id = updateTipDto.companyId;
+    if (updateTipDto.merchantId !== undefined)
+      updateData.merchant_id = updateTipDto.merchantId;
+    if (updateTipDto.orderId !== undefined)
+      updateData.order_id = updateTipDto.orderId;
+    if (updateTipDto.paymentId !== undefined)
+      updateData.payment_id = updateTipDto.paymentId;
+    if (updateTipDto.amount !== undefined)
+      updateData.amount = updateTipDto.amount;
+    if (updateTipDto.method !== undefined)
+      updateData.method = updateTipDto.method;
+    if (updateTipDto.status !== undefined)
+      updateData.status = updateTipDto.status;
 
     await this.tipRepository.update(id, updateData);
 
@@ -288,7 +339,9 @@ export class TipsService {
       throw new BadRequestException('Tip ID must be a valid positive number');
     }
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to delete tips');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to delete tips',
+      );
     }
 
     const existing = await this.tipRepository.findOne({

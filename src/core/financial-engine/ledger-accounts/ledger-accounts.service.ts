@@ -24,7 +24,7 @@ export class LedgerAccountsService {
     private readonly companyRepository: Repository<Company>,
     @InjectRepository(Merchant)
     private readonly merchantRepository: Repository<Merchant>,
-  ) { }
+  ) {}
 
   // ─── Helpers privados ──────────────────────────────────────────────────────
 
@@ -44,13 +44,29 @@ export class LedgerAccountsService {
     const data = this.toResponseDto(account);
     switch (createdUpdateDelete) {
       case 'Created':
-        return { statusCode: 201, message: 'Ledger Account Created successfully', data };
+        return {
+          statusCode: 201,
+          message: 'Ledger Account Created successfully',
+          data,
+        };
       case 'Updated':
-        return { statusCode: 201, message: 'Ledger Account Updated successfully', data };
+        return {
+          statusCode: 201,
+          message: 'Ledger Account Updated successfully',
+          data,
+        };
       case 'Deleted':
-        return { statusCode: 201, message: 'Ledger Account Deleted successfully', data };
+        return {
+          statusCode: 201,
+          message: 'Ledger Account Deleted successfully',
+          data,
+        };
       default:
-        return { statusCode: 200, message: 'Ledger Account retrieved successfully', data };
+        return {
+          statusCode: 200,
+          message: 'Ledger Account retrieved successfully',
+          data,
+        };
     }
   }
 
@@ -156,7 +172,11 @@ export class LedgerAccountsService {
     }
 
     const total = await qb.getCount();
-    const accounts = await qb.orderBy('account.code', 'ASC').skip(skip).take(limit).getMany();
+    const accounts = await qb
+      .orderBy('account.code', 'ASC')
+      .skip(skip)
+      .take(limit)
+      .getMany();
 
     const totalPages = Math.ceil(total / limit);
 
@@ -177,7 +197,8 @@ export class LedgerAccountsService {
     id: number,
     merchantId: number,
   ): Promise<OneLedgerAccountResponse> {
-    if (!id || id <= 0) ErrorHandler.invalidId('Ledger Account ID is incorrect');
+    if (!id || id <= 0)
+      ErrorHandler.invalidId('Ledger Account ID is incorrect');
     const company_id = await this.getCompanyId(merchantId);
     return this.fetchOne(id, company_id);
   }
@@ -187,7 +208,8 @@ export class LedgerAccountsService {
     merchantId: number,
     dto: UpdateLedgerAccountDto,
   ): Promise<OneLedgerAccountResponse> {
-    if (!id || id <= 0) ErrorHandler.invalidId('Ledger Account ID is incorrect');
+    if (!id || id <= 0)
+      ErrorHandler.invalidId('Ledger Account ID is incorrect');
 
     const company_id = await this.getCompanyId(merchantId);
 
@@ -203,7 +225,9 @@ export class LedgerAccountsService {
         where: { code: dto.code, company_id, is_active: true },
       });
       if (existing && existing.id !== id)
-        ErrorHandler.exists(`Ledger account with code '${dto.code}' already exists`);
+        ErrorHandler.exists(
+          `Ledger account with code '${dto.code}' already exists`,
+        );
     }
 
     if (dto.parent_account_id) {
@@ -229,8 +253,12 @@ export class LedgerAccountsService {
     }
   }
 
-  async remove(id: number, merchantId: number): Promise<OneLedgerAccountResponse> {
-    if (!id || id <= 0) ErrorHandler.invalidId('Ledger Account ID is incorrect');
+  async remove(
+    id: number,
+    merchantId: number,
+  ): Promise<OneLedgerAccountResponse> {
+    if (!id || id <= 0)
+      ErrorHandler.invalidId('Ledger Account ID is incorrect');
 
     const company_id = await this.getCompanyId(merchantId);
 

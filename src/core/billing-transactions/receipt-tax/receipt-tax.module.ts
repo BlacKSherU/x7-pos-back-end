@@ -5,13 +5,16 @@ import { ReceiptTaxController } from './receipt-tax.controller';
 import { ReceiptTax } from './entities/receipt-tax.entity';
 import { Receipt } from '../receipts/entities/receipt.entity';
 import { ReceiptItem } from '../receipt-item/entities/receipt-item.entity';
-import { Order } from 'src/orders/entities/order.entity';
+import { Order } from 'src/restaurant-operations/pos/orders/entities/order.entity';
 import { ReceiptsModule } from '../receipts/receipts.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ReceiptTax, Receipt, ReceiptItem, Order]), ReceiptsModule],
+  imports: [
+    TypeOrmModule.forFeature([ReceiptTax, Receipt, ReceiptItem, Order]),
+    ReceiptsModule,
+  ],
   controllers: [ReceiptTaxController],
   providers: [ReceiptTaxService],
   exports: [ReceiptTaxService],
 })
-export class ReceiptTaxModule { }
+export class ReceiptTaxModule {}

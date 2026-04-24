@@ -29,6 +29,7 @@ import {
   ApiConflictResponse,
   ApiQuery,
 } from '@nestjs/swagger';
+import { AuthenticatedUser } from '../../../auth/interfaces/authenticated-user.interface';
 import {
   OneTipPoolResponseDto,
   PaginatedTipPoolResponseDto,
@@ -68,8 +69,11 @@ export class TipPoolsController {
   @ApiForbiddenResponse({ type: ErrorResponse })
   @ApiNotFoundResponse({ type: ErrorResponse })
   @ApiBody({ type: CreateTipPoolDto })
-  async create(@Body() dto: CreateTipPoolDto, @Request() req: any) {
-    return this.tipPoolsService.create(dto, req.user?.merchant?.id);
+  async create(
+    @Body() dto: CreateTipPoolDto,
+    @Request() req: AuthenticatedUser,
+  ) {
+    return this.tipPoolsService.create(dto, req.merchant?.id);
   }
 
   @Get()
@@ -95,8 +99,11 @@ export class TipPoolsController {
   @ApiUnauthorizedResponse({ type: ErrorResponse })
   @ApiForbiddenResponse({ type: ErrorResponse })
   @ApiBadRequestResponse({ type: ErrorResponse })
-  async findAll(@Query() query: GetTipPoolQueryDto, @Request() req: any) {
-    return this.tipPoolsService.findAll(query, req.user?.merchant?.id);
+  async findAll(
+    @Query() query: GetTipPoolQueryDto,
+    @Request() req: AuthenticatedUser,
+  ) {
+    return this.tipPoolsService.findAll(query, req.merchant?.id);
   }
 
   @Get(':id')
@@ -115,8 +122,11 @@ export class TipPoolsController {
   @ApiForbiddenResponse({ type: ErrorResponse })
   @ApiNotFoundResponse({ type: ErrorResponse })
   @ApiBadRequestResponse({ type: ErrorResponse })
-  async findOne(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
-    return this.tipPoolsService.findOne(id, req.user?.merchant?.id);
+  async findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedUser,
+  ) {
+    return this.tipPoolsService.findOne(id, req.merchant?.id);
   }
 
   @Put(':id')
@@ -139,9 +149,9 @@ export class TipPoolsController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateTipPoolDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ) {
-    return this.tipPoolsService.update(id, dto, req.user?.merchant?.id);
+    return this.tipPoolsService.update(id, dto, req.merchant?.id);
   }
 
   @Delete(':id')
@@ -161,7 +171,10 @@ export class TipPoolsController {
   @ApiNotFoundResponse({ type: ErrorResponse })
   @ApiBadRequestResponse({ type: ErrorResponse })
   @ApiConflictResponse({ type: ErrorResponse })
-  async remove(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
-    return this.tipPoolsService.remove(id, req.user?.merchant?.id);
+  async remove(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedUser,
+  ) {
+    return this.tipPoolsService.remove(id, req.merchant?.id);
   }
 }

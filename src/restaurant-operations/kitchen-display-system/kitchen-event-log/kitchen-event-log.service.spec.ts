@@ -1,11 +1,14 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/unbound-method */
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { NotFoundException, ForbiddenException, BadRequestException, ConflictException } from '@nestjs/common';
+import { Repository, type DeepPartial, type SelectQueryBuilder } from 'typeorm';
+import {
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { KitchenEventLogService } from './kitchen-event-log.service';
 import { KitchenEventLog } from './entities/kitchen-event-log.entity';
 import { KitchenOrder } from '../kitchen-order/entities/kitchen-order.entity';
@@ -146,9 +149,7 @@ describe('KitchenEventLogService', () => {
     kitchenStationRepository = module.get<Repository<KitchenStation>>(
       getRepositoryToken(KitchenStation),
     );
-    userRepository = module.get<Repository<User>>(
-      getRepositoryToken(User),
-    );
+    userRepository = module.get<Repository<User>>(getRepositoryToken(User));
   });
 
   afterEach(() => {
@@ -180,12 +181,22 @@ describe('KitchenEventLogService', () => {
     };
 
     it('should create a kitchen event log successfully', async () => {
-      jest.spyOn(kitchenOrderRepository, 'findOne').mockResolvedValue(mockKitchenOrder as any);
-      jest.spyOn(kitchenStationRepository, 'findOne').mockResolvedValue(mockKitchenStation as any);
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser as any);
+      jest
+        .spyOn(kitchenOrderRepository, 'findOne')
+        .mockResolvedValue(mockKitchenOrder as unknown as KitchenOrder);
+      jest
+        .spyOn(kitchenStationRepository, 'findOne')
+        .mockResolvedValue(mockKitchenStation as unknown as KitchenStation);
+      jest
+        .spyOn(userRepository, 'findOne')
+        .mockResolvedValue(mockUser as unknown as User);
       const savedLog = { ...mockKitchenEventLog, id: 1 };
-      jest.spyOn(kitchenEventLogRepository, 'save').mockResolvedValue(savedLog as any);
-      jest.spyOn(kitchenEventLogRepository, 'findOne').mockResolvedValue(mockKitchenEventLog as any);
+      jest
+        .spyOn(kitchenEventLogRepository, 'save')
+        .mockResolvedValue(savedLog as unknown as KitchenEventLog);
+      jest
+        .spyOn(kitchenEventLogRepository, 'findOne')
+        .mockResolvedValue(mockKitchenEventLog as unknown as KitchenEventLog);
 
       const result = await service.create(createDto, 1);
 
@@ -200,14 +211,30 @@ describe('KitchenEventLogService', () => {
 
     it('should create event log with kitchen order item successfully', async () => {
       const dtoWithItem = { ...createDto, kitchenOrderItemId: 1 };
-      jest.spyOn(kitchenOrderRepository, 'findOne').mockResolvedValue(mockKitchenOrder as any);
-      jest.spyOn(kitchenOrderItemRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(mockKitchenOrderItem as any);
-      jest.spyOn(kitchenStationRepository, 'findOne').mockResolvedValue(mockKitchenStation as any);
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser as any);
+      jest
+        .spyOn(kitchenOrderRepository, 'findOne')
+        .mockResolvedValue(mockKitchenOrder as unknown as KitchenOrder);
+      jest
+        .spyOn(kitchenOrderItemRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<KitchenOrderItem>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        mockKitchenOrderItem as unknown as KitchenOrderItem,
+      );
+      jest
+        .spyOn(kitchenStationRepository, 'findOne')
+        .mockResolvedValue(mockKitchenStation as unknown as KitchenStation);
+      jest
+        .spyOn(userRepository, 'findOne')
+        .mockResolvedValue(mockUser as unknown as User);
       const savedLog = { ...mockKitchenEventLog, kitchen_order_item_id: 1 };
-      jest.spyOn(kitchenEventLogRepository, 'save').mockResolvedValue(savedLog as any);
-      jest.spyOn(kitchenEventLogRepository, 'findOne').mockResolvedValue(savedLog as any);
+      jest
+        .spyOn(kitchenEventLogRepository, 'save')
+        .mockResolvedValue(savedLog as unknown as KitchenEventLog);
+      jest
+        .spyOn(kitchenEventLogRepository, 'findOne')
+        .mockResolvedValue(savedLog as unknown as KitchenEventLog);
 
       const result = await service.create(dtoWithItem, 1);
 
@@ -218,9 +245,18 @@ describe('KitchenEventLogService', () => {
       const minimalDto: CreateKitchenEventLogDto = {
         eventType: KitchenEventLogEventType.INICIO,
       };
-      const savedLog = { ...mockKitchenEventLog, kitchen_order_id: null, station_id: null, user_id: null };
-      jest.spyOn(kitchenEventLogRepository, 'save').mockResolvedValue(savedLog as any);
-      jest.spyOn(kitchenEventLogRepository, 'findOne').mockResolvedValue(savedLog as any);
+      const savedLog = {
+        ...mockKitchenEventLog,
+        kitchen_order_id: null,
+        station_id: null,
+        user_id: null,
+      };
+      jest
+        .spyOn(kitchenEventLogRepository, 'save')
+        .mockResolvedValue(savedLog as unknown as KitchenEventLog);
+      jest
+        .spyOn(kitchenEventLogRepository, 'findOne')
+        .mockResolvedValue(savedLog as unknown as KitchenEventLog);
 
       const result = await service.create(minimalDto, 1);
 
@@ -233,16 +269,28 @@ describe('KitchenEventLogService', () => {
         eventType: KitchenEventLogEventType.INICIO,
       };
       const beforeCreate = new Date();
-      const savedLog = { ...mockKitchenEventLog, kitchen_order_id: null, station_id: null, user_id: null };
-      jest.spyOn(kitchenEventLogRepository, 'save').mockImplementation((log: any) => {
-        // Verify that event_time was set (should be a Date object)
-        expect(log.event_time).toBeInstanceOf(Date);
-        // Verify it's close to the current time (within 1 second)
-        const timeDiff = Math.abs(log.event_time.getTime() - beforeCreate.getTime());
-        expect(timeDiff).toBeLessThan(1000);
-        return Promise.resolve(savedLog as any);
-      });
-      jest.spyOn(kitchenEventLogRepository, 'findOne').mockResolvedValue(savedLog as any);
+      const savedLog = {
+        ...mockKitchenEventLog,
+        kitchen_order_id: null,
+        station_id: null,
+        user_id: null,
+      };
+      jest
+        .spyOn(kitchenEventLogRepository, 'save')
+        .mockImplementation((log: DeepPartial<KitchenEventLog>) => {
+          // Verify that event_time was set (should be a Date object)
+          expect(log.event_time).toBeInstanceOf(Date);
+          // Verify it's close to the current time (within 1 second)
+          const eventTime = log.event_time as Date;
+          const timeDiff = Math.abs(
+            eventTime.getTime() - beforeCreate.getTime(),
+          );
+          expect(timeDiff).toBeLessThan(1000);
+          return Promise.resolve(savedLog as unknown as KitchenEventLog);
+        });
+      jest
+        .spyOn(kitchenEventLogRepository, 'findOne')
+        .mockResolvedValue(savedLog as unknown as KitchenEventLog);
 
       const result = await service.create(dtoWithoutEventTime, 1);
 
@@ -256,16 +304,26 @@ describe('KitchenEventLogService', () => {
         eventType: KitchenEventLogEventType.INICIO,
         eventTime: providedEventTime,
       };
-      const savedLog = { ...mockKitchenEventLog, kitchen_order_id: null, station_id: null, user_id: null };
-      jest.spyOn(kitchenEventLogRepository, 'save').mockImplementation((log: any) => {
-        // Verify that event_time was set to the provided value
-        expect(log.event_time).toBeInstanceOf(Date);
-        // Compare the date values (ignoring milliseconds)
-        const expectedDate = new Date(providedEventTime);
-        expect(log.event_time.getTime()).toBe(expectedDate.getTime());
-        return Promise.resolve(savedLog as any);
-      });
-      jest.spyOn(kitchenEventLogRepository, 'findOne').mockResolvedValue(savedLog as any);
+      const savedLog = {
+        ...mockKitchenEventLog,
+        kitchen_order_id: null,
+        station_id: null,
+        user_id: null,
+      };
+      jest
+        .spyOn(kitchenEventLogRepository, 'save')
+        .mockImplementation((log: DeepPartial<KitchenEventLog>) => {
+          // Verify that event_time was set to the provided value
+          expect(log.event_time).toBeInstanceOf(Date);
+          // Compare the date values (ignoring milliseconds)
+          const expectedDate = new Date(providedEventTime);
+          const eventTime = log.event_time as Date;
+          expect(eventTime.getTime()).toBe(expectedDate.getTime());
+          return Promise.resolve(savedLog as unknown as KitchenEventLog);
+        });
+      jest
+        .spyOn(kitchenEventLogRepository, 'findOne')
+        .mockResolvedValue(savedLog as unknown as KitchenEventLog);
 
       const result = await service.create(dtoWithEventTime, 1);
 
@@ -274,10 +332,10 @@ describe('KitchenEventLogService', () => {
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.create(createDto, undefined as any)).rejects.toThrow(
+      await expect(service.create(createDto, 0)).rejects.toThrow(
         ForbiddenException,
       );
-      await expect(service.create(createDto, undefined as any)).rejects.toThrow(
+      await expect(service.create(createDto, 0)).rejects.toThrow(
         'You must be associated with a merchant to create kitchen event logs',
       );
     });
@@ -295,8 +353,14 @@ describe('KitchenEventLogService', () => {
 
     it('should throw NotFoundException when kitchen order item not found', async () => {
       const dtoWithItem = { ...createDto, kitchenOrderItemId: 1 };
-      jest.spyOn(kitchenOrderRepository, 'findOne').mockResolvedValue(mockKitchenOrder as any);
-      jest.spyOn(kitchenOrderItemRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(kitchenOrderRepository, 'findOne')
+        .mockResolvedValue(mockKitchenOrder as unknown as KitchenOrder);
+      jest
+        .spyOn(kitchenOrderItemRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<KitchenOrderItem>,
+        );
       mockQueryBuilder.getOne.mockResolvedValue(null);
 
       await expect(service.create(dtoWithItem, 1)).rejects.toThrow(
@@ -308,7 +372,9 @@ describe('KitchenEventLogService', () => {
     });
 
     it('should throw NotFoundException when station not found', async () => {
-      jest.spyOn(kitchenOrderRepository, 'findOne').mockResolvedValue(mockKitchenOrder as any);
+      jest
+        .spyOn(kitchenOrderRepository, 'findOne')
+        .mockResolvedValue(mockKitchenOrder as unknown as KitchenOrder);
       jest.spyOn(kitchenStationRepository, 'findOne').mockResolvedValue(null);
 
       await expect(service.create(createDto, 1)).rejects.toThrow(
@@ -320,8 +386,12 @@ describe('KitchenEventLogService', () => {
     });
 
     it('should throw NotFoundException when user not found', async () => {
-      jest.spyOn(kitchenOrderRepository, 'findOne').mockResolvedValue(mockKitchenOrder as any);
-      jest.spyOn(kitchenStationRepository, 'findOne').mockResolvedValue(mockKitchenStation as any);
+      jest
+        .spyOn(kitchenOrderRepository, 'findOne')
+        .mockResolvedValue(mockKitchenOrder as unknown as KitchenOrder);
+      jest
+        .spyOn(kitchenStationRepository, 'findOne')
+        .mockResolvedValue(mockKitchenStation as unknown as KitchenStation);
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
 
       await expect(service.create(createDto, 1)).rejects.toThrow(
@@ -334,9 +404,15 @@ describe('KitchenEventLogService', () => {
 
     it('should throw ForbiddenException when user belongs to different merchant', async () => {
       const differentMerchantUser = { ...mockUser, merchantId: 2 };
-      jest.spyOn(kitchenOrderRepository, 'findOne').mockResolvedValue(mockKitchenOrder as any);
-      jest.spyOn(kitchenStationRepository, 'findOne').mockResolvedValue(mockKitchenStation as any);
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(differentMerchantUser as any);
+      jest
+        .spyOn(kitchenOrderRepository, 'findOne')
+        .mockResolvedValue(mockKitchenOrder as unknown as KitchenOrder);
+      jest
+        .spyOn(kitchenStationRepository, 'findOne')
+        .mockResolvedValue(mockKitchenStation as unknown as KitchenStation);
+      jest
+        .spyOn(userRepository, 'findOne')
+        .mockResolvedValue(differentMerchantUser as unknown as User);
 
       await expect(service.create(createDto, 1)).rejects.toThrow(
         ForbiddenException,
@@ -354,8 +430,15 @@ describe('KitchenEventLogService', () => {
     };
 
     it('should return paginated list of kitchen event logs', async () => {
-      jest.spyOn(kitchenEventLogRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockKitchenEventLog] as any, 1]);
+      jest
+        .spyOn(kitchenEventLogRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<KitchenEventLog>,
+        );
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([
+        [mockKitchenEventLog] as unknown as KitchenEventLog[],
+        1,
+      ]);
 
       const result = await service.findAll(query, 1);
 
@@ -369,10 +452,10 @@ describe('KitchenEventLogService', () => {
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.findAll(query, undefined as any)).rejects.toThrow(
+      await expect(service.findAll(query, 0)).rejects.toThrow(
         ForbiddenException,
       );
-      await expect(service.findAll(query, undefined as any)).rejects.toThrow(
+      await expect(service.findAll(query, 0)).rejects.toThrow(
         'You must be associated with a merchant to access kitchen event logs',
       );
     });
@@ -409,8 +492,15 @@ describe('KitchenEventLogService', () => {
 
     it('should filter by kitchen order id', async () => {
       const queryWithFilter = { ...query, kitchenOrderId: 1 };
-      jest.spyOn(kitchenEventLogRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockKitchenEventLog] as any, 1]);
+      jest
+        .spyOn(kitchenEventLogRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<KitchenEventLog>,
+        );
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([
+        [mockKitchenEventLog] as unknown as KitchenEventLog[],
+        1,
+      ]);
 
       await service.findAll(queryWithFilter, 1);
 
@@ -421,9 +511,19 @@ describe('KitchenEventLogService', () => {
     });
 
     it('should filter by event type', async () => {
-      const queryWithFilter = { ...query, eventType: KitchenEventLogEventType.LISTO };
-      jest.spyOn(kitchenEventLogRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockKitchenEventLog] as any, 1]);
+      const queryWithFilter = {
+        ...query,
+        eventType: KitchenEventLogEventType.LISTO,
+      };
+      jest
+        .spyOn(kitchenEventLogRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<KitchenEventLog>,
+        );
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([
+        [mockKitchenEventLog] as unknown as KitchenEventLog[],
+        1,
+      ]);
 
       await service.findAll(queryWithFilter, 1);
 
@@ -435,8 +535,15 @@ describe('KitchenEventLogService', () => {
 
     it('should filter by user id', async () => {
       const queryWithFilter = { ...query, userId: 1 };
-      jest.spyOn(kitchenEventLogRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockKitchenEventLog] as any, 1]);
+      jest
+        .spyOn(kitchenEventLogRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<KitchenEventLog>,
+        );
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([
+        [mockKitchenEventLog] as unknown as KitchenEventLog[],
+        1,
+      ]);
 
       await service.findAll(queryWithFilter, 1);
 
@@ -469,8 +576,14 @@ describe('KitchenEventLogService', () => {
 
   describe('findOne', () => {
     it('should return a kitchen event log successfully', async () => {
-      jest.spyOn(kitchenEventLogRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(mockKitchenEventLog as any);
+      jest
+        .spyOn(kitchenEventLogRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<KitchenEventLog>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        mockKitchenEventLog as unknown as KitchenEventLog,
+      );
 
       const result = await service.findOne(1, 1);
 
@@ -480,21 +593,21 @@ describe('KitchenEventLogService', () => {
     });
 
     it('should throw BadRequestException if id is invalid', async () => {
-      await expect(service.findOne(0, 1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.findOne(0, 1)).rejects.toThrow(BadRequestException);
       await expect(service.findOne(0, 1)).rejects.toThrow(
         'Kitchen event log ID must be a valid positive number',
       );
     });
 
     it('should throw NotFoundException if kitchen event log not found', async () => {
-      jest.spyOn(kitchenEventLogRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(kitchenEventLogRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<KitchenEventLog>,
+        );
       mockQueryBuilder.getOne.mockResolvedValue(null);
 
-      await expect(service.findOne(1, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.findOne(1, 1)).rejects.toThrow(NotFoundException);
       await expect(service.findOne(1, 1)).rejects.toThrow(
         'Kitchen event log not found',
       );
@@ -508,11 +621,22 @@ describe('KitchenEventLogService', () => {
     };
 
     it('should update a kitchen event log successfully', async () => {
-      jest.spyOn(kitchenEventLogRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(kitchenEventLogRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<KitchenEventLog>,
+        );
       mockQueryBuilder.getOne
-        .mockResolvedValueOnce(mockKitchenEventLog as any)
-        .mockResolvedValueOnce({ ...mockKitchenEventLog, event_type: KitchenEventLogEventType.LISTO } as any);
-      jest.spyOn(kitchenEventLogRepository, 'save').mockResolvedValue(mockKitchenEventLog as any);
+        .mockResolvedValueOnce(
+          mockKitchenEventLog as unknown as KitchenEventLog,
+        )
+        .mockResolvedValueOnce({
+          ...mockKitchenEventLog,
+          event_type: KitchenEventLogEventType.LISTO,
+        } as unknown as KitchenEventLog);
+      jest
+        .spyOn(kitchenEventLogRepository, 'save')
+        .mockResolvedValue(mockKitchenEventLog as unknown as KitchenEventLog);
 
       const result = await service.update(1, updateDto, 1);
 
@@ -528,7 +652,11 @@ describe('KitchenEventLogService', () => {
     });
 
     it('should throw NotFoundException if kitchen event log not found', async () => {
-      jest.spyOn(kitchenEventLogRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(kitchenEventLogRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<KitchenEventLog>,
+        );
       mockQueryBuilder.getOne.mockResolvedValue(null);
 
       await expect(service.update(1, updateDto, 1)).rejects.toThrow(
@@ -537,9 +665,18 @@ describe('KitchenEventLogService', () => {
     });
 
     it('should throw ConflictException if log is already deleted', async () => {
-      const deletedLog = { ...mockKitchenEventLog, status: KitchenEventLogStatus.DELETED };
-      jest.spyOn(kitchenEventLogRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(deletedLog as any);
+      const deletedLog = {
+        ...mockKitchenEventLog,
+        status: KitchenEventLogStatus.DELETED,
+      };
+      jest
+        .spyOn(kitchenEventLogRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<KitchenEventLog>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        deletedLog as unknown as KitchenEventLog,
+      );
 
       await expect(service.update(1, updateDto, 1)).rejects.toThrow(
         ConflictException,
@@ -551,12 +688,26 @@ describe('KitchenEventLogService', () => {
 
     it('should update kitchen order id', async () => {
       const updateWithKitchenOrder = { ...updateDto, kitchenOrderId: 2 };
-      jest.spyOn(kitchenEventLogRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(kitchenEventLogRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<KitchenEventLog>,
+        );
       mockQueryBuilder.getOne
-        .mockResolvedValueOnce(mockKitchenEventLog as any)
-        .mockResolvedValueOnce({ ...mockKitchenEventLog, kitchen_order_id: 2 } as any);
-      jest.spyOn(kitchenOrderRepository, 'findOne').mockResolvedValue({ ...mockKitchenOrder, id: 2 } as any);
-      jest.spyOn(kitchenEventLogRepository, 'save').mockResolvedValue(mockKitchenEventLog as any);
+        .mockResolvedValueOnce(
+          mockKitchenEventLog as unknown as KitchenEventLog,
+        )
+        .mockResolvedValueOnce({
+          ...mockKitchenEventLog,
+          kitchen_order_id: 2,
+        } as unknown as KitchenEventLog);
+      jest.spyOn(kitchenOrderRepository, 'findOne').mockResolvedValue({
+        ...mockKitchenOrder,
+        id: 2,
+      } as unknown as KitchenOrder);
+      jest
+        .spyOn(kitchenEventLogRepository, 'save')
+        .mockResolvedValue(mockKitchenEventLog as unknown as KitchenEventLog);
 
       await service.update(1, updateWithKitchenOrder, 1);
 
@@ -573,11 +724,22 @@ describe('KitchenEventLogService', () => {
 
       for (const eventType of eventTypes) {
         const updateWithType = { ...updateDto, eventType };
-        jest.spyOn(kitchenEventLogRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+        jest
+          .spyOn(kitchenEventLogRepository, 'createQueryBuilder')
+          .mockReturnValue(
+            mockQueryBuilder as unknown as SelectQueryBuilder<KitchenEventLog>,
+          );
         mockQueryBuilder.getOne
-          .mockResolvedValueOnce(mockKitchenEventLog as any)
-          .mockResolvedValueOnce({ ...mockKitchenEventLog, event_type: eventType } as any);
-        jest.spyOn(kitchenEventLogRepository, 'save').mockResolvedValue(mockKitchenEventLog as any);
+          .mockResolvedValueOnce(
+            mockKitchenEventLog as unknown as KitchenEventLog,
+          )
+          .mockResolvedValueOnce({
+            ...mockKitchenEventLog,
+            event_type: eventType,
+          } as unknown as KitchenEventLog);
+        jest
+          .spyOn(kitchenEventLogRepository, 'save')
+          .mockResolvedValue(mockKitchenEventLog as unknown as KitchenEventLog);
 
         const result = await service.update(1, updateWithType, 1);
 
@@ -588,11 +750,22 @@ describe('KitchenEventLogService', () => {
 
   describe('remove', () => {
     it('should delete a kitchen event log successfully', async () => {
-      jest.spyOn(kitchenEventLogRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(kitchenEventLogRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<KitchenEventLog>,
+        );
       mockQueryBuilder.getOne
-        .mockResolvedValueOnce(mockKitchenEventLog as any)
-        .mockResolvedValueOnce({ ...mockKitchenEventLog, status: KitchenEventLogStatus.DELETED } as any);
-      jest.spyOn(kitchenEventLogRepository, 'save').mockResolvedValue(mockKitchenEventLog as any);
+        .mockResolvedValueOnce(
+          mockKitchenEventLog as unknown as KitchenEventLog,
+        )
+        .mockResolvedValueOnce({
+          ...mockKitchenEventLog,
+          status: KitchenEventLogStatus.DELETED,
+        } as unknown as KitchenEventLog);
+      jest
+        .spyOn(kitchenEventLogRepository, 'save')
+        .mockResolvedValue(mockKitchenEventLog as unknown as KitchenEventLog);
 
       const result = await service.remove(1, 1);
 
@@ -602,28 +775,35 @@ describe('KitchenEventLogService', () => {
     });
 
     it('should throw BadRequestException if id is invalid', async () => {
-      await expect(service.remove(0, 1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.remove(0, 1)).rejects.toThrow(BadRequestException);
     });
 
     it('should throw NotFoundException if kitchen event log not found', async () => {
-      jest.spyOn(kitchenEventLogRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(kitchenEventLogRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<KitchenEventLog>,
+        );
       mockQueryBuilder.getOne.mockResolvedValue(null);
 
-      await expect(service.remove(1, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.remove(1, 1)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ConflictException if log is already deleted', async () => {
-      const deletedLog = { ...mockKitchenEventLog, status: KitchenEventLogStatus.DELETED };
-      jest.spyOn(kitchenEventLogRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(deletedLog as any);
-
-      await expect(service.remove(1, 1)).rejects.toThrow(
-        ConflictException,
+      const deletedLog = {
+        ...mockKitchenEventLog,
+        status: KitchenEventLogStatus.DELETED,
+      };
+      jest
+        .spyOn(kitchenEventLogRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<KitchenEventLog>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        deletedLog as unknown as KitchenEventLog,
       );
+
+      await expect(service.remove(1, 1)).rejects.toThrow(ConflictException);
       await expect(service.remove(1, 1)).rejects.toThrow(
         'Kitchen event log is already deleted',
       );

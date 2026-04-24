@@ -224,14 +224,14 @@ export class MovementsService {
         break;
       case 'Updated':
         response = {
-          statusCode: 201,
+          statusCode: 200,
           message: `Movement ${createdUpdateDelete} successfully`,
           data: result,
         };
         break;
       case 'Deleted':
         response = {
-          statusCode: 201,
+          statusCode: 200,
           message: `Movement ${createdUpdateDelete} successfully`,
           data: result,
         };

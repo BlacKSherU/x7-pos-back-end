@@ -1,4 +1,12 @@
-import { IsOptional, IsNumber, IsEnum, Min, Max, IsDateString, IsString } from 'class-validator';
+import {
+  IsOptional,
+  IsNumber,
+  IsEnum,
+  Min,
+  Max,
+  IsDateString,
+  IsString,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { MarketingCampaignAudienceStatus } from '../constants/marketing-campaign-audience-status.enum';
@@ -59,7 +67,8 @@ export class GetMarketingCampaignAudienceQueryDto {
   @ApiPropertyOptional({
     example: MarketingCampaignAudienceStatus.SENT,
     enum: MarketingCampaignAudienceStatus,
-    description: 'Filter by audience status (pending, sent, delivered, opened, clicked, failed, deleted)',
+    description:
+      'Filter by audience status (pending, sent, delivered, opened, clicked, failed, deleted)',
   })
   @IsOptional()
   @IsEnum(MarketingCampaignAudienceStatus)

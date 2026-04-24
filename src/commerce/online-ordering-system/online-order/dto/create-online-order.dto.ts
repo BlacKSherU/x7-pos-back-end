@@ -1,5 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNumber, IsNotEmpty, IsOptional, IsEnum, IsString, Min, MaxLength } from 'class-validator';
+import {
+  IsNumber,
+  IsNotEmpty,
+  IsOptional,
+  IsEnum,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 import { OnlineOrderType } from '../constants/online-order-type.enum';
 import { OnlineOrderPaymentStatus } from '../constants/online-order-payment-status.enum';
 
@@ -9,7 +16,11 @@ export class CreateOnlineOrderDto {
   @IsNotEmpty({ message: 'Store ID is required' })
   storeId: number;
 
-  @ApiPropertyOptional({ example: 1, description: 'Identifier of the Order (optional)', nullable: true })
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'Identifier of the Order (optional)',
+    nullable: true,
+  })
   @IsOptional()
   @IsNumber({}, { message: 'Order ID must be a number' })
   orderId?: number | null;
@@ -31,29 +42,38 @@ export class CreateOnlineOrderDto {
   @ApiProperty({
     example: OnlineOrderPaymentStatus.PENDING,
     enum: OnlineOrderPaymentStatus,
-    description: 'Payment status of the order (pending, paid, failed, refunded)',
+    description:
+      'Payment status of the order (pending, paid, failed, refunded)',
   })
-  @IsEnum(OnlineOrderPaymentStatus, { message: 'Payment status must be a valid payment status' })
+  @IsEnum(OnlineOrderPaymentStatus, {
+    message: 'Payment status must be a valid payment status',
+  })
   @IsNotEmpty({ message: 'Payment status is required' })
   paymentStatus: OnlineOrderPaymentStatus;
 
-  @ApiPropertyOptional({ example: '2024-01-15T10:00:00Z', description: 'Scheduled time for the order', nullable: true })
+  @ApiPropertyOptional({
+    example: '2024-01-15T10:00:00Z',
+    description: 'Scheduled time for the order',
+    nullable: true,
+  })
   @IsOptional()
   @IsString({ message: 'Scheduled at must be a valid date string' })
   scheduledAt?: string | null;
 
-  @ApiPropertyOptional({ example: '2024-01-15T08:00:00Z', description: 'Time when the order was placed', nullable: true })
+  @ApiPropertyOptional({
+    example: '2024-01-15T08:00:00Z',
+    description: 'Time when the order was placed',
+    nullable: true,
+  })
   @IsOptional()
   @IsString({ message: 'Placed at must be a valid date string' })
   placedAt?: string | null;
 
-  @ApiProperty({ example: 125.99, description: 'Total amount of the order' })
-  @IsNumber({}, { message: 'Total amount must be a number' })
-  @IsNotEmpty({ message: 'Total amount is required' })
-  @Min(0, { message: 'Total amount must be greater than or equal to 0' })
-  totalAmount: number;
-
-  @ApiPropertyOptional({ example: 'Please deliver to the back door', description: 'Additional notes for the order', nullable: true })
+  @ApiPropertyOptional({
+    example: 'Please deliver to the back door',
+    description: 'Additional notes for the order',
+    nullable: true,
+  })
   @IsOptional()
   @IsString({ message: 'Notes must be a string' })
   @MaxLength(5000, { message: 'Notes must not exceed 5000 characters' })

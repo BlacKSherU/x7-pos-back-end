@@ -13,7 +13,10 @@ import { AdjustmentType } from '../constants/adjustment-type.enum';
 
 @Entity('payroll_adjustments')
 export class PayrollAdjustment {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the payroll adjustment' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the payroll adjustment',
+  })
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -37,11 +40,19 @@ export class PayrollAdjustment {
   @Column({ type: 'varchar', length: 50, name: 'adjustment_type' })
   adjustment_type: AdjustmentType;
 
-  @ApiProperty({ example: 'Performance bonus', description: 'Description of the adjustment', nullable: true })
+  @ApiProperty({
+    example: 'Performance bonus',
+    description: 'Description of the adjustment',
+    nullable: true,
+  })
   @Column({ type: 'text', nullable: true })
   description: string | null;
 
-  @ApiProperty({ example: 150.50, description: 'Adjustment amount (positive for bonus, negative for deduction)' })
+  @ApiProperty({
+    example: 150.5,
+    description:
+      'Adjustment amount (positive for bonus, negative for deduction)',
+  })
   @Column({ type: 'decimal', precision: 12, scale: 2 })
   amount: number;
 
@@ -53,7 +64,10 @@ export class PayrollAdjustment {
   @UpdateDateColumn({ type: 'timestamp', name: 'updated_at' })
   updated_at: Date;
 
-  @ApiProperty({ description: 'Logical delete timestamp (null = active)', nullable: true })
+  @ApiProperty({
+    description: 'Logical delete timestamp (null = active)',
+    nullable: true,
+  })
   @Column({ type: 'timestamp', name: 'deleted_at', nullable: true })
   deleted_at: Date | null;
 }

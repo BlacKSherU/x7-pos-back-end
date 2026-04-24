@@ -588,7 +588,7 @@ describe('ModifiersService', () => {
       expect(modifierRepository.save).toHaveBeenCalledWith(updatedModifier);
 
       expect(result).toEqual({
-        statusCode: 201,
+        statusCode: 200,
         message: 'Modifier Updated successfully',
         data: {
           ...mockModifierResponseDto,
@@ -720,7 +720,7 @@ describe('ModifiersService', () => {
       expect(modifierRepository.save).toHaveBeenCalledWith(inactiveModifier);
 
       expect(result).toEqual({
-        statusCode: 201,
+        statusCode: 200,
         message: 'Modifier Deleted successfully',
         data: {
           id: inactiveModifier.id,

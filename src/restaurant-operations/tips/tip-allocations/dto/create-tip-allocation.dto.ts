@@ -40,11 +40,13 @@ export class CreateTipAllocationDto {
     description: 'Role for this allocation (waiter, bartender, runner)',
   })
   @IsNotEmpty({ message: 'Role is required' })
-  @IsEnum(TipAllocationRole, { message: 'Role must be one of: waiter, bartender, runner' })
+  @IsEnum(TipAllocationRole, {
+    message: 'Role must be one of: waiter, bartender, runner',
+  })
   role: TipAllocationRole;
 
   @ApiProperty({
-    example: 50.00,
+    example: 50.0,
     description: 'Percentage of the tip allocated (0-100)',
   })
   @IsNotEmpty({ message: 'Percentage is required' })

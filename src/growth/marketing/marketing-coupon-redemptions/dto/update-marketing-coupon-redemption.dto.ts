@@ -4,7 +4,9 @@ import { IsOptional, IsNumber, Min, IsDateString } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
-export class UpdateMarketingCouponRedemptionDto extends PartialType(CreateMarketingCouponRedemptionDto) {
+export class UpdateMarketingCouponRedemptionDto extends PartialType(
+  CreateMarketingCouponRedemptionDto,
+) {
   @ApiPropertyOptional({
     example: 1,
     description: 'Identifier of the Marketing Coupon',
@@ -44,7 +46,7 @@ export class UpdateMarketingCouponRedemptionDto extends PartialType(CreateMarket
   redeemedAt?: string;
 
   @ApiPropertyOptional({
-    example: 10.50,
+    example: 10.5,
     description: 'Discount amount that was applied',
   })
   @IsOptional()

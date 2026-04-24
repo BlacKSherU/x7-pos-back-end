@@ -21,7 +21,6 @@ jest.mock('../loyalty-tier/loyalty-tier.helpers', () => ({
   DEFAULT_PROGRAM_TIERS: [],
 }));
 
-
 describe('LoyaltyCustomerService', () => {
   let service: LoyaltyCustomerService;
   let loyaltyCustomerRepo: jest.Mocked<Repository<LoyaltyCustomer>>;
@@ -64,7 +63,6 @@ describe('LoyaltyCustomerService', () => {
       findOneBy: jest.fn(),
       createQueryBuilder: jest.fn().mockReturnValue(mockQueryBuilder),
     };
-
 
     const mockLoyaltyProgramRepo = {
       findOneBy: jest.fn(),
@@ -250,8 +248,9 @@ describe('LoyaltyCustomerService', () => {
       loyaltyTierRepo.findOne.mockResolvedValue(mockLoyaltyTier as any);
       loyaltyTierRepo.findOneBy.mockResolvedValue(mockLoyaltyTier as any);
       loyaltyTierRepo.find.mockResolvedValue([mockLoyaltyTier as any]);
-      loyaltyCustomerRepo.findOneBy
-        .mockResolvedValueOnce(inactiveLoyaltyCustomer as any); // existingButInactive
+      loyaltyCustomerRepo.findOneBy.mockResolvedValueOnce(
+        inactiveLoyaltyCustomer as any,
+      ); // existingButInactive
       loyaltyCustomerRepo.save.mockResolvedValue({
         ...inactiveLoyaltyCustomer,
         is_active: true,
@@ -322,8 +321,7 @@ describe('LoyaltyCustomerService', () => {
       loyaltyTierRepo.findOneBy.mockResolvedValue(mockLoyaltyTier as any);
       loyaltyTierRepo.find.mockResolvedValue([mockLoyaltyTier as any]);
       customerRepo.findOneBy.mockResolvedValue(mockCustomer as any);
-      mockQueryBuilder.getOne
-        .mockResolvedValueOnce(newLoyaltyCustomer as any); // alreadyInProgram → ya existe activo
+      mockQueryBuilder.getOne.mockResolvedValueOnce(newLoyaltyCustomer as any); // alreadyInProgram → ya existe activo
       jest.spyOn(ErrorHandler, 'exists').mockImplementation(() => {
         throw new Error(ErrorMessage.LOYALTY_CUSTOMER_EXISTS);
       });
@@ -534,7 +532,7 @@ describe('LoyaltyCustomerService', () => {
         'Updated',
       );
       expect(result.message).toBe('Loyalty Customer Updated successfully');
-      expect(result.statusCode).toBe(201);
+      expect(result.statusCode).toBe(200);
     });
 
     it('should return a deleted loyalty customer successfully', async () => {
@@ -548,7 +546,7 @@ describe('LoyaltyCustomerService', () => {
         'Deleted',
       );
       expect(result.message).toBe('Loyalty Customer Deleted successfully');
-      expect(result.statusCode).toBe(201);
+      expect(result.statusCode).toBe(200);
     });
 
     it('should throw NotFoundException if loyalty customer not found', async () => {
@@ -613,7 +611,7 @@ describe('LoyaltyCustomerService', () => {
     };
 
     const expectedResponse = {
-      statusCode: 201,
+      statusCode: 200,
       message: 'Loyalty Customer Updated successfully',
       data: {
         id: updatedLoyaltyCustomer.id,
@@ -640,9 +638,7 @@ describe('LoyaltyCustomerService', () => {
     });
 
     it('should update a loyalty customer successfully', async () => {
-      loyaltyCustomerRepo.findOne.mockResolvedValue(
-        mockLoyaltyCustomer as any,
-      );
+      loyaltyCustomerRepo.findOne.mockResolvedValue(mockLoyaltyCustomer as any);
       loyaltyProgramRepo.findOneBy.mockResolvedValue(
         mockLoyaltyCustomer.loyaltyProgram as any,
       );
@@ -733,9 +729,7 @@ describe('LoyaltyCustomerService', () => {
     });
 
     it('should handle database errors', async () => {
-      loyaltyCustomerRepo.findOne.mockResolvedValue(
-        mockLoyaltyCustomer as any,
-      );
+      loyaltyCustomerRepo.findOne.mockResolvedValue(mockLoyaltyCustomer as any);
       loyaltyProgramRepo.findOneBy.mockResolvedValue(
         mockLoyaltyCustomer.loyaltyProgram as any,
       );
@@ -784,7 +778,7 @@ describe('LoyaltyCustomerService', () => {
     };
 
     const expectedResponse = {
-      statusCode: 201,
+      statusCode: 200,
       message: 'Loyalty Customer Deleted successfully',
       data: {
         id: mockLoyaltyCustomer.id,

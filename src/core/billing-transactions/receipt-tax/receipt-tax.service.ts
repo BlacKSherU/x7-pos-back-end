@@ -19,7 +19,7 @@ import {
 import { AllPaginatedReceiptTaxes } from './dto/all-paginated-receipt-taxes.dto';
 import { ReceiptTax } from './entities/receipt-tax.entity';
 import { Receipt } from '../receipts/entities/receipt.entity';
-import { Order } from 'src/orders/entities/order.entity';
+import { Order } from 'src/restaurant-operations/pos/orders/entities/order.entity';
 import { ReceiptTaxScope } from './constants/receipt-tax-scope.enum';
 import { ReceiptItem } from '../receipt-item/entities/receipt-item.entity';
 import { ReceiptsService } from '../receipts/receipts.service';
@@ -36,7 +36,7 @@ export class ReceiptTaxService {
     @InjectRepository(ReceiptItem)
     private readonly receiptItemRepo: Repository<ReceiptItem>,
     private readonly receiptsService: ReceiptsService,
-  ) { }
+  ) {}
 
   // ─── Helper: verifica ownership via receipt → order → merchant ───────────────
 
@@ -48,12 +48,16 @@ export class ReceiptTaxService {
       throw new ForbiddenException('You must be associated with a merchant');
     }
 
-    const receipt = await this.receiptRepo.findOne({ where: { id: receiptId, is_active: true } });
+    const receipt = await this.receiptRepo.findOne({
+      where: { id: receiptId, is_active: true },
+    });
     if (!receipt) {
       throw new NotFoundException(`Receipt with ID ${receiptId} not found`);
     }
 
-    const order = await this.orderRepo.findOne({ where: { id: receipt.order_id } });
+    const order = await this.orderRepo.findOne({
+      where: { id: receipt.order_id },
+    });
     if (!order) {
       throw new NotFoundException(
         `Order associated with receipt ${receiptId} not found`,
@@ -61,7 +65,9 @@ export class ReceiptTaxService {
     }
 
     if (order.merchant_id !== merchantId) {
-      throw new ForbiddenException('This receipt does not belong to your merchant');
+      throw new ForbiddenException(
+        'This receipt does not belong to your merchant',
+      );
     }
 
     return receipt;
@@ -104,7 +110,11 @@ export class ReceiptTaxService {
     // If receiptItemId provided, verify it belongs to the same receipt
     if (dto.receiptItemId) {
       const item = await this.receiptItemRepo.findOne({
-        where: { id: dto.receiptItemId, receipt_id: dto.receiptId, is_active: true },
+        where: {
+          id: dto.receiptItemId,
+          receipt_id: dto.receiptId,
+          is_active: true,
+        },
       });
       if (!item) {
         throw new NotFoundException(
@@ -185,7 +195,9 @@ export class ReceiptTaxService {
       [ReceiptTaxSortBy.AMOUNT]: 'rt.amount',
     };
 
-    const sortColumn = query.sortBy ? sortColumnMap[query.sortBy] : 'rt.created_at';
+    const sortColumn = query.sortBy
+      ? sortColumnMap[query.sortBy]
+      : 'rt.created_at';
     const sortOrder = query.sortOrder || 'DESC';
 
     const rows = await qb
@@ -313,11 +325,13 @@ export class ReceiptTaxService {
 
     if (dto.name !== undefined) tax.name = dto.name.trim();
     if (dto.rate !== undefined) {
-      if (dto.rate < 0) throw new BadRequestException('Rate cannot be negative');
+      if (dto.rate < 0)
+        throw new BadRequestException('Rate cannot be negative');
       tax.rate = dto.rate;
     }
     if (dto.amount !== undefined) {
-      if (dto.amount < 0) throw new BadRequestException('Amount cannot be negative');
+      if (dto.amount < 0)
+        throw new BadRequestException('Amount cannot be negative');
       tax.amount = dto.amount;
     }
 

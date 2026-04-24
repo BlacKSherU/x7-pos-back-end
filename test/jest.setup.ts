@@ -1,4 +1,6 @@
 // test/jest.setup.ts
+import '../src/polyfill';
+
 global.console = {
   ...global.console,
   log: jest.fn(),

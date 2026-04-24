@@ -63,8 +63,12 @@ describe('MarketingSegmentRulesController', () => {
       ],
     }).compile();
 
-    controller = module.get<MarketingSegmentRulesController>(MarketingSegmentRulesController);
-    service = module.get<MarketingSegmentRulesService>(MarketingSegmentRulesService);
+    controller = module.get<MarketingSegmentRulesController>(
+      MarketingSegmentRulesController,
+    );
+    service = module.get<MarketingSegmentRulesService>(
+      MarketingSegmentRulesService,
+    );
   });
 
   afterEach(() => {

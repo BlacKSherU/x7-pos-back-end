@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   Controller,
   Get,
@@ -37,6 +34,7 @@ import {
   ApiExtraModels,
   ApiQuery,
 } from '@nestjs/swagger';
+import { AuthenticatedUser } from '../../../auth/interfaces/authenticated-user.interface';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { UserRole } from 'src/platform-saas/users/constants/role.enum';
 import { Scope } from 'src/platform-saas/users/constants/scope.enum';
@@ -185,12 +183,12 @@ export class ShiftsController {
   })
   async create(
     @Body() dto: CreateShiftDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneShiftResponseDto> {
-    // Obtener el merchant_id del usuario autenticado
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+    // Get the merchant_id of the authenticated user
+    const authenticatedUserMerchantId = req.merchant?.id;
 
-    // Validar que el usuario tiene merchant_id
+    // Validate that the user has a merchant_id
     if (!authenticatedUserMerchantId) {
       throw new ForbiddenException(
         'User must be associated with a merchant to create shifts',
@@ -383,10 +381,10 @@ export class ShiftsController {
   })
   async findAll(
     @Query() query: GetShiftsQueryDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<PaginatedShiftsResponseDto> {
     // Get the merchant_id from the authenticated user
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+    const authenticatedUserMerchantId = req.merchant?.id;
 
     // Validate that the user has merchant_id
     if (!authenticatedUserMerchantId) {
@@ -530,12 +528,12 @@ export class ShiftsController {
   })
   async findOne(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneShiftResponseDto> {
-    // Obtener el merchant_id del usuario autenticado
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+    // Get the merchant_id of the authenticated user
+    const authenticatedUserMerchantId = req.merchant?.id;
 
-    // Validar que el usuario tiene merchant_id
+    // Validate that the user has a merchant_id
     if (!authenticatedUserMerchantId) {
       throw new ForbiddenException(
         'User must be associated with a merchant to view shifts',
@@ -720,12 +718,12 @@ export class ShiftsController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateShiftDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneShiftResponseDto> {
-    // Obtener el merchant_id del usuario autenticado
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+    // Get the merchant_id of the authenticated user
+    const authenticatedUserMerchantId = req.merchant?.id;
 
-    // Validar que el usuario tiene merchant_id
+    // Validate that the user has a merchant_id
     if (!authenticatedUserMerchantId) {
       throw new ForbiddenException(
         'User must be associated with a merchant to update shifts',
@@ -878,12 +876,12 @@ export class ShiftsController {
   })
   async remove(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneShiftResponseDto> {
-    // Obtener el merchant_id del usuario autenticado
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+    // Get the merchant_id of the authenticated user
+    const authenticatedUserMerchantId = req.merchant?.id;
 
-    // Validar que el usuario tiene merchant_id
+    // Validate that the user has a merchant_id
     if (!authenticatedUserMerchantId) {
       throw new ForbiddenException(
         'User must be associated with a merchant to delete shifts',

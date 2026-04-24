@@ -1,11 +1,15 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/unbound-method */
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { Repository, EntityManager } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException, ForbiddenException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { TablesService } from './tables.service';
 import { Table } from './entities/table.entity';
 import { CreateTableDto } from './dto/create-table.dto';
@@ -147,10 +151,18 @@ describe('TablesService', () => {
     };
 
     it('should create a table successfully', async () => {
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(floorZoneRepository, 'findOne').mockResolvedValue(mockFloorZone as any);
-      jest.spyOn(floorPlanRepository, 'findOne').mockResolvedValue(mockFloorPlan as any);
-      jest.spyOn(tableRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(floorZoneRepository, 'findOne')
+        .mockResolvedValue(mockFloorZone as any);
+      jest
+        .spyOn(floorPlanRepository, 'findOne')
+        .mockResolvedValue(mockFloorPlan as any);
+      jest
+        .spyOn(tableRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.getOne.mockResolvedValue(null);
       jest.spyOn(tableRepository, 'create').mockReturnValue(mockTable as any);
       jest.spyOn(tableRepository, 'save').mockResolvedValue(mockTable as any);
@@ -168,10 +180,12 @@ describe('TablesService', () => {
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.create(createTableDto, undefined as any)).rejects.toThrow(
-        ForbiddenException,
-      );
-      await expect(service.create(createTableDto, undefined as any)).rejects.toThrow(
+      await expect(
+        service.create(createTableDto, undefined as any),
+      ).rejects.toThrow(ForbiddenException);
+      await expect(
+        service.create(createTableDto, undefined as any),
+      ).rejects.toThrow(
         'User must be associated with a merchant to create tables',
       );
     });
@@ -197,10 +211,18 @@ describe('TablesService', () => {
     });
 
     it('should throw ConflictException if table number already exists', async () => {
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(floorZoneRepository, 'findOne').mockResolvedValue(mockFloorZone as any);
-      jest.spyOn(floorPlanRepository, 'findOne').mockResolvedValue(mockFloorPlan as any);
-      jest.spyOn(tableRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(floorZoneRepository, 'findOne')
+        .mockResolvedValue(mockFloorZone as any);
+      jest
+        .spyOn(floorPlanRepository, 'findOne')
+        .mockResolvedValue(mockFloorPlan as any);
+      jest
+        .spyOn(tableRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.getOne.mockResolvedValue(mockTable as any);
 
       await expect(service.create(createTableDto, 1)).rejects.toThrow(
@@ -213,10 +235,18 @@ describe('TablesService', () => {
 
     it('should throw BadRequestException if capacity is less than or equal to 0', async () => {
       const dtoWithInvalidCapacity = { ...createTableDto, capacity: 0 };
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(floorZoneRepository, 'findOne').mockResolvedValue(mockFloorZone as any);
-      jest.spyOn(floorPlanRepository, 'findOne').mockResolvedValue(mockFloorPlan as any);
-      jest.spyOn(tableRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(floorZoneRepository, 'findOne')
+        .mockResolvedValue(mockFloorZone as any);
+      jest
+        .spyOn(floorPlanRepository, 'findOne')
+        .mockResolvedValue(mockFloorPlan as any);
+      jest
+        .spyOn(tableRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.getOne.mockResolvedValue(null);
 
       await expect(service.create(dtoWithInvalidCapacity, 1)).rejects.toThrow(
@@ -235,8 +265,12 @@ describe('TablesService', () => {
     };
 
     it('should return paginated list of tables', async () => {
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(tableRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(tableRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.getCount.mockResolvedValue(1);
       mockQueryBuilder.getMany.mockResolvedValue([mockTable] as any);
 
@@ -270,8 +304,12 @@ describe('TablesService', () => {
 
     it('should throw BadRequestException if minCapacity is greater than maxCapacity', async () => {
       const invalidQuery = { ...query, minCapacity: 10, maxCapacity: 5 };
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(tableRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(tableRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder as any);
 
       await expect(service.findAll(invalidQuery, 1)).rejects.toThrow(
         BadRequestException,
@@ -283,57 +321,96 @@ describe('TablesService', () => {
 
     it('should filter by status', async () => {
       const queryWithStatus = { ...query, status: 'available' };
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(tableRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(tableRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.getCount.mockResolvedValue(1);
       mockQueryBuilder.getMany.mockResolvedValue([mockTable] as any);
 
       await service.findAll(queryWithStatus, 1);
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('table.status = :status', { status: 'available' });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'table.status = :status',
+        { status: 'available' },
+      );
     });
 
     it('should filter by minCapacity', async () => {
       const queryWithMinCapacity = { ...query, minCapacity: 4 };
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(tableRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(tableRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.getCount.mockResolvedValue(1);
       mockQueryBuilder.getMany.mockResolvedValue([mockTable] as any);
 
       await service.findAll(queryWithMinCapacity, 1);
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('table.capacity >= :minCapacity', { minCapacity: 4 });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'table.capacity >= :minCapacity',
+        { minCapacity: 4 },
+      );
     });
 
     it('should filter by maxCapacity', async () => {
       const queryWithMaxCapacity = { ...query, maxCapacity: 8 };
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(tableRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(tableRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.getCount.mockResolvedValue(1);
       mockQueryBuilder.getMany.mockResolvedValue([mockTable] as any);
 
       await service.findAll(queryWithMaxCapacity, 1);
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('table.capacity <= :maxCapacity', { maxCapacity: 8 });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'table.capacity <= :maxCapacity',
+        { maxCapacity: 8 },
+      );
     });
 
     it('should filter by both minCapacity and maxCapacity', async () => {
-      const queryWithCapacityRange = { ...query, minCapacity: 4, maxCapacity: 8 };
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(tableRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      const queryWithCapacityRange = {
+        ...query,
+        minCapacity: 4,
+        maxCapacity: 8,
+      };
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(tableRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.getCount.mockResolvedValue(1);
       mockQueryBuilder.getMany.mockResolvedValue([mockTable] as any);
 
       await service.findAll(queryWithCapacityRange, 1);
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('table.capacity >= :minCapacity', { minCapacity: 4 });
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('table.capacity <= :maxCapacity', { maxCapacity: 8 });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'table.capacity >= :minCapacity',
+        { minCapacity: 4 },
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'table.capacity <= :maxCapacity',
+        { maxCapacity: 8 },
+      );
     });
 
     it('should handle pagination correctly with default values', async () => {
       const queryWithoutPagination = {};
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(tableRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(tableRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.getCount.mockResolvedValue(25);
       mockQueryBuilder.getMany.mockResolvedValue([mockTable] as any);
 
@@ -349,8 +426,12 @@ describe('TablesService', () => {
 
     it('should handle pagination on last page', async () => {
       const queryLastPage = { page: 3, limit: 10 };
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(tableRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(tableRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.getCount.mockResolvedValue(25);
       mockQueryBuilder.getMany.mockResolvedValue([mockTable] as any);
 
@@ -363,8 +444,12 @@ describe('TablesService', () => {
 
     it('should handle pagination on first page', async () => {
       const queryFirstPage = { page: 1, limit: 10 };
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(tableRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(tableRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.getCount.mockResolvedValue(5);
       mockQueryBuilder.getMany.mockResolvedValue([mockTable] as any);
 
@@ -376,8 +461,12 @@ describe('TablesService', () => {
     });
 
     it('should handle empty results', async () => {
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(tableRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(tableRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.getCount.mockResolvedValue(0);
       mockQueryBuilder.getMany.mockResolvedValue([]);
 
@@ -391,8 +480,12 @@ describe('TablesService', () => {
 
   describe('findOne', () => {
     it('should return a table successfully', async () => {
-      jest.spyOn(tableRepository, 'findOne').mockResolvedValue(mockTable as any);
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(tableRepository, 'findOne')
+        .mockResolvedValue(mockTable as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
 
       const result = await service.findOne(1, 1);
 
@@ -406,12 +499,8 @@ describe('TablesService', () => {
     });
 
     it('should throw BadRequestException if id is invalid', async () => {
-      await expect(service.findOne(0, 1)).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.findOne(0, 1)).rejects.toThrow(
-        'Invalid table ID',
-      );
+      await expect(service.findOne(0, 1)).rejects.toThrow(BadRequestException);
+      await expect(service.findOne(0, 1)).rejects.toThrow('Invalid table ID');
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
@@ -426,21 +515,19 @@ describe('TablesService', () => {
     it('should throw NotFoundException if table not found', async () => {
       jest.spyOn(tableRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.findOne(999, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.findOne(999, 1)).rejects.toThrow(NotFoundException);
       await expect(service.findOne(999, 1)).rejects.toThrow(
         'Table 999 not found',
       );
     });
 
     it('should throw NotFoundException if merchant not found', async () => {
-      jest.spyOn(tableRepository, 'findOne').mockResolvedValue(mockTable as any);
+      jest
+        .spyOn(tableRepository, 'findOne')
+        .mockResolvedValue(mockTable as any);
       jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.findOne(1, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.findOne(1, 1)).rejects.toThrow(NotFoundException);
       await expect(service.findOne(1, 1)).rejects.toThrow(
         'Merchant with ID 1 not found',
       );
@@ -451,11 +538,11 @@ describe('TablesService', () => {
         ...mockTable,
         merchant: { id: 2, name: 'Other Merchant' },
       };
-      jest.spyOn(tableRepository, 'findOne').mockResolvedValue(tableFromDifferentMerchant as any);
+      jest
+        .spyOn(tableRepository, 'findOne')
+        .mockResolvedValue(tableFromDifferentMerchant as any);
 
-      await expect(service.findOne(1, 1)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.findOne(1, 1)).rejects.toThrow(ForbiddenException);
       await expect(service.findOne(1, 1)).rejects.toThrow(
         'You can only view tables from your own merchant',
       );
@@ -489,13 +576,23 @@ describe('TablesService', () => {
         capacity: 6,
       };
       // Merchant findOne (line 475)
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(floorZoneRepository, 'findOne').mockResolvedValue(mockFloorZone as any);
-      jest.spyOn(floorPlanRepository, 'findOne').mockResolvedValue(mockFloorPlan as any);
-      jest.spyOn(tableRepository, 'save').mockResolvedValue(updatedTable as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(floorZoneRepository, 'findOne')
+        .mockResolvedValue(mockFloorZone as any);
+      jest
+        .spyOn(floorPlanRepository, 'findOne')
+        .mockResolvedValue(mockFloorPlan as any);
+      jest
+        .spyOn(tableRepository, 'save')
+        .mockResolvedValue(updatedTable as any);
 
       // Reload call (line 544)
-      jest.spyOn(tableRepository, 'findOne').mockResolvedValueOnce(mockTable as any) // first call in update
+      jest
+        .spyOn(tableRepository, 'findOne')
+        .mockResolvedValueOnce(mockTable as any) // first call in update
         .mockResolvedValueOnce(updatedTable as any); // second call (reload)
 
       const result = await service.update(1, updateTableDto, 1);
@@ -513,9 +610,9 @@ describe('TablesService', () => {
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.update(1, updateTableDto, undefined as any)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(
+        service.update(1, updateTableDto, undefined as any),
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw NotFoundException if table not found', async () => {
@@ -533,7 +630,9 @@ describe('TablesService', () => {
         ...mockTable,
         merchant: { id: 2, name: 'Other Merchant' },
       };
-      jest.spyOn(tableRepository, 'findOne').mockResolvedValue(tableFromDifferentMerchant as any);
+      jest
+        .spyOn(tableRepository, 'findOne')
+        .mockResolvedValue(tableFromDifferentMerchant as any);
 
       await expect(service.update(1, updateTableDto, 1)).rejects.toThrow(
         ForbiddenException,
@@ -542,19 +641,29 @@ describe('TablesService', () => {
 
     it('should throw BadRequestException if capacity is invalid', async () => {
       const dtoWithInvalidCapacity = { ...updateTableDto, capacity: 0 };
-      jest.spyOn(tableRepository, 'findOne').mockResolvedValue(mockTable as any);
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(floorZoneRepository, 'findOne').mockResolvedValue(mockFloorZone as any);
-      jest.spyOn(floorPlanRepository, 'findOne').mockResolvedValue(mockFloorPlan as any);
+      jest
+        .spyOn(tableRepository, 'findOne')
+        .mockResolvedValue(mockTable as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(floorZoneRepository, 'findOne')
+        .mockResolvedValue(mockFloorZone as any);
+      jest
+        .spyOn(floorPlanRepository, 'findOne')
+        .mockResolvedValue(mockFloorPlan as any);
 
-      await expect(service.update(1, dtoWithInvalidCapacity, 1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.update(1, dtoWithInvalidCapacity, 1),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException if DTO is empty', async () => {
       const emptyDto = {};
-      jest.spyOn(tableRepository, 'findOne').mockResolvedValue(mockTable as any);
+      jest
+        .spyOn(tableRepository, 'findOne')
+        .mockResolvedValue(mockTable as any);
 
       await expect(service.update(1, emptyDto, 1)).rejects.toThrow(
         BadRequestException,
@@ -565,7 +674,9 @@ describe('TablesService', () => {
     });
 
     it('should throw BadRequestException if DTO is undefined', async () => {
-      jest.spyOn(tableRepository, 'findOne').mockResolvedValue(mockTable as any);
+      jest
+        .spyOn(tableRepository, 'findOne')
+        .mockResolvedValue(mockTable as any);
 
       await expect(service.update(1, undefined as any, 1)).rejects.toThrow(
         BadRequestException,
@@ -577,10 +688,18 @@ describe('TablesService', () => {
 
     it('should throw BadRequestException if status is empty', async () => {
       const dtoWithEmptyStatus = { ...updateTableDto, status: '' };
-      jest.spyOn(tableRepository, 'findOne').mockResolvedValue(mockTable as any);
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(floorZoneRepository, 'findOne').mockResolvedValue(mockFloorZone as any);
-      jest.spyOn(floorPlanRepository, 'findOne').mockResolvedValue(mockFloorPlan as any);
+      jest
+        .spyOn(tableRepository, 'findOne')
+        .mockResolvedValue(mockTable as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(floorZoneRepository, 'findOne')
+        .mockResolvedValue(mockFloorZone as any);
+      jest
+        .spyOn(floorPlanRepository, 'findOne')
+        .mockResolvedValue(mockFloorPlan as any);
 
       await expect(service.update(1, dtoWithEmptyStatus, 1)).rejects.toThrow(
         BadRequestException,
@@ -592,10 +711,18 @@ describe('TablesService', () => {
 
     it('should throw BadRequestException if location is empty', async () => {
       const dtoWithEmptyLocation = { ...updateTableDto, location: '' };
-      jest.spyOn(tableRepository, 'findOne').mockResolvedValue(mockTable as any);
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(floorZoneRepository, 'findOne').mockResolvedValue(mockFloorZone as any);
-      jest.spyOn(floorPlanRepository, 'findOne').mockResolvedValue(mockFloorPlan as any);
+      jest
+        .spyOn(tableRepository, 'findOne')
+        .mockResolvedValue(mockTable as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(floorZoneRepository, 'findOne')
+        .mockResolvedValue(mockFloorZone as any);
+      jest
+        .spyOn(floorPlanRepository, 'findOne')
+        .mockResolvedValue(mockFloorPlan as any);
 
       await expect(service.update(1, dtoWithEmptyLocation, 1)).rejects.toThrow(
         BadRequestException,
@@ -607,10 +734,18 @@ describe('TablesService', () => {
 
     it('should throw BadRequestException if number is empty', async () => {
       const dtoWithEmptyNumber = { ...updateTableDto, number: '' };
-      jest.spyOn(tableRepository, 'findOne').mockResolvedValue(mockTable as any);
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(floorZoneRepository, 'findOne').mockResolvedValue(mockFloorZone as any);
-      jest.spyOn(floorPlanRepository, 'findOne').mockResolvedValue(mockFloorPlan as any);
+      jest
+        .spyOn(tableRepository, 'findOne')
+        .mockResolvedValue(mockTable as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(floorZoneRepository, 'findOne')
+        .mockResolvedValue(mockFloorZone as any);
+      jest
+        .spyOn(floorPlanRepository, 'findOne')
+        .mockResolvedValue(mockFloorPlan as any);
 
       await expect(service.update(1, dtoWithEmptyNumber, 1)).rejects.toThrow(
         BadRequestException,
@@ -626,11 +761,21 @@ describe('TablesService', () => {
         ...mockTable,
         capacity: 6,
       };
-      jest.spyOn(tableRepository, 'findOne').mockResolvedValue(mockTable as any);
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(floorZoneRepository, 'findOne').mockResolvedValue(mockFloorZone as any);
-      jest.spyOn(floorPlanRepository, 'findOne').mockResolvedValue(mockFloorPlan as any);
-      jest.spyOn(tableRepository, 'save').mockResolvedValue(updatedTable as any);
+      jest
+        .spyOn(tableRepository, 'findOne')
+        .mockResolvedValue(mockTable as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(floorZoneRepository, 'findOne')
+        .mockResolvedValue(mockFloorZone as any);
+      jest
+        .spyOn(floorPlanRepository, 'findOne')
+        .mockResolvedValue(mockFloorPlan as any);
+      jest
+        .spyOn(tableRepository, 'save')
+        .mockResolvedValue(updatedTable as any);
 
       const result = await service.update(1, dtoWithSameNumber, 1);
 
@@ -645,9 +790,15 @@ describe('TablesService', () => {
         ...mockTable,
         status: 'occupied',
       };
-      jest.spyOn(tableRepository, 'findOne').mockResolvedValue(mockTable as any);
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(tableRepository, 'save').mockResolvedValue(updatedTable as any);
+      jest
+        .spyOn(tableRepository, 'findOne')
+        .mockResolvedValue(mockTable as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(tableRepository, 'save')
+        .mockResolvedValue(updatedTable as any);
 
       const result = await service.update(1, dtoWithStatusOnly, 1);
 
@@ -661,9 +812,15 @@ describe('TablesService', () => {
         ...mockTable,
         location: 'Center area',
       };
-      jest.spyOn(tableRepository, 'findOne').mockResolvedValue(mockTable as any);
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(tableRepository, 'save').mockResolvedValue(updatedTable as any);
+      jest
+        .spyOn(tableRepository, 'findOne')
+        .mockResolvedValue(mockTable as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(tableRepository, 'save')
+        .mockResolvedValue(updatedTable as any);
 
       const result = await service.update(1, dtoWithLocationOnly, 1);
 
@@ -683,11 +840,19 @@ describe('TablesService', () => {
         status: 'available',
         location: 'Near door',
       };
-      jest.spyOn(tableRepository, 'findOne').mockResolvedValue(mockTable as any);
-      jest.spyOn(tableRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(tableRepository, 'findOne')
+        .mockResolvedValue(mockTable as any);
+      jest
+        .spyOn(tableRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.getOne.mockResolvedValue(null);
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(tableRepository, 'save').mockResolvedValue(updatedTable as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(tableRepository, 'save')
+        .mockResolvedValue(updatedTable as any);
 
       await service.update(1, dtoWithSpaces, 1);
 
@@ -707,10 +872,16 @@ describe('TablesService', () => {
         ...mockTable,
         status: 'deleted',
       };
-      jest.spyOn(tableRepository, 'findOne').mockResolvedValueOnce(mockTable as any) // first call
+      jest
+        .spyOn(tableRepository, 'findOne')
+        .mockResolvedValueOnce(mockTable as any) // first call
         .mockResolvedValueOnce(deletedTable as any); // reload call
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(tableRepository, 'save').mockResolvedValue(deletedTable as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(tableRepository, 'save')
+        .mockResolvedValue(deletedTable as any);
 
       const result = await service.remove(1, 1);
 
@@ -722,9 +893,7 @@ describe('TablesService', () => {
     });
 
     it('should throw BadRequestException if id is invalid', async () => {
-      await expect(service.remove(0, 1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.remove(0, 1)).rejects.toThrow(BadRequestException);
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
@@ -736,9 +905,7 @@ describe('TablesService', () => {
     it('should throw NotFoundException if table not found', async () => {
       jest.spyOn(tableRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.remove(999, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.remove(999, 1)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ForbiddenException if table belongs to different merchant', async () => {
@@ -746,11 +913,11 @@ describe('TablesService', () => {
         ...mockTable,
         merchant: { id: 2, name: 'Other Merchant' },
       };
-      jest.spyOn(tableRepository, 'findOne').mockResolvedValue(tableFromDifferentMerchant as any);
+      jest
+        .spyOn(tableRepository, 'findOne')
+        .mockResolvedValue(tableFromDifferentMerchant as any);
 
-      await expect(service.remove(1, 1)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.remove(1, 1)).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw ConflictException if table is already deleted', async () => {
@@ -758,11 +925,11 @@ describe('TablesService', () => {
         ...mockTable,
         status: 'deleted',
       };
-      jest.spyOn(tableRepository, 'findOne').mockResolvedValue(deletedTable as any);
+      jest
+        .spyOn(tableRepository, 'findOne')
+        .mockResolvedValue(deletedTable as any);
 
-      await expect(service.remove(1, 1)).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.remove(1, 1)).rejects.toThrow(ConflictException);
       await expect(service.remove(1, 1)).rejects.toThrow(
         'Table is already deleted',
       );

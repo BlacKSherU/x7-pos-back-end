@@ -71,14 +71,6 @@ export class CreateCustomerDto {
 
   @ApiProperty({
     example: 1234567890,
-    description: 'Merchant ID of the customer',
-  })
-  @IsNotEmpty()
-  @IsNumber()
-  merchant: number;
-
-  @ApiProperty({
-    example: 1234567890,
     description: 'Company ID of the customer',
     required: false,
   })

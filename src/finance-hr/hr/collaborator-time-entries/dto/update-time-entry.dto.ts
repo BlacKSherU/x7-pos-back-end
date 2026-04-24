@@ -33,12 +33,18 @@ export class UpdateTimeEntryDto {
   @IsPositive()
   shift_id?: number;
 
-  @ApiPropertyOptional({ example: '2024-01-15T08:00:00.000Z', description: 'Clock in' })
+  @ApiPropertyOptional({
+    example: '2024-01-15T08:00:00.000Z',
+    description: 'Clock in',
+  })
   @IsOptional()
   @IsDateString()
   clock_in?: string;
 
-  @ApiPropertyOptional({ example: '2024-01-15T16:00:00.000Z', description: 'Clock out' })
+  @ApiPropertyOptional({
+    example: '2024-01-15T16:00:00.000Z',
+    description: 'Clock out',
+  })
   @IsOptional()
   @IsDateString()
   clock_out?: string | null;

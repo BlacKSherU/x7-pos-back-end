@@ -46,7 +46,7 @@ import {
 @Controller('ledger-accounts')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class LedgerAccountsController {
-  constructor(private readonly ledgerAccountsService: LedgerAccountsService) { }
+  constructor(private readonly ledgerAccountsService: LedgerAccountsService) {}
 
   @Post()
   @Roles(UserRole.MERCHANT_ADMIN)
@@ -59,20 +59,30 @@ export class LedgerAccountsController {
   )
   @ApiOperation({
     summary: 'Create a new ledger account',
-    description: "Creates a new ledger account for the authenticated user's company.",
+    description:
+      "Creates a new ledger account for the authenticated user's company.",
   })
   @ApiCreatedResponse({ description: 'Ledger account created successfully' })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
-  @ApiConflictResponse({ description: 'Ledger account with this code already exists' })
+  @ApiConflictResponse({
+    description: 'Ledger account with this code already exists',
+  })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  @ApiResponse({ status: 500, description: 'Internal server error', type: ErrorResponse })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+    type: ErrorResponse,
+  })
   @ApiBody({ type: CreateLedgerAccountDto })
   async create(
     @CurrentUser() user: AuthenticatedUser,
     @Body() createLedgerAccountDto: CreateLedgerAccountDto,
   ) {
     const merchantId = user.merchant.id;
-    return this.ledgerAccountsService.create(merchantId, createLedgerAccountDto);
+    return this.ledgerAccountsService.create(
+      merchantId,
+      createLedgerAccountDto,
+    );
   }
 
   @Get()
@@ -87,7 +97,7 @@ export class LedgerAccountsController {
   @ApiOperation({
     summary: 'Get all ledger accounts with pagination and filters',
     description:
-      "Retrieves a paginated list of ledger accounts. Users can only see accounts from their own company.",
+      'Retrieves a paginated list of ledger accounts. Users can only see accounts from their own company.',
   })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
@@ -103,7 +113,11 @@ export class LedgerAccountsController {
     type: AllPaginatedLedgerAccounts,
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  @ApiResponse({ status: 500, description: 'Internal server error', type: ErrorResponse })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+    type: ErrorResponse,
+  })
   async findAll(
     @CurrentUser() user: AuthenticatedUser,
     @Query() query: GetLedgerAccountsQueryDto,
@@ -158,7 +172,11 @@ export class LedgerAccountsController {
     @Body() updateLedgerAccountDto: UpdateLedgerAccountDto,
   ) {
     const merchantId = user.merchant.id;
-    return this.ledgerAccountsService.update(id, merchantId, updateLedgerAccountDto);
+    return this.ledgerAccountsService.update(
+      id,
+      merchantId,
+      updateLedgerAccountDto,
+    );
   }
 
   @Delete(':id')

@@ -6,7 +6,11 @@ import { UpdateMarketingCampaignDto } from './dto/update-marketing_campaing.dto'
 import { GetMarketingCampaignQueryDto } from './dto/get-marketing-campaign-query.dto';
 import { MarketingCampaignStatus } from './constants/marketing-campaign-status.enum';
 import { MarketingCampaignChannel } from './constants/marketing-campaign-channel.enum';
-import { NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 
 describe('MarketingCampaignController', () => {
   let controller: MarketingCampaignController;
@@ -56,7 +60,9 @@ describe('MarketingCampaignController', () => {
       ],
     }).compile();
 
-    controller = module.get<MarketingCampaignController>(MarketingCampaignController);
+    controller = module.get<MarketingCampaignController>(
+      MarketingCampaignController,
+    );
     service = module.get<MarketingCampaignService>(MarketingCampaignService);
   });
 
@@ -109,14 +115,20 @@ describe('MarketingCampaignController', () => {
     });
 
     it('should handle service errors', async () => {
-      jest.spyOn(service, 'create').mockRejectedValue(new BadRequestException('Invalid data'));
+      jest
+        .spyOn(service, 'create')
+        .mockRejectedValue(new BadRequestException('Invalid data'));
 
-      await expect(controller.create(createDto, mockRequest as any)).rejects.toThrow(BadRequestException);
+      await expect(
+        controller.create(createDto, mockRequest as any),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should extract merchant id from request', async () => {
       const requestWithoutMerchant = { user: {} };
-      jest.spyOn(service, 'create').mockResolvedValue(mockCampaignResponse as any);
+      jest
+        .spyOn(service, 'create')
+        .mockResolvedValue(mockCampaignResponse as any);
 
       await controller.create(createDto, requestWithoutMerchant as any);
 
@@ -177,7 +189,10 @@ describe('MarketingCampaignController', () => {
     });
 
     it('should filter by channel', async () => {
-      const queryWithChannel = { ...query, channel: MarketingCampaignChannel.SMS };
+      const queryWithChannel = {
+        ...query,
+        channel: MarketingCampaignChannel.SMS,
+      };
       jest.spyOn(service, 'findAll').mockResolvedValue({
         statusCode: 200,
         message: 'Success',
@@ -191,7 +206,10 @@ describe('MarketingCampaignController', () => {
     });
 
     it('should filter by status', async () => {
-      const queryWithStatus = { ...query, status: MarketingCampaignStatus.SCHEDULED };
+      const queryWithStatus = {
+        ...query,
+        status: MarketingCampaignStatus.SCHEDULED,
+      };
       jest.spyOn(service, 'findAll').mockResolvedValue({
         statusCode: 200,
         message: 'Success',
@@ -219,15 +237,21 @@ describe('MarketingCampaignController', () => {
     });
 
     it('should handle service errors', async () => {
-      jest.spyOn(service, 'findAll').mockRejectedValue(new ForbiddenException('Access denied'));
+      jest
+        .spyOn(service, 'findAll')
+        .mockRejectedValue(new ForbiddenException('Access denied'));
 
-      await expect(controller.findAll(query, mockRequest as any)).rejects.toThrow(ForbiddenException);
+      await expect(
+        controller.findAll(query, mockRequest as any),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 
   describe('findOne', () => {
     it('should return a marketing campaign by id', async () => {
-      jest.spyOn(service, 'findOne').mockResolvedValue(mockCampaignResponse as any);
+      jest
+        .spyOn(service, 'findOne')
+        .mockResolvedValue(mockCampaignResponse as any);
 
       const result = await controller.findOne(1, mockRequest as any);
 
@@ -237,20 +261,30 @@ describe('MarketingCampaignController', () => {
     });
 
     it('should handle not found', async () => {
-      jest.spyOn(service, 'findOne').mockRejectedValue(new NotFoundException('Campaign not found'));
+      jest
+        .spyOn(service, 'findOne')
+        .mockRejectedValue(new NotFoundException('Campaign not found'));
 
-      await expect(controller.findOne(999, mockRequest as any)).rejects.toThrow(NotFoundException);
+      await expect(controller.findOne(999, mockRequest as any)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should handle invalid id', async () => {
-      jest.spyOn(service, 'findOne').mockRejectedValue(new BadRequestException('Invalid ID'));
+      jest
+        .spyOn(service, 'findOne')
+        .mockRejectedValue(new BadRequestException('Invalid ID'));
 
-      await expect(controller.findOne(0, mockRequest as any)).rejects.toThrow(BadRequestException);
+      await expect(controller.findOne(0, mockRequest as any)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should extract merchant id from request', async () => {
       const requestWithoutMerchant = { user: {} };
-      jest.spyOn(service, 'findOne').mockResolvedValue(mockCampaignResponse as any);
+      jest
+        .spyOn(service, 'findOne')
+        .mockResolvedValue(mockCampaignResponse as any);
 
       await controller.findOne(1, requestWithoutMerchant as any);
 
@@ -280,7 +314,9 @@ describe('MarketingCampaignController', () => {
 
     it('should update status', async () => {
       const statusUpdate = { status: MarketingCampaignStatus.SCHEDULED };
-      jest.spyOn(service, 'update').mockResolvedValue(mockCampaignResponse as any);
+      jest
+        .spyOn(service, 'update')
+        .mockResolvedValue(mockCampaignResponse as any);
 
       await controller.update(1, statusUpdate, mockRequest as any);
 
@@ -289,7 +325,9 @@ describe('MarketingCampaignController', () => {
 
     it('should update channel', async () => {
       const channelUpdate = { channel: MarketingCampaignChannel.SMS };
-      jest.spyOn(service, 'update').mockResolvedValue(mockCampaignResponse as any);
+      jest
+        .spyOn(service, 'update')
+        .mockResolvedValue(mockCampaignResponse as any);
 
       await controller.update(1, channelUpdate, mockRequest as any);
 
@@ -298,7 +336,9 @@ describe('MarketingCampaignController', () => {
 
     it('should update content', async () => {
       const contentUpdate = { content: 'New content' };
-      jest.spyOn(service, 'update').mockResolvedValue(mockCampaignResponse as any);
+      jest
+        .spyOn(service, 'update')
+        .mockResolvedValue(mockCampaignResponse as any);
 
       await controller.update(1, contentUpdate, mockRequest as any);
 
@@ -307,7 +347,9 @@ describe('MarketingCampaignController', () => {
 
     it('should update scheduled date', async () => {
       const scheduleUpdate = { scheduledAt: '2024-01-01T10:00:00Z' };
-      jest.spyOn(service, 'update').mockResolvedValue(mockCampaignResponse as any);
+      jest
+        .spyOn(service, 'update')
+        .mockResolvedValue(mockCampaignResponse as any);
 
       await controller.update(1, scheduleUpdate, mockRequest as any);
 
@@ -315,20 +357,30 @@ describe('MarketingCampaignController', () => {
     });
 
     it('should handle not found', async () => {
-      jest.spyOn(service, 'update').mockRejectedValue(new NotFoundException('Campaign not found'));
+      jest
+        .spyOn(service, 'update')
+        .mockRejectedValue(new NotFoundException('Campaign not found'));
 
-      await expect(controller.update(999, updateDto, mockRequest as any)).rejects.toThrow(NotFoundException);
+      await expect(
+        controller.update(999, updateDto, mockRequest as any),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should handle validation errors', async () => {
-      jest.spyOn(service, 'update').mockRejectedValue(new BadRequestException('Invalid data'));
+      jest
+        .spyOn(service, 'update')
+        .mockRejectedValue(new BadRequestException('Invalid data'));
 
-      await expect(controller.update(1, updateDto, mockRequest as any)).rejects.toThrow(BadRequestException);
+      await expect(
+        controller.update(1, updateDto, mockRequest as any),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should extract merchant id from request', async () => {
       const requestWithoutMerchant = { user: {} };
-      jest.spyOn(service, 'update').mockResolvedValue(mockCampaignResponse as any);
+      jest
+        .spyOn(service, 'update')
+        .mockResolvedValue(mockCampaignResponse as any);
 
       await controller.update(1, updateDto, requestWithoutMerchant as any);
 
@@ -340,7 +392,10 @@ describe('MarketingCampaignController', () => {
     it('should soft delete a marketing campaign', async () => {
       const expectedResult = {
         ...mockCampaignResponse,
-        data: { ...mockCampaignResponse.data, status: MarketingCampaignStatus.DELETED },
+        data: {
+          ...mockCampaignResponse.data,
+          status: MarketingCampaignStatus.DELETED,
+        },
         message: 'Marketing campaign deleted successfully',
       };
 
@@ -354,26 +409,40 @@ describe('MarketingCampaignController', () => {
     });
 
     it('should handle not found', async () => {
-      jest.spyOn(service, 'remove').mockRejectedValue(new NotFoundException('Campaign not found'));
+      jest
+        .spyOn(service, 'remove')
+        .mockRejectedValue(new NotFoundException('Campaign not found'));
 
-      await expect(controller.remove(999, mockRequest as any)).rejects.toThrow(NotFoundException);
+      await expect(controller.remove(999, mockRequest as any)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should handle already deleted', async () => {
-      jest.spyOn(service, 'remove').mockRejectedValue(new BadRequestException('Already deleted'));
+      jest
+        .spyOn(service, 'remove')
+        .mockRejectedValue(new BadRequestException('Already deleted'));
 
-      await expect(controller.remove(1, mockRequest as any)).rejects.toThrow(BadRequestException);
+      await expect(controller.remove(1, mockRequest as any)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should handle invalid id', async () => {
-      jest.spyOn(service, 'remove').mockRejectedValue(new BadRequestException('Invalid ID'));
+      jest
+        .spyOn(service, 'remove')
+        .mockRejectedValue(new BadRequestException('Invalid ID'));
 
-      await expect(controller.remove(0, mockRequest as any)).rejects.toThrow(BadRequestException);
+      await expect(controller.remove(0, mockRequest as any)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should extract merchant id from request', async () => {
       const requestWithoutMerchant = { user: {} };
-      jest.spyOn(service, 'remove').mockResolvedValue(mockCampaignResponse as any);
+      jest
+        .spyOn(service, 'remove')
+        .mockResolvedValue(mockCampaignResponse as any);
 
       await controller.remove(1, requestWithoutMerchant as any);
 

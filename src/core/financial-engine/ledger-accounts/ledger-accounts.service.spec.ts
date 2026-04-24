@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/unbound-method, @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import { Test, TestingModule } from '@nestjs/testing';
 import { LedgerAccountsService } from './ledger-accounts.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -112,7 +112,10 @@ describe('LedgerAccountsService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         LedgerAccountsService,
-        { provide: getRepositoryToken(LedgerAccount), useValue: mockLedgerAccountRepo },
+        {
+          provide: getRepositoryToken(LedgerAccount),
+          useValue: mockLedgerAccountRepo,
+        },
         { provide: getRepositoryToken(Company), useValue: mockCompanyRepo },
         { provide: getRepositoryToken(Merchant), useValue: mockMerchantRepo },
       ],
@@ -121,7 +124,7 @@ describe('LedgerAccountsService', () => {
     service = module.get<LedgerAccountsService>(LedgerAccountsService);
 
     jest.clearAllMocks();
-    jest.spyOn(console, 'error').mockImplementation(() => { });
+    jest.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => jest.restoreAllMocks());
@@ -143,10 +146,16 @@ describe('LedgerAccountsService', () => {
       jest.spyOn(merchantRepo, 'findOne').mockResolvedValueOnce(mockMerchant);
       jest.spyOn(companyRepo, 'findOneBy').mockResolvedValueOnce(mockCompany);
       jest.spyOn(ledgerAccountRepo, 'findOne').mockResolvedValueOnce(null); // no duplicate
-      jest.spyOn(ledgerAccountRepo, 'create').mockReturnValueOnce(mockLedgerAccount);
-      jest.spyOn(ledgerAccountRepo, 'save').mockResolvedValueOnce(mockLedgerAccount);
+      jest
+        .spyOn(ledgerAccountRepo, 'create')
+        .mockReturnValueOnce(mockLedgerAccount);
+      jest
+        .spyOn(ledgerAccountRepo, 'save')
+        .mockResolvedValueOnce(mockLedgerAccount);
       // fetchOne call
-      jest.spyOn(ledgerAccountRepo, 'findOne').mockResolvedValueOnce(mockLedgerAccount);
+      jest
+        .spyOn(ledgerAccountRepo, 'findOne')
+        .mockResolvedValueOnce(mockLedgerAccount);
 
       const result = await service.create(mockMerchant.id, mockCreateDto);
 
@@ -171,7 +180,9 @@ describe('LedgerAccountsService', () => {
       jest.spyOn(merchantRepo, 'findOne').mockResolvedValueOnce(mockMerchant);
       jest.spyOn(companyRepo, 'findOneBy').mockResolvedValueOnce(null);
 
-      await expect(service.create(mockMerchant.id, mockCreateDto)).rejects.toThrow();
+      await expect(
+        service.create(mockMerchant.id, mockCreateDto),
+      ).rejects.toThrow();
     });
 
     it('should throw ConflictException if account code already exists', async () => {
@@ -181,9 +192,13 @@ describe('LedgerAccountsService', () => {
 
       jest.spyOn(merchantRepo, 'findOne').mockResolvedValueOnce(mockMerchant);
       jest.spyOn(companyRepo, 'findOneBy').mockResolvedValueOnce(mockCompany);
-      jest.spyOn(ledgerAccountRepo, 'findOne').mockResolvedValueOnce(mockLedgerAccount); // duplicate
+      jest
+        .spyOn(ledgerAccountRepo, 'findOne')
+        .mockResolvedValueOnce(mockLedgerAccount); // duplicate
 
-      await expect(service.create(mockMerchant.id, mockCreateDto)).rejects.toThrow();
+      await expect(
+        service.create(mockMerchant.id, mockCreateDto),
+      ).rejects.toThrow();
     });
 
     it('should throw if parent_account_id does not exist', async () => {
@@ -196,10 +211,13 @@ describe('LedgerAccountsService', () => {
       jest.spyOn(ledgerAccountRepo, 'findOne').mockResolvedValueOnce(null); // no duplicate
       jest.spyOn(ledgerAccountRepo, 'findOneBy').mockResolvedValueOnce(null); // parent not found
 
-      const dtoWithParent: CreateLedgerAccountDto = { ...mockCreateDto, parent_account_id: 999 };
-      await expect(service.create(mockMerchant.id, dtoWithParent)).rejects.toThrow(
-        'Parent ledger account not found',
-      );
+      const dtoWithParent: CreateLedgerAccountDto = {
+        ...mockCreateDto,
+        parent_account_id: 999,
+      };
+      await expect(
+        service.create(mockMerchant.id, dtoWithParent),
+      ).rejects.toThrow('Parent ledger account not found');
     });
   });
 
@@ -258,11 +276,17 @@ describe('LedgerAccountsService', () => {
       mockQueryBuilder.getCount.mockResolvedValueOnce(0);
       mockQueryBuilder.getMany.mockResolvedValueOnce([]);
 
-      await service.findAll({ ...mockQuery, type: AccountType.ASSET }, mockMerchant.id);
+      await service.findAll(
+        { ...mockQuery, type: AccountType.ASSET },
+        mockMerchant.id,
+      );
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('account.type = :type', {
-        type: AccountType.ASSET,
-      });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'account.type = :type',
+        {
+          type: AccountType.ASSET,
+        },
+      );
     });
   });
 
@@ -274,9 +298,14 @@ describe('LedgerAccountsService', () => {
       const ledgerAccountRepo = service['ledgerAccountRepository'];
 
       jest.spyOn(merchantRepo, 'findOne').mockResolvedValueOnce(mockMerchant);
-      jest.spyOn(ledgerAccountRepo, 'findOne').mockResolvedValueOnce(mockLedgerAccount);
+      jest
+        .spyOn(ledgerAccountRepo, 'findOne')
+        .mockResolvedValueOnce(mockLedgerAccount);
 
-      const result = await service.findOne(mockLedgerAccount.id, mockMerchant.id);
+      const result = await service.findOne(
+        mockLedgerAccount.id,
+        mockMerchant.id,
+      );
 
       expect(result).toEqual({
         statusCode: 200,
@@ -300,7 +329,9 @@ describe('LedgerAccountsService', () => {
     it('should throw BadRequestException for invalid IDs', async () => {
       await expect(service.findOne(0, mockMerchant.id)).rejects.toThrow();
       await expect(service.findOne(-1, mockMerchant.id)).rejects.toThrow();
-      await expect(service.findOne(null as any, mockMerchant.id)).rejects.toThrow();
+      await expect(
+        service.findOne(null as any, mockMerchant.id),
+      ).rejects.toThrow();
     });
   });
 
@@ -311,14 +342,27 @@ describe('LedgerAccountsService', () => {
       const merchantRepo = service['merchantRepository'];
       const ledgerAccountRepo = service['ledgerAccountRepository'];
 
-      const updatedAccount: LedgerAccount = { ...mockLedgerAccount, name: 'Cash and Equivalents' };
+      const updatedAccount: LedgerAccount = {
+        ...mockLedgerAccount,
+        name: 'Cash and Equivalents',
+      };
 
       jest.spyOn(merchantRepo, 'findOne').mockResolvedValue(mockMerchant);
-      jest.spyOn(ledgerAccountRepo, 'findOneBy').mockResolvedValueOnce(mockLedgerAccount);
-      jest.spyOn(ledgerAccountRepo, 'save').mockResolvedValueOnce(updatedAccount);
-      jest.spyOn(ledgerAccountRepo, 'findOne').mockResolvedValueOnce(updatedAccount);
+      jest
+        .spyOn(ledgerAccountRepo, 'findOneBy')
+        .mockResolvedValueOnce(mockLedgerAccount);
+      jest
+        .spyOn(ledgerAccountRepo, 'save')
+        .mockResolvedValueOnce(updatedAccount);
+      jest
+        .spyOn(ledgerAccountRepo, 'findOne')
+        .mockResolvedValueOnce(updatedAccount);
 
-      const result = await service.update(mockLedgerAccount.id, mockMerchant.id, mockUpdateDto);
+      const result = await service.update(
+        mockLedgerAccount.id,
+        mockMerchant.id,
+        mockUpdateDto,
+      );
 
       expect(result.statusCode).toBe(201);
       expect(result.message).toBe('Ledger Account Updated successfully');
@@ -341,11 +385,19 @@ describe('LedgerAccountsService', () => {
       const merchantRepo = service['merchantRepository'];
       const ledgerAccountRepo = service['ledgerAccountRepository'];
 
-      const existingOtherAccount: LedgerAccount = { ...mockLedgerAccount, id: 99, code: '2000' };
+      const existingOtherAccount: LedgerAccount = {
+        ...mockLedgerAccount,
+        id: 99,
+        code: '2000',
+      };
 
       jest.spyOn(merchantRepo, 'findOne').mockResolvedValueOnce(mockMerchant);
-      jest.spyOn(ledgerAccountRepo, 'findOneBy').mockResolvedValueOnce(mockLedgerAccount);
-      jest.spyOn(ledgerAccountRepo, 'findOne').mockResolvedValueOnce(existingOtherAccount); // code collision
+      jest
+        .spyOn(ledgerAccountRepo, 'findOneBy')
+        .mockResolvedValueOnce(mockLedgerAccount);
+      jest
+        .spyOn(ledgerAccountRepo, 'findOne')
+        .mockResolvedValueOnce(existingOtherAccount); // code collision
 
       await expect(
         service.update(mockLedgerAccount.id, mockMerchant.id, { code: '2000' }),
@@ -353,8 +405,12 @@ describe('LedgerAccountsService', () => {
     });
 
     it('should throw BadRequestException for invalid IDs', async () => {
-      await expect(service.update(0, mockMerchant.id, mockUpdateDto)).rejects.toThrow();
-      await expect(service.update(-1, mockMerchant.id, mockUpdateDto)).rejects.toThrow();
+      await expect(
+        service.update(0, mockMerchant.id, mockUpdateDto),
+      ).rejects.toThrow();
+      await expect(
+        service.update(-1, mockMerchant.id, mockUpdateDto),
+      ).rejects.toThrow();
     });
   });
 
@@ -365,14 +421,26 @@ describe('LedgerAccountsService', () => {
       const merchantRepo = service['merchantRepository'];
       const ledgerAccountRepo = service['ledgerAccountRepository'];
 
-      const deletedAccount: LedgerAccount = { ...mockLedgerAccount, is_active: false };
+      const deletedAccount: LedgerAccount = {
+        ...mockLedgerAccount,
+        is_active: false,
+      };
 
       jest.spyOn(merchantRepo, 'findOne').mockResolvedValue(mockMerchant);
-      jest.spyOn(ledgerAccountRepo, 'findOneBy').mockResolvedValueOnce(mockLedgerAccount);
-      jest.spyOn(ledgerAccountRepo, 'save').mockResolvedValueOnce(deletedAccount);
-      jest.spyOn(ledgerAccountRepo, 'findOne').mockResolvedValueOnce(deletedAccount);
+      jest
+        .spyOn(ledgerAccountRepo, 'findOneBy')
+        .mockResolvedValueOnce(mockLedgerAccount);
+      jest
+        .spyOn(ledgerAccountRepo, 'save')
+        .mockResolvedValueOnce(deletedAccount);
+      jest
+        .spyOn(ledgerAccountRepo, 'findOne')
+        .mockResolvedValueOnce(deletedAccount);
 
-      const result = await service.remove(mockLedgerAccount.id, mockMerchant.id);
+      const result = await service.remove(
+        mockLedgerAccount.id,
+        mockMerchant.id,
+      );
 
       expect(result.statusCode).toBe(201);
       expect(result.message).toBe('Ledger Account Deleted successfully');

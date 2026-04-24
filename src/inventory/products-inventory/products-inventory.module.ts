@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ProductsInventoryController } from './products-inventory.controller';
 import { ProductsInventoryService } from './products-inventory.service';
 import { ProductsModule } from './products/products.module';
 import { CategoryModule } from './category/category.module';
@@ -22,7 +21,7 @@ import { PurchaseOrderModule } from './purchase-order/purchase-order.module';
 import { PurchaseOrderItemModule } from './purchase-order-item/purchase-order-item.module';
 
 @Module({
-  controllers: [ProductsInventoryController],
+  controllers: [],
   providers: [ProductsInventoryService],
   imports: [
     TypeOrmModule.forFeature([
@@ -59,4 +58,4 @@ import { PurchaseOrderItemModule } from './purchase-order-item/purchase-order-it
     PurchaseOrderItemModule,
   ],
 })
-export class ProductsInventoryModule { }
+export class ProductsInventoryModule {}

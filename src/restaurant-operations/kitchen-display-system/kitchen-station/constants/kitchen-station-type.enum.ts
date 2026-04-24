@@ -6,5 +6,3 @@ export enum KitchenStationType {
   PREP = 'PREP',
   PACKING = 'PACKING',
 }
-
-

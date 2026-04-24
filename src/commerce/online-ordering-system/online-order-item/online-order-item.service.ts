@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
 import { OnlineOrderItem } from './entities/online-order-item.entity';
@@ -7,12 +13,19 @@ import { Product } from '../../../inventory/products-inventory/products/entities
 import { Variant } from '../../../inventory/products-inventory/variants/entities/variant.entity';
 import { CreateOnlineOrderItemDto } from './dto/create-online-order-item.dto';
 import { UpdateOnlineOrderItemDto } from './dto/update-online-order-item.dto';
-import { GetOnlineOrderItemQueryDto, OnlineOrderItemSortBy } from './dto/get-online-order-item-query.dto';
-import { OnlineOrderItemResponseDto, OneOnlineOrderItemResponseDto } from './dto/online-order-item-response.dto';
+import {
+  GetOnlineOrderItemQueryDto,
+  OnlineOrderItemSortBy,
+} from './dto/get-online-order-item-query.dto';
+import {
+  OnlineOrderItemResponseDto,
+  OneOnlineOrderItemResponseDto,
+} from './dto/online-order-item-response.dto';
 import { PaginatedOnlineOrderItemResponseDto } from './dto/paginated-online-order-item-response.dto';
 import { OnlineStoreStatus } from '../online-stores/constants/online-store-status.enum';
 import { OnlineOrderStatus } from '../online-order/constants/online-order-status.enum';
 import { OnlineOrderItemStatus } from './constants/online-order-item-status.enum';
+import { resolveUnitPriceForOnlineOrderItem } from '../online-order/online-order-pricing.util';
 
 @Injectable()
 export class OnlineOrderItemService {
@@ -27,23 +40,36 @@ export class OnlineOrderItemService {
     private readonly variantRepository: Repository<Variant>,
   ) {}
 
-  async create(createOnlineOrderItemDto: CreateOnlineOrderItemDto, authenticatedUserMerchantId: number): Promise<OneOnlineOrderItemResponseDto> {
+  async create(
+    createOnlineOrderItemDto: CreateOnlineOrderItemDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneOnlineOrderItemResponseDto> {
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to create online order items');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to create online order items',
+      );
     }
 
     const onlineOrder = await this.onlineOrderRepository
       .createQueryBuilder('onlineOrder')
       .leftJoinAndSelect('onlineOrder.store', 'store')
       .leftJoin('store.merchant', 'merchant')
-      .where('onlineOrder.id = :orderId', { orderId: createOnlineOrderItemDto.onlineOrderId })
-      .andWhere('merchant.id = :merchantId', { merchantId: authenticatedUserMerchantId })
+      .where('onlineOrder.id = :orderId', {
+        orderId: createOnlineOrderItemDto.onlineOrderId,
+      })
+      .andWhere('merchant.id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
       .andWhere('store.status = :status', { status: OnlineStoreStatus.ACTIVE })
-      .andWhere('onlineOrder.status != :deletedStatus', { deletedStatus: OnlineOrderStatus.DELETED })
+      .andWhere('onlineOrder.status != :deletedStatus', {
+        deletedStatus: OnlineOrderStatus.DELETED,
+      })
       .getOne();
 
     if (!onlineOrder) {
-      throw new NotFoundException('Online order not found or you do not have access to it');
+      throw new NotFoundException(
+        'Online order not found or you do not have access to it',
+      );
     }
 
     const product = await this.productRepository.findOne({
@@ -56,7 +82,9 @@ export class OnlineOrderItemService {
     }
 
     if (product.merchantId !== authenticatedUserMerchantId) {
-      throw new ForbiddenException('You can only use products from your own merchant');
+      throw new ForbiddenException(
+        'You can only use products from your own merchant',
+      );
     }
 
     if (createOnlineOrderItemDto.variantId) {
@@ -70,11 +98,15 @@ export class OnlineOrderItemService {
       }
 
       if (variant.product.merchantId !== authenticatedUserMerchantId) {
-        throw new ForbiddenException('You can only use variants from your own merchant');
+        throw new ForbiddenException(
+          'You can only use variants from your own merchant',
+        );
       }
 
       if (variant.productId !== createOnlineOrderItemDto.productId) {
-        throw new BadRequestException('Variant does not belong to the specified product');
+        throw new BadRequestException(
+          'Variant does not belong to the specified product',
+        );
       }
     }
 
@@ -82,12 +114,14 @@ export class OnlineOrderItemService {
       throw new BadRequestException('Quantity must be greater than 0');
     }
 
-    if (createOnlineOrderItemDto.unitPrice < 0) {
-      throw new BadRequestException('Unit price must be greater than or equal to 0');
-    }
-
-    if (createOnlineOrderItemDto.modifiers !== undefined && createOnlineOrderItemDto.modifiers !== null) {
-      if (typeof createOnlineOrderItemDto.modifiers !== 'object' || Array.isArray(createOnlineOrderItemDto.modifiers)) {
+    if (
+      createOnlineOrderItemDto.modifiers !== undefined &&
+      createOnlineOrderItemDto.modifiers !== null
+    ) {
+      if (
+        typeof createOnlineOrderItemDto.modifiers !== 'object' ||
+        Array.isArray(createOnlineOrderItemDto.modifiers)
+      ) {
         throw new BadRequestException('Modifiers must be a valid JSON object');
       }
     }
@@ -97,16 +131,17 @@ export class OnlineOrderItemService {
     onlineOrderItem.product_id = createOnlineOrderItemDto.productId;
     onlineOrderItem.variant_id = createOnlineOrderItemDto.variantId || null;
     onlineOrderItem.quantity = createOnlineOrderItemDto.quantity;
-    onlineOrderItem.unit_price = createOnlineOrderItemDto.unitPrice;
     onlineOrderItem.modifiers = createOnlineOrderItemDto.modifiers || null;
     onlineOrderItem.notes = createOnlineOrderItemDto.notes || null;
 
-    const savedOnlineOrderItem = await this.onlineOrderItemRepository.save(onlineOrderItem);
+    const savedOnlineOrderItem =
+      await this.onlineOrderItemRepository.save(onlineOrderItem);
 
-    const completeOnlineOrderItem = await this.onlineOrderItemRepository.findOne({
-      where: { id: savedOnlineOrderItem.id },
-      relations: ['onlineOrder', 'product', 'variant'],
-    });
+    const completeOnlineOrderItem =
+      await this.onlineOrderItemRepository.findOne({
+        where: { id: savedOnlineOrderItem.id },
+        relations: ['onlineOrder', 'product', 'variant', 'orderItem'],
+      });
 
     if (!completeOnlineOrderItem) {
       throw new NotFoundException('Online order item not found after creation');
@@ -119,9 +154,14 @@ export class OnlineOrderItemService {
     };
   }
 
-  async findAll(query: GetOnlineOrderItemQueryDto, authenticatedUserMerchantId: number): Promise<PaginatedOnlineOrderItemResponseDto> {
+  async findAll(
+    query: GetOnlineOrderItemQueryDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<PaginatedOnlineOrderItemResponseDto> {
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to access online order items');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to access online order items',
+      );
     }
 
     if (query.page !== undefined && query.page < 1) {
@@ -135,7 +175,9 @@ export class OnlineOrderItemService {
     if (query.createdDate) {
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
       if (!dateRegex.test(query.createdDate)) {
-        throw new BadRequestException('Created date must be in YYYY-MM-DD format');
+        throw new BadRequestException(
+          'Created date must be in YYYY-MM-DD format',
+        );
       }
     }
 
@@ -148,41 +190,62 @@ export class OnlineOrderItemService {
       .leftJoinAndSelect('onlineOrderItem.onlineOrder', 'onlineOrder')
       .leftJoinAndSelect('onlineOrderItem.product', 'product')
       .leftJoinAndSelect('onlineOrderItem.variant', 'variant')
+      .leftJoinAndSelect('onlineOrderItem.orderItem', 'orderItem')
       .leftJoin('onlineOrder.store', 'store')
       .leftJoin('store.merchant', 'merchant')
-      .where('merchant.id = :merchantId', { merchantId: authenticatedUserMerchantId })
+      .where('merchant.id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
       .andWhere('store.status = :status', { status: OnlineStoreStatus.ACTIVE })
-      .andWhere('onlineOrder.status != :deletedStatus', { deletedStatus: OnlineOrderStatus.DELETED })
-      .andWhere('onlineOrderItem.status != :itemDeletedStatus', { itemDeletedStatus: OnlineOrderItemStatus.DELETED });
+      .andWhere('onlineOrder.status != :deletedStatus', {
+        deletedStatus: OnlineOrderStatus.DELETED,
+      })
+      .andWhere('onlineOrderItem.status != :itemDeletedStatus', {
+        itemDeletedStatus: OnlineOrderItemStatus.DELETED,
+      });
 
     if (query.onlineOrderId) {
-      queryBuilder.andWhere('onlineOrderItem.online_order_id = :onlineOrderId', { onlineOrderId: query.onlineOrderId });
+      queryBuilder.andWhere(
+        'onlineOrderItem.online_order_id = :onlineOrderId',
+        { onlineOrderId: query.onlineOrderId },
+      );
     }
 
     if (query.productId) {
-      queryBuilder.andWhere('onlineOrderItem.product_id = :productId', { productId: query.productId });
+      queryBuilder.andWhere('onlineOrderItem.product_id = :productId', {
+        productId: query.productId,
+      });
     }
 
     if (query.variantId) {
-      queryBuilder.andWhere('onlineOrderItem.variant_id = :variantId', { variantId: query.variantId });
+      queryBuilder.andWhere('onlineOrderItem.variant_id = :variantId', {
+        variantId: query.variantId,
+      });
     }
 
     if (query.createdDate) {
       const startDate = new Date(query.createdDate);
       const endDate = new Date(query.createdDate);
       endDate.setDate(endDate.getDate() + 1);
-      queryBuilder.andWhere('onlineOrderItem.created_at >= :startDate', { startDate })
+      queryBuilder
+        .andWhere('onlineOrderItem.created_at >= :startDate', { startDate })
         .andWhere('onlineOrderItem.created_at < :endDate', { endDate });
     }
 
-    const sortField = query.sortBy === OnlineOrderItemSortBy.ONLINE_ORDER_ID ? 'onlineOrderItem.online_order_id' :
-                     query.sortBy === OnlineOrderItemSortBy.PRODUCT_ID ? 'onlineOrderItem.product_id' :
-                     query.sortBy === OnlineOrderItemSortBy.VARIANT_ID ? 'onlineOrderItem.variant_id' :
-                     query.sortBy === OnlineOrderItemSortBy.QUANTITY ? 'onlineOrderItem.quantity' :
-                     query.sortBy === OnlineOrderItemSortBy.UNIT_PRICE ? 'onlineOrderItem.unit_price' :
-                     query.sortBy === OnlineOrderItemSortBy.UPDATED_AT ? 'onlineOrderItem.updated_at' :
-                     query.sortBy === OnlineOrderItemSortBy.ID ? 'onlineOrderItem.id' :
-                     'onlineOrderItem.created_at';
+    const sortField =
+      query.sortBy === OnlineOrderItemSortBy.ONLINE_ORDER_ID
+        ? 'onlineOrderItem.online_order_id'
+        : query.sortBy === OnlineOrderItemSortBy.PRODUCT_ID
+          ? 'onlineOrderItem.product_id'
+          : query.sortBy === OnlineOrderItemSortBy.VARIANT_ID
+            ? 'onlineOrderItem.variant_id'
+            : query.sortBy === OnlineOrderItemSortBy.QUANTITY
+              ? 'onlineOrderItem.quantity'
+              : query.sortBy === OnlineOrderItemSortBy.UPDATED_AT
+                ? 'onlineOrderItem.updated_at'
+                : query.sortBy === OnlineOrderItemSortBy.ID
+                  ? 'onlineOrderItem.id'
+                  : 'onlineOrderItem.created_at';
     const sortOrder = query.sortOrder || 'DESC';
     queryBuilder.orderBy(sortField, sortOrder);
 
@@ -206,18 +269,27 @@ export class OnlineOrderItemService {
     return {
       statusCode: 200,
       message: 'Online order items retrieved successfully',
-      data: onlineOrderItems.map(item => this.formatOnlineOrderItemResponse(item)),
+      data: onlineOrderItems.map((item) =>
+        this.formatOnlineOrderItemResponse(item),
+      ),
       paginationMeta,
     };
   }
 
-  async findOne(id: number, authenticatedUserMerchantId: number): Promise<OneOnlineOrderItemResponseDto> {
+  async findOne(
+    id: number,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneOnlineOrderItemResponseDto> {
     if (!id || id <= 0) {
-      throw new BadRequestException('Online order item ID must be a valid positive number');
+      throw new BadRequestException(
+        'Online order item ID must be a valid positive number',
+      );
     }
 
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to access online order items');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to access online order items',
+      );
     }
 
     const onlineOrderItem = await this.onlineOrderItemRepository
@@ -225,13 +297,20 @@ export class OnlineOrderItemService {
       .leftJoinAndSelect('onlineOrderItem.onlineOrder', 'onlineOrder')
       .leftJoinAndSelect('onlineOrderItem.product', 'product')
       .leftJoinAndSelect('onlineOrderItem.variant', 'variant')
+      .leftJoinAndSelect('onlineOrderItem.orderItem', 'orderItem')
       .leftJoin('onlineOrder.store', 'store')
       .leftJoin('store.merchant', 'merchant')
       .where('onlineOrderItem.id = :id', { id })
-      .andWhere('merchant.id = :merchantId', { merchantId: authenticatedUserMerchantId })
+      .andWhere('merchant.id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
       .andWhere('store.status = :status', { status: OnlineStoreStatus.ACTIVE })
-      .andWhere('onlineOrder.status != :deletedStatus', { deletedStatus: OnlineOrderStatus.DELETED })
-      .andWhere('onlineOrderItem.status != :itemDeletedStatus', { itemDeletedStatus: OnlineOrderItemStatus.DELETED })
+      .andWhere('onlineOrder.status != :deletedStatus', {
+        deletedStatus: OnlineOrderStatus.DELETED,
+      })
+      .andWhere('onlineOrderItem.status != :itemDeletedStatus', {
+        itemDeletedStatus: OnlineOrderItemStatus.DELETED,
+      })
       .getOne();
 
     if (!onlineOrderItem) {
@@ -245,13 +324,21 @@ export class OnlineOrderItemService {
     };
   }
 
-  async update(id: number, updateOnlineOrderItemDto: UpdateOnlineOrderItemDto, authenticatedUserMerchantId: number): Promise<OneOnlineOrderItemResponseDto> {
+  async update(
+    id: number,
+    updateOnlineOrderItemDto: UpdateOnlineOrderItemDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneOnlineOrderItemResponseDto> {
     if (!id || id <= 0) {
-      throw new BadRequestException('Online order item ID must be a valid positive number');
+      throw new BadRequestException(
+        'Online order item ID must be a valid positive number',
+      );
     }
 
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to update online order items');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to update online order items',
+      );
     }
 
     const existingOnlineOrderItem = await this.onlineOrderItemRepository
@@ -259,13 +346,20 @@ export class OnlineOrderItemService {
       .leftJoinAndSelect('onlineOrderItem.onlineOrder', 'onlineOrder')
       .leftJoinAndSelect('onlineOrderItem.product', 'product')
       .leftJoinAndSelect('onlineOrderItem.variant', 'variant')
+      .leftJoinAndSelect('onlineOrderItem.orderItem', 'orderItem')
       .leftJoin('onlineOrder.store', 'store')
       .leftJoin('store.merchant', 'merchant')
       .where('onlineOrderItem.id = :id', { id })
-      .andWhere('merchant.id = :merchantId', { merchantId: authenticatedUserMerchantId })
+      .andWhere('merchant.id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
       .andWhere('store.status = :status', { status: OnlineStoreStatus.ACTIVE })
-      .andWhere('onlineOrder.status != :deletedStatus', { deletedStatus: OnlineOrderStatus.DELETED })
-      .andWhere('onlineOrderItem.status != :itemDeletedStatus', { itemDeletedStatus: OnlineOrderItemStatus.DELETED })
+      .andWhere('onlineOrder.status != :deletedStatus', {
+        deletedStatus: OnlineOrderStatus.DELETED,
+      })
+      .andWhere('onlineOrderItem.status != :itemDeletedStatus', {
+        itemDeletedStatus: OnlineOrderItemStatus.DELETED,
+      })
       .getOne();
 
     if (!existingOnlineOrderItem) {
@@ -276,22 +370,39 @@ export class OnlineOrderItemService {
       throw new ConflictException('Cannot update a deleted online order item');
     }
 
+    if (existingOnlineOrderItem.order_item_id) {
+      throw new BadRequestException(
+        'Cannot update line items linked to a POS order; change the order in the POS',
+      );
+    }
+
     if (updateOnlineOrderItemDto.onlineOrderId !== undefined) {
       const onlineOrder = await this.onlineOrderRepository
         .createQueryBuilder('onlineOrder')
         .leftJoinAndSelect('onlineOrder.store', 'store')
         .leftJoin('store.merchant', 'merchant')
-        .where('onlineOrder.id = :orderId', { orderId: updateOnlineOrderItemDto.onlineOrderId })
-        .andWhere('merchant.id = :merchantId', { merchantId: authenticatedUserMerchantId })
-        .andWhere('store.status = :status', { status: OnlineStoreStatus.ACTIVE })
-        .andWhere('onlineOrder.status != :deletedStatus', { deletedStatus: OnlineOrderStatus.DELETED })
+        .where('onlineOrder.id = :orderId', {
+          orderId: updateOnlineOrderItemDto.onlineOrderId,
+        })
+        .andWhere('merchant.id = :merchantId', {
+          merchantId: authenticatedUserMerchantId,
+        })
+        .andWhere('store.status = :status', {
+          status: OnlineStoreStatus.ACTIVE,
+        })
+        .andWhere('onlineOrder.status != :deletedStatus', {
+          deletedStatus: OnlineOrderStatus.DELETED,
+        })
         .getOne();
 
       if (!onlineOrder) {
-        throw new NotFoundException('Online order not found or you do not have access to it');
+        throw new NotFoundException(
+          'Online order not found or you do not have access to it',
+        );
       }
 
-      existingOnlineOrderItem.online_order_id = updateOnlineOrderItemDto.onlineOrderId;
+      existingOnlineOrderItem.online_order_id =
+        updateOnlineOrderItemDto.onlineOrderId;
     }
 
     if (updateOnlineOrderItemDto.productId !== undefined) {
@@ -305,7 +416,9 @@ export class OnlineOrderItemService {
       }
 
       if (product.merchantId !== authenticatedUserMerchantId) {
-        throw new ForbiddenException('You can only use products from your own merchant');
+        throw new ForbiddenException(
+          'You can only use products from your own merchant',
+        );
       }
 
       existingOnlineOrderItem.product_id = updateOnlineOrderItemDto.productId;
@@ -325,12 +438,19 @@ export class OnlineOrderItemService {
         }
 
         if (variant.product.merchantId !== authenticatedUserMerchantId) {
-          throw new ForbiddenException('You can only use variants from your own merchant');
+          throw new ForbiddenException(
+            'You can only use variants from your own merchant',
+          );
         }
 
-        const productId = updateOnlineOrderItemDto.productId !== undefined ? updateOnlineOrderItemDto.productId : existingOnlineOrderItem.product_id;
+        const productId =
+          updateOnlineOrderItemDto.productId !== undefined
+            ? updateOnlineOrderItemDto.productId
+            : existingOnlineOrderItem.product_id;
         if (variant.productId !== productId) {
-          throw new BadRequestException('Variant does not belong to the specified product');
+          throw new BadRequestException(
+            'Variant does not belong to the specified product',
+          );
         }
 
         existingOnlineOrderItem.variant_id = updateOnlineOrderItemDto.variantId;
@@ -344,19 +464,17 @@ export class OnlineOrderItemService {
       existingOnlineOrderItem.quantity = updateOnlineOrderItemDto.quantity;
     }
 
-    if (updateOnlineOrderItemDto.unitPrice !== undefined) {
-      if (updateOnlineOrderItemDto.unitPrice < 0) {
-        throw new BadRequestException('Unit price must be greater than or equal to 0');
-      }
-      existingOnlineOrderItem.unit_price = updateOnlineOrderItemDto.unitPrice;
-    }
-
     if (updateOnlineOrderItemDto.modifiers !== undefined) {
       if (updateOnlineOrderItemDto.modifiers === null) {
         existingOnlineOrderItem.modifiers = null;
       } else {
-        if (typeof updateOnlineOrderItemDto.modifiers !== 'object' || Array.isArray(updateOnlineOrderItemDto.modifiers)) {
-          throw new BadRequestException('Modifiers must be a valid JSON object');
+        if (
+          typeof updateOnlineOrderItemDto.modifiers !== 'object' ||
+          Array.isArray(updateOnlineOrderItemDto.modifiers)
+        ) {
+          throw new BadRequestException(
+            'Modifiers must be a valid JSON object',
+          );
         }
         existingOnlineOrderItem.modifiers = updateOnlineOrderItemDto.modifiers;
       }
@@ -366,12 +484,15 @@ export class OnlineOrderItemService {
       existingOnlineOrderItem.notes = updateOnlineOrderItemDto.notes || null;
     }
 
-    const updatedOnlineOrderItem = await this.onlineOrderItemRepository.save(existingOnlineOrderItem);
+    const updatedOnlineOrderItem = await this.onlineOrderItemRepository.save(
+      existingOnlineOrderItem,
+    );
 
-    const completeOnlineOrderItem = await this.onlineOrderItemRepository.findOne({
-      where: { id: updatedOnlineOrderItem.id },
-      relations: ['onlineOrder', 'product', 'variant'],
-    });
+    const completeOnlineOrderItem =
+      await this.onlineOrderItemRepository.findOne({
+        where: { id: updatedOnlineOrderItem.id },
+        relations: ['onlineOrder', 'product', 'variant', 'orderItem'],
+      });
 
     if (!completeOnlineOrderItem) {
       throw new NotFoundException('Online order item not found after update');
@@ -384,13 +505,20 @@ export class OnlineOrderItemService {
     };
   }
 
-  async remove(id: number, authenticatedUserMerchantId: number): Promise<OneOnlineOrderItemResponseDto> {
+  async remove(
+    id: number,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneOnlineOrderItemResponseDto> {
     if (!id || id <= 0) {
-      throw new BadRequestException('Online order item ID must be a valid positive number');
+      throw new BadRequestException(
+        'Online order item ID must be a valid positive number',
+      );
     }
 
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to delete online order items');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to delete online order items',
+      );
     }
 
     const existingOnlineOrderItem = await this.onlineOrderItemRepository
@@ -398,13 +526,20 @@ export class OnlineOrderItemService {
       .leftJoinAndSelect('onlineOrderItem.onlineOrder', 'onlineOrder')
       .leftJoinAndSelect('onlineOrderItem.product', 'product')
       .leftJoinAndSelect('onlineOrderItem.variant', 'variant')
+      .leftJoinAndSelect('onlineOrderItem.orderItem', 'orderItem')
       .leftJoin('onlineOrder.store', 'store')
       .leftJoin('store.merchant', 'merchant')
       .where('onlineOrderItem.id = :id', { id })
-      .andWhere('merchant.id = :merchantId', { merchantId: authenticatedUserMerchantId })
+      .andWhere('merchant.id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
       .andWhere('store.status = :status', { status: OnlineStoreStatus.ACTIVE })
-      .andWhere('onlineOrder.status != :deletedStatus', { deletedStatus: OnlineOrderStatus.DELETED })
-      .andWhere('onlineOrderItem.status != :itemDeletedStatus', { itemDeletedStatus: OnlineOrderItemStatus.DELETED })
+      .andWhere('onlineOrder.status != :deletedStatus', {
+        deletedStatus: OnlineOrderStatus.DELETED,
+      })
+      .andWhere('onlineOrderItem.status != :itemDeletedStatus', {
+        itemDeletedStatus: OnlineOrderItemStatus.DELETED,
+      })
       .getOne();
 
     if (!existingOnlineOrderItem) {
@@ -416,7 +551,9 @@ export class OnlineOrderItemService {
     }
 
     existingOnlineOrderItem.status = OnlineOrderItemStatus.DELETED;
-    const updatedOnlineOrderItem = await this.onlineOrderItemRepository.save(existingOnlineOrderItem);
+    const updatedOnlineOrderItem = await this.onlineOrderItemRepository.save(
+      existingOnlineOrderItem,
+    );
 
     return {
       statusCode: 200,
@@ -425,17 +562,21 @@ export class OnlineOrderItemService {
     };
   }
 
-  private formatOnlineOrderItemResponse(onlineOrderItem: OnlineOrderItem): OnlineOrderItemResponseDto {
+  private formatOnlineOrderItemResponse(
+    onlineOrderItem: OnlineOrderItem,
+  ): OnlineOrderItemResponseDto {
     return {
       id: onlineOrderItem.id,
       onlineOrderId: onlineOrderItem.online_order_id,
       productId: onlineOrderItem.product_id,
       variantId: onlineOrderItem.variant_id,
       quantity: onlineOrderItem.quantity,
-      unitPrice: onlineOrderItem.unit_price ? parseFloat(onlineOrderItem.unit_price.toString()) : 0,
+      unitPrice: resolveUnitPriceForOnlineOrderItem(onlineOrderItem),
       modifiers: onlineOrderItem.modifiers,
       notes: onlineOrderItem.notes,
       status: onlineOrderItem.status,
+      orderItemId: onlineOrderItem.order_item_id,
+      kitchenLineStatus: onlineOrderItem.kitchen_line_status,
       createdAt: onlineOrderItem.created_at,
       updatedAt: onlineOrderItem.updated_at,
       onlineOrder: {
@@ -446,14 +587,20 @@ export class OnlineOrderItemService {
         id: onlineOrderItem.product.id,
         name: onlineOrderItem.product.name,
         sku: onlineOrderItem.product.sku,
-        basePrice: onlineOrderItem.product.basePrice ? parseFloat(onlineOrderItem.product.basePrice.toString()) : 0,
+        basePrice: onlineOrderItem.product.basePrice
+          ? parseFloat(onlineOrderItem.product.basePrice.toString())
+          : 0,
       },
-      variant: onlineOrderItem.variant ? {
-        id: onlineOrderItem.variant.id,
-        name: onlineOrderItem.variant.name,
-        price: onlineOrderItem.variant.price ? parseFloat(onlineOrderItem.variant.price.toString()) : 0,
-        sku: onlineOrderItem.variant.sku,
-      } : null,
+      variant: onlineOrderItem.variant
+        ? {
+            id: onlineOrderItem.variant.id,
+            name: onlineOrderItem.variant.name,
+            price: onlineOrderItem.variant.price
+              ? parseFloat(onlineOrderItem.variant.price.toString())
+              : 0,
+            sku: onlineOrderItem.variant.sku,
+          }
+        : null,
     };
   }
 }

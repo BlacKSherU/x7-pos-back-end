@@ -5,7 +5,9 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { MarketingAutomationActionType } from '../constants/marketing-automation-action-type.enum';
 
-export class UpdateMarketingAutomationActionDto extends PartialType(CreateMarketingAutomationActionDto) {
+export class UpdateMarketingAutomationActionDto extends PartialType(
+  CreateMarketingAutomationActionDto,
+) {
   @ApiPropertyOptional({
     example: 1,
     description: 'Identifier of the Marketing Automation',

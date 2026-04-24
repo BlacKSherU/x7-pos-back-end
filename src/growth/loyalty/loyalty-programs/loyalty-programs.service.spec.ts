@@ -99,7 +99,7 @@ describe('LoyaltyProgramsService', () => {
     loyaltyProgramRepo = module.get(getRepositoryToken(LoyaltyProgram));
 
     jest.clearAllMocks();
-    jest.spyOn(console, 'error').mockImplementation(() => { });
+    jest.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {

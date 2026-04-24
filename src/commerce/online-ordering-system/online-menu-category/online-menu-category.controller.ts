@@ -7,12 +7,11 @@ import {
   Put,
   Delete,
   ParseIntPipe,
-  HttpCode,
-  HttpStatus,
   UseGuards,
   Request,
   Query,
 } from '@nestjs/common';
+import { Request as ExpressRequest } from 'express';
 import { OnlineMenuCategoryService } from './online-menu-category.service';
 import { CreateOnlineMenuCategoryDto } from './dto/create-online-menu-category.dto';
 import { UpdateOnlineMenuCategoryDto } from './dto/update-online-menu-category.dto';
@@ -30,7 +29,8 @@ import {
   ApiForbiddenResponse,
   ApiQuery,
 } from '@nestjs/swagger';
-import { OnlineMenuCategoryResponseDto, OneOnlineMenuCategoryResponseDto } from './dto/online-menu-category-response.dto';
+import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
+import { OneOnlineMenuCategoryResponseDto } from './dto/online-menu-category-response.dto';
 import { GetOnlineMenuCategoryQueryDto } from './dto/get-online-menu-category-query.dto';
 import { PaginatedOnlineMenuCategoryResponseDto } from './dto/paginated-online-menu-category-response.dto';
 import { Roles } from 'src/auth/decorators/roles.decorator';
@@ -41,12 +41,16 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { ErrorResponse } from 'src/common/dtos/error-response.dto';
 
+type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
+
 @ApiTags('Online Menu Categories')
 @ApiBearerAuth()
 @Controller('online-menu-categories')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class OnlineMenuCategoryController {
-  constructor(private readonly onlineMenuCategoryService: OnlineMenuCategoryService) {}
+  constructor(
+    private readonly onlineMenuCategoryService: OnlineMenuCategoryService,
+  ) {}
 
   @Post()
   @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
@@ -57,31 +61,34 @@ export class OnlineMenuCategoryController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Create a new Online Menu Category',
-    description: 'Creates a new association between an online menu and a category from product inventory. The online menu must belong to the authenticated user\'s merchant, and the category must also belong to the same merchant. Only portal administrators and merchant administrators can create online menu categories.'
+    description:
+      "Creates a new association between an online menu and a category from product inventory. The online menu must belong to the authenticated user's merchant, and the category must also belong to the same merchant. Only portal administrators and merchant administrators can create online menu categories.",
   })
   @ApiCreatedResponse({
     description: 'Online menu category created successfully',
     type: OneOnlineMenuCategoryResponseDto,
   })
-  @ApiBadRequestResponse({ 
+  @ApiBadRequestResponse({
     description: 'Invalid input data or validation errors',
     type: ErrorResponse,
   })
-  @ApiUnauthorizedResponse({ 
+  @ApiUnauthorizedResponse({
     description: 'Unauthorized - Invalid or missing authentication token',
     type: ErrorResponse,
   })
-  @ApiForbiddenResponse({ 
-    description: 'Forbidden - You must be associated with a merchant to create online menu categories',
+  @ApiForbiddenResponse({
+    description:
+      'Forbidden - You must be associated with a merchant to create online menu categories',
     type: ErrorResponse,
   })
-  @ApiNotFoundResponse({ 
-    description: 'Online menu or category not found or you do not have access to it',
+  @ApiNotFoundResponse({
+    description:
+      'Online menu or category not found or you do not have access to it',
     type: ErrorResponse,
   })
-  @ApiBody({ 
+  @ApiBody({
     type: CreateOnlineMenuCategoryDto,
     description: 'Online menu category creation data',
     examples: {
@@ -91,7 +98,7 @@ export class OnlineMenuCategoryController {
           menuId: 1,
           categoryId: 5,
           displayOrder: 1,
-        }
+        },
       },
       example2: {
         summary: 'Create online menu category with different display order',
@@ -99,16 +106,19 @@ export class OnlineMenuCategoryController {
           menuId: 1,
           categoryId: 3,
           displayOrder: 2,
-        }
-      }
-    }
+        },
+      },
+    },
   })
   async create(
     @Body() dto: CreateOnlineMenuCategoryDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOnlineMenuCategoryResponseDto> {
     const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.onlineMenuCategoryService.create(dto, authenticatedUserMerchantId);
+    return this.onlineMenuCategoryService.create(
+      dto,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Get()
@@ -120,81 +130,94 @@ export class OnlineMenuCategoryController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Get all Online Menu Categories with pagination and filters',
-    description: 'Retrieves a paginated list of online menu categories for online menus belonging to the authenticated user\'s merchant. Supports filtering by menu ID, category ID, and creation date.'
+    description:
+      "Retrieves a paginated list of online menu categories for online menus belonging to the authenticated user's merchant. Supports filtering by menu ID, category ID, and creation date.",
   })
   @ApiQuery({
     name: 'page',
     required: false,
     type: Number,
     description: 'Page number for pagination (minimum 1)',
-    example: 1
+    example: 1,
   })
   @ApiQuery({
     name: 'limit',
     required: false,
     type: Number,
     description: 'Number of items per page (1-100)',
-    example: 10
+    example: 10,
   })
   @ApiQuery({
     name: 'menuId',
     required: false,
     type: Number,
     description: 'Filter by menu ID',
-    example: 1
+    example: 1,
   })
   @ApiQuery({
     name: 'categoryId',
     required: false,
     type: Number,
     description: 'Filter by category ID',
-    example: 5
+    example: 5,
   })
   @ApiQuery({
     name: 'createdDate',
     required: false,
     type: String,
     description: 'Filter by creation date (YYYY-MM-DD format)',
-    example: '2024-01-15'
+    example: '2024-01-15',
   })
   @ApiQuery({
     name: 'sortBy',
     required: false,
-    enum: ['id', 'menuId', 'categoryId', 'displayOrder', 'createdAt', 'updatedAt'],
+    enum: [
+      'id',
+      'menuId',
+      'categoryId',
+      'displayOrder',
+      'createdAt',
+      'updatedAt',
+    ],
     description: 'Field to sort by',
-    example: 'createdAt'
+    example: 'createdAt',
   })
   @ApiQuery({
     name: 'sortOrder',
     required: false,
     enum: ['ASC', 'DESC'],
     description: 'Sort order',
-    example: 'DESC'
+    example: 'DESC',
   })
-  @ApiOkResponse({ 
-    description: 'Paginated list of online menu categories retrieved successfully',
+  @ApiOkResponse({
+    description:
+      'Paginated list of online menu categories retrieved successfully',
     type: PaginatedOnlineMenuCategoryResponseDto,
   })
-  @ApiUnauthorizedResponse({ 
+  @ApiUnauthorizedResponse({
     description: 'Unauthorized - Invalid or missing authentication token',
     type: ErrorResponse,
   })
-  @ApiForbiddenResponse({ 
-    description: 'Forbidden - User must be associated with a merchant to view online menu categories',
+  @ApiForbiddenResponse({
+    description:
+      'Forbidden - User must be associated with a merchant to view online menu categories',
     type: ErrorResponse,
   })
-  @ApiBadRequestResponse({ 
+  @ApiBadRequestResponse({
     description: 'Invalid query parameters',
     type: ErrorResponse,
   })
   async findAll(
     @Query() query: GetOnlineMenuCategoryQueryDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ): Promise<PaginatedOnlineMenuCategoryResponseDto> {
     const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.onlineMenuCategoryService.findAll(query, authenticatedUserMerchantId);
+    return this.onlineMenuCategoryService.findAll(
+      query,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Get(':id')
@@ -206,25 +229,43 @@ export class OnlineMenuCategoryController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Get an Online Menu Category by ID',
-    description: 'Retrieves a specific online menu category by its ID. Users can only access online menu categories from online menus belonging to their own merchant.'
+    description:
+      'Retrieves a specific online menu category by its ID. Users can only access online menu categories from online menus belonging to their own merchant.',
   })
-  @ApiParam({ name: 'id', type: Number, description: 'Online menu category ID' })
-  @ApiOkResponse({ 
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'Online menu category ID',
+  })
+  @ApiOkResponse({
     description: 'Online menu category found successfully',
-    type: OneOnlineMenuCategoryResponseDto
+    type: OneOnlineMenuCategoryResponseDto,
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
-  @ApiForbiddenResponse({ description: 'Forbidden - You can only view online menu categories from your own merchant', type: ErrorResponse })
-  @ApiNotFoundResponse({ description: 'Online menu category not found', type: ErrorResponse })
-  @ApiBadRequestResponse({ description: 'Invalid online menu category ID', type: ErrorResponse })
+  @ApiForbiddenResponse({
+    description:
+      'Forbidden - You can only view online menu categories from your own merchant',
+    type: ErrorResponse,
+  })
+  @ApiNotFoundResponse({
+    description: 'Online menu category not found',
+    type: ErrorResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid online menu category ID',
+    type: ErrorResponse,
+  })
   async findOne(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOnlineMenuCategoryResponseDto> {
     const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.onlineMenuCategoryService.findOne(id, authenticatedUserMerchantId);
+    return this.onlineMenuCategoryService.findOne(
+      id,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Put(':id')
@@ -236,37 +277,39 @@ export class OnlineMenuCategoryController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Update an Online Menu Category by ID',
-    description: 'Updates an existing online menu category. Users can only update online menu categories from online menus belonging to their own merchant. All fields are optional.'
+    description:
+      'Updates an existing online menu category. Users can only update online menu categories from online menus belonging to their own merchant. All fields are optional.',
   })
-  @ApiParam({ 
-    name: 'id', 
-    type: Number, 
+  @ApiParam({
+    name: 'id',
+    type: Number,
     description: 'Online menu category ID to update',
-    example: 1
+    example: 1,
   })
-  @ApiOkResponse({ 
-    description: 'Online menu category updated successfully', 
+  @ApiOkResponse({
+    description: 'Online menu category updated successfully',
     type: OneOnlineMenuCategoryResponseDto,
   })
-  @ApiUnauthorizedResponse({ 
+  @ApiUnauthorizedResponse({
     description: 'Unauthorized - Invalid or missing authentication token',
     type: ErrorResponse,
   })
-  @ApiForbiddenResponse({ 
-    description: 'Forbidden - You can only update online menu categories from your own merchant',
+  @ApiForbiddenResponse({
+    description:
+      'Forbidden - You can only update online menu categories from your own merchant',
     type: ErrorResponse,
   })
-  @ApiNotFoundResponse({ 
+  @ApiNotFoundResponse({
     description: 'Online menu category not found',
     type: ErrorResponse,
   })
-  @ApiBadRequestResponse({ 
+  @ApiBadRequestResponse({
     description: 'Invalid input data or ID',
     type: ErrorResponse,
   })
-  @ApiBody({ 
+  @ApiBody({
     type: UpdateOnlineMenuCategoryDto,
     description: 'Online menu category update data (all fields optional)',
     examples: {
@@ -274,7 +317,7 @@ export class OnlineMenuCategoryController {
         summary: 'Update display order',
         value: {
           displayOrder: 3,
-        }
+        },
       },
       example2: {
         summary: 'Update menu and category',
@@ -282,17 +325,21 @@ export class OnlineMenuCategoryController {
           menuId: 2,
           categoryId: 7,
           displayOrder: 1,
-        }
-      }
-    }
+        },
+      },
+    },
   })
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateOnlineMenuCategoryDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOnlineMenuCategoryResponseDto> {
     const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.onlineMenuCategoryService.update(id, dto, authenticatedUserMerchantId);
+    return this.onlineMenuCategoryService.update(
+      id,
+      dto,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Delete(':id')
@@ -304,32 +351,42 @@ export class OnlineMenuCategoryController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Delete an Online Menu Category by ID',
-    description: 'Permanently deletes an online menu category. Users can only delete online menu categories from online menus belonging to their own merchant.'
+    description:
+      'Permanently deletes an online menu category. Users can only delete online menu categories from online menus belonging to their own merchant.',
   })
-  @ApiParam({ name: 'id', type: Number, description: 'Online menu category ID to delete' })
-  @ApiOkResponse({ 
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'Online menu category ID to delete',
+  })
+  @ApiOkResponse({
     description: 'Online menu category deleted successfully',
-    type: OneOnlineMenuCategoryResponseDto
+    type: OneOnlineMenuCategoryResponseDto,
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
-  @ApiForbiddenResponse({ description: 'Forbidden - You can only delete online menu categories from your own merchant', type: ErrorResponse })
-  @ApiNotFoundResponse({ description: 'Online menu category not found', type: ErrorResponse })
-  @ApiBadRequestResponse({ description: 'Invalid online menu category ID', type: ErrorResponse })
+  @ApiForbiddenResponse({
+    description:
+      'Forbidden - You can only delete online menu categories from your own merchant',
+    type: ErrorResponse,
+  })
+  @ApiNotFoundResponse({
+    description: 'Online menu category not found',
+    type: ErrorResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid online menu category ID',
+    type: ErrorResponse,
+  })
   async remove(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOnlineMenuCategoryResponseDto> {
     const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.onlineMenuCategoryService.remove(id, authenticatedUserMerchantId);
+    return this.onlineMenuCategoryService.remove(
+      id,
+      authenticatedUserMerchantId,
+    );
   }
 }
-
-
-
-
-
-
-
-

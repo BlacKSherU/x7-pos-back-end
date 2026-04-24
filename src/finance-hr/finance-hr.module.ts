@@ -4,6 +4,6 @@ import { FinanceHrService } from './finance-hr.service';
 
 @Module({
   controllers: [FinanceHrController],
-  providers: [FinanceHrService]
+  providers: [FinanceHrService],
 })
 export class FinanceHrModule {}

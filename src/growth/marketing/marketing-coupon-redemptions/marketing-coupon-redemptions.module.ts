@@ -4,12 +4,17 @@ import { MarketingCouponRedemptionsService } from './marketing-coupon-redemption
 import { MarketingCouponRedemptionsController } from './marketing-coupon-redemptions.controller';
 import { MarketingCouponRedemption } from './entities/marketing-coupon-redemption.entity';
 import { MarketingCoupon } from '../marketing-coupons/entities/marketing-coupon.entity';
-import { Order } from '../../../orders/entities/order.entity';
-import { Customer } from 'src/core/business-partners/customers/entities/customer.entity';
+import { Order } from '../../../restaurant-operations/pos/orders/entities/order.entity';
+import { Customer } from '../../../core/business-partners/customers/entities/customer.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([MarketingCouponRedemption, MarketingCoupon, Order, Customer]),
+    TypeOrmModule.forFeature([
+      MarketingCouponRedemption,
+      MarketingCoupon,
+      Order,
+      Customer,
+    ]),
   ],
   controllers: [MarketingCouponRedemptionsController],
   providers: [MarketingCouponRedemptionsService],

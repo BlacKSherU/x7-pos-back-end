@@ -1,5 +1,13 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsNumber, IsDateString, IsString, Min, Max, IsIn } from 'class-validator';
+import {
+  IsOptional,
+  IsNumber,
+  IsDateString,
+  IsString,
+  Min,
+  Max,
+  IsIn,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class GetTableAssignmentsQueryDto {
@@ -92,4 +100,3 @@ export class GetTableAssignmentsQueryDto {
   @IsIn(['active', 'inactive', 'deleted'])
   status?: string;
 }
-

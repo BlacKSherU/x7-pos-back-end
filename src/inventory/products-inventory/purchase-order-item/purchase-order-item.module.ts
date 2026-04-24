@@ -21,7 +21,6 @@ import { VariantsModule } from '../variants/variants.module';
       Supplier,
       Merchant,
     ]),
-    forwardRef(() => PurchaseOrderItemModule),
     forwardRef(() => ProductsModule),
     forwardRef(() => VariantsModule),
   ],
@@ -29,4 +28,4 @@ import { VariantsModule } from '../variants/variants.module';
   providers: [PurchaseOrderItemService],
   exports: [PurchaseOrderItemService],
 })
-export class PurchaseOrderItemModule { }
+export class PurchaseOrderItemModule {}

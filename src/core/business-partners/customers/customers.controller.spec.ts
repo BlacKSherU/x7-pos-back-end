@@ -87,7 +87,6 @@ describe('CustomersController', () => {
       city: 'New York',
       state: 'NY',
       country: 'USA',
-      merchant: 1,
     };
 
     it('should create a customer successfully', async () => {

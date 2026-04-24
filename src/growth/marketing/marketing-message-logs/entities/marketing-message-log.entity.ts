@@ -20,13 +20,17 @@ import { MarketingMessageLogRecordStatus } from '../constants/marketing-message-
 @Index(['campaign_id', 'automation_id', 'customer_id', 'sent_at'])
 @Index(['channel', 'status', 'record_status', 'created_at'])
 export class MarketingMessageLog {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the marketing message log' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the marketing message log',
+  })
   @PrimaryGeneratedColumn({ type: 'bigint' })
   id: number;
 
   @ApiProperty({
     example: 1,
-    description: 'Identifier of the Marketing Campaign (optional, null if from automation)',
+    description:
+      'Identifier of the Marketing Campaign (optional, null if from automation)',
   })
   @Column({ type: 'bigint', name: 'campaign_id', nullable: true })
   campaign_id: number | null;
@@ -41,7 +45,8 @@ export class MarketingMessageLog {
 
   @ApiProperty({
     example: 1,
-    description: 'Identifier of the Marketing Automation (optional, null if from campaign)',
+    description:
+      'Identifier of the Marketing Automation (optional, null if from campaign)',
   })
   @Column({ type: 'bigint', name: 'automation_id', nullable: true })
   automation_id: number | null;
@@ -80,7 +85,8 @@ export class MarketingMessageLog {
   @ApiProperty({
     example: MarketingMessageLogStatus.SENT,
     enum: MarketingMessageLogStatus,
-    description: 'Delivery status of the message (sent, delivered, opened, clicked, bounced)',
+    description:
+      'Delivery status of the message (sent, delivered, opened, clicked, bounced)',
   })
   @Column({ type: 'varchar', length: 50 })
   status: MarketingMessageLogStatus;

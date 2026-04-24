@@ -25,7 +25,10 @@ import { KitchenEventLogStatus } from '../constants/kitchen-event-log-status.enu
 @Index(['event_time'])
 @Index(['status'])
 export class KitchenEventLog {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Kitchen Event Log' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Kitchen Event Log',
+  })
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -50,7 +53,8 @@ export class KitchenEventLog {
 
   @ApiProperty({
     example: 1,
-    description: 'Identifier of the Kitchen Order Item associated with this event',
+    description:
+      'Identifier of the Kitchen Order Item associated with this event',
     nullable: true,
   })
   @Column({ name: 'kitchen_order_item_id', nullable: true })

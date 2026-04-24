@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { PosModule } from './pos/pos.module';
 import { ShiftModule } from './shift/shift.module';
 import { TipsModule } from './tips/tips.module';
 import { CashdrawerModule } from './cashdrawer/cashdrawer.module';
@@ -7,6 +8,7 @@ import { DiningSystemModule } from './dining-system/dining-system.module';
 
 @Module({
   imports: [
+    PosModule,
     ShiftModule,
     TipsModule,
     CashdrawerModule,
@@ -16,6 +18,7 @@ import { DiningSystemModule } from './dining-system/dining-system.module';
   controllers: [],
   providers: [],
   exports: [
+    PosModule,
     ShiftModule,
     TipsModule,
     CashdrawerModule,
@@ -23,4 +26,4 @@ import { DiningSystemModule } from './dining-system/dining-system.module';
     DiningSystemModule,
   ],
 })
-export class RestaurantOperationsModule { }
+export class RestaurantOperationsModule {}

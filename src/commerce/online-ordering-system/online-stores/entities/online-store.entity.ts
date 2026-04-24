@@ -15,7 +15,10 @@ import { OnlineStoreStatus } from '../constants/online-store-status.enum';
 @Entity('online_store')
 @Index(['merchant_id', 'status', 'created_at'])
 export class OnlineStore {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Online Store' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Online Store',
+  })
   @PrimaryGeneratedColumn()
   id: number;
 

@@ -379,7 +379,7 @@ export class PurchaseOrderController {
     // type: OnePurchaseOrderResponse, // Asumo que existe un DTO de respuesta para OnePurchaseOrderResponse
     schema: {
       example: {
-        statusCode: 201,
+        statusCode: 200,
         message: 'Purchase Order Updated successfully',
         data: {
           id: 1,
@@ -493,7 +493,7 @@ export class PurchaseOrderController {
     // type: OnePurchaseOrderResponse, // Asumo que existe un DTO de respuesta para OnePurchaseOrderResponse
     schema: {
       example: {
-        statusCode: 201,
+        statusCode: 200,
         message: 'Purchase Order Deleted successfully',
         data: {
           id: 1,

@@ -13,6 +13,7 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { Request as ExpressRequest } from 'express';
 import { OnlinePaymentService } from './online-payment.service';
 import { CreateOnlinePaymentDto } from './dto/create-online-payment.dto';
 import { UpdateOnlinePaymentDto } from './dto/update-online-payment.dto';
@@ -31,7 +32,10 @@ import {
   ApiQuery,
   ApiConflictResponse,
 } from '@nestjs/swagger';
-import { OnlinePaymentResponseDto, OneOnlinePaymentResponseDto } from './dto/online-payment-response.dto';
+import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
+import { OneOnlinePaymentResponseDto } from './dto/online-payment-response.dto';
+
+type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
 import { GetOnlinePaymentQueryDto } from './dto/get-online-payment-query.dto';
 import { PaginatedOnlinePaymentResponseDto } from './dto/paginated-online-payment-response.dto';
 import { Roles } from 'src/auth/decorators/roles.decorator';
@@ -61,7 +65,8 @@ export class OnlinePaymentController {
   )
   @ApiOperation({
     summary: 'Create a new Online Payment',
-    description: 'Creates a new online payment. The online order must belong to the authenticated user\'s merchant. Only portal administrators and merchant administrators can create online payments.',
+    description:
+      "Creates a new online payment. The online order must belong to the authenticated user's merchant. Only portal administrators and merchant administrators can create online payments.",
   })
   @ApiCreatedResponse({
     description: 'Online payment created successfully',
@@ -76,7 +81,8 @@ export class OnlinePaymentController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You must be associated with a merchant to create online payments',
+    description:
+      'Forbidden - You must be associated with a merchant to create online payments',
     type: ErrorResponse,
   })
   @ApiNotFoundResponse({
@@ -100,9 +106,15 @@ export class OnlinePaymentController {
       },
     },
   })
-  async create(@Body() createOnlinePaymentDto: CreateOnlinePaymentDto, @Request() req: any) {
+  async create(
+    @Body() createOnlinePaymentDto: CreateOnlinePaymentDto,
+    @Request() req: AuthenticatedRequest,
+  ): Promise<OneOnlinePaymentResponseDto> {
     const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.onlinePaymentService.create(createOnlinePaymentDto, authenticatedUserMerchantId);
+    return this.onlinePaymentService.create(
+      createOnlinePaymentDto,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Get()
@@ -116,7 +128,8 @@ export class OnlinePaymentController {
   )
   @ApiOperation({
     summary: 'Get all Online Payments',
-    description: 'Retrieves a paginated list of online payments. Only returns payments from online orders that belong to the authenticated user\'s merchant. Only portal administrators and merchant administrators can access online payments.',
+    description:
+      "Retrieves a paginated list of online payments. Only returns payments from online orders that belong to the authenticated user's merchant. Only portal administrators and merchant administrators can access online payments.",
   })
   @ApiOkResponse({
     description: 'Online payments retrieved successfully',
@@ -127,7 +140,8 @@ export class OnlinePaymentController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You must be associated with a merchant to access online payments',
+    description:
+      'Forbidden - You must be associated with a merchant to access online payments',
     type: ErrorResponse,
   })
   @ApiQuery({
@@ -181,7 +195,17 @@ export class OnlinePaymentController {
   @ApiQuery({
     name: 'sortBy',
     required: false,
-    enum: ['id', 'onlineOrderId', 'paymentProvider', 'transactionId', 'amount', 'status', 'processedAt', 'createdAt', 'updatedAt'],
+    enum: [
+      'id',
+      'onlineOrderId',
+      'paymentProvider',
+      'transactionId',
+      'amount',
+      'status',
+      'processedAt',
+      'createdAt',
+      'updatedAt',
+    ],
     description: 'Field to sort by',
   })
   @ApiQuery({
@@ -190,9 +214,15 @@ export class OnlinePaymentController {
     enum: ['ASC', 'DESC'],
     description: 'Sort order (ASC or DESC)',
   })
-  async findAll(@Query() query: GetOnlinePaymentQueryDto, @Request() req: any) {
+  async findAll(
+    @Query() query: GetOnlinePaymentQueryDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
     const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.onlinePaymentService.findAll(query, authenticatedUserMerchantId);
+    return this.onlinePaymentService.findAll(
+      query,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Get(':id')
@@ -206,7 +236,8 @@ export class OnlinePaymentController {
   )
   @ApiOperation({
     summary: 'Get a single Online Payment by ID',
-    description: 'Retrieves a single online payment by its ID. The payment must belong to an online order that belongs to the authenticated user\'s merchant. Only portal administrators and merchant administrators can access online payments.',
+    description:
+      "Retrieves a single online payment by its ID. The payment must belong to an online order that belongs to the authenticated user's merchant. Only portal administrators and merchant administrators can access online payments.",
   })
   @ApiOkResponse({
     description: 'Online payment retrieved successfully',
@@ -217,7 +248,8 @@ export class OnlinePaymentController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You must be associated with a merchant to access online payments',
+    description:
+      'Forbidden - You must be associated with a merchant to access online payments',
     type: ErrorResponse,
   })
   @ApiNotFoundResponse({
@@ -230,7 +262,10 @@ export class OnlinePaymentController {
     description: 'Online payment ID',
     example: 1,
   })
-  async findOne(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
+  async findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedRequest,
+  ) {
     const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlinePaymentService.findOne(id, authenticatedUserMerchantId);
   }
@@ -246,7 +281,8 @@ export class OnlinePaymentController {
   )
   @ApiOperation({
     summary: 'Update an Online Payment',
-    description: 'Updates an existing online payment. The payment must belong to an online order that belongs to the authenticated user\'s merchant. Only portal administrators and merchant administrators can update online payments.',
+    description:
+      "Updates an existing online payment. The payment must belong to an online order that belongs to the authenticated user's merchant. Only portal administrators and merchant administrators can update online payments.",
   })
   @ApiOkResponse({
     description: 'Online payment updated successfully',
@@ -261,7 +297,8 @@ export class OnlinePaymentController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You must be associated with a merchant to update online payments',
+    description:
+      'Forbidden - You must be associated with a merchant to update online payments',
     type: ErrorResponse,
   })
   @ApiNotFoundResponse({
@@ -292,7 +329,7 @@ export class OnlinePaymentController {
       example2: {
         summary: 'Update amount',
         value: {
-          amount: 150.00,
+          amount: 150.0,
         },
       },
     },
@@ -300,10 +337,14 @@ export class OnlinePaymentController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateOnlinePaymentDto: UpdateOnlinePaymentDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.onlinePaymentService.update(id, updateOnlinePaymentDto, authenticatedUserMerchantId);
+    return this.onlinePaymentService.update(
+      id,
+      updateOnlinePaymentDto,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Delete(':id')
@@ -318,7 +359,8 @@ export class OnlinePaymentController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Delete an Online Payment',
-    description: 'Performs a logical deletion of an online payment. The payment must belong to an online order that belongs to the authenticated user\'s merchant. Only portal administrators and merchant administrators can delete online payments.',
+    description:
+      "Performs a logical deletion of an online payment. The payment must belong to an online order that belongs to the authenticated user's merchant. Only portal administrators and merchant administrators can delete online payments.",
   })
   @ApiOkResponse({
     description: 'Online payment deleted successfully',
@@ -329,7 +371,8 @@ export class OnlinePaymentController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You must be associated with a merchant to delete online payments',
+    description:
+      'Forbidden - You must be associated with a merchant to delete online payments',
     type: ErrorResponse,
   })
   @ApiNotFoundResponse({
@@ -346,7 +389,10 @@ export class OnlinePaymentController {
     description: 'Online payment ID',
     example: 1,
   })
-  async remove(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
+  async remove(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedRequest,
+  ) {
     const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlinePaymentService.remove(id, authenticatedUserMerchantId);
   }

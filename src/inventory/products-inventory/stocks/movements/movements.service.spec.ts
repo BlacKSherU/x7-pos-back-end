@@ -146,15 +146,17 @@ describe('MovementsService', () => {
 
     jest.clearAllMocks();
 
-    jest.spyOn(console, 'error').mockImplementation(() => { });
+    jest.spyOn(console, 'error').mockImplementation(() => {});
     jest
       .spyOn(ErrorHandler, 'notFound')
       .mockImplementation((message?: string) => {
         throw new NotFoundException(message);
       });
-    jest.spyOn(ErrorHandler, 'exists').mockImplementation((message?: string) => {
-      throw new BadRequestException(message);
-    });
+    jest
+      .spyOn(ErrorHandler, 'exists')
+      .mockImplementation((message?: string) => {
+        throw new BadRequestException(message);
+      });
     jest
       .spyOn(ErrorHandler, 'invalidId')
       .mockImplementation((message?: string) => {
@@ -887,7 +889,7 @@ describe('MovementsService', () => {
       expect(movementToDelete.isActive).toBe(false);
       expect(movementRepo.save).toHaveBeenCalledWith(movementToDelete);
       expect(result).toEqual({
-        statusCode: 201,
+        statusCode: 200,
         message: 'Movement Deleted successfully',
         data: {
           id: inactiveMovement.id,

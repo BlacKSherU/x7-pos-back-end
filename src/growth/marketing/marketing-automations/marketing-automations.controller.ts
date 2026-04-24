@@ -7,8 +7,6 @@ import {
   Put,
   Delete,
   ParseIntPipe,
-  HttpCode,
-  HttpStatus,
   UseGuards,
   Request,
   Query,
@@ -31,7 +29,11 @@ import {
   ApiForbiddenResponse,
   ApiQuery,
 } from '@nestjs/swagger';
-import { MarketingAutomationResponseDto, OneMarketingAutomationResponseDto, PaginatedMarketingAutomationResponseDto } from './dto/marketing-automation-response.dto';
+import { AuthenticatedUser } from '../../../auth/interfaces/authenticated-user.interface';
+import {
+  OneMarketingAutomationResponseDto,
+  PaginatedMarketingAutomationResponseDto,
+} from './dto/marketing-automation-response.dto';
 import { GetMarketingAutomationQueryDto } from './dto/get-marketing-automation-query.dto';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { UserRole } from 'src/platform-saas/users/constants/role.enum';
@@ -48,7 +50,9 @@ import { MarketingAutomationAction } from './constants/marketing-automation-acti
 @Controller('marketing-automations')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class MarketingAutomationsController {
-  constructor(private readonly marketingAutomationsService: MarketingAutomationsService) {}
+  constructor(
+    private readonly marketingAutomationsService: MarketingAutomationsService,
+  ) {}
 
   @Post()
   @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
@@ -59,31 +63,33 @@ export class MarketingAutomationsController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Create a new Marketing Automation',
-    description: 'Creates a new marketing automation for the authenticated user\'s merchant. Only portal administrators and merchant administrators can create marketing automations.'
+    description:
+      "Creates a new marketing automation for the authenticated user's merchant. Only portal administrators and merchant administrators can create marketing automations.",
   })
   @ApiCreatedResponse({
     description: 'Marketing automation created successfully',
     type: OneMarketingAutomationResponseDto,
   })
-  @ApiBadRequestResponse({ 
+  @ApiBadRequestResponse({
     description: 'Invalid input data or validation errors',
     type: ErrorResponse,
   })
-  @ApiUnauthorizedResponse({ 
+  @ApiUnauthorizedResponse({
     description: 'Unauthorized - Invalid or missing authentication token',
     type: ErrorResponse,
   })
-  @ApiForbiddenResponse({ 
-    description: 'Forbidden - You must be associated with a merchant to create marketing automations',
+  @ApiForbiddenResponse({
+    description:
+      'Forbidden - You must be associated with a merchant to create marketing automations',
     type: ErrorResponse,
   })
-  @ApiNotFoundResponse({ 
+  @ApiNotFoundResponse({
     description: 'Merchant not found',
     type: ErrorResponse,
   })
-  @ApiBody({ 
+  @ApiBody({
     type: CreateMarketingAutomationDto,
     description: 'Marketing automation creation data',
     examples: {
@@ -95,7 +101,7 @@ export class MarketingAutomationsController {
           action: MarketingAutomationAction.SEND_EMAIL,
           actionPayload: '{"template_id": 1, "subject": "Welcome!"}',
           active: true,
-        }
+        },
       },
       example2: {
         summary: 'Create birthday coupon automation',
@@ -105,16 +111,19 @@ export class MarketingAutomationsController {
           action: MarketingAutomationAction.ASSIGN_COUPON,
           actionPayload: '{"coupon_id": 1}',
           active: true,
-        }
-      }
-    }
+        },
+      },
+    },
   })
   async create(
     @Body() dto: CreateMarketingAutomationDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneMarketingAutomationResponseDto> {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.marketingAutomationsService.create(dto, authenticatedUserMerchantId);
+    const authenticatedUserMerchantId = req.merchant?.id;
+    return this.marketingAutomationsService.create(
+      dto,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Get()
@@ -126,95 +135,101 @@ export class MarketingAutomationsController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Get all Marketing Automations with pagination and filters',
-    description: 'Retrieves a paginated list of marketing automations for the authenticated user\'s merchant. Supports filtering by name, trigger, action, active status, and creation date.'
+    description:
+      "Retrieves a paginated list of marketing automations for the authenticated user's merchant. Supports filtering by name, trigger, action, active status, and creation date.",
   })
   @ApiQuery({
     name: 'page',
     required: false,
     type: Number,
     description: 'Page number for pagination (minimum 1)',
-    example: 1
+    example: 1,
   })
   @ApiQuery({
     name: 'limit',
     required: false,
     type: Number,
     description: 'Number of items per page (1-100)',
-    example: 10
+    example: 10,
   })
   @ApiQuery({
     name: 'name',
     required: false,
     type: String,
     description: 'Filter by automation name (partial match)',
-    example: 'Welcome'
+    example: 'Welcome',
   })
   @ApiQuery({
     name: 'trigger',
     required: false,
     enum: MarketingAutomationTrigger,
     description: 'Filter by trigger',
-    example: MarketingAutomationTrigger.ON_NEW_CUSTOMER
+    example: MarketingAutomationTrigger.ON_NEW_CUSTOMER,
   })
   @ApiQuery({
     name: 'action',
     required: false,
     enum: MarketingAutomationAction,
     description: 'Filter by action',
-    example: MarketingAutomationAction.SEND_EMAIL
+    example: MarketingAutomationAction.SEND_EMAIL,
   })
   @ApiQuery({
     name: 'active',
     required: false,
     type: Boolean,
     description: 'Filter by active status',
-    example: true
+    example: true,
   })
   @ApiQuery({
     name: 'createdDate',
     required: false,
     type: String,
     description: 'Filter by creation date (YYYY-MM-DD format)',
-    example: '2024-01-01'
+    example: '2024-01-01',
   })
   @ApiQuery({
     name: 'sortBy',
     required: false,
     enum: ['name', 'trigger', 'action', 'createdAt', 'updatedAt'],
     description: 'Field to sort by',
-    example: 'createdAt'
+    example: 'createdAt',
   })
   @ApiQuery({
     name: 'sortOrder',
     required: false,
     enum: ['ASC', 'DESC'],
     description: 'Sort order',
-    example: 'DESC'
+    example: 'DESC',
   })
-  @ApiOkResponse({ 
-    description: 'Paginated list of marketing automations retrieved successfully',
+  @ApiOkResponse({
+    description:
+      'Paginated list of marketing automations retrieved successfully',
     type: PaginatedMarketingAutomationResponseDto,
   })
-  @ApiUnauthorizedResponse({ 
+  @ApiUnauthorizedResponse({
     description: 'Unauthorized - Invalid or missing authentication token',
     type: ErrorResponse,
   })
-  @ApiForbiddenResponse({ 
-    description: 'Forbidden - User must be associated with a merchant to view marketing automations',
+  @ApiForbiddenResponse({
+    description:
+      'Forbidden - User must be associated with a merchant to view marketing automations',
     type: ErrorResponse,
   })
-  @ApiBadRequestResponse({ 
+  @ApiBadRequestResponse({
     description: 'Invalid query parameters',
     type: ErrorResponse,
   })
   async findAll(
     @Query() query: GetMarketingAutomationQueryDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<PaginatedMarketingAutomationResponseDto> {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.marketingAutomationsService.findAll(query, authenticatedUserMerchantId);
+    const authenticatedUserMerchantId = req.merchant?.id;
+    return this.marketingAutomationsService.findAll(
+      query,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Get(':id')
@@ -226,25 +241,43 @@ export class MarketingAutomationsController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Get a Marketing Automation by ID',
-    description: 'Retrieves a specific marketing automation by its ID. Users can only access marketing automations from their own merchant.'
+    description:
+      'Retrieves a specific marketing automation by its ID. Users can only access marketing automations from their own merchant.',
   })
-  @ApiParam({ name: 'id', type: Number, description: 'Marketing automation ID' })
-  @ApiOkResponse({ 
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'Marketing automation ID',
+  })
+  @ApiOkResponse({
     description: 'Marketing automation found successfully',
-    type: OneMarketingAutomationResponseDto
+    type: OneMarketingAutomationResponseDto,
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
-  @ApiForbiddenResponse({ description: 'Forbidden - You can only view marketing automations from your own merchant', type: ErrorResponse })
-  @ApiNotFoundResponse({ description: 'Marketing automation not found', type: ErrorResponse })
-  @ApiBadRequestResponse({ description: 'Invalid marketing automation ID', type: ErrorResponse })
+  @ApiForbiddenResponse({
+    description:
+      'Forbidden - You can only view marketing automations from your own merchant',
+    type: ErrorResponse,
+  })
+  @ApiNotFoundResponse({
+    description: 'Marketing automation not found',
+    type: ErrorResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid marketing automation ID',
+    type: ErrorResponse,
+  })
   async findOne(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneMarketingAutomationResponseDto> {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.marketingAutomationsService.findOne(id, authenticatedUserMerchantId);
+    const authenticatedUserMerchantId = req.merchant?.id;
+    return this.marketingAutomationsService.findOne(
+      id,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Put(':id')
@@ -256,37 +289,39 @@ export class MarketingAutomationsController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Update a Marketing Automation by ID',
-    description: 'Updates an existing marketing automation for the authenticated user\'s merchant. Only portal administrators and merchant administrators can update marketing automations. All fields are optional.'
+    description:
+      "Updates an existing marketing automation for the authenticated user's merchant. Only portal administrators and merchant administrators can update marketing automations. All fields are optional.",
   })
-  @ApiParam({ 
-    name: 'id', 
-    type: Number, 
+  @ApiParam({
+    name: 'id',
+    type: Number,
     description: 'Marketing automation ID to update',
-    example: 1
+    example: 1,
   })
-  @ApiOkResponse({ 
-    description: 'Marketing automation updated successfully', 
+  @ApiOkResponse({
+    description: 'Marketing automation updated successfully',
     type: OneMarketingAutomationResponseDto,
   })
-  @ApiUnauthorizedResponse({ 
+  @ApiUnauthorizedResponse({
     description: 'Unauthorized - Invalid or missing authentication token',
     type: ErrorResponse,
   })
-  @ApiForbiddenResponse({ 
-    description: 'Forbidden - You can only update marketing automations from your own merchant',
+  @ApiForbiddenResponse({
+    description:
+      'Forbidden - You can only update marketing automations from your own merchant',
     type: ErrorResponse,
   })
-  @ApiNotFoundResponse({ 
+  @ApiNotFoundResponse({
     description: 'Marketing automation not found',
     type: ErrorResponse,
   })
-  @ApiBadRequestResponse({ 
+  @ApiBadRequestResponse({
     description: 'Invalid input data or ID',
     type: ErrorResponse,
   })
-  @ApiBody({ 
+  @ApiBody({
     type: UpdateMarketingAutomationDto,
     description: 'Marketing automation update data (all fields optional)',
     examples: {
@@ -295,23 +330,27 @@ export class MarketingAutomationsController {
         value: {
           name: 'Updated Welcome Email',
           active: false,
-        }
+        },
       },
       example2: {
         summary: 'Update action payload',
         value: {
           actionPayload: '{"template_id": 2, "subject": "Updated Welcome!"}',
-        }
-      }
-    }
+        },
+      },
+    },
   })
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateMarketingAutomationDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneMarketingAutomationResponseDto> {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.marketingAutomationsService.update(id, dto, authenticatedUserMerchantId);
+    const authenticatedUserMerchantId = req.merchant?.id;
+    return this.marketingAutomationsService.update(
+      id,
+      dto,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Delete(':id')
@@ -323,25 +362,46 @@ export class MarketingAutomationsController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Soft delete a Marketing Automation by ID',
-    description: 'Performs a soft delete by changing the marketing automation status to "deleted". Only merchant administrators can delete marketing automations from their own merchant.'
+    description:
+      'Performs a soft delete by changing the marketing automation status to "deleted". Only merchant administrators can delete marketing automations from their own merchant.',
   })
-  @ApiParam({ name: 'id', type: Number, description: 'Marketing automation ID to delete' })
-  @ApiOkResponse({ 
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'Marketing automation ID to delete',
+  })
+  @ApiOkResponse({
     description: 'Marketing automation soft deleted successfully',
-    type: OneMarketingAutomationResponseDto
+    type: OneMarketingAutomationResponseDto,
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
-  @ApiForbiddenResponse({ description: 'Forbidden - You can only delete marketing automations from your own merchant', type: ErrorResponse })
-  @ApiNotFoundResponse({ description: 'Marketing automation not found', type: ErrorResponse })
-  @ApiBadRequestResponse({ description: 'Invalid marketing automation ID', type: ErrorResponse })
-  @ApiConflictResponse({ description: 'Marketing automation is already deleted', type: ErrorResponse })
+  @ApiForbiddenResponse({
+    description:
+      'Forbidden - You can only delete marketing automations from your own merchant',
+    type: ErrorResponse,
+  })
+  @ApiNotFoundResponse({
+    description: 'Marketing automation not found',
+    type: ErrorResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid marketing automation ID',
+    type: ErrorResponse,
+  })
+  @ApiConflictResponse({
+    description: 'Marketing automation is already deleted',
+    type: ErrorResponse,
+  })
   async remove(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneMarketingAutomationResponseDto> {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.marketingAutomationsService.remove(id, authenticatedUserMerchantId);
+    const authenticatedUserMerchantId = req.merchant?.id;
+    return this.marketingAutomationsService.remove(
+      id,
+      authenticatedUserMerchantId,
+    );
   }
 }

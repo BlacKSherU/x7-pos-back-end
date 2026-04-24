@@ -6,4 +6,4 @@ import { ShiftAssignmentsModule } from './shift-assignments/shift-assignments.mo
   imports: [ShiftsModule, ShiftAssignmentsModule],
   exports: [ShiftsModule, ShiftAssignmentsModule],
 })
-export class ShiftModule { }
+export class ShiftModule {}

@@ -29,6 +29,7 @@ import {
   ApiForbiddenResponse,
   ApiQuery,
 } from '@nestjs/swagger';
+import { AuthenticatedUser } from '../../../auth/interfaces/authenticated-user.interface';
 import {
   OneTipAllocationResponseDto,
   PaginatedTipAllocationResponseDto,
@@ -68,7 +69,10 @@ export class TipAllocationsController {
     description: 'Tip allocation created successfully',
     type: OneTipAllocationResponseDto,
   })
-  @ApiBadRequestResponse({ description: 'Invalid input or percentage/amount', type: ErrorResponse })
+  @ApiBadRequestResponse({
+    description: 'Invalid input or percentage/amount',
+    type: ErrorResponse,
+  })
   @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
   @ApiForbiddenResponse({
     description: 'Forbidden - You must be associated with a merchant',
@@ -95,8 +99,11 @@ export class TipAllocationsController {
       },
     },
   })
-  async create(@Body() dto: CreateTipAllocationDto, @Request() req: any) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+  async create(
+    @Body() dto: CreateTipAllocationDto,
+    @Request() req: AuthenticatedUser,
+  ) {
+    const authenticatedUserMerchantId = req.merchant?.id;
     return this.tipAllocationsService.create(dto, authenticatedUserMerchantId);
   }
 
@@ -111,7 +118,8 @@ export class TipAllocationsController {
   )
   @ApiOperation({
     summary: 'Get all Tip Allocations with pagination and filters',
-    description: "Retrieves a paginated list of tip allocations for the authenticated user's merchant.",
+    description:
+      "Retrieves a paginated list of tip allocations for the authenticated user's merchant.",
   })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
@@ -119,8 +127,17 @@ export class TipAllocationsController {
   @ApiQuery({ name: 'collaboratorId', required: false, type: Number })
   @ApiQuery({ name: 'shiftId', required: false, type: Number })
   @ApiQuery({ name: 'role', required: false, enum: TipAllocationRole })
-  @ApiQuery({ name: 'createdDate', required: false, type: String, description: 'YYYY-MM-DD' })
-  @ApiQuery({ name: 'sortBy', required: false, enum: ['amount', 'percentage', 'role', 'createdAt', 'updatedAt'] })
+  @ApiQuery({
+    name: 'createdDate',
+    required: false,
+    type: String,
+    description: 'YYYY-MM-DD',
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    enum: ['amount', 'percentage', 'role', 'createdAt', 'updatedAt'],
+  })
   @ApiQuery({ name: 'sortOrder', required: false, enum: ['ASC', 'DESC'] })
   @ApiOkResponse({
     description: 'Paginated list of tip allocations',
@@ -128,10 +145,19 @@ export class TipAllocationsController {
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
   @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorResponse })
-  @ApiBadRequestResponse({ description: 'Invalid query parameters', type: ErrorResponse })
-  async findAll(@Query() query: GetTipAllocationQueryDto, @Request() req: any) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.tipAllocationsService.findAll(query, authenticatedUserMerchantId);
+  @ApiBadRequestResponse({
+    description: 'Invalid query parameters',
+    type: ErrorResponse,
+  })
+  async findAll(
+    @Query() query: GetTipAllocationQueryDto,
+    @Request() req: AuthenticatedUser,
+  ) {
+    const authenticatedUserMerchantId = req.merchant?.id;
+    return this.tipAllocationsService.findAll(
+      query,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Get(':id')
@@ -145,7 +171,8 @@ export class TipAllocationsController {
   )
   @ApiOperation({
     summary: 'Get a Tip Allocation by ID',
-    description: 'Retrieves a specific tip allocation. Users can only access allocations for tips from their merchant.',
+    description:
+      'Retrieves a specific tip allocation. Users can only access allocations for tips from their merchant.',
   })
   @ApiParam({ name: 'id', type: Number, description: 'Tip allocation ID' })
   @ApiOkResponse({
@@ -154,10 +181,16 @@ export class TipAllocationsController {
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
   @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorResponse })
-  @ApiNotFoundResponse({ description: 'Tip allocation not found', type: ErrorResponse })
+  @ApiNotFoundResponse({
+    description: 'Tip allocation not found',
+    type: ErrorResponse,
+  })
   @ApiBadRequestResponse({ description: 'Invalid ID', type: ErrorResponse })
-  async findOne(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+  async findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedUser,
+  ) {
+    const authenticatedUserMerchantId = req.merchant?.id;
     return this.tipAllocationsService.findOne(id, authenticatedUserMerchantId);
   }
 
@@ -174,23 +207,40 @@ export class TipAllocationsController {
     summary: 'Update a Tip Allocation by ID',
     description: 'Updates an existing tip allocation. All fields are optional.',
   })
-  @ApiParam({ name: 'id', type: Number, description: 'Tip allocation ID to update' })
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'Tip allocation ID to update',
+  })
   @ApiOkResponse({
     description: 'Tip allocation updated successfully',
     type: OneTipAllocationResponseDto,
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
   @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorResponse })
-  @ApiNotFoundResponse({ description: 'Tip allocation not found', type: ErrorResponse })
-  @ApiBadRequestResponse({ description: 'Invalid input or ID', type: ErrorResponse })
-  @ApiBody({ type: UpdateTipAllocationDto, description: 'Tip allocation update data (all fields optional)' })
+  @ApiNotFoundResponse({
+    description: 'Tip allocation not found',
+    type: ErrorResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid input or ID',
+    type: ErrorResponse,
+  })
+  @ApiBody({
+    type: UpdateTipAllocationDto,
+    description: 'Tip allocation update data (all fields optional)',
+  })
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateTipAllocationDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.tipAllocationsService.update(id, dto, authenticatedUserMerchantId);
+    const authenticatedUserMerchantId = req.merchant?.id;
+    return this.tipAllocationsService.update(
+      id,
+      dto,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Delete(':id')
@@ -204,20 +254,34 @@ export class TipAllocationsController {
   )
   @ApiOperation({
     summary: 'Soft delete a Tip Allocation by ID',
-    description: 'Performs a soft delete by setting the record status to deleted.',
+    description:
+      'Performs a soft delete by setting the record status to deleted.',
   })
-  @ApiParam({ name: 'id', type: Number, description: 'Tip allocation ID to delete' })
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'Tip allocation ID to delete',
+  })
   @ApiOkResponse({
     description: 'Tip allocation soft deleted successfully',
     type: OneTipAllocationResponseDto,
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
   @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorResponse })
-  @ApiNotFoundResponse({ description: 'Tip allocation not found', type: ErrorResponse })
+  @ApiNotFoundResponse({
+    description: 'Tip allocation not found',
+    type: ErrorResponse,
+  })
   @ApiBadRequestResponse({ description: 'Invalid ID', type: ErrorResponse })
-  @ApiConflictResponse({ description: 'Tip allocation is already deleted', type: ErrorResponse })
-  async remove(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+  @ApiConflictResponse({
+    description: 'Tip allocation is already deleted',
+    type: ErrorResponse,
+  })
+  async remove(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedUser,
+  ) {
+    const authenticatedUserMerchantId = req.merchant?.id;
     return this.tipAllocationsService.remove(id, authenticatedUserMerchantId);
   }
 }

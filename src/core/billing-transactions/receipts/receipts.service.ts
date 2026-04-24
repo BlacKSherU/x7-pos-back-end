@@ -1,12 +1,25 @@
-import { Injectable, BadRequestException, ConflictException, ForbiddenException, NotFoundException, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+  Inject,
+} from '@nestjs/common';
 import { InjectRepository, getRepositoryToken } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { CreateReceiptDto } from './dto/create-receipt.dto';
 import { UpdateReceiptDto } from './dto/update-receipt.dto';
-import { GetReceiptsQueryDto, ReceiptSortBy } from './dto/get-receipts-query.dto';
+import {
+  GetReceiptsQueryDto,
+  ReceiptSortBy,
+} from './dto/get-receipts-query.dto';
 import { Receipt } from './entities/receipt.entity';
-import { Order } from 'src/orders/entities/order.entity';
-import { OneReceiptResponseDto, ReceiptResponseDto } from './dto/receipt-response.dto';
+import { Order } from 'src/restaurant-operations/pos/orders/entities/order.entity';
+import {
+  OneReceiptResponseDto,
+  ReceiptResponseDto,
+} from './dto/receipt-response.dto';
 import { AllPaginatedReceipts } from './dto/all-paginated-receipts.dto';
 
 import { ReceiptType } from './constants/receipt-type.enum';
@@ -24,14 +37,24 @@ export class ReceiptsService {
     private readonly receiptItemRepo: Repository<ReceiptItem>,
     @Inject(getRepositoryToken(ReceiptTax))
     private readonly receiptTaxRepo: Repository<ReceiptTax>,
-  ) { }
+  ) {}
 
   async recalculateTotals(receiptId: number): Promise<void> {
-    const items = await this.receiptItemRepo.find({ where: { receipt_id: receiptId, is_active: true } });
-    const taxes = await this.receiptTaxRepo.find({ where: { receipt_id: receiptId, is_active: true } });
+    const items = await this.receiptItemRepo.find({
+      where: { receipt_id: receiptId, is_active: true },
+    });
+    const taxes = await this.receiptTaxRepo.find({
+      where: { receipt_id: receiptId, is_active: true },
+    });
 
-    const subtotal = items.reduce((sum, item) => sum + Number(item.subtotal), 0);
-    const totalDiscount = items.reduce((sum, item) => sum + Number(item.discount_amount), 0);
+    const subtotal = items.reduce(
+      (sum, item) => sum + Number(item.subtotal),
+      0,
+    );
+    const totalDiscount = items.reduce(
+      (sum, item) => sum + Number(item.discount_amount),
+      0,
+    );
     const totalTax = taxes.reduce((sum, tax) => sum + Number(tax.amount), 0);
     const grandTotal = subtotal + totalTax - totalDiscount;
 
@@ -43,7 +66,10 @@ export class ReceiptsService {
     });
   }
 
-  async create(dto: CreateReceiptDto, authenticatedUserMerchantId: number): Promise<OneReceiptResponseDto> {
+  async create(
+    dto: CreateReceiptDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneReceiptResponseDto> {
     if (!authenticatedUserMerchantId) {
       throw new ForbiddenException('You must be associated with a merchant');
     }
@@ -77,8 +103,14 @@ export class ReceiptsService {
     if (dto.fiscalData) {
       try {
         const parsed = JSON.parse(dto.fiscalData);
-        if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-          throw new BadRequestException('fiscalData must be a valid JSON object');
+        if (
+          typeof parsed !== 'object' ||
+          parsed === null ||
+          Array.isArray(parsed)
+        ) {
+          throw new BadRequestException(
+            'fiscalData must be a valid JSON object',
+          );
         }
       } catch (e) {
         if (e instanceof BadRequestException) throw e;
@@ -102,7 +134,10 @@ export class ReceiptsService {
     return this.findOne(saved.id, authenticatedUserMerchantId, 'Created');
   }
 
-  async findAll(query: GetReceiptsQueryDto, authenticatedUserMerchantId: number): Promise<AllPaginatedReceipts> {
+  async findAll(
+    query: GetReceiptsQueryDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<AllPaginatedReceipts> {
     if (!authenticatedUserMerchantId) {
       throw new ForbiddenException('You must be associated with a merchant');
     }
@@ -110,11 +145,15 @@ export class ReceiptsService {
     const page = query.page || 1;
     const limit = query.limit || 10;
     if (page < 1) throw new BadRequestException('Page must be >= 1');
-    if (limit < 1 || limit > 100) throw new BadRequestException('Limit must be between 1 and 100');
+    if (limit < 1 || limit > 100)
+      throw new BadRequestException('Limit must be between 1 and 100');
 
     if (query.orderId) {
-      const order = await this.orderRepo.findOne({ where: { id: query.orderId } });
-      if (!order) throw new NotFoundException(`Order with ID ${query.orderId} not found`);
+      const order = await this.orderRepo.findOne({
+        where: { id: query.orderId },
+      });
+      if (!order)
+        throw new NotFoundException(`Order with ID ${query.orderId} not found`);
       if (order.merchant_id !== authenticatedUserMerchantId) {
         throw new ForbiddenException('Order does not belong to your merchant');
       }
@@ -211,9 +250,12 @@ export class ReceiptsService {
     if (!row) throw new NotFoundException('Receipt not found');
 
     const order = await this.orderRepo.findOne({ where: { id: row.order_id } });
-    if (!order) throw new NotFoundException('Order associated with receipt not found');
+    if (!order)
+      throw new NotFoundException('Order associated with receipt not found');
     if (order.merchant_id !== authenticatedUserMerchantId) {
-      throw new ForbiddenException('You can only access receipts from your merchant');
+      throw new ForbiddenException(
+        'You can only access receipts from your merchant',
+      );
     }
 
     const dataForResponse: ReceiptResponseDto = {
@@ -232,36 +274,66 @@ export class ReceiptsService {
 
     switch (createdUpdatedDeleted) {
       case 'Created':
-        return { statusCode: 201, message: 'Receipt created successfully', data: dataForResponse };
+        return {
+          statusCode: 201,
+          message: 'Receipt created successfully',
+          data: dataForResponse,
+        };
       case 'Updated':
-        return { statusCode: 200, message: 'Receipt updated successfully', data: dataForResponse };
+        return {
+          statusCode: 200,
+          message: 'Receipt updated successfully',
+          data: dataForResponse,
+        };
       case 'Deleted':
-        return { statusCode: 200, message: 'Receipt deleted successfully', data: dataForResponse };
+        return {
+          statusCode: 200,
+          message: 'Receipt deleted successfully',
+          data: dataForResponse,
+        };
       default:
-        return { statusCode: 200, message: 'Receipt retrieved successfully', data: dataForResponse };
+        return {
+          statusCode: 200,
+          message: 'Receipt retrieved successfully',
+          data: dataForResponse,
+        };
     }
   }
 
-  async update(id: number, dto: UpdateReceiptDto, authenticatedUserMerchantId: number): Promise<OneReceiptResponseDto> {
+  async update(
+    id: number,
+    dto: UpdateReceiptDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneReceiptResponseDto> {
     if (!id || id <= 0) throw new BadRequestException('Invalid id');
     if (!authenticatedUserMerchantId) {
       throw new ForbiddenException('You must be associated with a merchant');
     }
 
-    const existing = await this.receiptRepo.findOne({ where: { id, is_active: true } });
+    const existing = await this.receiptRepo.findOne({
+      where: { id, is_active: true },
+    });
     if (!existing) throw new NotFoundException('Receipt not found');
 
-    const existingOrder = await this.orderRepo.findOne({ where: { id: existing.order_id } });
-    if (!existingOrder) throw new NotFoundException('Order associated with receipt not found');
+    const existingOrder = await this.orderRepo.findOne({
+      where: { id: existing.order_id },
+    });
+    if (!existingOrder)
+      throw new NotFoundException('Order associated with receipt not found');
     if (existingOrder.merchant_id !== authenticatedUserMerchantId) {
-      throw new ForbiddenException('You can only update receipts from your merchant');
+      throw new ForbiddenException(
+        'You can only update receipts from your merchant',
+      );
     }
 
     const updateData: any = {};
     if (dto.orderId !== undefined) {
       if (dto.orderId <= 0) throw new BadRequestException('Invalid order ID');
-      const newOrder = await this.orderRepo.findOne({ where: { id: dto.orderId } });
-      if (!newOrder) throw new NotFoundException(`Order with ID ${dto.orderId} not found`);
+      const newOrder = await this.orderRepo.findOne({
+        where: { id: dto.orderId },
+      });
+      if (!newOrder)
+        throw new NotFoundException(`Order with ID ${dto.orderId} not found`);
       if (newOrder.merchant_id !== authenticatedUserMerchantId) {
         throw new ForbiddenException('Order does not belong to your merchant');
       }
@@ -270,7 +342,11 @@ export class ReceiptsService {
     if (dto.type !== undefined) updateData.type = dto.type;
     if (dto.fiscalData !== undefined) {
       if (dto.fiscalData) {
-        try { JSON.parse(dto.fiscalData); } catch { throw new BadRequestException('fiscalData must be valid JSON'); }
+        try {
+          JSON.parse(dto.fiscalData);
+        } catch {
+          throw new BadRequestException('fiscalData must be valid JSON');
+        }
       }
       updateData.fiscal_data = dto.fiscalData ?? null;
     }
@@ -282,19 +358,29 @@ export class ReceiptsService {
     return this.findOne(id, authenticatedUserMerchantId, 'Updated');
   }
 
-  async remove(id: number, authenticatedUserMerchantId: number): Promise<OneReceiptResponseDto> {
+  async remove(
+    id: number,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneReceiptResponseDto> {
     if (!id || id <= 0) throw new BadRequestException('Invalid id');
     if (!authenticatedUserMerchantId) {
       throw new ForbiddenException('You must be associated with a merchant');
     }
 
-    const existing = await this.receiptRepo.findOne({ where: { id, is_active: true } });
+    const existing = await this.receiptRepo.findOne({
+      where: { id, is_active: true },
+    });
     if (!existing) throw new NotFoundException('Receipt not found');
 
-    const order = await this.orderRepo.findOne({ where: { id: existing.order_id } });
-    if (!order) throw new NotFoundException('Order associated with receipt not found');
+    const order = await this.orderRepo.findOne({
+      where: { id: existing.order_id },
+    });
+    if (!order)
+      throw new NotFoundException('Order associated with receipt not found');
     if (order.merchant_id !== authenticatedUserMerchantId) {
-      throw new ForbiddenException('You can only delete receipts from your merchant');
+      throw new ForbiddenException(
+        'You can only delete receipts from your merchant',
+      );
     }
 
     await this.receiptRepo.update(id, { is_active: false });
@@ -313,6 +399,10 @@ export class ReceiptsService {
       updated_at: existing.updated_at,
     };
 
-    return { statusCode: 200, message: 'Receipt deleted successfully', data: dataForResponse };
+    return {
+      statusCode: 200,
+      message: 'Receipt deleted successfully',
+      data: dataForResponse,
+    };
   }
 }

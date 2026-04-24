@@ -4,7 +4,8 @@ import { IsNumber, IsNotEmpty, IsPositive } from 'class-validator';
 export class CreateCashDrawerHistoryDto {
   @ApiProperty({
     example: 1,
-    description: 'Identifier of the Cash Drawer associated with this history record',
+    description:
+      'Identifier of the Cash Drawer associated with this history record',
   })
   @IsNumber()
   @IsNotEmpty()
@@ -12,7 +13,7 @@ export class CreateCashDrawerHistoryDto {
   cashDrawerId: number;
 
   @ApiProperty({
-    example: 100.00,
+    example: 100.0,
     description: 'Opening balance amount in the cash drawer',
   })
   @IsNumber()
@@ -21,7 +22,7 @@ export class CreateCashDrawerHistoryDto {
   openingBalance: number;
 
   @ApiProperty({
-    example: 150.50,
+    example: 150.5,
     description: 'Closing balance amount in the cash drawer',
   })
   @IsNumber()

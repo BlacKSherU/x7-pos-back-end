@@ -26,6 +26,7 @@ import {
   ApiForbiddenResponse,
   ApiQuery,
 } from '@nestjs/swagger';
+import { AuthenticatedUser } from '../../../auth/interfaces/authenticated-user.interface';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
@@ -210,9 +211,9 @@ export class TableAssignmentsController {
   })
   async create(
     @Body() createTableAssignmentDto: CreateTableAssignmentDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneTableAssignmentResponseDto> {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+    const authenticatedUserMerchantId = req.merchant?.id;
     return this.tableAssignmentsService.create(
       createTableAssignmentDto,
       authenticatedUserMerchantId,
@@ -354,9 +355,9 @@ export class TableAssignmentsController {
   })
   async findAll(
     @Query() query: GetTableAssignmentsQueryDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<PaginatedTableAssignmentsResponseDto> {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+    const authenticatedUserMerchantId = req.merchant?.id;
     return this.tableAssignmentsService.findAll(
       query,
       authenticatedUserMerchantId,
@@ -459,9 +460,9 @@ export class TableAssignmentsController {
   })
   async findOne(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneTableAssignmentResponseDto> {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+    const authenticatedUserMerchantId = req.merchant?.id;
     return this.tableAssignmentsService.findOne(
       id,
       authenticatedUserMerchantId,
@@ -589,9 +590,9 @@ export class TableAssignmentsController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateTableAssignmentDto: UpdateTableAssignmentDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneTableAssignmentResponseDto> {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+    const authenticatedUserMerchantId = req.merchant?.id;
     return this.tableAssignmentsService.update(
       id,
       updateTableAssignmentDto,
@@ -695,9 +696,9 @@ export class TableAssignmentsController {
   })
   async remove(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneTableAssignmentResponseDto> {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+    const authenticatedUserMerchantId = req.merchant?.id;
     return this.tableAssignmentsService.remove(id, authenticatedUserMerchantId);
   }
 }

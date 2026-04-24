@@ -10,7 +10,13 @@ import { User } from '../../../platform-saas/users/entities/user.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([KitchenEventLog, KitchenOrder, KitchenOrderItem, KitchenStation, User]),
+    TypeOrmModule.forFeature([
+      KitchenEventLog,
+      KitchenOrder,
+      KitchenOrderItem,
+      KitchenStation,
+      User,
+    ]),
   ],
   controllers: [KitchenEventLogController],
   providers: [KitchenEventLogService],

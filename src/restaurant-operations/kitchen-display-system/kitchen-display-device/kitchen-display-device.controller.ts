@@ -13,6 +13,7 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { Request as ExpressRequest } from 'express';
 import { KitchenDisplayDeviceService } from './kitchen-display-device.service';
 import { CreateKitchenDisplayDeviceDto } from './dto/create-kitchen-display-device.dto';
 import { UpdateKitchenDisplayDeviceDto } from './dto/update-kitchen-display-device.dto';
@@ -31,7 +32,8 @@ import {
   ApiQuery,
   ApiConflictResponse,
 } from '@nestjs/swagger';
-import { KitchenDisplayDeviceResponseDto, OneKitchenDisplayDeviceResponseDto } from './dto/kitchen-display-device-response.dto';
+import { AuthenticatedUser } from '../../../auth/interfaces/authenticated-user.interface';
+import { OneKitchenDisplayDeviceResponseDto } from './dto/kitchen-display-device-response.dto';
 import { GetKitchenDisplayDeviceQueryDto } from './dto/get-kitchen-display-device-query.dto';
 import { PaginatedKitchenDisplayDeviceResponseDto } from './dto/paginated-kitchen-display-device-response.dto';
 import { Roles } from 'src/auth/decorators/roles.decorator';
@@ -42,12 +44,16 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { ErrorResponse } from 'src/common/dtos/error-response.dto';
 
+type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
+
 @ApiTags('Kitchen Display Devices')
 @ApiBearerAuth()
 @Controller('kitchen-display-devices')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class KitchenDisplayDeviceController {
-  constructor(private readonly kitchenDisplayDeviceService: KitchenDisplayDeviceService) {}
+  constructor(
+    private readonly kitchenDisplayDeviceService: KitchenDisplayDeviceService,
+  ) {}
 
   @Post()
   @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
@@ -60,7 +66,8 @@ export class KitchenDisplayDeviceController {
   )
   @ApiOperation({
     summary: 'Create a new Kitchen Display Device',
-    description: 'Creates a new kitchen display device. The device must belong to the authenticated user\'s merchant. Only portal administrators and merchant administrators can create kitchen display devices.',
+    description:
+      "Creates a new kitchen display device. The device must belong to the authenticated user's merchant. Only portal administrators and merchant administrators can create kitchen display devices.",
   })
   @ApiCreatedResponse({
     description: 'Kitchen display device created successfully',
@@ -75,7 +82,8 @@ export class KitchenDisplayDeviceController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You must be associated with a merchant to create kitchen display devices',
+    description:
+      'Forbidden - You must be associated with a merchant to create kitchen display devices',
     type: ErrorResponse,
   })
   @ApiNotFoundResponse({
@@ -98,9 +106,15 @@ export class KitchenDisplayDeviceController {
       },
     },
   })
-  async create(@Body() createKitchenDisplayDeviceDto: CreateKitchenDisplayDeviceDto, @Request() req: any) {
+  async create(
+    @Body() createKitchenDisplayDeviceDto: CreateKitchenDisplayDeviceDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
     const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.kitchenDisplayDeviceService.create(createKitchenDisplayDeviceDto, authenticatedUserMerchantId);
+    return this.kitchenDisplayDeviceService.create(
+      createKitchenDisplayDeviceDto,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Get()
@@ -114,7 +128,8 @@ export class KitchenDisplayDeviceController {
   )
   @ApiOperation({
     summary: 'Get all Kitchen Display Devices',
-    description: 'Retrieves a paginated list of kitchen display devices. Only returns devices that belong to the authenticated user\'s merchant. Only portal administrators and merchant administrators can access kitchen display devices.',
+    description:
+      "Retrieves a paginated list of kitchen display devices. Only returns devices that belong to the authenticated user's merchant. Only portal administrators and merchant administrators can access kitchen display devices.",
   })
   @ApiOkResponse({
     description: 'Kitchen display devices retrieved successfully',
@@ -125,7 +140,8 @@ export class KitchenDisplayDeviceController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You must be associated with a merchant to access kitchen display devices',
+    description:
+      'Forbidden - You must be associated with a merchant to access kitchen display devices',
     type: ErrorResponse,
   })
   @ApiQuery({
@@ -179,7 +195,17 @@ export class KitchenDisplayDeviceController {
   @ApiQuery({
     name: 'sortBy',
     required: false,
-    enum: ['id', 'stationId', 'name', 'deviceIdentifier', 'ipAddress', 'isOnline', 'lastSync', 'createdAt', 'updatedAt'],
+    enum: [
+      'id',
+      'stationId',
+      'name',
+      'deviceIdentifier',
+      'ipAddress',
+      'isOnline',
+      'lastSync',
+      'createdAt',
+      'updatedAt',
+    ],
     description: 'Field to sort by',
   })
   @ApiQuery({
@@ -188,9 +214,15 @@ export class KitchenDisplayDeviceController {
     enum: ['ASC', 'DESC'],
     description: 'Sort order (ASC or DESC)',
   })
-  async findAll(@Query() query: GetKitchenDisplayDeviceQueryDto, @Request() req: any) {
+  async findAll(
+    @Query() query: GetKitchenDisplayDeviceQueryDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
     const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.kitchenDisplayDeviceService.findAll(query, authenticatedUserMerchantId);
+    return this.kitchenDisplayDeviceService.findAll(
+      query,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Get(':id')
@@ -204,7 +236,8 @@ export class KitchenDisplayDeviceController {
   )
   @ApiOperation({
     summary: 'Get a single Kitchen Display Device by ID',
-    description: 'Retrieves a single kitchen display device by its ID. The device must belong to the authenticated user\'s merchant. Only portal administrators and merchant administrators can access kitchen display devices.',
+    description:
+      "Retrieves a single kitchen display device by its ID. The device must belong to the authenticated user's merchant. Only portal administrators and merchant administrators can access kitchen display devices.",
   })
   @ApiOkResponse({
     description: 'Kitchen display device retrieved successfully',
@@ -215,7 +248,8 @@ export class KitchenDisplayDeviceController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You must be associated with a merchant to access kitchen display devices',
+    description:
+      'Forbidden - You must be associated with a merchant to access kitchen display devices',
     type: ErrorResponse,
   })
   @ApiNotFoundResponse({
@@ -228,9 +262,15 @@ export class KitchenDisplayDeviceController {
     description: 'Kitchen display device ID',
     example: 1,
   })
-  async findOne(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
+  async findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedRequest,
+  ) {
     const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.kitchenDisplayDeviceService.findOne(id, authenticatedUserMerchantId);
+    return this.kitchenDisplayDeviceService.findOne(
+      id,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Put(':id')
@@ -244,7 +284,8 @@ export class KitchenDisplayDeviceController {
   )
   @ApiOperation({
     summary: 'Update a Kitchen Display Device',
-    description: 'Updates an existing kitchen display device. The device must belong to the authenticated user\'s merchant. Only portal administrators and merchant administrators can update kitchen display devices.',
+    description:
+      "Updates an existing kitchen display device. The device must belong to the authenticated user's merchant. Only portal administrators and merchant administrators can update kitchen display devices.",
   })
   @ApiOkResponse({
     description: 'Kitchen display device updated successfully',
@@ -259,7 +300,8 @@ export class KitchenDisplayDeviceController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You must be associated with a merchant to update kitchen display devices',
+    description:
+      'Forbidden - You must be associated with a merchant to update kitchen display devices',
     type: ErrorResponse,
   })
   @ApiNotFoundResponse({
@@ -299,10 +341,14 @@ export class KitchenDisplayDeviceController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateKitchenDisplayDeviceDto: UpdateKitchenDisplayDeviceDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.kitchenDisplayDeviceService.update(id, updateKitchenDisplayDeviceDto, authenticatedUserMerchantId);
+    return this.kitchenDisplayDeviceService.update(
+      id,
+      updateKitchenDisplayDeviceDto,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Delete(':id')
@@ -317,7 +363,8 @@ export class KitchenDisplayDeviceController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Delete a Kitchen Display Device',
-    description: 'Performs a logical deletion of a kitchen display device. The device must belong to the authenticated user\'s merchant. Only portal administrators and merchant administrators can delete kitchen display devices.',
+    description:
+      "Performs a logical deletion of a kitchen display device. The device must belong to the authenticated user's merchant. Only portal administrators and merchant administrators can delete kitchen display devices.",
   })
   @ApiOkResponse({
     description: 'Kitchen display device deleted successfully',
@@ -328,7 +375,8 @@ export class KitchenDisplayDeviceController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You must be associated with a merchant to delete kitchen display devices',
+    description:
+      'Forbidden - You must be associated with a merchant to delete kitchen display devices',
     type: ErrorResponse,
   })
   @ApiNotFoundResponse({
@@ -345,8 +393,14 @@ export class KitchenDisplayDeviceController {
     description: 'Kitchen display device ID',
     example: 1,
   })
-  async remove(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
+  async remove(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedRequest,
+  ) {
     const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.kitchenDisplayDeviceService.remove(id, authenticatedUserMerchantId);
+    return this.kitchenDisplayDeviceService.remove(
+      id,
+      authenticatedUserMerchantId,
+    );
   }
 }

@@ -1,5 +1,7 @@
 {
+  "exclude": ["node_modules", "dist"],
   "compilerOptions": {
+    "ignoreDeprecations": "6.0",
     "module": "commonjs",
     "types": ["jest", "node"],
     "declaration": true,
@@ -19,6 +21,6 @@
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false,
-    //"ignoreDeprecations": "6.0"
+    "types": ["node", "jest"]
   }
 }

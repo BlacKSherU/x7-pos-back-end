@@ -1,15 +1,19 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/unbound-method */
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { Repository, EntityManager } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException, ForbiddenException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { CollaboratorsService } from './collaborators.service';
 import { Collaborator } from './entities/collaborator.entity';
-import { User } from '../../platform-saas/users/entities/user.entity';
-import { Merchant } from '../../platform-saas/merchants/entities/merchant.entity';
+import { User } from '../../../platform-saas/users/entities/user.entity';
+import { Merchant } from '../../../platform-saas/merchants/entities/merchant.entity';
 import { CreateCollaboratorDto } from './dto/create-collaborator.dto';
 import { UpdateCollaboratorDto } from './dto/update-collaborator.dto';
 import { GetCollaboratorsQueryDto } from './dto/get-collaborators-query.dto';
@@ -47,7 +51,7 @@ describe('CollaboratorsService', () => {
 
   const mockUser = {
     id: 1,
-    username: 'testuser',
+    username: 'John Doe',
     email: 'test@example.com',
   };
 
@@ -55,9 +59,9 @@ describe('CollaboratorsService', () => {
     id: 1,
     user_id: 1,
     merchant_id: 1,
-    name: 'Juan Pérez',
+    name: 'John Doe',
     role: ShiftRole.WAITER,
-    status: CollaboratorStatus.ACTIVO,
+    status: CollaboratorStatus.ACTIVE,
     merchant: mockMerchant,
     user: mockUser,
   };
@@ -97,9 +101,13 @@ describe('CollaboratorsService', () => {
     }).compile();
 
     service = module.get<CollaboratorsService>(CollaboratorsService);
-    collaboratorRepository = module.get<Repository<Collaborator>>(getRepositoryToken(Collaborator));
+    collaboratorRepository = module.get<Repository<Collaborator>>(
+      getRepositoryToken(Collaborator),
+    );
     userRepository = module.get<Repository<User>>(getRepositoryToken(User));
-    merchantRepository = module.get<Repository<Merchant>>(getRepositoryToken(Merchant));
+    merchantRepository = module.get<Repository<Merchant>>(
+      getRepositoryToken(Merchant),
+    );
     entityManager = module.get<EntityManager>(EntityManager);
   });
 
@@ -118,34 +126,46 @@ describe('CollaboratorsService', () => {
     const createCollaboratorDto: CreateCollaboratorDto = {
       user_id: 1,
       merchant_id: 1,
-      name: 'Juan Pérez',
+      name: 'John Doe',
       role: ShiftRole.WAITER,
-      status: CollaboratorStatus.ACTIVO,
+      status: CollaboratorStatus.ACTIVE,
     };
 
     it('should create a collaborator successfully', async () => {
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser as any);
       jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(null);
-      jest.spyOn(collaboratorRepository, 'create').mockReturnValue(mockCollaborator as any);
-      jest.spyOn(collaboratorRepository, 'save').mockResolvedValue(mockCollaborator as any);
+      jest
+        .spyOn(collaboratorRepository, 'create')
+        .mockReturnValue(mockCollaborator as any);
+      jest
+        .spyOn(collaboratorRepository, 'save')
+        .mockResolvedValue(mockCollaborator as any);
 
       const result = await service.create(createCollaboratorDto, 1);
 
-      expect(merchantRepository.findOne).toHaveBeenCalledWith({ where: { id: 1 } });
+      expect(merchantRepository.findOne).toHaveBeenCalledWith({
+        where: { id: 1 },
+      });
       expect(userRepository.findOne).toHaveBeenCalledWith({ where: { id: 1 } });
-      expect(collaboratorRepository.findOne).toHaveBeenCalledWith({ where: { user_id: 1 } });
+      expect(collaboratorRepository.findOne).toHaveBeenCalledWith({
+        where: { user_id: 1 },
+      });
       expect(collaboratorRepository.save).toHaveBeenCalled();
       expect(result.statusCode).toBe(201);
       expect(result.message).toBe('Collaborator created successfully');
-      expect(result.data.name).toBe('Juan Pérez');
+      expect(result.data.name).toBe('John Doe');
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.create(createCollaboratorDto, undefined as any)).rejects.toThrow(
-        ForbiddenException,
-      );
-      await expect(service.create(createCollaboratorDto, undefined as any)).rejects.toThrow(
+      await expect(
+        service.create(createCollaboratorDto, undefined as any),
+      ).rejects.toThrow(ForbiddenException);
+      await expect(
+        service.create(createCollaboratorDto, undefined as any),
+      ).rejects.toThrow(
         'User must be associated with a merchant to create collaborators',
       );
     });
@@ -171,7 +191,9 @@ describe('CollaboratorsService', () => {
     });
 
     it('should throw NotFoundException if user not found', async () => {
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
 
       await expect(service.create(createCollaboratorDto, 1)).rejects.toThrow(
@@ -183,9 +205,13 @@ describe('CollaboratorsService', () => {
     });
 
     it('should throw ConflictException if user is already a collaborator', async () => {
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser as any);
-      jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(mockCollaborator as any);
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
+        .mockResolvedValue(mockCollaborator as any);
 
       await expect(service.create(createCollaboratorDto, 1)).rejects.toThrow(
         ConflictException,
@@ -197,7 +223,9 @@ describe('CollaboratorsService', () => {
 
     it('should throw BadRequestException if name is empty', async () => {
       const dtoWithEmptyName = { ...createCollaboratorDto, name: '' };
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser as any);
       jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(null);
 
@@ -214,7 +242,9 @@ describe('CollaboratorsService', () => {
         ...createCollaboratorDto,
         name: 'a'.repeat(151),
       };
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser as any);
       jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(null);
 
@@ -229,19 +259,25 @@ describe('CollaboratorsService', () => {
     it('should trim name when creating collaborator', async () => {
       const dtoWithSpaces = {
         ...createCollaboratorDto,
-        name: '  Juan Pérez  ',
+        name: '  John Doe  ',
       };
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser as any);
       jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(null);
-      jest.spyOn(collaboratorRepository, 'create').mockReturnValue(mockCollaborator as any);
-      jest.spyOn(collaboratorRepository, 'save').mockResolvedValue(mockCollaborator as any);
+      jest
+        .spyOn(collaboratorRepository, 'create')
+        .mockReturnValue(mockCollaborator as any);
+      jest
+        .spyOn(collaboratorRepository, 'save')
+        .mockResolvedValue(mockCollaborator as any);
 
       await service.create(dtoWithSpaces, 1);
 
       expect(collaboratorRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          name: 'Juan Pérez', // Should be trimmed
+          name: 'John Doe', // Should be trimmed
         }),
       );
     });
@@ -254,8 +290,12 @@ describe('CollaboratorsService', () => {
     };
 
     it('should return paginated list of collaborators', async () => {
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(collaboratorRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(collaboratorRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.getCount.mockResolvedValue(1);
       mockQueryBuilder.getMany.mockResolvedValue([mockCollaborator] as any);
 
@@ -288,21 +328,32 @@ describe('CollaboratorsService', () => {
     });
 
     it('should filter by status', async () => {
-      const queryWithStatus = { ...query, status: CollaboratorStatus.ACTIVO };
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(collaboratorRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      const queryWithStatus = { ...query, status: CollaboratorStatus.ACTIVE };
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(collaboratorRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.getCount.mockResolvedValue(1);
       mockQueryBuilder.getMany.mockResolvedValue([mockCollaborator] as any);
 
       await service.findAll(queryWithStatus, 1);
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('collaborator.status = :status', { status: CollaboratorStatus.ACTIVO });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'collaborator.status = :status',
+        { status: CollaboratorStatus.ACTIVE },
+      );
     });
 
     it('should handle pagination correctly with default values', async () => {
       const queryWithoutPagination = {};
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(collaboratorRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(collaboratorRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.getCount.mockResolvedValue(25);
       mockQueryBuilder.getMany.mockResolvedValue([mockCollaborator] as any);
 
@@ -318,8 +369,12 @@ describe('CollaboratorsService', () => {
 
     it('should handle pagination on last page', async () => {
       const queryLastPage = { page: 3, limit: 10 };
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(collaboratorRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(collaboratorRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.getCount.mockResolvedValue(25);
       mockQueryBuilder.getMany.mockResolvedValue([mockCollaborator] as any);
 
@@ -332,8 +387,12 @@ describe('CollaboratorsService', () => {
 
     it('should handle pagination on first page', async () => {
       const queryFirstPage = { page: 1, limit: 10 };
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(collaboratorRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(collaboratorRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.getCount.mockResolvedValue(5);
       mockQueryBuilder.getMany.mockResolvedValue([mockCollaborator] as any);
 
@@ -345,8 +404,12 @@ describe('CollaboratorsService', () => {
     });
 
     it('should handle empty results', async () => {
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(collaboratorRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(collaboratorRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.getCount.mockResolvedValue(0);
       mockQueryBuilder.getMany.mockResolvedValue([]);
 
@@ -360,8 +423,12 @@ describe('CollaboratorsService', () => {
 
   describe('findOne', () => {
     it('should return a collaborator successfully', async () => {
-      jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(mockCollaborator as any);
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
+        .mockResolvedValue(mockCollaborator as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser as any);
 
       const result = await service.findOne(1, 1);
@@ -376,9 +443,7 @@ describe('CollaboratorsService', () => {
     });
 
     it('should throw BadRequestException if id is invalid', async () => {
-      await expect(service.findOne(0, 1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.findOne(0, 1)).rejects.toThrow(BadRequestException);
       await expect(service.findOne(0, 1)).rejects.toThrow(
         'Invalid collaborator ID',
       );
@@ -396,34 +461,34 @@ describe('CollaboratorsService', () => {
     it('should throw NotFoundException if collaborator not found', async () => {
       jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.findOne(999, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.findOne(999, 1)).rejects.toThrow(NotFoundException);
       await expect(service.findOne(999, 1)).rejects.toThrow(
         'Collaborator 999 not found',
       );
     });
 
     it('should throw NotFoundException if merchant not found', async () => {
-      jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(mockCollaborator as any);
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
+        .mockResolvedValue(mockCollaborator as any);
       jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.findOne(1, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.findOne(1, 1)).rejects.toThrow(NotFoundException);
       await expect(service.findOne(1, 1)).rejects.toThrow(
         'Merchant with ID 1 not found',
       );
     });
 
     it('should throw NotFoundException if user not found', async () => {
-      jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(mockCollaborator as any);
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
+        .mockResolvedValue(mockCollaborator as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.findOne(1, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.findOne(1, 1)).rejects.toThrow(NotFoundException);
       await expect(service.findOne(1, 1)).rejects.toThrow(
         'User with ID 1 not found',
       );
@@ -434,11 +499,11 @@ describe('CollaboratorsService', () => {
         ...mockCollaborator,
         merchant_id: 2,
       };
-      jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(collaboratorFromDifferentMerchant as any);
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
+        .mockResolvedValue(collaboratorFromDifferentMerchant as any);
 
-      await expect(service.findOne(1, 1)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.findOne(1, 1)).rejects.toThrow(ForbiddenException);
       await expect(service.findOne(1, 1)).rejects.toThrow(
         'You can only view collaborators from your own merchant',
       );
@@ -447,7 +512,7 @@ describe('CollaboratorsService', () => {
 
   describe('update', () => {
     const updateCollaboratorDto: UpdateCollaboratorDto = {
-      name: 'Juan Pérez Updated',
+      name: 'John Doe Updated',
       role: ShiftRole.COOK,
     };
 
@@ -459,15 +524,21 @@ describe('CollaboratorsService', () => {
     it('should update a collaborator successfully', async () => {
       const updatedCollaborator = {
         ...mockCollaborator,
-        name: 'Juan Pérez Updated',
+        name: 'John Doe Updated',
         role: ShiftRole.COOK,
       };
       // First call: find existing collaborator (line 355)
-      jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(mockCollaborator as any);
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
+        .mockResolvedValue(mockCollaborator as any);
       // Get user after update (line 461 in service) - this is userRepository.findOne
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser as any);
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(collaboratorRepository, 'save').mockResolvedValue(updatedCollaborator as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(collaboratorRepository, 'save')
+        .mockResolvedValue(updatedCollaborator as any);
 
       const result = await service.update(1, updateCollaboratorDto, 1);
 
@@ -485,18 +556,18 @@ describe('CollaboratorsService', () => {
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.update(1, updateCollaboratorDto, undefined as any)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(
+        service.update(1, updateCollaboratorDto, undefined as any),
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw NotFoundException if collaborator not found', async () => {
       // Mock findOne to return null (collaborator not found) - this is the first call in update (line 355)
       jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.update(999, updateCollaboratorDto, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.update(999, updateCollaboratorDto, 1),
+      ).rejects.toThrow(NotFoundException);
       expect(collaboratorRepository.findOne).toHaveBeenCalledWith({
         where: { id: 999 },
         relations: ['user', 'merchant'],
@@ -510,7 +581,9 @@ describe('CollaboratorsService', () => {
       };
       // Mock findOne to return collaborator from different merchant (line 355)
       // The service calls findOne at line 355 to find the collaborator
-      jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(collaboratorFromDifferentMerchant as any);
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
+        .mockResolvedValue(collaboratorFromDifferentMerchant as any);
 
       await expect(service.update(1, updateCollaboratorDto, 1)).rejects.toThrow(
         ForbiddenException,
@@ -525,7 +598,8 @@ describe('CollaboratorsService', () => {
       jest.clearAllMocks();
       // First call: find the collaborator to update (line 355)
       // Second call: check if user_id already exists (line 404)
-      jest.spyOn(collaboratorRepository, 'findOne')
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
         .mockResolvedValueOnce(mockCollaborator as any) // Find collaborator to update
         .mockResolvedValueOnce(existingCollaborator as any); // Check user_id uniqueness
       const dtoWithUserId = { ...updateCollaboratorDto, user_id: 2 };
@@ -537,7 +611,9 @@ describe('CollaboratorsService', () => {
 
     it('should throw BadRequestException if name is empty', async () => {
       const dtoWithEmptyName = { ...updateCollaboratorDto, name: '' };
-      jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(mockCollaborator as any);
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
+        .mockResolvedValue(mockCollaborator as any);
 
       await expect(service.update(1, dtoWithEmptyName, 1)).rejects.toThrow(
         BadRequestException,
@@ -556,7 +632,9 @@ describe('CollaboratorsService', () => {
     });
 
     it('should throw BadRequestException if DTO is undefined', async () => {
-      jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(mockCollaborator as any);
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
+        .mockResolvedValue(mockCollaborator as any);
 
       await expect(service.update(1, undefined as any, 1)).rejects.toThrow(
         BadRequestException,
@@ -567,9 +645,16 @@ describe('CollaboratorsService', () => {
     });
 
     it('should throw BadRequestException if name exceeds 150 characters', async () => {
-      const dtoWithLongName = { ...updateCollaboratorDto, name: 'a'.repeat(151) };
-      jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(mockCollaborator as any);
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      const dtoWithLongName = {
+        ...updateCollaboratorDto,
+        name: 'a'.repeat(151),
+      };
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
+        .mockResolvedValue(mockCollaborator as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
 
       await expect(service.update(1, dtoWithLongName, 1)).rejects.toThrow(
         BadRequestException,
@@ -581,7 +666,9 @@ describe('CollaboratorsService', () => {
 
     it('should throw BadRequestException if user_id is invalid', async () => {
       const dtoWithInvalidUserId = { ...updateCollaboratorDto, user_id: 0 };
-      jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(mockCollaborator as any);
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
+        .mockResolvedValue(mockCollaborator as any);
 
       await expect(service.update(1, dtoWithInvalidUserId, 1)).rejects.toThrow(
         BadRequestException,
@@ -593,11 +680,14 @@ describe('CollaboratorsService', () => {
 
     it('should throw NotFoundException if user not found when updating user_id', async () => {
       const dtoWithUserId = { ...updateCollaboratorDto, user_id: 2 };
-      jest.spyOn(collaboratorRepository, 'findOne')
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
         .mockResolvedValueOnce(mockCollaborator as any) // Find collaborator
         .mockResolvedValueOnce(null); // Check uniqueness - no conflict
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(null); // User not found
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
 
       await expect(service.update(1, dtoWithUserId, 1)).rejects.toThrow(
         NotFoundException,
@@ -608,18 +698,27 @@ describe('CollaboratorsService', () => {
     });
 
     it('should update successfully when user_id is not changed', async () => {
-      const dtoWithSameUserId = { ...updateCollaboratorDto, user_id: mockCollaborator.user_id };
+      const dtoWithSameUserId = {
+        ...updateCollaboratorDto,
+        user_id: mockCollaborator.user_id,
+      };
       const updatedCollaborator = {
         ...mockCollaborator,
-        name: 'Juan Pérez Updated',
+        name: 'John Doe Updated',
         role: ShiftRole.COOK,
       };
       // First call: find existing collaborator (line 355)
-      jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(mockCollaborator as any);
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
+        .mockResolvedValue(mockCollaborator as any);
       // Get user after update (line 461 in service) - this is userRepository.findOne
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser as any);
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(collaboratorRepository, 'save').mockResolvedValue(updatedCollaborator as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(collaboratorRepository, 'save')
+        .mockResolvedValue(updatedCollaborator as any);
 
       const result = await service.update(1, dtoWithSameUserId, 1);
 
@@ -630,7 +729,9 @@ describe('CollaboratorsService', () => {
     });
 
     it('should throw NotFoundException if merchant not found during update', async () => {
-      jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(mockCollaborator as any);
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
+        .mockResolvedValue(mockCollaborator as any);
       jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(null);
 
       await expect(service.update(1, updateCollaboratorDto, 1)).rejects.toThrow(
@@ -644,42 +745,54 @@ describe('CollaboratorsService', () => {
     it('should throw NotFoundException if user not found after update', async () => {
       const updatedCollaborator = {
         ...mockCollaborator,
-        name: 'Juan Pérez Updated',
+        name: 'John Doe Updated',
         user_id: 999, // Changed user_id
       };
       // First call: find existing collaborator (line 355)
-      jest.spyOn(collaboratorRepository, 'findOne')
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
         .mockResolvedValueOnce(mockCollaborator as any) // Find collaborator
         .mockResolvedValueOnce(null); // Check uniqueness - no conflict (line 404)
       // User exists for validation (line 419)
-      jest.spyOn(userRepository, 'findOne')
+      jest
+        .spyOn(userRepository, 'findOne')
         .mockResolvedValueOnce(mockUser as any) // User exists for validation
         .mockResolvedValueOnce(null); // Get user after update - not found (line 461)
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(collaboratorRepository, 'save').mockResolvedValue(updatedCollaborator as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(collaboratorRepository, 'save')
+        .mockResolvedValue(updatedCollaborator as any);
 
-      await expect(service.update(1, { ...updateCollaboratorDto, user_id: 999 }, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.update(1, { ...updateCollaboratorDto, user_id: 999 }, 1),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should update only status field', async () => {
-      const dtoWithStatusOnly = { status: CollaboratorStatus.INACTIVO };
+      const dtoWithStatusOnly = { status: CollaboratorStatus.INACTIVE };
       const updatedCollaborator = {
         ...mockCollaborator,
-        status: CollaboratorStatus.INACTIVO,
+        status: CollaboratorStatus.INACTIVE,
       };
       // First call: find existing collaborator (line 355)
-      jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(mockCollaborator as any);
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
+        .mockResolvedValue(mockCollaborator as any);
       // Get user after update (line 461 in service) - this is userRepository.findOne
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser as any);
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(collaboratorRepository, 'save').mockResolvedValue(updatedCollaborator as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(collaboratorRepository, 'save')
+        .mockResolvedValue(updatedCollaborator as any);
 
       const result = await service.update(1, dtoWithStatusOnly, 1);
 
       expect(result.statusCode).toBe(200);
-      expect(result.data.status).toBe(CollaboratorStatus.INACTIVO);
+      expect(result.data.status).toBe(CollaboratorStatus.INACTIVE);
     });
 
     it('should update only role field', async () => {
@@ -689,11 +802,17 @@ describe('CollaboratorsService', () => {
         role: ShiftRole.MANAGER,
       };
       // First call: find existing collaborator (line 355)
-      jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(mockCollaborator as any);
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
+        .mockResolvedValue(mockCollaborator as any);
       // Get user after update (line 461 in service) - this is userRepository.findOne
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser as any);
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(collaboratorRepository, 'save').mockResolvedValue(updatedCollaborator as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(collaboratorRepository, 'save')
+        .mockResolvedValue(updatedCollaborator as any);
 
       const result = await service.update(1, dtoWithRoleOnly, 1);
 
@@ -713,16 +832,22 @@ describe('CollaboratorsService', () => {
         ...mockCollaborator,
         status: CollaboratorStatus.DELETED,
       };
-      // Ensure mockCollaborator has status 'activo' (not deleted) and merchant_id: 1
+      // Ensure mockCollaborator has status 'active' (not deleted) and merchant_id: 1
       const collaboratorToDelete = {
         ...mockCollaborator,
-        status: CollaboratorStatus.ACTIVO,
+        status: CollaboratorStatus.ACTIVE,
         merchant_id: 1,
       };
-      jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(collaboratorToDelete as any);
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
+        .mockResolvedValue(collaboratorToDelete as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser as any);
-      jest.spyOn(collaboratorRepository, 'save').mockResolvedValue(deletedCollaborator as any);
+      jest
+        .spyOn(collaboratorRepository, 'save')
+        .mockResolvedValue(deletedCollaborator as any);
 
       const result = await service.remove(1, 1);
 
@@ -734,9 +859,7 @@ describe('CollaboratorsService', () => {
     });
 
     it('should throw BadRequestException if id is invalid', async () => {
-      await expect(service.remove(0, 1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.remove(0, 1)).rejects.toThrow(BadRequestException);
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
@@ -748,9 +871,7 @@ describe('CollaboratorsService', () => {
     it('should throw NotFoundException if collaborator not found', async () => {
       jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.remove(999, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.remove(999, 1)).rejects.toThrow(NotFoundException);
       await expect(service.remove(999, 1)).rejects.toThrow(
         'Collaborator 999 not found',
       );
@@ -761,14 +882,14 @@ describe('CollaboratorsService', () => {
       const collaboratorWithMerchant = {
         ...mockCollaborator,
         merchant_id: 1,
-        status: CollaboratorStatus.ACTIVO, // Not deleted
+        status: CollaboratorStatus.ACTIVE, // Not deleted
       };
-      jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(collaboratorWithMerchant as any);
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
+        .mockResolvedValue(collaboratorWithMerchant as any);
       jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.remove(1, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.remove(1, 1)).rejects.toThrow(NotFoundException);
       await expect(service.remove(1, 1)).rejects.toThrow(
         'Merchant with ID 1 not found',
       );
@@ -780,19 +901,21 @@ describe('CollaboratorsService', () => {
         id: 1,
         user_id: 1, // Explicitly set user_id to 1
         merchant_id: 1,
-        name: 'Juan Pérez',
+        name: 'John Doe',
         role: ShiftRole.WAITER,
-        status: CollaboratorStatus.ACTIVO, // Not deleted
+        status: CollaboratorStatus.ACTIVE, // Not deleted
         merchant: mockMerchant,
         user: mockUser,
       };
-      jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(collaboratorWithMerchant as any);
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
+        .mockResolvedValue(collaboratorWithMerchant as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as any);
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.remove(1, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.remove(1, 1)).rejects.toThrow(NotFoundException);
       await expect(service.remove(1, 1)).rejects.toThrow(
         'User with ID 1 not found',
       );
@@ -803,11 +926,11 @@ describe('CollaboratorsService', () => {
         ...mockCollaborator,
         merchant_id: 2,
       };
-      jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(collaboratorFromDifferentMerchant as any);
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
+        .mockResolvedValue(collaboratorFromDifferentMerchant as any);
 
-      await expect(service.remove(1, 1)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.remove(1, 1)).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw ConflictException if collaborator is already deleted', async () => {
@@ -815,11 +938,11 @@ describe('CollaboratorsService', () => {
         ...mockCollaborator,
         status: CollaboratorStatus.DELETED,
       };
-      jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(deletedCollaborator as any);
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
+        .mockResolvedValue(deletedCollaborator as any);
 
-      await expect(service.remove(1, 1)).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.remove(1, 1)).rejects.toThrow(ConflictException);
       await expect(service.remove(1, 1)).rejects.toThrow(
         'Collaborator is already deleted',
       );

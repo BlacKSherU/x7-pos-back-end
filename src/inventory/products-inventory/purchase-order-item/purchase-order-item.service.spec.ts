@@ -230,7 +230,7 @@ describe('PurchaseOrderItemService', () => {
     variantRepo = module.get(getRepositoryToken(Variant));
 
     jest.clearAllMocks();
-    jest.spyOn(console, 'error').mockImplementation(() => { });
+    jest.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -690,7 +690,7 @@ describe('PurchaseOrderItemService', () => {
           mockUpdatePurchaseOrderItemDto.unitPrice!,
       });
       expect(result).toEqual({
-        statusCode: 201,
+        statusCode: 200,
         message: 'Purchase Order Item Updated successfully',
         data: {
           id: updatedPurchaseOrderItemData.id,
@@ -902,7 +902,7 @@ describe('PurchaseOrderItemService', () => {
         }),
       );
       expect(result).toEqual({
-        statusCode: 201,
+        statusCode: 200,
         message: 'Purchase Order Item Updated successfully',
         data: {
           id: updatedPurchaseOrderItemData.id,
@@ -974,7 +974,7 @@ describe('PurchaseOrderItemService', () => {
         ],
       });
       expect(result).toEqual({
-        statusCode: 201,
+        statusCode: 200,
         message: 'Purchase Order Item Deleted successfully',
         data: {
           id: inactivePurchaseOrderItem.id,

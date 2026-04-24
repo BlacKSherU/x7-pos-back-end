@@ -11,6 +11,7 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { AuthenticatedUser } from '../../../auth/interfaces/authenticated-user.interface';
 import { CollaboratorTimeEntriesService } from './collaborator-time-entries.service';
 import { CreateTimeEntryDto } from './dto/create-time-entry.dto';
 import { UpdateTimeEntryDto } from './dto/update-time-entry.dto';
@@ -42,7 +43,9 @@ import { RolesGuard } from 'src/auth/guards/roles.guard';
 @Controller('collaborator-time-entries')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class CollaboratorTimeEntriesController {
-  constructor(private readonly collaboratorTimeEntriesService: CollaboratorTimeEntriesService) {}
+  constructor(
+    private readonly collaboratorTimeEntriesService: CollaboratorTimeEntriesService,
+  ) {}
 
   @Post()
   @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
@@ -54,16 +57,21 @@ export class CollaboratorTimeEntriesController {
     Scope.MERCHANT_CLOVER,
   )
   @ApiOperation({ summary: 'Create time entry' })
-  @ApiCreatedResponse({ description: 'Time entry created', type: OneTimeEntryResponseDto })
+  @ApiCreatedResponse({
+    description: 'Time entry created',
+    type: OneTimeEntryResponseDto,
+  })
   @ApiBadRequestResponse({ description: 'Invalid input' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiForbiddenResponse({ description: 'Forbidden' })
-  @ApiNotFoundResponse({ description: 'Company, Merchant, Collaborator or Shift not found' })
+  @ApiNotFoundResponse({
+    description: 'Company, Merchant, Collaborator or Shift not found',
+  })
   async create(
     @Body() dto: CreateTimeEntryDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneTimeEntryResponseDto> {
-    const merchantId = req.user?.merchant?.id;
+    const merchantId = req.merchant?.id;
     return this.collaboratorTimeEntriesService.create(dto, merchantId);
   }
 
@@ -86,14 +94,17 @@ export class CollaboratorTimeEntriesController {
   @ApiQuery({ name: 'approved', required: false })
   @ApiQuery({ name: 'from_date', required: false })
   @ApiQuery({ name: 'to_date', required: false })
-  @ApiOkResponse({ description: 'Paginated time entries', type: PaginatedTimeEntriesResponseDto })
+  @ApiOkResponse({
+    description: 'Paginated time entries',
+    type: PaginatedTimeEntriesResponseDto,
+  })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiForbiddenResponse({ description: 'Forbidden' })
   async findAll(
     @Query() query: GetTimeEntryQueryDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<PaginatedTimeEntriesResponseDto> {
-    const merchantId = req.user?.merchant?.id;
+    const merchantId = req.merchant?.id;
     return this.collaboratorTimeEntriesService.findAll(query, merchantId);
   }
 
@@ -108,15 +119,18 @@ export class CollaboratorTimeEntriesController {
   )
   @ApiOperation({ summary: 'Get time entry by ID' })
   @ApiParam({ name: 'id', type: Number })
-  @ApiOkResponse({ description: 'Time entry found', type: OneTimeEntryResponseDto })
+  @ApiOkResponse({
+    description: 'Time entry found',
+    type: OneTimeEntryResponseDto,
+  })
   @ApiNotFoundResponse({ description: 'Time entry not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiForbiddenResponse({ description: 'Forbidden' })
   async findOne(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneTimeEntryResponseDto> {
-    const merchantId = req.user?.merchant?.id;
+    const merchantId = req.merchant?.id;
     return this.collaboratorTimeEntriesService.findOne(id, merchantId);
   }
 
@@ -131,7 +145,10 @@ export class CollaboratorTimeEntriesController {
   )
   @ApiOperation({ summary: 'Update time entry' })
   @ApiParam({ name: 'id', type: Number })
-  @ApiOkResponse({ description: 'Time entry updated', type: OneTimeEntryResponseDto })
+  @ApiOkResponse({
+    description: 'Time entry updated',
+    type: OneTimeEntryResponseDto,
+  })
   @ApiBadRequestResponse({ description: 'Invalid input' })
   @ApiNotFoundResponse({ description: 'Time entry not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -139,9 +156,9 @@ export class CollaboratorTimeEntriesController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateTimeEntryDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneTimeEntryResponseDto> {
-    const merchantId = req.user?.merchant?.id;
+    const merchantId = req.merchant?.id;
     return this.collaboratorTimeEntriesService.update(id, dto, merchantId);
   }
 
@@ -156,15 +173,18 @@ export class CollaboratorTimeEntriesController {
   )
   @ApiOperation({ summary: 'Delete time entry' })
   @ApiParam({ name: 'id', type: Number })
-  @ApiOkResponse({ description: 'Time entry deleted', type: OneTimeEntryResponseDto })
+  @ApiOkResponse({
+    description: 'Time entry deleted',
+    type: OneTimeEntryResponseDto,
+  })
   @ApiNotFoundResponse({ description: 'Time entry not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiForbiddenResponse({ description: 'Forbidden' })
   async remove(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneTimeEntryResponseDto> {
-    const merchantId = req.user?.merchant?.id;
+    const merchantId = req.merchant?.id;
     return this.collaboratorTimeEntriesService.remove(id, merchantId);
   }
 }

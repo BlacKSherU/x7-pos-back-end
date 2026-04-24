@@ -8,12 +8,18 @@ export class BasicMerchantInfoDto {
   @ApiProperty({ example: 1, description: 'Unique identifier of the Merchant' })
   id: number;
 
-  @ApiProperty({ example: 'Restaurant ABC', description: 'Name of the merchant' })
+  @ApiProperty({
+    example: 'Restaurant ABC',
+    description: 'Name of the merchant',
+  })
   name: string;
 }
 
 export class MarketingCouponResponseDto {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Marketing Coupon' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Marketing Coupon',
+  })
   id: number;
 
   @ApiProperty({
@@ -42,7 +48,7 @@ export class MarketingCouponResponseDto {
   type: MarketingCouponType;
 
   @ApiProperty({
-    example: 10.50,
+    example: 10.5,
     description: 'Fixed amount discount',
     nullable: true,
   })
@@ -84,7 +90,7 @@ export class MarketingCouponResponseDto {
   validUntil: Date | null;
 
   @ApiProperty({
-    example: 50.00,
+    example: 50.0,
     description: 'Minimum order amount required to use the coupon',
     nullable: true,
   })

@@ -247,14 +247,14 @@ export class PurchaseOrderItemService {
         break;
       case 'Updated':
         response = {
-          statusCode: 201,
+          statusCode: 200,
           message: `Purchase Order Item ${createdUpdateDelete} successfully`,
           data: result,
         };
         break;
       case 'Deleted':
         response = {
-          statusCode: 201,
+          statusCode: 200,
           message: `Purchase Order Item ${createdUpdateDelete} successfully`,
           data: result,
         };

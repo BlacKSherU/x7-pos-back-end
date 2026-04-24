@@ -3,12 +3,16 @@ import { SuccessResponse } from '../../../../common/dtos/success-response.dto';
 import { CashDrawerHistoryStatus } from '../constants/cash-drawer-history-status.enum';
 
 export class CashDrawerHistoryResponseDto {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Cash Drawer History' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Cash Drawer History',
+  })
   id: number;
 
   @ApiProperty({
     example: 1,
-    description: 'Identifier of the Cash Drawer associated with this history record',
+    description:
+      'Identifier of the Cash Drawer associated with this history record',
   })
   cashDrawerId: number;
 
@@ -16,8 +20,8 @@ export class CashDrawerHistoryResponseDto {
     description: 'Basic cash drawer information',
     example: {
       id: 1,
-      openingBalance: 100.00,
-      closingBalance: 150.50,
+      openingBalance: 100.0,
+      closingBalance: 150.5,
     },
   })
   cashDrawer: {
@@ -27,13 +31,13 @@ export class CashDrawerHistoryResponseDto {
   };
 
   @ApiProperty({
-    example: 100.00,
+    example: 100.0,
     description: 'Opening balance amount in the cash drawer',
   })
   openingBalance: number;
 
   @ApiProperty({
-    example: 150.50,
+    example: 150.5,
     description: 'Closing balance amount in the cash drawer',
   })
   closingBalance: number;
@@ -102,8 +106,3 @@ export class OneCashDrawerHistoryResponseDto extends SuccessResponse {
   @ApiProperty({ type: CashDrawerHistoryResponseDto })
   data: CashDrawerHistoryResponseDto;
 }
-
-
-
-
-

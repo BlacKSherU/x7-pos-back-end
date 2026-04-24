@@ -3,6 +3,7 @@ import {
   PrimaryGeneratedColumn,
   Column,
   ManyToOne,
+  OneToMany,
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
@@ -10,11 +11,12 @@ import {
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { Merchant } from '../../../../platform-saas/merchants/entities/merchant.entity';
-import { Order } from '../../../../orders/entities/order.entity';
+import { Order } from '../../../../restaurant-operations/pos/orders/entities/order.entity';
 import { OnlineOrder } from '../../../../commerce/online-ordering-system/online-order/entities/online-order.entity';
 import { KitchenStation } from '../../kitchen-station/entities/kitchen-station.entity';
 import { KitchenOrderStatus } from '../constants/kitchen-order-status.enum';
 import { KitchenOrderBusinessStatus } from '../constants/kitchen-order-business-status.enum';
+import { KitchenOrderItem } from '../../kitchen-order-item/entities/kitchen-order-item.entity';
 
 @Entity('kitchen_order')
 @Index(['merchant_id'])
@@ -24,7 +26,10 @@ import { KitchenOrderBusinessStatus } from '../constants/kitchen-order-business-
 @Index(['status'])
 @Index(['business_status'])
 export class KitchenOrder {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Kitchen Order' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Kitchen Order',
+  })
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -38,7 +43,11 @@ export class KitchenOrder {
   @JoinColumn({ name: 'merchant_id' })
   merchant: Merchant;
 
-  @ApiProperty({ example: 1, description: 'Identifier of the Order', nullable: true })
+  @ApiProperty({
+    example: 1,
+    description: 'Identifier of the Order',
+    nullable: true,
+  })
   @Column({ name: 'order_id', nullable: true })
   order_id: number | null;
 
@@ -48,17 +57,25 @@ export class KitchenOrder {
   @JoinColumn({ name: 'order_id' })
   order: Order | null;
 
-  @ApiProperty({ example: 1, description: 'Identifier of the Online Order', nullable: true })
+  @ApiProperty({
+    example: 1,
+    description: 'Identifier of the Online Order',
+    nullable: true,
+  })
   @Column({ name: 'online_order_id', nullable: true })
   online_order_id: number | null;
 
-  @ManyToOne(() => OnlineOrder, {
+  @ManyToOne(() => OnlineOrder, (oo) => oo.kitchenOrders, {
     nullable: true,
   })
   @JoinColumn({ name: 'online_order_id' })
   onlineOrder: OnlineOrder | null;
 
-  @ApiProperty({ example: 1, description: 'Identifier of the Kitchen Station', nullable: true })
+  @ApiProperty({
+    example: 1,
+    description: 'Identifier of the Kitchen Station',
+    nullable: true,
+  })
   @Column({ name: 'station_id', nullable: true })
   station_id: number | null;
 
@@ -68,27 +85,48 @@ export class KitchenOrder {
   @JoinColumn({ name: 'station_id' })
   station: KitchenStation | null;
 
-  @ApiProperty({ example: 1, description: 'Priority of the order (higher number = higher priority)' })
+  @ApiProperty({
+    example: 1,
+    description: 'Priority of the order (higher number = higher priority)',
+  })
   @Column({ type: 'int', default: 0 })
   priority: number;
 
   @ApiProperty({
     example: KitchenOrderBusinessStatus.PENDING,
     enum: KitchenOrderBusinessStatus,
-    description: 'Business status of the kitchen order (pending, started, completed, cancelled)',
+    description:
+      'Business status of the kitchen order (pending, started, completed, cancelled)',
   })
-  @Column({ type: 'varchar', length: 50, name: 'business_status', default: KitchenOrderBusinessStatus.PENDING })
+  @Column({
+    type: 'varchar',
+    length: 50,
+    name: 'business_status',
+    default: KitchenOrderBusinessStatus.PENDING,
+  })
   business_status: KitchenOrderBusinessStatus;
 
-  @ApiProperty({ example: '2024-01-15T08:00:00Z', description: 'Timestamp when the order was started', nullable: true })
+  @ApiProperty({
+    example: '2024-01-15T08:00:00Z',
+    description: 'Timestamp when the order was started',
+    nullable: true,
+  })
   @Column({ type: 'timestamp', name: 'started_at', nullable: true })
   started_at: Date | null;
 
-  @ApiProperty({ example: '2024-01-15T09:00:00Z', description: 'Timestamp when the order was completed', nullable: true })
+  @ApiProperty({
+    example: '2024-01-15T09:00:00Z',
+    description: 'Timestamp when the order was completed',
+    nullable: true,
+  })
   @Column({ type: 'timestamp', name: 'completed_at', nullable: true })
   completed_at: Date | null;
 
-  @ApiProperty({ example: 'Extra sauce on the side', description: 'Notes about the kitchen order', nullable: true })
+  @ApiProperty({
+    example: 'Extra sauce on the side',
+    description: 'Notes about the kitchen order',
+    nullable: true,
+  })
   @Column({ type: 'text', nullable: true })
   notes: string | null;
 
@@ -104,11 +142,20 @@ export class KitchenOrder {
   })
   status: KitchenOrderStatus;
 
-  @ApiProperty({ example: '2024-01-15T08:00:00Z', description: 'Creation timestamp' })
+  @ApiProperty({
+    example: '2024-01-15T08:00:00Z',
+    description: 'Creation timestamp',
+  })
   @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
   created_at: Date;
 
-  @ApiProperty({ example: '2024-01-15T09:00:00Z', description: 'Last update timestamp' })
+  @ApiProperty({
+    example: '2024-01-15T09:00:00Z',
+    description: 'Last update timestamp',
+  })
   @UpdateDateColumn({ type: 'timestamp', name: 'updated_at' })
   updated_at: Date;
+
+  @OneToMany(() => KitchenOrderItem, (item) => item.kitchenOrder)
+  kitchenOrderItems: KitchenOrderItem[];
 }

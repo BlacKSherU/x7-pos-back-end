@@ -1,11 +1,21 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNumber, IsNotEmpty, IsOptional, IsEnum, IsString, Min, MaxLength } from 'class-validator';
+import {
+  IsNumber,
+  IsNotEmpty,
+  IsOptional,
+  IsEnum,
+  IsString,
+  Min,
+  MaxLength,
+  IsBoolean,
+} from 'class-validator';
 import { KitchenOrderBusinessStatus } from '../constants/kitchen-order-business-status.enum';
 
 export class CreateKitchenOrderDto {
   @ApiPropertyOptional({
     example: 1,
-    description: 'Identifier of the Order (optional - either orderId or onlineOrderId must be provided)',
+    description:
+      'Identifier of the Order (optional - either orderId or onlineOrderId must be provided)',
     nullable: true,
     required: false,
   })
@@ -15,7 +25,8 @@ export class CreateKitchenOrderDto {
 
   @ApiPropertyOptional({
     example: 1,
-    description: 'Identifier of the Online Order (optional - either orderId or onlineOrderId must be provided)',
+    description:
+      'Identifier of the Online Order (optional - either orderId or onlineOrderId must be provided)',
     nullable: true,
     required: false,
   })
@@ -52,7 +63,9 @@ export class CreateKitchenOrderDto {
     default: KitchenOrderBusinessStatus.PENDING,
   })
   @IsOptional()
-  @IsEnum(KitchenOrderBusinessStatus, { message: 'Business status must be a valid kitchen order status' })
+  @IsEnum(KitchenOrderBusinessStatus, {
+    message: 'Business status must be a valid kitchen order status',
+  })
   businessStatus?: KitchenOrderBusinessStatus;
 
   @ApiPropertyOptional({
@@ -83,4 +96,13 @@ export class CreateKitchenOrderDto {
   @IsString({ message: 'Notes must be a string' })
   @MaxLength(5000, { message: 'Notes must not exceed 5000 characters' })
   notes?: string | null;
+
+  @ApiPropertyOptional({
+    description:
+      'Si es true, no se generan kitchen order items desde las líneas POS (compatibilidad). Por defecto false.',
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  skipAutoKitchenItems?: boolean;
 }

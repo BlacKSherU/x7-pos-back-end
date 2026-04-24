@@ -6,9 +6,7 @@ import { OnlineStore } from './entities/online-store.entity';
 import { Merchant } from '../../../platform-saas/merchants/entities/merchant.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([OnlineStore, Merchant]),
-  ],
+  imports: [TypeOrmModule.forFeature([OnlineStore, Merchant])],
   controllers: [OnlineStoresController],
   providers: [OnlineStoresService],
   exports: [OnlineStoresService],

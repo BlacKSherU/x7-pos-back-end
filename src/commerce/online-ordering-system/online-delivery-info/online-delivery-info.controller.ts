@@ -13,6 +13,7 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { Request as ExpressRequest } from 'express';
 import { OnlineDeliveryInfoService } from './online-delivery-info.service';
 import { CreateOnlineDeliveryInfoDto } from './dto/create-online-delivery-info.dto';
 import { UpdateOnlineDeliveryInfoDto } from './dto/update-online-delivery-info.dto';
@@ -31,7 +32,10 @@ import {
   ApiQuery,
   ApiConflictResponse,
 } from '@nestjs/swagger';
-import { OnlineDeliveryInfoResponseDto, OneOnlineDeliveryInfoResponseDto } from './dto/online-delivery-info-response.dto';
+import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
+import { OneOnlineDeliveryInfoResponseDto } from './dto/online-delivery-info-response.dto';
+
+type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
 import { GetOnlineDeliveryInfoQueryDto } from './dto/get-online-delivery-info-query.dto';
 import { PaginatedOnlineDeliveryInfoResponseDto } from './dto/paginated-online-delivery-info-response.dto';
 import { Roles } from 'src/auth/decorators/roles.decorator';
@@ -47,7 +51,9 @@ import { ErrorResponse } from 'src/common/dtos/error-response.dto';
 @Controller('online-delivery-info')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class OnlineDeliveryInfoController {
-  constructor(private readonly onlineDeliveryInfoService: OnlineDeliveryInfoService) {}
+  constructor(
+    private readonly onlineDeliveryInfoService: OnlineDeliveryInfoService,
+  ) {}
 
   @Post()
   @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
@@ -60,7 +66,8 @@ export class OnlineDeliveryInfoController {
   )
   @ApiOperation({
     summary: 'Create a new Online Delivery Info',
-    description: 'Creates a new online delivery info. The online order must belong to the authenticated user\'s merchant. Only portal administrators and merchant administrators can create online delivery info.',
+    description:
+      "Creates a new online delivery info. The online order must belong to the authenticated user's merchant. Only portal administrators and merchant administrators can create online delivery info.",
   })
   @ApiCreatedResponse({
     description: 'Online delivery info created successfully',
@@ -75,7 +82,8 @@ export class OnlineDeliveryInfoController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You must be associated with a merchant to create online delivery info',
+    description:
+      'Forbidden - You must be associated with a merchant to create online delivery info',
     type: ErrorResponse,
   })
   @ApiNotFoundResponse({
@@ -99,9 +107,15 @@ export class OnlineDeliveryInfoController {
       },
     },
   })
-  async create(@Body() createOnlineDeliveryInfoDto: CreateOnlineDeliveryInfoDto, @Request() req: any) {
+  async create(
+    @Body() createOnlineDeliveryInfoDto: CreateOnlineDeliveryInfoDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
     const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.onlineDeliveryInfoService.create(createOnlineDeliveryInfoDto, authenticatedUserMerchantId);
+    return this.onlineDeliveryInfoService.create(
+      createOnlineDeliveryInfoDto,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Get()
@@ -115,7 +129,8 @@ export class OnlineDeliveryInfoController {
   )
   @ApiOperation({
     summary: 'Get all Online Delivery Info',
-    description: 'Retrieves a paginated list of online delivery info. Only returns info from online orders that belong to the authenticated user\'s merchant. Only portal administrators and merchant administrators can access online delivery info.',
+    description:
+      "Retrieves a paginated list of online delivery info. Only returns info from online orders that belong to the authenticated user's merchant. Only portal administrators and merchant administrators can access online delivery info.",
   })
   @ApiOkResponse({
     description: 'Online delivery info retrieved successfully',
@@ -126,7 +141,8 @@ export class OnlineDeliveryInfoController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You must be associated with a merchant to access online delivery info',
+    description:
+      'Forbidden - You must be associated with a merchant to access online delivery info',
     type: ErrorResponse,
   })
   @ApiQuery({
@@ -168,7 +184,14 @@ export class OnlineDeliveryInfoController {
   @ApiQuery({
     name: 'sortBy',
     required: false,
-    enum: ['id', 'onlineOrderId', 'customerName', 'city', 'createdAt', 'updatedAt'],
+    enum: [
+      'id',
+      'onlineOrderId',
+      'customerName',
+      'city',
+      'createdAt',
+      'updatedAt',
+    ],
     description: 'Field to sort by',
   })
   @ApiQuery({
@@ -177,9 +200,15 @@ export class OnlineDeliveryInfoController {
     enum: ['ASC', 'DESC'],
     description: 'Sort order (ASC or DESC)',
   })
-  async findAll(@Query() query: GetOnlineDeliveryInfoQueryDto, @Request() req: any) {
+  async findAll(
+    @Query() query: GetOnlineDeliveryInfoQueryDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
     const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.onlineDeliveryInfoService.findAll(query, authenticatedUserMerchantId);
+    return this.onlineDeliveryInfoService.findAll(
+      query,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Get(':id')
@@ -193,7 +222,8 @@ export class OnlineDeliveryInfoController {
   )
   @ApiOperation({
     summary: 'Get a single Online Delivery Info by ID',
-    description: 'Retrieves a single online delivery info by its ID. The info must belong to an online order that belongs to the authenticated user\'s merchant. Only portal administrators and merchant administrators can access online delivery info.',
+    description:
+      "Retrieves a single online delivery info by its ID. The info must belong to an online order that belongs to the authenticated user's merchant. Only portal administrators and merchant administrators can access online delivery info.",
   })
   @ApiOkResponse({
     description: 'Online delivery info retrieved successfully',
@@ -204,7 +234,8 @@ export class OnlineDeliveryInfoController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You must be associated with a merchant to access online delivery info',
+    description:
+      'Forbidden - You must be associated with a merchant to access online delivery info',
     type: ErrorResponse,
   })
   @ApiNotFoundResponse({
@@ -217,9 +248,15 @@ export class OnlineDeliveryInfoController {
     description: 'Online delivery info ID',
     example: 1,
   })
-  async findOne(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
+  async findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedRequest,
+  ) {
     const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.onlineDeliveryInfoService.findOne(id, authenticatedUserMerchantId);
+    return this.onlineDeliveryInfoService.findOne(
+      id,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Put(':id')
@@ -233,7 +270,8 @@ export class OnlineDeliveryInfoController {
   )
   @ApiOperation({
     summary: 'Update an Online Delivery Info',
-    description: 'Updates an existing online delivery info. The info must belong to an online order that belongs to the authenticated user\'s merchant. Only portal administrators and merchant administrators can update online delivery info.',
+    description:
+      "Updates an existing online delivery info. The info must belong to an online order that belongs to the authenticated user's merchant. Only portal administrators and merchant administrators can update online delivery info.",
   })
   @ApiOkResponse({
     description: 'Online delivery info updated successfully',
@@ -248,7 +286,8 @@ export class OnlineDeliveryInfoController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You must be associated with a merchant to update online delivery info',
+    description:
+      'Forbidden - You must be associated with a merchant to update online delivery info',
     type: ErrorResponse,
   })
   @ApiNotFoundResponse({
@@ -287,10 +326,14 @@ export class OnlineDeliveryInfoController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateOnlineDeliveryInfoDto: UpdateOnlineDeliveryInfoDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.onlineDeliveryInfoService.update(id, updateOnlineDeliveryInfoDto, authenticatedUserMerchantId);
+    return this.onlineDeliveryInfoService.update(
+      id,
+      updateOnlineDeliveryInfoDto,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Delete(':id')
@@ -305,7 +348,8 @@ export class OnlineDeliveryInfoController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Delete an Online Delivery Info',
-    description: 'Performs a logical deletion of an online delivery info. The info must belong to an online order that belongs to the authenticated user\'s merchant. Only portal administrators and merchant administrators can delete online delivery info.',
+    description:
+      "Performs a logical deletion of an online delivery info. The info must belong to an online order that belongs to the authenticated user's merchant. Only portal administrators and merchant administrators can delete online delivery info.",
   })
   @ApiOkResponse({
     description: 'Online delivery info deleted successfully',
@@ -316,7 +360,8 @@ export class OnlineDeliveryInfoController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You must be associated with a merchant to delete online delivery info',
+    description:
+      'Forbidden - You must be associated with a merchant to delete online delivery info',
     type: ErrorResponse,
   })
   @ApiNotFoundResponse({
@@ -333,8 +378,14 @@ export class OnlineDeliveryInfoController {
     description: 'Online delivery info ID',
     example: 1,
   })
-  async remove(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
+  async remove(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedRequest,
+  ) {
     const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.onlineDeliveryInfoService.remove(id, authenticatedUserMerchantId);
+    return this.onlineDeliveryInfoService.remove(
+      id,
+      authenticatedUserMerchantId,
+    );
   }
 }

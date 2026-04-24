@@ -2,8 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { CollaboratorContractsService } from './collaborator-contracts.service';
 import { CollaboratorContract } from './entities/collaborator-contract.entity';
-import { Company } from '../../platform-saas/companies/entities/company.entity';
-import { Merchant } from '../../platform-saas/merchants/entities/merchant.entity';
+import { Company } from '../../../platform-saas/companies/entities/company.entity';
+import { Merchant } from '../../../platform-saas/merchants/entities/merchant.entity';
 import { Collaborator } from '../collaborators/entities/collaborator.entity';
 
 const mockRepository = {
@@ -28,14 +28,19 @@ describe('CollaboratorContractsService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CollaboratorContractsService,
-        { provide: getRepositoryToken(CollaboratorContract), useValue: mockRepository },
+        {
+          provide: getRepositoryToken(CollaboratorContract),
+          useValue: mockRepository,
+        },
         { provide: getRepositoryToken(Company), useValue: mockRepository },
         { provide: getRepositoryToken(Merchant), useValue: mockRepository },
         { provide: getRepositoryToken(Collaborator), useValue: mockRepository },
       ],
     }).compile();
 
-    service = module.get<CollaboratorContractsService>(CollaboratorContractsService);
+    service = module.get<CollaboratorContractsService>(
+      CollaboratorContractsService,
+    );
   });
 
   it('should be defined', () => {

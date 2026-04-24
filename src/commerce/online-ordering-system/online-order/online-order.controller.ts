@@ -7,13 +7,13 @@ import {
   Put,
   Delete,
   ParseIntPipe,
-  HttpCode,
-  HttpStatus,
   UseGuards,
   Request,
   Query,
 } from '@nestjs/common';
+import { Request as ExpressRequest } from 'express';
 import { OnlineOrderService } from './online-order.service';
+import { OnlineOrderFulfillmentService } from './online-order-fulfillment.service';
 import { CreateOnlineOrderDto } from './dto/create-online-order.dto';
 import { UpdateOnlineOrderDto } from './dto/update-online-order.dto';
 import {
@@ -31,7 +31,8 @@ import {
   ApiQuery,
   ApiConflictResponse,
 } from '@nestjs/swagger';
-import { OnlineOrderResponseDto, OneOnlineOrderResponseDto } from './dto/online-order-response.dto';
+import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
+import { OneOnlineOrderResponseDto } from './dto/online-order-response.dto';
 import { GetOnlineOrderQueryDto } from './dto/get-online-order-query.dto';
 import { PaginatedOnlineOrderResponseDto } from './dto/paginated-online-order-response.dto';
 import { Roles } from 'src/auth/decorators/roles.decorator';
@@ -44,12 +45,17 @@ import { ErrorResponse } from 'src/common/dtos/error-response.dto';
 import { OnlineOrderType } from './constants/online-order-type.enum';
 import { OnlineOrderPaymentStatus } from './constants/online-order-payment-status.enum';
 
+type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
+
 @ApiTags('Online Orders')
 @ApiBearerAuth()
 @Controller('online-orders')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class OnlineOrderController {
-  constructor(private readonly onlineOrderService: OnlineOrderService) {}
+  constructor(
+    private readonly onlineOrderService: OnlineOrderService,
+    private readonly onlineOrderFulfillmentService: OnlineOrderFulfillmentService,
+  ) {}
 
   @Post()
   @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
@@ -62,7 +68,8 @@ export class OnlineOrderController {
   )
   @ApiOperation({
     summary: 'Create a new Online Order',
-    description: 'Creates a new online order. The online store must belong to the authenticated user\'s merchant, and the customer must also belong to the same merchant. Only portal administrators and merchant administrators can create online orders.',
+    description:
+      "Creates a new online order. The online store must belong to the authenticated user's merchant, and the customer must also belong to the same merchant. Only portal administrators and merchant administrators can create online orders.",
   })
   @ApiCreatedResponse({
     description: 'Online order created successfully',
@@ -77,11 +84,13 @@ export class OnlineOrderController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You must be associated with a merchant to create online orders',
+    description:
+      'Forbidden - You must be associated with a merchant to create online orders',
     type: ErrorResponse,
   })
   @ApiNotFoundResponse({
-    description: 'Online store, order, or customer not found or you do not have access to it',
+    description:
+      'Online store, order, or customer not found or you do not have access to it',
     type: ErrorResponse,
   })
   @ApiBody({
@@ -95,7 +104,6 @@ export class OnlineOrderController {
           customerId: 5,
           type: OnlineOrderType.DELIVERY,
           paymentStatus: OnlineOrderPaymentStatus.PENDING,
-          totalAmount: 125.99,
           notes: 'Please deliver to the back door',
         },
       },
@@ -107,7 +115,6 @@ export class OnlineOrderController {
           type: OnlineOrderType.PICKUP,
           paymentStatus: OnlineOrderPaymentStatus.PAID,
           scheduledAt: '2024-01-15T10:00:00Z',
-          totalAmount: 85.50,
         },
       },
       example3: {
@@ -119,17 +126,70 @@ export class OnlineOrderController {
           type: OnlineOrderType.DINE_IN,
           paymentStatus: OnlineOrderPaymentStatus.PAID,
           placedAt: '2024-01-15T08:00:00Z',
-          totalAmount: 200.00,
         },
       },
     },
   })
   async create(
     @Body() dto: CreateOnlineOrderDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOnlineOrderResponseDto> {
     const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlineOrderService.create(dto, authenticatedUserMerchantId);
+  }
+
+  @Post(':id/accept')
+  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Scopes(
+    Scope.ADMIN_PORTAL,
+    Scope.MERCHANT_WEB,
+    Scope.MERCHANT_ANDROID,
+    Scope.MERCHANT_IOS,
+    Scope.MERCHANT_CLOVER,
+  )
+  @ApiOperation({
+    summary: 'Accept online order (create POS order and link lines)',
+    description:
+      'Creates a mirror POS order with source ONLINE, links online_order.order_id and online_order_item.order_item_id, and opens a kitchen order when applicable. Idempotent if already accepted.',
+  })
+  @ApiParam({ name: 'id', type: Number, description: 'Online order ID' })
+  @ApiOkResponse({
+    description: 'Online order accepted',
+    type: OneOnlineOrderResponseDto,
+  })
+  async accept(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedRequest,
+  ): Promise<OneOnlineOrderResponseDto> {
+    const merchantId = req.user?.merchant?.id;
+    return this.onlineOrderFulfillmentService.acceptOnlineOrder(id, merchantId);
+  }
+
+  @Post(':id/cancel')
+  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Scopes(
+    Scope.ADMIN_PORTAL,
+    Scope.MERCHANT_WEB,
+    Scope.MERCHANT_ANDROID,
+    Scope.MERCHANT_IOS,
+    Scope.MERCHANT_CLOVER,
+  )
+  @ApiOperation({
+    summary: 'Cancel online order before POS acceptance',
+    description:
+      'Only allowed while fulfillment is received and no POS order exists yet.',
+  })
+  @ApiParam({ name: 'id', type: Number, description: 'Online order ID' })
+  @ApiOkResponse({
+    description: 'Online order cancelled',
+    type: OneOnlineOrderResponseDto,
+  })
+  async cancelFulfillment(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedRequest,
+  ): Promise<OneOnlineOrderResponseDto> {
+    const merchantId = req.user?.merchant?.id;
+    return this.onlineOrderFulfillmentService.cancelOnlineOrder(id, merchantId);
   }
 
   @Get()
@@ -143,7 +203,8 @@ export class OnlineOrderController {
   )
   @ApiOperation({
     summary: 'Get all Online Orders with pagination and filters',
-    description: 'Retrieves a paginated list of online orders for online stores belonging to the authenticated user\'s merchant. Supports filtering by store ID, order ID, customer ID, type, payment status, placed date, and scheduled date.',
+    description:
+      "Retrieves a paginated list of online orders for online stores belonging to the authenticated user's merchant. Supports filtering by store ID, order ID, customer ID, type, payment status, placed date, and scheduled date.",
   })
   @ApiQuery({
     name: 'page',
@@ -211,7 +272,18 @@ export class OnlineOrderController {
   @ApiQuery({
     name: 'sortBy',
     required: false,
-    enum: ['id', 'merchantId', 'storeId', 'orderId', 'customerId', 'type', 'paymentStatus', 'totalAmount', 'placedAt', 'scheduledAt', 'updatedAt'],
+    enum: [
+      'id',
+      'merchantId',
+      'storeId',
+      'orderId',
+      'customerId',
+      'type',
+      'paymentStatus',
+      'placedAt',
+      'scheduledAt',
+      'updatedAt',
+    ],
     description: 'Field to sort by',
     example: 'updatedAt',
   })
@@ -231,7 +303,8 @@ export class OnlineOrderController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - User must be associated with a merchant to view online orders',
+    description:
+      'Forbidden - User must be associated with a merchant to view online orders',
     type: ErrorResponse,
   })
   @ApiBadRequestResponse({
@@ -240,7 +313,7 @@ export class OnlineOrderController {
   })
   async findAll(
     @Query() query: GetOnlineOrderQueryDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ): Promise<PaginatedOnlineOrderResponseDto> {
     const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlineOrderService.findAll(query, authenticatedUserMerchantId);
@@ -257,7 +330,8 @@ export class OnlineOrderController {
   )
   @ApiOperation({
     summary: 'Get an Online Order by ID',
-    description: 'Retrieves a specific online order by its ID. Users can only access online orders from online stores belonging to their own merchant.',
+    description:
+      'Retrieves a specific online order by its ID. Users can only access online orders from online stores belonging to their own merchant.',
   })
   @ApiParam({ name: 'id', type: Number, description: 'Online order ID' })
   @ApiOkResponse({
@@ -265,12 +339,22 @@ export class OnlineOrderController {
     type: OneOnlineOrderResponseDto,
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
-  @ApiForbiddenResponse({ description: 'Forbidden - You can only view online orders from your own merchant', type: ErrorResponse })
-  @ApiNotFoundResponse({ description: 'Online order not found', type: ErrorResponse })
-  @ApiBadRequestResponse({ description: 'Invalid online order ID', type: ErrorResponse })
+  @ApiForbiddenResponse({
+    description:
+      'Forbidden - You can only view online orders from your own merchant',
+    type: ErrorResponse,
+  })
+  @ApiNotFoundResponse({
+    description: 'Online order not found',
+    type: ErrorResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid online order ID',
+    type: ErrorResponse,
+  })
   async findOne(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOnlineOrderResponseDto> {
     const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlineOrderService.findOne(id, authenticatedUserMerchantId);
@@ -287,7 +371,8 @@ export class OnlineOrderController {
   )
   @ApiOperation({
     summary: 'Update an Online Order by ID',
-    description: 'Updates an existing online order. Users can only update online orders from online stores belonging to their own merchant. All fields are optional.',
+    description:
+      'Updates an existing online order. Users can only update online orders from online stores belonging to their own merchant. All fields are optional.',
   })
   @ApiParam({
     name: 'id',
@@ -304,7 +389,8 @@ export class OnlineOrderController {
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden - You can only update online orders from your own merchant',
+    description:
+      'Forbidden - You can only update online orders from your own merchant',
     type: ErrorResponse,
   })
   @ApiNotFoundResponse({
@@ -324,10 +410,9 @@ export class OnlineOrderController {
     description: 'Online order update data (all fields optional)',
     examples: {
       example1: {
-        summary: 'Update payment status and total amount',
+        summary: 'Update payment status',
         value: {
           paymentStatus: OnlineOrderPaymentStatus.PAID,
-          totalAmount: 150.99,
         },
       },
       example2: {
@@ -342,7 +427,7 @@ export class OnlineOrderController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateOnlineOrderDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOnlineOrderResponseDto> {
     const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlineOrderService.update(id, dto, authenticatedUserMerchantId);
@@ -359,24 +444,39 @@ export class OnlineOrderController {
   )
   @ApiOperation({
     summary: 'Delete an Online Order by ID',
-    description: 'Performs a logical deletion of an online order. Users can only delete online orders from online stores belonging to their own merchant.',
+    description:
+      'Performs a logical deletion of an online order. Users can only delete online orders from online stores belonging to their own merchant.',
   })
-  @ApiParam({ name: 'id', type: Number, description: 'Online order ID to delete' })
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'Online order ID to delete',
+  })
   @ApiOkResponse({
     description: 'Online order deleted successfully',
     type: OneOnlineOrderResponseDto,
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
-  @ApiForbiddenResponse({ description: 'Forbidden - You can only delete online orders from your own merchant', type: ErrorResponse })
-  @ApiNotFoundResponse({ description: 'Online order not found', type: ErrorResponse })
-  @ApiBadRequestResponse({ description: 'Invalid online order ID', type: ErrorResponse })
+  @ApiForbiddenResponse({
+    description:
+      'Forbidden - You can only delete online orders from your own merchant',
+    type: ErrorResponse,
+  })
+  @ApiNotFoundResponse({
+    description: 'Online order not found',
+    type: ErrorResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid online order ID',
+    type: ErrorResponse,
+  })
   @ApiConflictResponse({
     description: 'Online order is already deleted',
     type: ErrorResponse,
   })
   async remove(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ): Promise<OneOnlineOrderResponseDto> {
     const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlineOrderService.remove(id, authenticatedUserMerchantId);

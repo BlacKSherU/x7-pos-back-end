@@ -10,7 +10,13 @@ import { Shift } from 'src/restaurant-operations/shift/shifts/entities/shift.ent
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([TimeEntry, Company, Merchant, Collaborator, Shift]),
+    TypeOrmModule.forFeature([
+      TimeEntry,
+      Company,
+      Merchant,
+      Collaborator,
+      Shift,
+    ]),
   ],
   controllers: [CollaboratorTimeEntriesController],
   providers: [CollaboratorTimeEntriesService],

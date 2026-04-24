@@ -9,9 +9,7 @@ import { CreatePurchaseOrderItemDto } from 'src/inventory/products-inventory/pur
 import { UpdatePurchaseOrderItemDto } from 'src/inventory/products-inventory/purchase-order-item/dto/update-purchase-order-item.dto';
 
 @ValidatorConstraint({ async: false })
-export class IsCalculatedTotalPriceConstraint
-  implements ValidatorConstraintInterface
-{
+export class IsCalculatedTotalPriceConstraint implements ValidatorConstraintInterface {
   validate(totalPrice: number, args: ValidationArguments) {
     const obj = args.object as
       | CreatePurchaseOrderItemDto

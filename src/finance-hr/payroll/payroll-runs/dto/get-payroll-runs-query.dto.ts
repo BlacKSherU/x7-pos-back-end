@@ -1,4 +1,11 @@
-import { IsOptional, IsNumber, IsEnum, IsPositive, Min, Max } from 'class-validator';
+import {
+  IsOptional,
+  IsNumber,
+  IsEnum,
+  IsPositive,
+  Min,
+  Max,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { PayrollRunStatus } from '../constants/payroll-run-status.enum';
@@ -18,7 +25,12 @@ export class GetPayrollRunsQueryDto {
   @Min(1)
   page?: number;
 
-  @ApiPropertyOptional({ example: 10, description: 'Items per page', minimum: 1, maximum: 100 })
+  @ApiPropertyOptional({
+    example: 10,
+    description: 'Items per page',
+    minimum: 1,
+    maximum: 100,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
@@ -40,7 +52,11 @@ export class GetPayrollRunsQueryDto {
   @IsPositive()
   merchant_id?: number;
 
-  @ApiPropertyOptional({ example: PayrollRunStatus.DRAFT, enum: PayrollRunStatus, description: 'Filter by status' })
+  @ApiPropertyOptional({
+    example: PayrollRunStatus.DRAFT,
+    enum: PayrollRunStatus,
+    description: 'Filter by status',
+  })
   @IsOptional()
   @IsEnum(PayrollRunStatus)
   status?: PayrollRunStatus;
@@ -54,7 +70,11 @@ export class GetPayrollRunsQueryDto {
   @IsEnum(PayrollRunSortBy)
   sortBy?: PayrollRunSortBy;
 
-  @ApiPropertyOptional({ example: 'DESC', enum: ['ASC', 'DESC'], description: 'Sort order' })
+  @ApiPropertyOptional({
+    example: 'DESC',
+    enum: ['ASC', 'DESC'],
+    description: 'Sort order',
+  })
   @IsOptional()
   sortOrder?: 'ASC' | 'DESC';
 }

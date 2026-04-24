@@ -14,4 +14,4 @@ import { Company } from 'src/platform-saas/companies/entities/company.entity';
   providers: [CustomersService],
   exports: [CustomersService],
 })
-export class CustomersModule { }
+export class CustomersModule {}

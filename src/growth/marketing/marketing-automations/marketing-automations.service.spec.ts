@@ -9,7 +9,12 @@ import { UpdateMarketingAutomationDto } from './dto/update-marketing-automation.
 import { MarketingAutomationTrigger } from './constants/marketing-automation-trigger.enum';
 import { MarketingAutomationAction } from './constants/marketing-automation-action.enum';
 import { MarketingAutomationStatus } from './constants/marketing-automation-status.enum';
-import { NotFoundException, BadRequestException, ForbiddenException, ConflictException } from '@nestjs/common';
+import {
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+  ConflictException,
+} from '@nestjs/common';
 
 describe('MarketingAutomationsService', () => {
   let service: MarketingAutomationsService;
@@ -73,7 +78,9 @@ describe('MarketingAutomationsService', () => {
       ],
     }).compile();
 
-    service = module.get<MarketingAutomationsService>(MarketingAutomationsService);
+    service = module.get<MarketingAutomationsService>(
+      MarketingAutomationsService,
+    );
     marketingAutomationRepository = module.get<Repository<MarketingAutomation>>(
       getRepositoryToken(MarketingAutomation),
     );
@@ -101,8 +108,12 @@ describe('MarketingAutomationsService', () => {
 
     it('should create a marketing automation successfully', async () => {
       mockMerchantRepository.findOne.mockResolvedValue(mockMerchant);
-      mockMarketingAutomationRepository.save.mockResolvedValue(mockMarketingAutomation);
-      mockMarketingAutomationRepository.findOne.mockResolvedValue(mockMarketingAutomation);
+      mockMarketingAutomationRepository.save.mockResolvedValue(
+        mockMarketingAutomation,
+      );
+      mockMarketingAutomationRepository.findOne.mockResolvedValue(
+        mockMarketingAutomation,
+      );
 
       const result = await service.create(createDto, 1);
 
@@ -113,27 +124,35 @@ describe('MarketingAutomationsService', () => {
     });
 
     it('should throw ForbiddenException when user has no merchant', async () => {
-      await expect(service.create(createDto, null)).rejects.toThrow(ForbiddenException);
+      await expect(service.create(createDto, null)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw NotFoundException when merchant does not exist', async () => {
       mockMerchantRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.create(createDto, 1)).rejects.toThrow(NotFoundException);
+      await expect(service.create(createDto, 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw BadRequestException when name is empty', async () => {
       const invalidDto = { ...createDto, name: '' };
       mockMerchantRepository.findOne.mockResolvedValue(mockMerchant);
 
-      await expect(service.create(invalidDto, 1)).rejects.toThrow(BadRequestException);
+      await expect(service.create(invalidDto, 1)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException when action payload is invalid JSON', async () => {
       const invalidDto = { ...createDto, actionPayload: 'invalid json' };
       mockMerchantRepository.findOne.mockResolvedValue(mockMerchant);
 
-      await expect(service.create(invalidDto, 1)).rejects.toThrow(BadRequestException);
+      await expect(service.create(invalidDto, 1)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -141,7 +160,7 @@ describe('MarketingAutomationsService', () => {
     it('should return paginated marketing automations', async () => {
       const query = { page: 1, limit: 10 };
       const mockAutomations = [mockMarketingAutomation];
-      
+
       mockMarketingAutomationRepository.createQueryBuilder.mockReturnValue({
         ...mockQueryBuilder,
         getManyAndCount: jest.fn().mockResolvedValue([mockAutomations, 1]),
@@ -150,13 +169,17 @@ describe('MarketingAutomationsService', () => {
       const result = await service.findAll(query, 1);
 
       expect(result.statusCode).toBe(200);
-      expect(result.message).toBe('Marketing automations retrieved successfully');
+      expect(result.message).toBe(
+        'Marketing automations retrieved successfully',
+      );
       expect(result.data).toHaveLength(1);
       expect(result.paginationMeta).toBeDefined();
     });
 
     it('should throw ForbiddenException when user has no merchant', async () => {
-      await expect(service.findAll({}, null)).rejects.toThrow(ForbiddenException);
+      await expect(service.findAll({}, null)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -170,7 +193,9 @@ describe('MarketingAutomationsService', () => {
       const result = await service.findOne(1, 1);
 
       expect(result.statusCode).toBe(200);
-      expect(result.message).toBe('Marketing automation retrieved successfully');
+      expect(result.message).toBe(
+        'Marketing automation retrieved successfully',
+      );
       expect(result.data.id).toBe(1);
     });
 
@@ -202,7 +227,9 @@ describe('MarketingAutomationsService', () => {
         getOne: jest.fn().mockResolvedValue(mockMarketingAutomation),
       });
       mockMarketingAutomationRepository.update.mockResolvedValue(undefined);
-      mockMarketingAutomationRepository.findOne.mockResolvedValue(updatedAutomation);
+      mockMarketingAutomationRepository.findOne.mockResolvedValue(
+        updatedAutomation,
+      );
 
       const result = await service.update(1, updateDto, 1);
 
@@ -217,7 +244,9 @@ describe('MarketingAutomationsService', () => {
         getOne: jest.fn().mockResolvedValue(null),
       });
 
-      await expect(service.update(999, updateDto, 1)).rejects.toThrow(NotFoundException);
+      await expect(service.update(999, updateDto, 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -232,7 +261,9 @@ describe('MarketingAutomationsService', () => {
         ...mockQueryBuilder,
         getOne: jest.fn().mockResolvedValue(mockMarketingAutomation),
       });
-      mockMarketingAutomationRepository.save.mockResolvedValue(deletedAutomation);
+      mockMarketingAutomationRepository.save.mockResolvedValue(
+        deletedAutomation,
+      );
 
       const result = await service.remove(1, 1);
 

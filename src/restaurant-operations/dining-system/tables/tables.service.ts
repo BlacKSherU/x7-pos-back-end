@@ -34,7 +34,7 @@ export class TablesService {
 
     @InjectRepository(FloorPlan)
     private readonly floorPlanRepo: Repository<FloorPlan>,
-  ) { }
+  ) {}
 
   async create(
     dto: CreateTableDto,
@@ -174,9 +174,9 @@ export class TablesService {
         },
         parent_table: savedTable.parentTable
           ? {
-            id: savedTable.parentTable.id,
-            number: savedTable.parentTable.number,
-          }
+              id: savedTable.parentTable.id,
+              number: savedTable.parentTable.number,
+            }
           : null,
       },
     };
@@ -280,9 +280,9 @@ export class TablesService {
       floorPlan: table.floorPlan,
       parent_table: table.parentTable
         ? {
-          id: table.parentTable.id,
-          number: table.parentTable.number,
-        }
+            id: table.parentTable.id,
+            number: table.parentTable.number,
+          }
         : null,
     }));
 
@@ -368,9 +368,9 @@ export class TablesService {
         floorPlan: table.floorPlan,
         parent_table: table.parentTable
           ? {
-            id: table.parentTable.id,
-            number: table.parentTable.number,
-          }
+              id: table.parentTable.id,
+              number: table.parentTable.number,
+            }
           : null,
       },
     };
@@ -585,9 +585,9 @@ export class TablesService {
         floorPlan: updated.floorPlan,
         parent_table: updated.parentTable
           ? {
-            id: updated.parentTable.id,
-            number: updated.parentTable.number,
-          }
+              id: updated.parentTable.id,
+              number: updated.parentTable.number,
+            }
           : null,
       },
     };
@@ -687,9 +687,9 @@ export class TablesService {
         floorPlan: updated.floorPlan,
         parent_table: updated.parentTable
           ? {
-            id: updated.parentTable.id,
-            number: updated.parentTable.number,
-          }
+              id: updated.parentTable.id,
+              number: updated.parentTable.number,
+            }
           : null,
       },
     };

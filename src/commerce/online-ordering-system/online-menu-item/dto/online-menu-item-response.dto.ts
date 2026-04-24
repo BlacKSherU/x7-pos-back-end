@@ -39,7 +39,10 @@ export class BasicOnlineMenuInfoDto {
 }
 
 export class OnlineMenuItemResponseDto {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Online Menu Item' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Online Menu Item',
+  })
   id: number;
 
   @ApiProperty({ example: 1, description: 'Identifier of the Online Menu' })
@@ -48,44 +51,72 @@ export class OnlineMenuItemResponseDto {
   @ApiProperty({ example: 1, description: 'Identifier of the Product' })
   productId: number;
 
-  @ApiProperty({ example: 1, description: 'Identifier of the Variant', nullable: true })
+  @ApiProperty({
+    example: 1,
+    description: 'Identifier of the Variant',
+    nullable: true,
+  })
   variantId: number | null;
 
   @ApiProperty({ example: true, description: 'Whether the item is available' })
   isAvailable: boolean;
 
-  @ApiProperty({ example: 15.99, description: 'Price override for this item in the menu', nullable: true })
+  @ApiProperty({
+    example: 15.99,
+    description: 'Price override for this item in the menu',
+    nullable: true,
+  })
   priceOverride: number | null;
 
-  @ApiProperty({ example: 1, description: 'Display order of the item in the menu' })
+  @ApiProperty({
+    example: 1,
+    description: 'Display order of the item in the menu',
+  })
   displayOrder: number;
 
-  @ApiProperty({ 
-    example: OnlineMenuItemStatus.ACTIVE, 
+  @ApiProperty({
+    example: OnlineMenuItemStatus.ACTIVE,
     enum: OnlineMenuItemStatus,
-    description: 'Logical status for deletion (active, deleted)' 
+    description: 'Logical status for deletion (active, deleted)',
   })
   status: OnlineMenuItemStatus;
 
-  @ApiProperty({ example: '2024-01-15T08:00:00Z', description: 'Creation timestamp' })
+  @ApiProperty({
+    example: '2024-01-15T08:00:00Z',
+    description: 'Creation timestamp',
+  })
   createdAt: Date;
 
-  @ApiProperty({ example: '2024-01-15T09:00:00Z', description: 'Last update timestamp' })
+  @ApiProperty({
+    example: '2024-01-15T09:00:00Z',
+    description: 'Last update timestamp',
+  })
   updatedAt: Date;
 
-  @ApiProperty({ type: () => BasicOnlineMenuInfoDto, description: 'Online Menu information' })
+  @ApiProperty({
+    type: () => BasicOnlineMenuInfoDto,
+    description: 'Online Menu information',
+  })
   menu: BasicOnlineMenuInfoDto;
 
-  @ApiProperty({ type: () => BasicProductInfoDto, description: 'Product information' })
+  @ApiProperty({
+    type: () => BasicProductInfoDto,
+    description: 'Product information',
+  })
   product: BasicProductInfoDto;
 
-  @ApiProperty({ type: () => BasicVariantInfoDto, description: 'Variant information', nullable: true })
+  @ApiProperty({
+    type: () => BasicVariantInfoDto,
+    description: 'Variant information',
+    nullable: true,
+  })
   variant: BasicVariantInfoDto | null;
 }
 
 export class OneOnlineMenuItemResponseDto extends SuccessResponse {
-  @ApiProperty({ type: () => OnlineMenuItemResponseDto, description: 'Online menu item data' })
+  @ApiProperty({
+    type: () => OnlineMenuItemResponseDto,
+    description: 'Online menu item data',
+  })
   data: OnlineMenuItemResponseDto;
 }
-
-

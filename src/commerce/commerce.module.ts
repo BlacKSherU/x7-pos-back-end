@@ -6,4 +6,4 @@ import { OnlineOrderingModule } from './online-ordering-system/online-ordering.m
   imports: [QRCodeModule, OnlineOrderingModule],
   exports: [QRCodeModule, OnlineOrderingModule],
 })
-export class CommerceModule { }
+export class CommerceModule {}

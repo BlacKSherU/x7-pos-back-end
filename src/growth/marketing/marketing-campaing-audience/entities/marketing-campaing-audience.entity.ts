@@ -18,7 +18,10 @@ import { MarketingCampaignAudienceStatus } from '../constants/marketing-campaign
 @Index(['marketing_campaign_id', 'status', 'created_at'])
 @Index(['customer_id', 'status'])
 export class MarketingCampaignAudience {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the marketing campaign audience' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the marketing campaign audience',
+  })
   @PrimaryGeneratedColumn({ type: 'bigint' })
   id: number;
 
@@ -61,7 +64,8 @@ export class MarketingCampaignAudience {
   @ApiProperty({
     example: MarketingCampaignAudienceStatus.PENDING,
     enum: MarketingCampaignAudienceStatus,
-    description: 'Status of the audience entry (pending, sent, delivered, opened, clicked, failed, deleted)',
+    description:
+      'Status of the audience entry (pending, sent, delivered, opened, clicked, failed, deleted)',
   })
   @Column({
     type: 'enum',
@@ -119,7 +123,8 @@ export class MarketingCampaignAudience {
 
   @ApiProperty({
     example: '2023-10-01T12:00:00Z',
-    description: 'Last update timestamp of the marketing campaign audience record',
+    description:
+      'Last update timestamp of the marketing campaign audience record',
   })
   @UpdateDateColumn({ type: 'timestamp', name: 'updated_at' })
   updated_at: Date;

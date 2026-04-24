@@ -456,7 +456,7 @@ describe('CategoryService', () => {
       });
 
       expect(result).toEqual({
-        statusCode: 201,
+        statusCode: 200,
         message: 'Category Updated successfully',
         data: {
           id: updatedCategory.id,
@@ -609,7 +609,7 @@ describe('CategoryService', () => {
       expect(categoryToDelete.isActive).toBe(false);
       expect(categoryRepo.save).toHaveBeenCalledWith(categoryToDelete);
       expect(result).toEqual({
-        statusCode: 201,
+        statusCode: 200,
         message: 'Category Deleted successfully',
         data: {
           id: inactiveCategory.id,
@@ -738,7 +738,7 @@ describe('CategoryService', () => {
       });
 
       expect(result).toEqual({
-        statusCode: 201,
+        statusCode: 200,
         message: 'Category Deleted successfully',
         data: {
           id: expectedParentSaved.id,

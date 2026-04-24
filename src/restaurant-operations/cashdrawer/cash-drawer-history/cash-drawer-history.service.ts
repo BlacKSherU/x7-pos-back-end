@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, In } from 'typeorm';
 import { CashDrawerHistory } from './entities/cash-drawer-history.entity';
@@ -6,8 +12,14 @@ import { CashDrawer } from '../cash-drawers/entities/cash-drawer.entity';
 import { Collaborator } from 'src/finance-hr/hr/collaborators/entities/collaborator.entity';
 import { CreateCashDrawerHistoryDto } from './dto/create-cash-drawer-history.dto';
 import { UpdateCashDrawerHistoryDto } from './dto/update-cash-drawer-history.dto';
-import { GetCashDrawerHistoryQueryDto, CashDrawerHistorySortBy } from './dto/get-cash-drawer-history-query.dto';
-import { CashDrawerHistoryResponseDto, OneCashDrawerHistoryResponseDto } from './dto/cash-drawer-history-response.dto';
+import {
+  GetCashDrawerHistoryQueryDto,
+  CashDrawerHistorySortBy,
+} from './dto/get-cash-drawer-history-query.dto';
+import {
+  CashDrawerHistoryResponseDto,
+  OneCashDrawerHistoryResponseDto,
+} from './dto/cash-drawer-history-response.dto';
 import { PaginatedCashDrawerHistoryResponseDto } from './dto/paginated-cash-drawer-history-response.dto';
 import { CashDrawerHistoryStatus } from './constants/cash-drawer-history-status.enum';
 
@@ -22,11 +34,15 @@ export class CashDrawerHistoryService {
     private readonly collaboratorRepository: Repository<Collaborator>,
   ) {}
 
-  async create(createCashDrawerHistoryDto: CreateCashDrawerHistoryDto, authenticatedUserMerchantId: number): Promise<OneCashDrawerHistoryResponseDto> {
-
+  async create(
+    createCashDrawerHistoryDto: CreateCashDrawerHistoryDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneCashDrawerHistoryResponseDto> {
     // Validate user permissions - must be associated with a merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to create cash drawer history');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to create cash drawer history',
+      );
     }
 
     // Validate cash drawer exists and belongs to merchant
@@ -40,7 +56,9 @@ export class CashDrawerHistoryService {
     }
 
     if (cashDrawer.merchant_id !== authenticatedUserMerchantId) {
-      throw new ForbiddenException('You can only create cash drawer history for cash drawers belonging to your merchant');
+      throw new ForbiddenException(
+        'You can only create cash drawer history for cash drawers belonging to your merchant',
+      );
     }
 
     // Validate opened by collaborator exists and belongs to merchant
@@ -53,7 +71,9 @@ export class CashDrawerHistoryService {
     }
 
     if (openedByCollaborator.merchant_id !== authenticatedUserMerchantId) {
-      throw new ForbiddenException('You can only assign collaborators from your merchant');
+      throw new ForbiddenException(
+        'You can only assign collaborators from your merchant',
+      );
     }
 
     // Validate closed by collaborator exists and belongs to merchant
@@ -66,7 +86,9 @@ export class CashDrawerHistoryService {
     }
 
     if (closedByCollaborator.merchant_id !== authenticatedUserMerchantId) {
-      throw new ForbiddenException('You can only assign collaborators from your merchant');
+      throw new ForbiddenException(
+        'You can only assign collaborators from your merchant',
+      );
     }
 
     // Business rule validation: Opening balance must be non-negative
@@ -82,22 +104,33 @@ export class CashDrawerHistoryService {
     // Create cash drawer history
     const cashDrawerHistory = new CashDrawerHistory();
     cashDrawerHistory.cash_drawer_id = createCashDrawerHistoryDto.cashDrawerId;
-    cashDrawerHistory.opening_balance = createCashDrawerHistoryDto.openingBalance;
-    cashDrawerHistory.closing_balance = createCashDrawerHistoryDto.closingBalance;
+    cashDrawerHistory.opening_balance =
+      createCashDrawerHistoryDto.openingBalance;
+    cashDrawerHistory.closing_balance =
+      createCashDrawerHistoryDto.closingBalance;
     cashDrawerHistory.opened_by = createCashDrawerHistoryDto.openedBy;
     cashDrawerHistory.closed_by = createCashDrawerHistoryDto.closedBy;
     cashDrawerHistory.status = CashDrawerHistoryStatus.ACTIVE;
 
-    const savedCashDrawerHistory = await this.cashDrawerHistoryRepository.save(cashDrawerHistory);
+    const savedCashDrawerHistory =
+      await this.cashDrawerHistoryRepository.save(cashDrawerHistory);
 
     // Fetch the complete cash drawer history with relations
-    const completeCashDrawerHistory = await this.cashDrawerHistoryRepository.findOne({
-      where: { id: savedCashDrawerHistory.id },
-      relations: ['cashDrawer', 'cashDrawer.merchant', 'openedByCollaborator', 'closedByCollaborator'],
-    });
+    const completeCashDrawerHistory =
+      await this.cashDrawerHistoryRepository.findOne({
+        where: { id: savedCashDrawerHistory.id },
+        relations: [
+          'cashDrawer',
+          'cashDrawer.merchant',
+          'openedByCollaborator',
+          'closedByCollaborator',
+        ],
+      });
 
     if (!completeCashDrawerHistory) {
-      throw new NotFoundException('Cash drawer history not found after creation');
+      throw new NotFoundException(
+        'Cash drawer history not found after creation',
+      );
     }
 
     return {
@@ -107,11 +140,15 @@ export class CashDrawerHistoryService {
     };
   }
 
-  async findAll(query: GetCashDrawerHistoryQueryDto, authenticatedUserMerchantId: number): Promise<PaginatedCashDrawerHistoryResponseDto> {
-
+  async findAll(
+    query: GetCashDrawerHistoryQueryDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<PaginatedCashDrawerHistoryResponseDto> {
     // Validate user has merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to access cash drawer history');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to access cash drawer history',
+      );
     }
 
     // Validate pagination parameters
@@ -127,7 +164,9 @@ export class CashDrawerHistoryService {
     if (query.createdDate) {
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
       if (!dateRegex.test(query.createdDate)) {
-        throw new BadRequestException('Created date must be in YYYY-MM-DD format');
+        throw new BadRequestException(
+          'Created date must be in YYYY-MM-DD format',
+        );
       }
     }
 
@@ -147,10 +186,14 @@ export class CashDrawerHistoryService {
         relations: ['merchant'],
       });
       if (!cashDrawer) {
-        throw new NotFoundException(`Cash drawer with ID ${query.cashDrawerId} not found`);
+        throw new NotFoundException(
+          `Cash drawer with ID ${query.cashDrawerId} not found`,
+        );
       }
       if (cashDrawer.merchant_id !== authenticatedUserMerchantId) {
-        throw new ForbiddenException('Cash drawer does not belong to your merchant');
+        throw new ForbiddenException(
+          'Cash drawer does not belong to your merchant',
+        );
       }
       whereConditions.cash_drawer_id = query.cashDrawerId;
     } else {
@@ -159,7 +202,7 @@ export class CashDrawerHistoryService {
         where: { merchant_id: authenticatedUserMerchantId },
         select: ['id'],
       });
-      const merchantCashDrawerIds = merchantCashDrawers.map(cd => cd.id);
+      const merchantCashDrawerIds = merchantCashDrawers.map((cd) => cd.id);
       if (merchantCashDrawerIds.length === 0) {
         // No cash drawers for this merchant, return empty result
         return {
@@ -177,9 +220,10 @@ export class CashDrawerHistoryService {
         };
       }
       // Use In operator when there are multiple cash drawer IDs
-      whereConditions.cash_drawer_id = merchantCashDrawerIds.length === 1 
-        ? merchantCashDrawerIds[0] 
-        : In(merchantCashDrawerIds);
+      whereConditions.cash_drawer_id =
+        merchantCashDrawerIds.length === 1
+          ? merchantCashDrawerIds[0]
+          : In(merchantCashDrawerIds);
     }
 
     if (query.openedBy) {
@@ -188,10 +232,14 @@ export class CashDrawerHistoryService {
         where: { id: query.openedBy },
       });
       if (!collaborator) {
-        throw new NotFoundException(`Collaborator with ID ${query.openedBy} not found`);
+        throw new NotFoundException(
+          `Collaborator with ID ${query.openedBy} not found`,
+        );
       }
       if (collaborator.merchant_id !== authenticatedUserMerchantId) {
-        throw new ForbiddenException('Collaborator does not belong to your merchant');
+        throw new ForbiddenException(
+          'Collaborator does not belong to your merchant',
+        );
       }
       whereConditions.opened_by = query.openedBy;
     }
@@ -202,10 +250,14 @@ export class CashDrawerHistoryService {
         where: { id: query.closedBy },
       });
       if (!collaborator) {
-        throw new NotFoundException(`Collaborator with ID ${query.closedBy} not found`);
+        throw new NotFoundException(
+          `Collaborator with ID ${query.closedBy} not found`,
+        );
       }
       if (collaborator.merchant_id !== authenticatedUserMerchantId) {
-        throw new ForbiddenException('Collaborator does not belong to your merchant');
+        throw new ForbiddenException(
+          'Collaborator does not belong to your merchant',
+        );
       }
       whereConditions.closed_by = query.closedBy;
     }
@@ -220,25 +272,35 @@ export class CashDrawerHistoryService {
     // Build order conditions
     const orderConditions: any = {};
     if (query.sortBy) {
-      const sortField = query.sortBy === CashDrawerHistorySortBy.OPENING_BALANCE ? 'opening_balance' :
-                       query.sortBy === CashDrawerHistorySortBy.CLOSING_BALANCE ? 'closing_balance' :
-                       query.sortBy === CashDrawerHistorySortBy.CREATED_AT ? 'created_at' :
-                       query.sortBy === CashDrawerHistorySortBy.UPDATED_AT ? 'updated_at' : 'id';
+      const sortField =
+        query.sortBy === CashDrawerHistorySortBy.OPENING_BALANCE
+          ? 'opening_balance'
+          : query.sortBy === CashDrawerHistorySortBy.CLOSING_BALANCE
+            ? 'closing_balance'
+            : query.sortBy === CashDrawerHistorySortBy.CREATED_AT
+              ? 'created_at'
+              : query.sortBy === CashDrawerHistorySortBy.UPDATED_AT
+                ? 'updated_at'
+                : 'id';
       orderConditions[sortField] = query.sortOrder || 'DESC';
     } else {
       orderConditions.created_at = 'DESC';
     }
 
-
     // Execute query
-    const [cashDrawerHistories, total] = await this.cashDrawerHistoryRepository.findAndCount({
-      where: whereConditions,
-      relations: ['cashDrawer', 'cashDrawer.merchant', 'openedByCollaborator', 'closedByCollaborator'],
-      order: orderConditions,
-      skip,
-      take: limit,
-    });
-
+    const [cashDrawerHistories, total] =
+      await this.cashDrawerHistoryRepository.findAndCount({
+        where: whereConditions,
+        relations: [
+          'cashDrawer',
+          'cashDrawer.merchant',
+          'openedByCollaborator',
+          'closedByCollaborator',
+        ],
+        order: orderConditions,
+        skip,
+        take: limit,
+      });
 
     // Calculate pagination metadata
     const totalPages = Math.ceil(total / limit);
@@ -257,30 +319,43 @@ export class CashDrawerHistoryService {
     return {
       statusCode: 200,
       message: 'Cash drawer history retrieved successfully',
-      data: cashDrawerHistories.map(history => this.formatCashDrawerHistoryResponse(history)),
+      data: cashDrawerHistories.map((history) =>
+        this.formatCashDrawerHistoryResponse(history),
+      ),
       paginationMeta,
     };
   }
 
-  async findOne(id: number, authenticatedUserMerchantId: number): Promise<OneCashDrawerHistoryResponseDto> {
-
+  async findOne(
+    id: number,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneCashDrawerHistoryResponseDto> {
     // Validate ID
     if (!id || id <= 0) {
-      throw new BadRequestException('Cash drawer history ID must be a valid positive number');
+      throw new BadRequestException(
+        'Cash drawer history ID must be a valid positive number',
+      );
     }
 
     // Validate user has merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to access cash drawer history');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to access cash drawer history',
+      );
     }
 
     // Find cash drawer history
     const cashDrawerHistory = await this.cashDrawerHistoryRepository.findOne({
-      where: { 
+      where: {
         id,
         status: CashDrawerHistoryStatus.ACTIVE,
       },
-      relations: ['cashDrawer', 'cashDrawer.merchant', 'openedByCollaborator', 'closedByCollaborator'],
+      relations: [
+        'cashDrawer',
+        'cashDrawer.merchant',
+        'openedByCollaborator',
+        'closedByCollaborator',
+      ],
     });
 
     if (!cashDrawerHistory) {
@@ -288,10 +363,13 @@ export class CashDrawerHistoryService {
     }
 
     // Validate merchant ownership through cash drawer
-    if (cashDrawerHistory.cashDrawer.merchant_id !== authenticatedUserMerchantId) {
-      throw new ForbiddenException('You can only access cash drawer history from your merchant');
+    if (
+      cashDrawerHistory.cashDrawer.merchant_id !== authenticatedUserMerchantId
+    ) {
+      throw new ForbiddenException(
+        'You can only access cash drawer history from your merchant',
+      );
     }
-
 
     return {
       statusCode: 200,
@@ -300,34 +378,52 @@ export class CashDrawerHistoryService {
     };
   }
 
-  async update(id: number, updateCashDrawerHistoryDto: UpdateCashDrawerHistoryDto, authenticatedUserMerchantId: number): Promise<OneCashDrawerHistoryResponseDto> {
-
+  async update(
+    id: number,
+    updateCashDrawerHistoryDto: UpdateCashDrawerHistoryDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneCashDrawerHistoryResponseDto> {
     // Validate ID
     if (!id || id <= 0) {
-      throw new BadRequestException('Cash drawer history ID must be a valid positive number');
-     }
+      throw new BadRequestException(
+        'Cash drawer history ID must be a valid positive number',
+      );
+    }
 
     // Validate user has merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to update cash drawer history');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to update cash drawer history',
+      );
     }
 
     // Find existing cash drawer history
-    const existingCashDrawerHistory = await this.cashDrawerHistoryRepository.findOne({
-      where: { 
-        id,
-        status: CashDrawerHistoryStatus.ACTIVE,
-      },
-      relations: ['cashDrawer', 'cashDrawer.merchant', 'openedByCollaborator', 'closedByCollaborator'],
-    });
+    const existingCashDrawerHistory =
+      await this.cashDrawerHistoryRepository.findOne({
+        where: {
+          id,
+          status: CashDrawerHistoryStatus.ACTIVE,
+        },
+        relations: [
+          'cashDrawer',
+          'cashDrawer.merchant',
+          'openedByCollaborator',
+          'closedByCollaborator',
+        ],
+      });
 
     if (!existingCashDrawerHistory) {
       throw new NotFoundException('Cash drawer history not found');
     }
 
     // Validate merchant ownership
-    if (existingCashDrawerHistory.cashDrawer.merchant_id !== authenticatedUserMerchantId) {
-      throw new ForbiddenException('You can only update cash drawer history from your merchant');
+    if (
+      existingCashDrawerHistory.cashDrawer.merchant_id !==
+      authenticatedUserMerchantId
+    ) {
+      throw new ForbiddenException(
+        'You can only update cash drawer history from your merchant',
+      );
     }
 
     // Validate cash drawer if provided
@@ -342,7 +438,9 @@ export class CashDrawerHistoryService {
       }
 
       if (cashDrawer.merchant_id !== authenticatedUserMerchantId) {
-        throw new ForbiddenException('You can only assign cash drawers from your merchant');
+        throw new ForbiddenException(
+          'You can only assign cash drawers from your merchant',
+        );
       }
     }
 
@@ -357,7 +455,9 @@ export class CashDrawerHistoryService {
       }
 
       if (openedByCollaborator.merchant_id !== authenticatedUserMerchantId) {
-        throw new ForbiddenException('You can only assign collaborators from your merchant');
+        throw new ForbiddenException(
+          'You can only assign collaborators from your merchant',
+        );
       }
     }
 
@@ -372,33 +472,52 @@ export class CashDrawerHistoryService {
       }
 
       if (closedByCollaborator.merchant_id !== authenticatedUserMerchantId) {
-        throw new ForbiddenException('You can only assign collaborators from your merchant');
+        throw new ForbiddenException(
+          'You can only assign collaborators from your merchant',
+        );
       }
     }
 
     // Business rule validation: amounts
-    if (updateCashDrawerHistoryDto.openingBalance !== undefined && updateCashDrawerHistoryDto.openingBalance < 0) {
+    if (
+      updateCashDrawerHistoryDto.openingBalance !== undefined &&
+      updateCashDrawerHistoryDto.openingBalance < 0
+    ) {
       throw new BadRequestException('Opening balance must be non-negative');
     }
-    if (updateCashDrawerHistoryDto.closingBalance !== undefined && updateCashDrawerHistoryDto.closingBalance < 0) {
+    if (
+      updateCashDrawerHistoryDto.closingBalance !== undefined &&
+      updateCashDrawerHistoryDto.closingBalance < 0
+    ) {
       throw new BadRequestException('Closing balance must be non-negative');
     }
 
     // Update cash drawer history
     const updateData: any = {};
-    if (updateCashDrawerHistoryDto.cashDrawerId !== undefined) updateData.cash_drawer_id = updateCashDrawerHistoryDto.cashDrawerId;
-    if (updateCashDrawerHistoryDto.openingBalance !== undefined) updateData.opening_balance = updateCashDrawerHistoryDto.openingBalance;
-    if (updateCashDrawerHistoryDto.closingBalance !== undefined) updateData.closing_balance = updateCashDrawerHistoryDto.closingBalance;
-    if (updateCashDrawerHistoryDto.openedBy !== undefined) updateData.opened_by = updateCashDrawerHistoryDto.openedBy;
-    if (updateCashDrawerHistoryDto.closedBy !== undefined) updateData.closed_by = updateCashDrawerHistoryDto.closedBy;
+    if (updateCashDrawerHistoryDto.cashDrawerId !== undefined)
+      updateData.cash_drawer_id = updateCashDrawerHistoryDto.cashDrawerId;
+    if (updateCashDrawerHistoryDto.openingBalance !== undefined)
+      updateData.opening_balance = updateCashDrawerHistoryDto.openingBalance;
+    if (updateCashDrawerHistoryDto.closingBalance !== undefined)
+      updateData.closing_balance = updateCashDrawerHistoryDto.closingBalance;
+    if (updateCashDrawerHistoryDto.openedBy !== undefined)
+      updateData.opened_by = updateCashDrawerHistoryDto.openedBy;
+    if (updateCashDrawerHistoryDto.closedBy !== undefined)
+      updateData.closed_by = updateCashDrawerHistoryDto.closedBy;
 
     await this.cashDrawerHistoryRepository.update(id, updateData);
 
     // Fetch updated cash drawer history
-    const updatedCashDrawerHistory = await this.cashDrawerHistoryRepository.findOne({
-      where: { id },
-      relations: ['cashDrawer', 'cashDrawer.merchant', 'openedByCollaborator', 'closedByCollaborator'],
-    });
+    const updatedCashDrawerHistory =
+      await this.cashDrawerHistoryRepository.findOne({
+        where: { id },
+        relations: [
+          'cashDrawer',
+          'cashDrawer.merchant',
+          'openedByCollaborator',
+          'closedByCollaborator',
+        ],
+      });
 
     if (!updatedCashDrawerHistory) {
       throw new NotFoundException('Cash drawer history not found after update');
@@ -411,34 +530,51 @@ export class CashDrawerHistoryService {
     };
   }
 
-  async remove(id: number, authenticatedUserMerchantId: number): Promise<OneCashDrawerHistoryResponseDto> {
-
+  async remove(
+    id: number,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneCashDrawerHistoryResponseDto> {
     // Validate ID
     if (!id || id <= 0) {
-      throw new BadRequestException('Cash drawer history ID must be a valid positive number');
+      throw new BadRequestException(
+        'Cash drawer history ID must be a valid positive number',
+      );
     }
 
     // Validate user has merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to delete cash drawer history');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to delete cash drawer history',
+      );
     }
 
     // Find existing cash drawer history
-    const existingCashDrawerHistory = await this.cashDrawerHistoryRepository.findOne({
-      where: { 
-        id,
-        status: CashDrawerHistoryStatus.ACTIVE,
-      },
-      relations: ['cashDrawer', 'cashDrawer.merchant', 'openedByCollaborator', 'closedByCollaborator'],
-    });
+    const existingCashDrawerHistory =
+      await this.cashDrawerHistoryRepository.findOne({
+        where: {
+          id,
+          status: CashDrawerHistoryStatus.ACTIVE,
+        },
+        relations: [
+          'cashDrawer',
+          'cashDrawer.merchant',
+          'openedByCollaborator',
+          'closedByCollaborator',
+        ],
+      });
 
     if (!existingCashDrawerHistory) {
       throw new NotFoundException('Cash drawer history not found');
     }
 
     // Validate merchant ownership
-    if (existingCashDrawerHistory.cashDrawer.merchant_id !== authenticatedUserMerchantId) {
-      throw new ForbiddenException('You can only delete cash drawer history from your merchant');
+    if (
+      existingCashDrawerHistory.cashDrawer.merchant_id !==
+      authenticatedUserMerchantId
+    ) {
+      throw new ForbiddenException(
+        'You can only delete cash drawer history from your merchant',
+      );
     }
 
     // Check if already deleted
@@ -457,7 +593,9 @@ export class CashDrawerHistoryService {
     };
   }
 
-  private formatCashDrawerHistoryResponse(cashDrawerHistory: CashDrawerHistory): CashDrawerHistoryResponseDto {
+  private formatCashDrawerHistoryResponse(
+    cashDrawerHistory: CashDrawerHistory,
+  ): CashDrawerHistoryResponseDto {
     return {
       id: cashDrawerHistory.id,
       cashDrawerId: cashDrawerHistory.cash_drawer_id,

@@ -8,12 +8,9 @@ import { Merchant } from 'src/platform-saas/merchants/entities/merchant.entity';
 import { IsUniqueField } from 'src/validators/is-unique-field.validator';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Collaborator, User, Merchant])
-  ],
+  imports: [TypeOrmModule.forFeature([Collaborator, User, Merchant])],
   controllers: [CollaboratorsController],
   providers: [CollaboratorsService, IsUniqueField],
-  exports: [IsUniqueField]
+  exports: [IsUniqueField],
 })
-export class CollaboratorsModule { }
-
+export class CollaboratorsModule {}

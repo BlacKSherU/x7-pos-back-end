@@ -17,7 +17,10 @@ import { KitchenStationStatus } from '../constants/kitchen-station-status.enum';
 @Entity('kitchen_station')
 @Index(['merchant_id', 'status', 'created_at'])
 export class KitchenStation {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the Kitchen Station' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the Kitchen Station',
+  })
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -73,7 +76,12 @@ export class KitchenStation {
     description: 'Name of the printer associated with this station',
     nullable: true,
   })
-  @Column({ type: 'varchar', length: 100, name: 'printer_name', nullable: true })
+  @Column({
+    type: 'varchar',
+    length: 100,
+    name: 'printer_name',
+    nullable: true,
+  })
   printer_name: string | null;
 
   @ApiProperty({

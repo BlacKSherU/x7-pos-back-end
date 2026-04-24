@@ -58,14 +58,20 @@ export class UpdateCollaboratorContractDto {
   @Max(10)
   overtime_multiplier?: number;
 
-  @ApiPropertyOptional({ example: 2.0, description: 'Double overtime multiplier' })
+  @ApiPropertyOptional({
+    example: 2.0,
+    description: 'Double overtime multiplier',
+  })
   @IsOptional()
   @IsNumber()
   @Min(1)
   @Max(10)
   double_overtime_multiplier?: number;
 
-  @ApiPropertyOptional({ example: false, description: 'Tips included in payroll' })
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Tips included in payroll',
+  })
   @IsOptional()
   @IsBoolean()
   tips_included_in_payroll?: boolean;

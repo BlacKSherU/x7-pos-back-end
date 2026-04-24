@@ -85,7 +85,11 @@ describe('LedgerAccountsController', () => {
         name: 'Cash',
         type: AccountType.ASSET,
       };
-      const createdResponse = { ...mockAccountResponse, statusCode: 201, message: 'Ledger Account Created successfully' };
+      const createdResponse = {
+        ...mockAccountResponse,
+        statusCode: 201,
+        message: 'Ledger Account Created successfully',
+      };
       service.create.mockResolvedValueOnce(createdResponse as any);
 
       const result = await controller.create(mockUser, dto);
@@ -107,8 +111,15 @@ describe('LedgerAccountsController', () => {
     });
 
     it('should apply type filter', async () => {
-      const query: GetLedgerAccountsQueryDto = { page: 1, limit: 10, type: AccountType.ASSET };
-      service.findAll.mockResolvedValueOnce({ ...mockPaginatedResponse, data: [] } as any);
+      const query: GetLedgerAccountsQueryDto = {
+        page: 1,
+        limit: 10,
+        type: AccountType.ASSET,
+      };
+      service.findAll.mockResolvedValueOnce({
+        ...mockPaginatedResponse,
+        data: [],
+      } as any);
 
       await controller.findAll(mockUser, query);
 
@@ -130,7 +141,11 @@ describe('LedgerAccountsController', () => {
   describe('update', () => {
     it('should call service.update with id, merchantId and dto', async () => {
       const dto: UpdateLedgerAccountDto = { name: 'Cash and Equivalents' };
-      const updatedResponse = { ...mockAccountResponse, statusCode: 201, message: 'Ledger Account Updated successfully' };
+      const updatedResponse = {
+        ...mockAccountResponse,
+        statusCode: 201,
+        message: 'Ledger Account Updated successfully',
+      };
       service.update.mockResolvedValueOnce(updatedResponse as any);
 
       const result = await controller.update(mockUser, 1, dto);
@@ -142,7 +157,11 @@ describe('LedgerAccountsController', () => {
 
   describe('remove', () => {
     it('should call service.remove with id and merchantId', async () => {
-      const deletedResponse = { ...mockAccountResponse, statusCode: 201, message: 'Ledger Account Deleted successfully' };
+      const deletedResponse = {
+        ...mockAccountResponse,
+        statusCode: 201,
+        message: 'Ledger Account Deleted successfully',
+      };
       service.remove.mockResolvedValueOnce(deletedResponse as any);
 
       const result = await controller.remove(mockUser, 1);

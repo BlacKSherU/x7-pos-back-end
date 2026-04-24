@@ -10,15 +10,18 @@ import {
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { MarketingCoupon } from '../../marketing-coupons/entities/marketing-coupon.entity';
-import { Order } from '../../../../orders/entities/order.entity';
-import { Customer } from 'src/core/business-partners/customers/entities/customer.entity';
+import { Order } from '../../../../restaurant-operations/pos/orders/entities/order.entity';
+import { Customer } from '../../../../core/business-partners/customers/entities/customer.entity';
 import { MarketingCouponRedemptionStatus } from '../constants/marketing-coupon-redemption-status.enum';
 
 @Entity('marketing_coupon_redemptions')
 @Index(['coupon_id', 'order_id', 'customer_id', 'redeemed_at'])
 @Index(['status', 'created_at'])
 export class MarketingCouponRedemption {
-  @ApiProperty({ example: 1, description: 'Unique identifier of the marketing coupon redemption' })
+  @ApiProperty({
+    example: 1,
+    description: 'Unique identifier of the marketing coupon redemption',
+  })
   @PrimaryGeneratedColumn({ type: 'bigint' })
   id: number;
 
@@ -81,10 +84,15 @@ export class MarketingCouponRedemption {
   redeemed_at: Date;
 
   @ApiProperty({
-    example: 10.50,
+    example: 10.5,
     description: 'Discount amount that was applied to the order',
   })
-  @Column({ type: 'decimal', precision: 10, scale: 2, name: 'discount_applied' })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    name: 'discount_applied',
+  })
   discount_applied: number;
 
   @ApiProperty({
@@ -108,7 +116,8 @@ export class MarketingCouponRedemption {
 
   @ApiProperty({
     example: '2023-10-01T12:00:00Z',
-    description: 'Last update timestamp of the marketing coupon redemption record',
+    description:
+      'Last update timestamp of the marketing coupon redemption record',
   })
   @UpdateDateColumn({ type: 'timestamp', name: 'updated_at' })
   updated_at: Date;

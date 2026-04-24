@@ -1,4 +1,11 @@
-import { IsNotEmpty, IsNumber, IsEnum, IsOptional, IsDateString, Min } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsEnum,
+  IsOptional,
+  IsDateString,
+  Min,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { TipPoolDistributionType } from '../constants/tip-pool-distribution-type.enum';
@@ -26,7 +33,10 @@ export class CreateTipPoolDto {
   @Min(1)
   shiftId: number;
 
-  @ApiProperty({ example: 'Morning Shift Pool', description: 'Name of the tip pool' })
+  @ApiProperty({
+    example: 'Morning Shift Pool',
+    description: 'Name of the tip pool',
+  })
   @IsNotEmpty()
   name: string;
 
@@ -55,7 +65,10 @@ export class CreateTipPoolDto {
   @IsEnum(TipPoolStatus)
   status: TipPoolStatus;
 
-  @ApiPropertyOptional({ example: '2024-01-15T18:00:00Z', description: 'When the pool was closed' })
+  @ApiPropertyOptional({
+    example: '2024-01-15T18:00:00Z',
+    description: 'When the pool was closed',
+  })
   @IsOptional()
   @IsDateString()
   closedAt?: string | null;

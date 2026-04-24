@@ -25,7 +25,7 @@ export class LoyaltyProgramsService {
     private readonly merchantRepo: Repository<Merchant>,
     @InjectRepository(LoyaltyTier)
     private readonly loyaltyTierRepo: Repository<LoyaltyTier>,
-  ) { }
+  ) {}
 
   async create(
     merchant_id: number,
@@ -133,9 +133,9 @@ export class LoyaltyProgramsService {
         updated_at: program.updated_at,
         merchant: program.merchant
           ? {
-            id: program.merchant.id,
-            name: program.merchant.name,
-          }
+              id: program.merchant.id,
+              name: program.merchant.name,
+            }
           : null,
       }),
     );
@@ -192,9 +192,9 @@ export class LoyaltyProgramsService {
       updated_at: loyaltyProgram.updated_at,
       merchant: loyaltyProgram.merchant
         ? {
-          id: loyaltyProgram.merchant.id,
-          name: loyaltyProgram.merchant.name,
-        }
+            id: loyaltyProgram.merchant.id,
+            name: loyaltyProgram.merchant.name,
+          }
         : null,
     };
 

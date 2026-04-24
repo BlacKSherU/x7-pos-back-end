@@ -20,6 +20,6 @@ import { FloorZoneModule } from './floor-zone/floor-zone.module';
     TableAssignmentsModule,
     FloorPlanModule,
     FloorZoneModule,
-  ]
+  ],
 })
-export class DiningSystemModule { }
+export class DiningSystemModule {}

@@ -29,6 +29,7 @@ import {
   ApiForbiddenResponse,
   ApiQuery,
 } from '@nestjs/swagger';
+import { AuthenticatedUser } from '../../../auth/interfaces/authenticated-user.interface';
 import {
   OneTipResponseDto,
   PaginatedTipResponseDto,
@@ -115,8 +116,8 @@ export class TipsController {
       },
     },
   })
-  async create(@Body() dto: CreateTipDto, @Request() req: any) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+  async create(@Body() dto: CreateTipDto, @Request() req: AuthenticatedUser) {
+    const authenticatedUserMerchantId = req.merchant?.id;
     return this.tipsService.create(dto, authenticatedUserMerchantId);
   }
 
@@ -209,8 +210,11 @@ export class TipsController {
     description: 'Invalid query parameters',
     type: ErrorResponse,
   })
-  async findAll(@Query() query: GetTipQueryDto, @Request() req: any) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+  async findAll(
+    @Query() query: GetTipQueryDto,
+    @Request() req: AuthenticatedUser,
+  ) {
+    const authenticatedUserMerchantId = req.merchant?.id;
     return this.tipsService.findAll(query, authenticatedUserMerchantId);
   }
 
@@ -237,8 +241,11 @@ export class TipsController {
   @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorResponse })
   @ApiNotFoundResponse({ description: 'Tip not found', type: ErrorResponse })
   @ApiBadRequestResponse({ description: 'Invalid tip ID', type: ErrorResponse })
-  async findOne(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+  async findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedUser,
+  ) {
+    const authenticatedUserMerchantId = req.merchant?.id;
     return this.tipsService.findOne(id, authenticatedUserMerchantId);
   }
 
@@ -275,9 +282,9 @@ export class TipsController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateTipDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+    const authenticatedUserMerchantId = req.merchant?.id;
     return this.tipsService.update(id, dto, authenticatedUserMerchantId);
   }
 
@@ -308,8 +315,11 @@ export class TipsController {
     description: 'Tip is already deleted',
     type: ErrorResponse,
   })
-  async remove(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
+  async remove(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedUser,
+  ) {
+    const authenticatedUserMerchantId = req.merchant?.id;
     return this.tipsService.remove(id, authenticatedUserMerchantId);
   }
 }

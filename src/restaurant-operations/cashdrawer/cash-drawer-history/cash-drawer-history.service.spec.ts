@@ -1,18 +1,24 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/unbound-method */
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { Repository, In } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException, ForbiddenException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { CashDrawerHistoryService } from './cash-drawer-history.service';
 import { CashDrawerHistory } from './entities/cash-drawer-history.entity';
 import { CashDrawer } from '../cash-drawers/entities/cash-drawer.entity';
-import { Collaborator } from '../../../hr/collaborators/entities/collaborator.entity';
+import { Collaborator } from '../../../finance-hr/hr/collaborators/entities/collaborator.entity';
 import { CreateCashDrawerHistoryDto } from './dto/create-cash-drawer-history.dto';
 import { UpdateCashDrawerHistoryDto } from './dto/update-cash-drawer-history.dto';
-import { GetCashDrawerHistoryQueryDto, CashDrawerHistorySortBy } from './dto/get-cash-drawer-history-query.dto';
+import {
+  GetCashDrawerHistoryQueryDto,
+  CashDrawerHistorySortBy,
+} from './dto/get-cash-drawer-history-query.dto';
 import { CashDrawerHistoryStatus } from './constants/cash-drawer-history-status.enum';
 import { CashDrawerStatus } from '../cash-drawers/constants/cash-drawer-status.enum';
 
@@ -131,9 +137,17 @@ describe('CashDrawerHistoryService', () => {
       mockCashDrawerRepository.findOne.mockResolvedValue(mockCashDrawer);
       mockCollaboratorRepository.findOne
         .mockResolvedValueOnce(mockCollaborator)
-        .mockResolvedValueOnce({ ...mockCollaborator, id: 2, name: 'María García' });
-      mockCashDrawerHistoryRepository.save.mockResolvedValue(mockCashDrawerHistory);
-      mockCashDrawerHistoryRepository.findOne.mockResolvedValue(mockCashDrawerHistory);
+        .mockResolvedValueOnce({
+          ...mockCollaborator,
+          id: 2,
+          name: 'María García',
+        });
+      mockCashDrawerHistoryRepository.save.mockResolvedValue(
+        mockCashDrawerHistory,
+      );
+      mockCashDrawerHistoryRepository.findOne.mockResolvedValue(
+        mockCashDrawerHistory,
+      );
 
       const result = await service.create(createCashDrawerHistoryDto, 1);
 
@@ -149,10 +163,12 @@ describe('CashDrawerHistoryService', () => {
     });
 
     it('should throw ForbiddenException if user has no merchant', async () => {
-      await expect(service.create(createCashDrawerHistoryDto, null as any)).rejects.toThrow(
-        ForbiddenException,
-      );
-      await expect(service.create(createCashDrawerHistoryDto, null as any)).rejects.toThrow(
+      await expect(
+        service.create(createCashDrawerHistoryDto, null as any),
+      ).rejects.toThrow(ForbiddenException);
+      await expect(
+        service.create(createCashDrawerHistoryDto, null as any),
+      ).rejects.toThrow(
         'You must be associated with a merchant to create cash drawer history',
       );
     });
@@ -160,12 +176,12 @@ describe('CashDrawerHistoryService', () => {
     it('should throw NotFoundException if cash drawer not found', async () => {
       mockCashDrawerRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.create(createCashDrawerHistoryDto, 1)).rejects.toThrow(
-        NotFoundException,
-      );
-      await expect(service.create(createCashDrawerHistoryDto, 1)).rejects.toThrow(
-        'Cash drawer not found',
-      );
+      await expect(
+        service.create(createCashDrawerHistoryDto, 1),
+      ).rejects.toThrow(NotFoundException);
+      await expect(
+        service.create(createCashDrawerHistoryDto, 1),
+      ).rejects.toThrow('Cash drawer not found');
     });
 
     it('should throw ForbiddenException if cash drawer belongs to different merchant', async () => {
@@ -174,10 +190,12 @@ describe('CashDrawerHistoryService', () => {
         merchant_id: 2,
       });
 
-      await expect(service.create(createCashDrawerHistoryDto, 1)).rejects.toThrow(
-        ForbiddenException,
-      );
-      await expect(service.create(createCashDrawerHistoryDto, 1)).rejects.toThrow(
+      await expect(
+        service.create(createCashDrawerHistoryDto, 1),
+      ).rejects.toThrow(ForbiddenException);
+      await expect(
+        service.create(createCashDrawerHistoryDto, 1),
+      ).rejects.toThrow(
         'You can only create cash drawer history for cash drawers belonging to your merchant',
       );
     });
@@ -186,12 +204,12 @@ describe('CashDrawerHistoryService', () => {
       mockCashDrawerRepository.findOne.mockResolvedValue(mockCashDrawer);
       mockCollaboratorRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.create(createCashDrawerHistoryDto, 1)).rejects.toThrow(
-        NotFoundException,
-      );
-      await expect(service.create(createCashDrawerHistoryDto, 1)).rejects.toThrow(
-        'Opened by collaborator not found',
-      );
+      await expect(
+        service.create(createCashDrawerHistoryDto, 1),
+      ).rejects.toThrow(NotFoundException);
+      await expect(
+        service.create(createCashDrawerHistoryDto, 1),
+      ).rejects.toThrow('Opened by collaborator not found');
     });
 
     it('should throw ForbiddenException if openedBy collaborator belongs to different merchant', async () => {
@@ -201,12 +219,12 @@ describe('CashDrawerHistoryService', () => {
         merchant_id: 2,
       });
 
-      await expect(service.create(createCashDrawerHistoryDto, 1)).rejects.toThrow(
-        ForbiddenException,
-      );
-      await expect(service.create(createCashDrawerHistoryDto, 1)).rejects.toThrow(
-        'You can only assign collaborators from your merchant',
-      );
+      await expect(
+        service.create(createCashDrawerHistoryDto, 1),
+      ).rejects.toThrow(ForbiddenException);
+      await expect(
+        service.create(createCashDrawerHistoryDto, 1),
+      ).rejects.toThrow('You can only assign collaborators from your merchant');
     });
 
     it('should throw NotFoundException if closedBy collaborator not found', async () => {
@@ -218,12 +236,12 @@ describe('CashDrawerHistoryService', () => {
         .mockResolvedValueOnce({ ...mockCollaborator, merchant_id: 1 })
         .mockResolvedValueOnce(null);
 
-      await expect(service.create(createCashDrawerHistoryDto, 1)).rejects.toThrow(
-        NotFoundException,
-      );
-      await expect(service.create(createCashDrawerHistoryDto, 1)).rejects.toThrow(
-        'Closed by collaborator not found',
-      );
+      await expect(
+        service.create(createCashDrawerHistoryDto, 1),
+      ).rejects.toThrow(NotFoundException);
+      await expect(
+        service.create(createCashDrawerHistoryDto, 1),
+      ).rejects.toThrow('Closed by collaborator not found');
     });
 
     it('should throw ForbiddenException if closedBy collaborator belongs to different merchant', async () => {
@@ -232,12 +250,12 @@ describe('CashDrawerHistoryService', () => {
         .mockResolvedValueOnce(mockCollaborator)
         .mockResolvedValueOnce({ ...mockCollaborator, id: 2, merchant_id: 2 });
 
-      await expect(service.create(createCashDrawerHistoryDto, 1)).rejects.toThrow(
-        ForbiddenException,
-      );
-      await expect(service.create(createCashDrawerHistoryDto, 1)).rejects.toThrow(
-        'You can only assign collaborators from your merchant',
-      );
+      await expect(
+        service.create(createCashDrawerHistoryDto, 1),
+      ).rejects.toThrow(ForbiddenException);
+      await expect(
+        service.create(createCashDrawerHistoryDto, 1),
+      ).rejects.toThrow('You can only assign collaborators from your merchant');
     });
 
     it('should throw BadRequestException if opening balance is negative', async () => {
@@ -250,7 +268,9 @@ describe('CashDrawerHistoryService', () => {
         .mockResolvedValueOnce({ ...mockCollaborator, merchant_id: 1 })
         .mockResolvedValueOnce({ ...mockCollaborator, id: 2, merchant_id: 1 });
 
-      await expect(service.create(invalidDto, 1)).rejects.toThrow(BadRequestException);
+      await expect(service.create(invalidDto, 1)).rejects.toThrow(
+        BadRequestException,
+      );
       await expect(service.create(invalidDto, 1)).rejects.toThrow(
         'Opening balance must be non-negative',
       );
@@ -266,7 +286,9 @@ describe('CashDrawerHistoryService', () => {
         .mockResolvedValueOnce({ ...mockCollaborator, merchant_id: 1 })
         .mockResolvedValueOnce({ ...mockCollaborator, id: 2, merchant_id: 1 });
 
-      await expect(service.create(invalidDto, 1)).rejects.toThrow(BadRequestException);
+      await expect(service.create(invalidDto, 1)).rejects.toThrow(
+        BadRequestException,
+      );
       await expect(service.create(invalidDto, 1)).rejects.toThrow(
         'Closing balance must be non-negative',
       );
@@ -296,7 +318,9 @@ describe('CashDrawerHistoryService', () => {
     });
 
     it('should throw ForbiddenException if user has no merchant', async () => {
-      await expect(service.findAll(query, null as any)).rejects.toThrow(ForbiddenException);
+      await expect(service.findAll(query, null as any)).rejects.toThrow(
+        ForbiddenException,
+      );
       await expect(service.findAll(query, null as any)).rejects.toThrow(
         'You must be associated with a merchant to access cash drawer history',
       );
@@ -449,7 +473,9 @@ describe('CashDrawerHistoryService', () => {
 
   describe('findOne', () => {
     it('should return a cash drawer history by id', async () => {
-      mockCashDrawerHistoryRepository.findOne.mockResolvedValue(mockCashDrawerHistory);
+      mockCashDrawerHistoryRepository.findOne.mockResolvedValue(
+        mockCashDrawerHistory,
+      );
 
       const result = await service.findOne(1, 1);
 
@@ -457,7 +483,12 @@ describe('CashDrawerHistoryService', () => {
       expect(result.data.id).toBe(1);
       expect(mockCashDrawerHistoryRepository.findOne).toHaveBeenCalledWith({
         where: { id: 1, status: CashDrawerHistoryStatus.ACTIVE },
-        relations: ['cashDrawer', 'cashDrawer.merchant', 'openedByCollaborator', 'closedByCollaborator'],
+        relations: [
+          'cashDrawer',
+          'cashDrawer.merchant',
+          'openedByCollaborator',
+          'closedByCollaborator',
+        ],
       });
     });
 
@@ -467,7 +498,9 @@ describe('CashDrawerHistoryService', () => {
     });
 
     it('should throw ForbiddenException if user has no merchant', async () => {
-      await expect(service.findOne(1, null as any)).rejects.toThrow(ForbiddenException);
+      await expect(service.findOne(1, null as any)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw NotFoundException if cash drawer history not found', async () => {
@@ -510,17 +543,23 @@ describe('CashDrawerHistoryService', () => {
     });
 
     it('should throw BadRequestException if id is invalid', async () => {
-      await expect(service.update(0, updateDto, 1)).rejects.toThrow(BadRequestException);
+      await expect(service.update(0, updateDto, 1)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw ForbiddenException if user has no merchant', async () => {
-      await expect(service.update(1, updateDto, null as any)).rejects.toThrow(ForbiddenException);
+      await expect(service.update(1, updateDto, null as any)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw NotFoundException if cash drawer history not found', async () => {
       mockCashDrawerHistoryRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.update(999, updateDto, 1)).rejects.toThrow(NotFoundException);
+      await expect(service.update(999, updateDto, 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw ForbiddenException if cash drawer history belongs to different merchant', async () => {
@@ -529,7 +568,9 @@ describe('CashDrawerHistoryService', () => {
         cashDrawer: { ...mockCashDrawer, merchant_id: 2 },
       });
 
-      await expect(service.update(1, updateDto, 1)).rejects.toThrow(ForbiddenException);
+      await expect(service.update(1, updateDto, 1)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should validate cash drawer if provided', async () => {
@@ -553,12 +594,14 @@ describe('CashDrawerHistoryService', () => {
 
     it('should throw NotFoundException if cash drawer not found during update', async () => {
       const updateDtoWithCashDrawer = { ...updateDto, cashDrawerId: 999 };
-      mockCashDrawerHistoryRepository.findOne.mockResolvedValue(mockCashDrawerHistory);
+      mockCashDrawerHistoryRepository.findOne.mockResolvedValue(
+        mockCashDrawerHistory,
+      );
       mockCashDrawerRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.update(1, updateDtoWithCashDrawer, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.update(1, updateDtoWithCashDrawer, 1),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should validate openedBy collaborator if provided', async () => {
@@ -581,7 +624,9 @@ describe('CashDrawerHistoryService', () => {
 
     it('should throw NotFoundException if openedBy collaborator not found', async () => {
       const updateDtoWithOpenedBy = { ...updateDto, openedBy: 999 };
-      mockCashDrawerHistoryRepository.findOne.mockResolvedValue(mockCashDrawerHistory);
+      mockCashDrawerHistoryRepository.findOne.mockResolvedValue(
+        mockCashDrawerHistory,
+      );
       mockCollaboratorRepository.findOne.mockResolvedValue(null);
 
       await expect(service.update(1, updateDtoWithOpenedBy, 1)).rejects.toThrow(
@@ -609,22 +654,32 @@ describe('CashDrawerHistoryService', () => {
 
     it('should throw BadRequestException if opening balance is negative', async () => {
       const invalidDto = { ...updateDto, openingBalance: -10 };
-      mockCashDrawerHistoryRepository.findOne.mockResolvedValue(mockCashDrawerHistory);
+      mockCashDrawerHistoryRepository.findOne.mockResolvedValue(
+        mockCashDrawerHistory,
+      );
 
-      await expect(service.update(1, invalidDto, 1)).rejects.toThrow(BadRequestException);
+      await expect(service.update(1, invalidDto, 1)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException if closing balance is negative', async () => {
       const invalidDto = { ...updateDto, closingBalance: -10 };
-      mockCashDrawerHistoryRepository.findOne.mockResolvedValue(mockCashDrawerHistory);
+      mockCashDrawerHistoryRepository.findOne.mockResolvedValue(
+        mockCashDrawerHistory,
+      );
 
-      await expect(service.update(1, invalidDto, 1)).rejects.toThrow(BadRequestException);
+      await expect(service.update(1, invalidDto, 1)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
   describe('remove', () => {
     it('should remove a cash drawer history successfully (soft delete)', async () => {
-      mockCashDrawerHistoryRepository.findOne.mockResolvedValue(mockCashDrawerHistory);
+      mockCashDrawerHistoryRepository.findOne.mockResolvedValue(
+        mockCashDrawerHistory,
+      );
       mockCashDrawerHistoryRepository.save.mockResolvedValue({
         ...mockCashDrawerHistory,
         status: CashDrawerHistoryStatus.DELETED,
@@ -642,7 +697,9 @@ describe('CashDrawerHistoryService', () => {
     });
 
     it('should throw ForbiddenException if user has no merchant', async () => {
-      await expect(service.remove(1, null as any)).rejects.toThrow(ForbiddenException);
+      await expect(service.remove(1, null as any)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw NotFoundException if cash drawer history not found', async () => {

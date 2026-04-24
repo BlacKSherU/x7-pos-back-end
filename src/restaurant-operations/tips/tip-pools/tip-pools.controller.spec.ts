@@ -7,7 +7,13 @@ import { TipPoolStatus } from './constants/tip-pool-status.enum';
 
 describe('TipPoolsController', () => {
   let controller: TipPoolsController;
-  const mockService = { create: jest.fn(), findAll: jest.fn(), findOne: jest.fn(), update: jest.fn(), remove: jest.fn() };
+  const mockService = {
+    create: jest.fn(),
+    findAll: jest.fn(),
+    findOne: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+  };
   const mockReq = { user: { merchant: { id: 1 } } };
 
   beforeEach(async () => {

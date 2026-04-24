@@ -3,16 +3,16 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { QROrderService } from './qr-order.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { QROrder } from './entity/qr-order.entity';
-import { Merchant } from 'src/platform-saas/merchants/entities/merchant.entity';
-import { Customer } from 'src/core/business-partners/customers/entities/customer.entity';
-import { Order } from 'src/orders/entities/order.entity';
+import { Order } from '../../../restaurant-operations/pos/orders/entities/order.entity';
+import { Merchant } from '../../../platform-saas/merchants/entities/merchant.entity';
+import { Customer } from '../../../core/business-partners/customers/entities/customer.entity';
 import { QRLocation } from '../qr-location/entity/qr-location.entity';
 import { QROrderStatus } from '../constants/qr-order-status.enum';
 import { CreateQROrderDto } from './dto/create-qr-order.dto';
 import { SelectQueryBuilder } from 'typeorm';
 import { Repository, In } from 'typeorm';
 import { UpdateQROrderDto } from './dto/update-qr-order.dto';
-import { Table } from 'src/restaurant-operations/dining-system/tables/entities/table.entity';
+import { Table } from '../../../restaurant-operations/dining-system/tables/entities/table.entity';
 
 describe('QROrderService', () => {
   let service: QROrderService;
@@ -252,7 +252,7 @@ describe('QROrderService', () => {
     it('should return all qr order', async () => {
       const mockQROrders = [mockQROrder as QROrder];
 
-      // QueryBuilder ya mockeado en el beforeEach
+      // QueryBuilder ya con mock en el beforeEach
       const qb = qrOrderRepository.createQueryBuilder() as Partial<
         SelectQueryBuilder<QROrder>
       >;

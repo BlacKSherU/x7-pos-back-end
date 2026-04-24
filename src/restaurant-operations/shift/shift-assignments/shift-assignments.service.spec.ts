@@ -5,11 +5,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Repository, EntityManager, Not } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException, ForbiddenException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { ShiftAssignmentsService } from './shift-assignments.service';
 import { ShiftAssignment } from './entities/shift-assignment.entity';
 import { Shift } from '../shifts/entities/shift.entity';
-import { Collaborator } from '../../../hr/collaborators/entities/collaborator.entity';
+import { Collaborator } from '../../../finance-hr/hr/collaborators/entities/collaborator.entity';
 import { CreateShiftAssignmentDto } from './dto/create-shift-assignment.dto';
 import { UpdateShiftAssignmentDto } from './dto/update-shift-assignment.dto';
 import { GetShiftAssignmentsQueryDto } from './dto/get-shift-assignments-query.dto';
@@ -105,9 +110,13 @@ describe('ShiftAssignmentsService', () => {
     }).compile();
 
     service = module.get<ShiftAssignmentsService>(ShiftAssignmentsService);
-    shiftAssignmentRepository = module.get<Repository<ShiftAssignment>>(getRepositoryToken(ShiftAssignment));
+    shiftAssignmentRepository = module.get<Repository<ShiftAssignment>>(
+      getRepositoryToken(ShiftAssignment),
+    );
     shiftRepository = module.get<Repository<Shift>>(getRepositoryToken(Shift));
-    collaboratorRepository = module.get<Repository<Collaborator>>(getRepositoryToken(Collaborator));
+    collaboratorRepository = module.get<Repository<Collaborator>>(
+      getRepositoryToken(Collaborator),
+    );
     entityManager = module.get<EntityManager>(EntityManager);
   });
 
@@ -130,11 +139,19 @@ describe('ShiftAssignmentsService', () => {
     };
 
     it('should create a shift assignment successfully', async () => {
-      jest.spyOn(shiftRepository, 'findOne').mockResolvedValue(mockShift as any);
-      jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(mockCollaborator as any);
+      jest
+        .spyOn(shiftRepository, 'findOne')
+        .mockResolvedValue(mockShift as any);
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
+        .mockResolvedValue(mockCollaborator as any);
       jest.spyOn(shiftAssignmentRepository, 'findOne').mockResolvedValue(null);
-      jest.spyOn(shiftAssignmentRepository, 'create').mockReturnValue(mockShiftAssignment as any);
-      jest.spyOn(shiftAssignmentRepository, 'save').mockResolvedValue(mockShiftAssignment as any);
+      jest
+        .spyOn(shiftAssignmentRepository, 'create')
+        .mockReturnValue(mockShiftAssignment as any);
+      jest
+        .spyOn(shiftAssignmentRepository, 'save')
+        .mockResolvedValue(mockShiftAssignment as any);
 
       const result = await service.create(createShiftAssignmentDto, 1);
 
@@ -154,10 +171,12 @@ describe('ShiftAssignmentsService', () => {
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.create(createShiftAssignmentDto, undefined as any)).rejects.toThrow(
-        ForbiddenException,
-      );
-      await expect(service.create(createShiftAssignmentDto, undefined as any)).rejects.toThrow(
+      await expect(
+        service.create(createShiftAssignmentDto, undefined as any),
+      ).rejects.toThrow(ForbiddenException);
+      await expect(
+        service.create(createShiftAssignmentDto, undefined as any),
+      ).rejects.toThrow(
         'User must be associated with a merchant to create shift assignments',
       );
     });
@@ -178,7 +197,9 @@ describe('ShiftAssignmentsService', () => {
         ...mockShift,
         merchant: { id: 2, name: 'Other Merchant' },
       };
-      jest.spyOn(shiftRepository, 'findOne').mockResolvedValue(shiftFromDifferentMerchant as any);
+      jest
+        .spyOn(shiftRepository, 'findOne')
+        .mockResolvedValue(shiftFromDifferentMerchant as any);
 
       await expect(service.create(createShiftAssignmentDto, 1)).rejects.toThrow(
         ForbiddenException,
@@ -189,7 +210,9 @@ describe('ShiftAssignmentsService', () => {
     });
 
     it('should throw NotFoundException if collaborator not found', async () => {
-      jest.spyOn(shiftRepository, 'findOne').mockResolvedValue(mockShift as any);
+      jest
+        .spyOn(shiftRepository, 'findOne')
+        .mockResolvedValue(mockShift as any);
       jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(null);
 
       await expect(service.create(createShiftAssignmentDto, 1)).rejects.toThrow(
@@ -205,8 +228,12 @@ describe('ShiftAssignmentsService', () => {
         ...mockCollaborator,
         merchant: { id: 2, name: 'Other Merchant' },
       };
-      jest.spyOn(shiftRepository, 'findOne').mockResolvedValue(mockShift as any);
-      jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(collaboratorFromDifferentMerchant as any);
+      jest
+        .spyOn(shiftRepository, 'findOne')
+        .mockResolvedValue(mockShift as any);
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
+        .mockResolvedValue(collaboratorFromDifferentMerchant as any);
 
       await expect(service.create(createShiftAssignmentDto, 1)).rejects.toThrow(
         ForbiddenException,
@@ -221,8 +248,12 @@ describe('ShiftAssignmentsService', () => {
         ...createShiftAssignmentDto,
         startTime: 'invalid-date',
       };
-      jest.spyOn(shiftRepository, 'findOne').mockResolvedValue(mockShift as any);
-      jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(mockCollaborator as any);
+      jest
+        .spyOn(shiftRepository, 'findOne')
+        .mockResolvedValue(mockShift as any);
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
+        .mockResolvedValue(mockCollaborator as any);
 
       await expect(service.create(dtoWithInvalidStartTime, 1)).rejects.toThrow(
         BadRequestException,
@@ -238,8 +269,12 @@ describe('ShiftAssignmentsService', () => {
         startTime: '2024-01-15T16:00:00Z',
         endTime: '2024-01-15T08:00:00Z',
       };
-      jest.spyOn(shiftRepository, 'findOne').mockResolvedValue(mockShift as any);
-      jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(mockCollaborator as any);
+      jest
+        .spyOn(shiftRepository, 'findOne')
+        .mockResolvedValue(mockShift as any);
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
+        .mockResolvedValue(mockCollaborator as any);
 
       await expect(service.create(dtoWithInvalidEndTime, 1)).rejects.toThrow(
         BadRequestException,
@@ -250,9 +285,15 @@ describe('ShiftAssignmentsService', () => {
     });
 
     it('should throw ConflictException if assignment already exists', async () => {
-      jest.spyOn(shiftRepository, 'findOne').mockResolvedValue(mockShift as any);
-      jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(mockCollaborator as any);
-      jest.spyOn(shiftAssignmentRepository, 'findOne').mockResolvedValue(mockShiftAssignment as any);
+      jest
+        .spyOn(shiftRepository, 'findOne')
+        .mockResolvedValue(mockShift as any);
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
+        .mockResolvedValue(mockCollaborator as any);
+      jest
+        .spyOn(shiftAssignmentRepository, 'findOne')
+        .mockResolvedValue(mockShiftAssignment as any);
 
       await expect(service.create(createShiftAssignmentDto, 1)).rejects.toThrow(
         ConflictException,
@@ -267,11 +308,19 @@ describe('ShiftAssignmentsService', () => {
         ...createShiftAssignmentDto,
         roleDuringShift: undefined,
       };
-      jest.spyOn(shiftRepository, 'findOne').mockResolvedValue(mockShift as any);
-      jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(mockCollaborator as any);
+      jest
+        .spyOn(shiftRepository, 'findOne')
+        .mockResolvedValue(mockShift as any);
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
+        .mockResolvedValue(mockCollaborator as any);
       jest.spyOn(shiftAssignmentRepository, 'findOne').mockResolvedValue(null);
-      jest.spyOn(shiftAssignmentRepository, 'create').mockReturnValue(mockShiftAssignment as any);
-      jest.spyOn(shiftAssignmentRepository, 'save').mockResolvedValue(mockShiftAssignment as any);
+      jest
+        .spyOn(shiftAssignmentRepository, 'create')
+        .mockReturnValue(mockShiftAssignment as any);
+      jest
+        .spyOn(shiftAssignmentRepository, 'save')
+        .mockResolvedValue(mockShiftAssignment as any);
 
       await service.create(dtoWithoutRole, 1);
 
@@ -287,11 +336,19 @@ describe('ShiftAssignmentsService', () => {
         ...createShiftAssignmentDto,
         status: undefined,
       };
-      jest.spyOn(shiftRepository, 'findOne').mockResolvedValue(mockShift as any);
-      jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(mockCollaborator as any);
+      jest
+        .spyOn(shiftRepository, 'findOne')
+        .mockResolvedValue(mockShift as any);
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
+        .mockResolvedValue(mockCollaborator as any);
       jest.spyOn(shiftAssignmentRepository, 'findOne').mockResolvedValue(null);
-      jest.spyOn(shiftAssignmentRepository, 'create').mockReturnValue(mockShiftAssignment as any);
-      jest.spyOn(shiftAssignmentRepository, 'save').mockResolvedValue(mockShiftAssignment as any);
+      jest
+        .spyOn(shiftAssignmentRepository, 'create')
+        .mockReturnValue(mockShiftAssignment as any);
+      jest
+        .spyOn(shiftAssignmentRepository, 'save')
+        .mockResolvedValue(mockShiftAssignment as any);
 
       await service.create(dtoWithoutStatus, 1);
 
@@ -311,7 +368,9 @@ describe('ShiftAssignmentsService', () => {
 
     it('should return paginated list of shift assignments', async () => {
       jest.spyOn(shiftAssignmentRepository, 'count').mockResolvedValue(1);
-      jest.spyOn(shiftAssignmentRepository, 'find').mockResolvedValue([mockShiftAssignment] as any);
+      jest
+        .spyOn(shiftAssignmentRepository, 'find')
+        .mockResolvedValue([mockShiftAssignment] as any);
 
       const result = await service.findAll(query, 1);
 
@@ -336,7 +395,9 @@ describe('ShiftAssignmentsService', () => {
     it('should filter by shiftId', async () => {
       const queryWithShiftId = { ...query, shiftId: 1 };
       jest.spyOn(shiftAssignmentRepository, 'count').mockResolvedValue(1);
-      jest.spyOn(shiftAssignmentRepository, 'find').mockResolvedValue([mockShiftAssignment] as any);
+      jest
+        .spyOn(shiftAssignmentRepository, 'find')
+        .mockResolvedValue([mockShiftAssignment] as any);
 
       await service.findAll(queryWithShiftId, 1);
 
@@ -352,7 +413,9 @@ describe('ShiftAssignmentsService', () => {
     it('should filter by collaboratorId', async () => {
       const queryWithCollaboratorId = { ...query, collaboratorId: 1 };
       jest.spyOn(shiftAssignmentRepository, 'count').mockResolvedValue(1);
-      jest.spyOn(shiftAssignmentRepository, 'find').mockResolvedValue([mockShiftAssignment] as any);
+      jest
+        .spyOn(shiftAssignmentRepository, 'find')
+        .mockResolvedValue([mockShiftAssignment] as any);
 
       await service.findAll(queryWithCollaboratorId, 1);
 
@@ -366,9 +429,14 @@ describe('ShiftAssignmentsService', () => {
     });
 
     it('should filter by status', async () => {
-      const queryWithStatus = { ...query, status: ShiftAssignmentStatus.ACTIVE };
+      const queryWithStatus = {
+        ...query,
+        status: ShiftAssignmentStatus.ACTIVE,
+      };
       jest.spyOn(shiftAssignmentRepository, 'count').mockResolvedValue(1);
-      jest.spyOn(shiftAssignmentRepository, 'find').mockResolvedValue([mockShiftAssignment] as any);
+      jest
+        .spyOn(shiftAssignmentRepository, 'find')
+        .mockResolvedValue([mockShiftAssignment] as any);
 
       await service.findAll(queryWithStatus, 1);
 
@@ -383,7 +451,7 @@ describe('ShiftAssignmentsService', () => {
 
     it('should throw BadRequestException if startDate format is invalid', async () => {
       const queryWithInvalidDate = { ...query, startDate: 'invalid-date' };
-      
+
       await expect(service.findAll(queryWithInvalidDate, 1)).rejects.toThrow(
         BadRequestException,
       );
@@ -398,7 +466,7 @@ describe('ShiftAssignmentsService', () => {
         startDate: '2024-01-31',
         endDate: '2024-01-01',
       };
-      
+
       await expect(service.findAll(queryWithInvalidRange, 1)).rejects.toThrow(
         BadRequestException,
       );
@@ -410,7 +478,9 @@ describe('ShiftAssignmentsService', () => {
     it('should handle pagination correctly', async () => {
       const queryPage2 = { page: 2, limit: 5 };
       jest.spyOn(shiftAssignmentRepository, 'count').mockResolvedValue(15);
-      jest.spyOn(shiftAssignmentRepository, 'find').mockResolvedValue([mockShiftAssignment] as any);
+      jest
+        .spyOn(shiftAssignmentRepository, 'find')
+        .mockResolvedValue([mockShiftAssignment] as any);
 
       const result = await service.findAll(queryPage2, 1);
 
@@ -425,7 +495,9 @@ describe('ShiftAssignmentsService', () => {
 
   describe('findOne', () => {
     it('should return a shift assignment successfully', async () => {
-      jest.spyOn(shiftAssignmentRepository, 'findOne').mockResolvedValue(mockShiftAssignment as any);
+      jest
+        .spyOn(shiftAssignmentRepository, 'findOne')
+        .mockResolvedValue(mockShiftAssignment as any);
 
       const result = await service.findOne(1, 1);
 
@@ -442,9 +514,7 @@ describe('ShiftAssignmentsService', () => {
     });
 
     it('should throw BadRequestException if id is invalid', async () => {
-      await expect(service.findOne(0, 1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.findOne(0, 1)).rejects.toThrow(BadRequestException);
       await expect(service.findOne(0, 1)).rejects.toThrow(
         'Invalid shift assignment ID',
       );
@@ -462,9 +532,7 @@ describe('ShiftAssignmentsService', () => {
     it('should throw NotFoundException if shift assignment not found', async () => {
       jest.spyOn(shiftAssignmentRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.findOne(999, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.findOne(999, 1)).rejects.toThrow(NotFoundException);
       await expect(service.findOne(999, 1)).rejects.toThrow(
         'Shift assignment with ID 999 not found',
       );
@@ -478,11 +546,11 @@ describe('ShiftAssignmentsService', () => {
           merchant: { id: 2, name: 'Other Merchant' },
         },
       };
-      jest.spyOn(shiftAssignmentRepository, 'findOne').mockResolvedValue(assignmentFromDifferentMerchant as any);
+      jest
+        .spyOn(shiftAssignmentRepository, 'findOne')
+        .mockResolvedValue(assignmentFromDifferentMerchant as any);
 
-      await expect(service.findOne(1, 1)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.findOne(1, 1)).rejects.toThrow(ForbiddenException);
       await expect(service.findOne(1, 1)).rejects.toThrow(
         'You can only view shift assignments from your own merchant',
       );
@@ -501,10 +569,13 @@ describe('ShiftAssignmentsService', () => {
         roleDuringShift: ShiftRole.COOK,
         startTime: new Date('2024-01-15T09:00:00Z'),
       };
-      jest.spyOn(shiftAssignmentRepository, 'findOne')
+      jest
+        .spyOn(shiftAssignmentRepository, 'findOne')
         .mockResolvedValueOnce(mockShiftAssignment as any) // Find existing assignment
         .mockResolvedValueOnce(null); // Check uniqueness - no conflict
-      jest.spyOn(shiftAssignmentRepository, 'save').mockResolvedValue(updatedAssignment as any);
+      jest
+        .spyOn(shiftAssignmentRepository, 'save')
+        .mockResolvedValue(updatedAssignment as any);
 
       const result = await service.update(1, updateShiftAssignmentDto, 1);
 
@@ -516,20 +587,22 @@ describe('ShiftAssignmentsService', () => {
     });
 
     it('should throw BadRequestException if id is invalid', async () => {
-      await expect(service.update(0, updateShiftAssignmentDto, 1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.update(0, updateShiftAssignmentDto, 1),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.update(1, updateShiftAssignmentDto, undefined as any)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(
+        service.update(1, updateShiftAssignmentDto, undefined as any),
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw BadRequestException if DTO is empty', async () => {
       const emptyDto = {};
-      jest.spyOn(shiftAssignmentRepository, 'findOne').mockResolvedValue(mockShiftAssignment as any);
+      jest
+        .spyOn(shiftAssignmentRepository, 'findOne')
+        .mockResolvedValue(mockShiftAssignment as any);
 
       await expect(service.update(1, emptyDto, 1)).rejects.toThrow(
         BadRequestException,
@@ -542,12 +615,12 @@ describe('ShiftAssignmentsService', () => {
     it('should throw NotFoundException if shift assignment not found', async () => {
       jest.spyOn(shiftAssignmentRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.update(999, updateShiftAssignmentDto, 1)).rejects.toThrow(
-        NotFoundException,
-      );
-      await expect(service.update(999, updateShiftAssignmentDto, 1)).rejects.toThrow(
-        'Shift assignment with ID 999 not found',
-      );
+      await expect(
+        service.update(999, updateShiftAssignmentDto, 1),
+      ).rejects.toThrow(NotFoundException);
+      await expect(
+        service.update(999, updateShiftAssignmentDto, 1),
+      ).rejects.toThrow('Shift assignment with ID 999 not found');
     });
 
     it('should throw ForbiddenException if shift assignment belongs to different merchant', async () => {
@@ -558,12 +631,16 @@ describe('ShiftAssignmentsService', () => {
           merchant: { id: 2, name: 'Other Merchant' },
         },
       };
-      jest.spyOn(shiftAssignmentRepository, 'findOne').mockResolvedValue(assignmentFromDifferentMerchant as any);
+      jest
+        .spyOn(shiftAssignmentRepository, 'findOne')
+        .mockResolvedValue(assignmentFromDifferentMerchant as any);
 
-      await expect(service.update(1, updateShiftAssignmentDto, 1)).rejects.toThrow(
-        ForbiddenException,
-      );
-      await expect(service.update(1, updateShiftAssignmentDto, 1)).rejects.toThrow(
+      await expect(
+        service.update(1, updateShiftAssignmentDto, 1),
+      ).rejects.toThrow(ForbiddenException);
+      await expect(
+        service.update(1, updateShiftAssignmentDto, 1),
+      ).rejects.toThrow(
         'You can only update shift assignments from your own merchant',
       );
     });
@@ -573,7 +650,9 @@ describe('ShiftAssignmentsService', () => {
         startTime: '2024-01-15T16:00:00Z',
         endTime: '2024-01-15T08:00:00Z',
       };
-      jest.spyOn(shiftAssignmentRepository, 'findOne').mockResolvedValue(mockShiftAssignment as any);
+      jest
+        .spyOn(shiftAssignmentRepository, 'findOne')
+        .mockResolvedValue(mockShiftAssignment as any);
 
       await expect(service.update(1, dtoWithInvalidEndTime, 1)).rejects.toThrow(
         BadRequestException,
@@ -602,14 +681,18 @@ describe('ShiftAssignmentsService', () => {
       jest.clearAllMocks();
       // First call: find existing assignment (line 318) - shiftAssignmentRepo.findOne
       // Second call: check uniqueness - conflict (line 401) - shiftAssignmentRepo.findOne
-      jest.spyOn(shiftAssignmentRepository, 'findOne')
+      jest
+        .spyOn(shiftAssignmentRepository, 'findOne')
         .mockImplementation((options: any) => {
           // First call: find existing assignment by id
           if (options?.where?.id === 1) {
             return Promise.resolve(mockShiftAssignment as any);
           }
           // Second call: check uniqueness by shiftId and collaboratorId
-          if (options?.where?.shiftId === 2 && options?.where?.collaboratorId === 1) {
+          if (
+            options?.where?.shiftId === 2 &&
+            options?.where?.collaboratorId === 1
+          ) {
             return Promise.resolve(existingAssignment as any);
           }
           return Promise.resolve(null);
@@ -617,9 +700,13 @@ describe('ShiftAssignmentsService', () => {
       // Find new shift (line 365) - shiftRepo.findOne
       jest.spyOn(shiftRepository, 'findOne').mockResolvedValue(newShift as any);
       // Find collaborator (line 382) - collaboratorRepo.findOne
-      jest.spyOn(collaboratorRepository, 'findOne').mockResolvedValue(mockCollaborator as any);
+      jest
+        .spyOn(collaboratorRepository, 'findOne')
+        .mockResolvedValue(mockCollaborator as any);
 
-      await expect(service.update(1, dtoWithNewShift, 1)).rejects.toThrow(ConflictException);
+      await expect(service.update(1, dtoWithNewShift, 1)).rejects.toThrow(
+        ConflictException,
+      );
       await expect(service.update(1, dtoWithNewShift, 1)).rejects.toThrow(
         'This collaborator is already assigned to this shift',
       );
@@ -637,8 +724,12 @@ describe('ShiftAssignmentsService', () => {
         ...mockShiftAssignment,
         status: ShiftAssignmentStatus.DELETED,
       };
-      jest.spyOn(shiftAssignmentRepository, 'findOne').mockResolvedValue(mockShiftAssignment as any);
-      jest.spyOn(shiftAssignmentRepository, 'save').mockResolvedValue(deletedAssignment as any);
+      jest
+        .spyOn(shiftAssignmentRepository, 'findOne')
+        .mockResolvedValue(mockShiftAssignment as any);
+      jest
+        .spyOn(shiftAssignmentRepository, 'save')
+        .mockResolvedValue(deletedAssignment as any);
 
       const result = await service.remove(1, 1);
 
@@ -650,9 +741,7 @@ describe('ShiftAssignmentsService', () => {
     });
 
     it('should throw BadRequestException if id is invalid', async () => {
-      await expect(service.remove(0, 1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.remove(0, 1)).rejects.toThrow(BadRequestException);
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
@@ -665,9 +754,7 @@ describe('ShiftAssignmentsService', () => {
       jest.clearAllMocks();
       jest.spyOn(shiftAssignmentRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.remove(999, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.remove(999, 1)).rejects.toThrow(NotFoundException);
       await expect(service.remove(999, 1)).rejects.toThrow(
         'Shift assignment with ID 999 not found',
       );
@@ -681,11 +768,11 @@ describe('ShiftAssignmentsService', () => {
           merchant: { id: 2, name: 'Other Merchant' },
         },
       };
-      jest.spyOn(shiftAssignmentRepository, 'findOne').mockResolvedValue(assignmentFromDifferentMerchant as any);
+      jest
+        .spyOn(shiftAssignmentRepository, 'findOne')
+        .mockResolvedValue(assignmentFromDifferentMerchant as any);
 
-      await expect(service.remove(1, 1)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.remove(1, 1)).rejects.toThrow(ForbiddenException);
       await expect(service.remove(1, 1)).rejects.toThrow(
         'You can only delete shift assignments from your own merchant',
       );
@@ -696,15 +783,14 @@ describe('ShiftAssignmentsService', () => {
         ...mockShiftAssignment,
         status: ShiftAssignmentStatus.DELETED,
       };
-      jest.spyOn(shiftAssignmentRepository, 'findOne').mockResolvedValue(deletedAssignment as any);
+      jest
+        .spyOn(shiftAssignmentRepository, 'findOne')
+        .mockResolvedValue(deletedAssignment as any);
 
-      await expect(service.remove(1, 1)).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.remove(1, 1)).rejects.toThrow(ConflictException);
       await expect(service.remove(1, 1)).rejects.toThrow(
         'Shift assignment is already deleted',
       );
     });
   });
 });
-

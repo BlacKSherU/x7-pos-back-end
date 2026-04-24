@@ -1,17 +1,23 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/unbound-method */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { Repository } from 'typeorm';
+import { Repository, UpdateResult } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException, ForbiddenException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { KitchenStationService } from './kitchen-station.service';
 import { KitchenStation } from './entities/kitchen-station.entity';
 import { Merchant } from '../../../platform-saas/merchants/entities/merchant.entity';
 import { CreateKitchenStationDto } from './dto/create-kitchen-station.dto';
 import { UpdateKitchenStationDto } from './dto/update-kitchen-station.dto';
-import { GetKitchenStationQueryDto, KitchenStationSortBy } from './dto/get-kitchen-station-query.dto';
+import {
+  GetKitchenStationQueryDto,
+  KitchenStationSortBy,
+} from './dto/get-kitchen-station-query.dto';
 import { KitchenStationStatus } from './constants/kitchen-station-status.enum';
 import { KitchenStationType } from './constants/kitchen-station-type.enum';
 import { KitchenDisplayMode } from './constants/kitchen-display-mode.enum';
@@ -95,10 +101,15 @@ describe('KitchenStationService', () => {
     };
 
     it('should create a kitchen station successfully', async () => {
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
-      jest.spyOn(kitchenStationRepository, 'save').mockResolvedValue(mockKitchenStation as any);
-      jest.spyOn(kitchenStationRepository, 'findOne')
-        .mockResolvedValueOnce(mockKitchenStation as any); // After save, get complete station
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as Merchant);
+      jest
+        .spyOn(kitchenStationRepository, 'save')
+        .mockResolvedValue(mockKitchenStation as unknown as KitchenStation);
+      jest
+        .spyOn(kitchenStationRepository, 'findOne')
+        .mockResolvedValueOnce(mockKitchenStation as unknown as KitchenStation); // After save, get complete station
 
       const result = await service.create(createKitchenStationDto, 1);
 
@@ -113,10 +124,10 @@ describe('KitchenStationService', () => {
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.create(createKitchenStationDto, undefined as any)).rejects.toThrow(
+      await expect(service.create(createKitchenStationDto, 0)).rejects.toThrow(
         ForbiddenException,
       );
-      await expect(service.create(createKitchenStationDto, undefined as any)).rejects.toThrow(
+      await expect(service.create(createKitchenStationDto, 0)).rejects.toThrow(
         'You must be associated with a merchant to create kitchen stations',
       );
     });
@@ -134,7 +145,9 @@ describe('KitchenStationService', () => {
 
     it('should throw BadRequestException if name is empty', async () => {
       const dtoWithEmptyName = { ...createKitchenStationDto, name: '' };
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as Merchant);
 
       await expect(service.create(dtoWithEmptyName, 1)).rejects.toThrow(
         BadRequestException,
@@ -149,7 +162,9 @@ describe('KitchenStationService', () => {
         ...createKitchenStationDto,
         name: 'a'.repeat(101),
       };
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as Merchant);
 
       await expect(service.create(dtoWithLongName, 1)).rejects.toThrow(
         BadRequestException,
@@ -164,7 +179,9 @@ describe('KitchenStationService', () => {
         ...createKitchenStationDto,
         displayOrder: -1,
       };
-      jest.spyOn(merchantRepository, 'findOne').mockResolvedValue(mockMerchant as any);
+      jest
+        .spyOn(merchantRepository, 'findOne')
+        .mockResolvedValue(mockMerchant as Merchant);
 
       await expect(service.create(dtoWithNegativeOrder, 1)).rejects.toThrow(
         BadRequestException,
@@ -183,7 +200,12 @@ describe('KitchenStationService', () => {
 
     it('should return paginated list of kitchen stations', async () => {
       const mockKitchenStations = [mockKitchenStation];
-      jest.spyOn(kitchenStationRepository, 'findAndCount').mockResolvedValue([mockKitchenStations as any, 1]);
+      jest
+        .spyOn(kitchenStationRepository, 'findAndCount')
+        .mockResolvedValue([
+          mockKitchenStations as unknown as KitchenStation[],
+          1,
+        ]);
 
       const result = await service.findAll(query, 1);
 
@@ -197,10 +219,10 @@ describe('KitchenStationService', () => {
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.findAll(query, undefined as any)).rejects.toThrow(
+      await expect(service.findAll(query, 0)).rejects.toThrow(
         ForbiddenException,
       );
-      await expect(service.findAll(query, undefined as any)).rejects.toThrow(
+      await expect(service.findAll(query, 0)).rejects.toThrow(
         'You must be associated with a merchant to access kitchen stations',
       );
     });
@@ -244,7 +266,12 @@ describe('KitchenStationService', () => {
 
     it('should filter by station type', async () => {
       const queryWithType = { ...query, stationType: KitchenStationType.HOT };
-      jest.spyOn(kitchenStationRepository, 'findAndCount').mockResolvedValue([[mockKitchenStation] as any, 1]);
+      jest
+        .spyOn(kitchenStationRepository, 'findAndCount')
+        .mockResolvedValue([
+          [mockKitchenStation] as unknown as KitchenStation[],
+          1,
+        ]);
 
       await service.findAll(queryWithType, 1);
 
@@ -253,7 +280,12 @@ describe('KitchenStationService', () => {
 
     it('should filter by status', async () => {
       const queryWithStatus = { ...query, status: KitchenStationStatus.ACTIVE };
-      jest.spyOn(kitchenStationRepository, 'findAndCount').mockResolvedValue([[mockKitchenStation] as any, 1]);
+      jest
+        .spyOn(kitchenStationRepository, 'findAndCount')
+        .mockResolvedValue([
+          [mockKitchenStation] as unknown as KitchenStation[],
+          1,
+        ]);
 
       await service.findAll(queryWithStatus, 1);
 
@@ -263,7 +295,9 @@ describe('KitchenStationService', () => {
 
   describe('findOne', () => {
     it('should return a kitchen station successfully', async () => {
-      jest.spyOn(kitchenStationRepository, 'findOne').mockResolvedValue(mockKitchenStation as any);
+      jest
+        .spyOn(kitchenStationRepository, 'findOne')
+        .mockResolvedValue(mockKitchenStation as unknown as KitchenStation);
 
       const result = await service.findOne(1, 1);
 
@@ -281,19 +315,15 @@ describe('KitchenStationService', () => {
     });
 
     it('should throw BadRequestException if id is invalid', async () => {
-      await expect(service.findOne(0, 1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.findOne(0, 1)).rejects.toThrow(BadRequestException);
       await expect(service.findOne(0, 1)).rejects.toThrow(
         'Kitchen station ID must be a valid positive number',
       );
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.findOne(1, undefined as any)).rejects.toThrow(
-        ForbiddenException,
-      );
-      await expect(service.findOne(1, undefined as any)).rejects.toThrow(
+      await expect(service.findOne(1, 0)).rejects.toThrow(ForbiddenException);
+      await expect(service.findOne(1, 0)).rejects.toThrow(
         'You must be associated with a merchant to access kitchen stations',
       );
     });
@@ -301,9 +331,7 @@ describe('KitchenStationService', () => {
     it('should throw NotFoundException if kitchen station not found', async () => {
       jest.spyOn(kitchenStationRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.findOne(999, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.findOne(999, 1)).rejects.toThrow(NotFoundException);
       await expect(service.findOne(999, 1)).rejects.toThrow(
         'Kitchen station not found',
       );
@@ -322,10 +350,17 @@ describe('KitchenStationService', () => {
         name: 'Hot Station 1 Updated',
         display_order: 2,
       };
-      jest.spyOn(kitchenStationRepository, 'findOne')
-        .mockResolvedValueOnce(mockKitchenStation as any) // First call: find existing station
-        .mockResolvedValueOnce(updatedKitchenStation as any); // Second call: get updated station after update
-      jest.spyOn(kitchenStationRepository, 'update').mockResolvedValue(undefined as any);
+      jest
+        .spyOn(kitchenStationRepository, 'findOne')
+        .mockResolvedValueOnce(mockKitchenStation as unknown as KitchenStation) // First call: find existing station
+        .mockResolvedValueOnce(
+          updatedKitchenStation as unknown as KitchenStation,
+        ); // Second call: get updated station after update
+      jest.spyOn(kitchenStationRepository, 'update').mockResolvedValue({
+        affected: 1,
+        raw: [],
+        generatedMaps: [],
+      } as UpdateResult);
 
       const result = await service.update(1, updateKitchenStationDto, 1);
 
@@ -336,28 +371,30 @@ describe('KitchenStationService', () => {
     });
 
     it('should throw BadRequestException if id is invalid', async () => {
-      await expect(service.update(0, updateKitchenStationDto, 1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.update(0, updateKitchenStationDto, 1),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.update(1, updateKitchenStationDto, undefined as any)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(
+        service.update(1, updateKitchenStationDto, 0),
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw NotFoundException if kitchen station not found', async () => {
       jest.spyOn(kitchenStationRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.update(999, updateKitchenStationDto, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.update(999, updateKitchenStationDto, 1),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw BadRequestException if name is empty', async () => {
       const dtoWithEmptyName = { ...updateKitchenStationDto, name: '' };
-      jest.spyOn(kitchenStationRepository, 'findOne').mockResolvedValue(mockKitchenStation as any);
+      jest
+        .spyOn(kitchenStationRepository, 'findOne')
+        .mockResolvedValue(mockKitchenStation as unknown as KitchenStation);
 
       await expect(service.update(1, dtoWithEmptyName, 1)).rejects.toThrow(
         BadRequestException,
@@ -365,8 +402,13 @@ describe('KitchenStationService', () => {
     });
 
     it('should throw BadRequestException if display order is negative', async () => {
-      const dtoWithNegativeOrder = { ...updateKitchenStationDto, displayOrder: -1 };
-      jest.spyOn(kitchenStationRepository, 'findOne').mockResolvedValue(mockKitchenStation as any);
+      const dtoWithNegativeOrder = {
+        ...updateKitchenStationDto,
+        displayOrder: -1,
+      };
+      jest
+        .spyOn(kitchenStationRepository, 'findOne')
+        .mockResolvedValue(mockKitchenStation as unknown as KitchenStation);
 
       await expect(service.update(1, dtoWithNegativeOrder, 1)).rejects.toThrow(
         BadRequestException,
@@ -380,8 +422,12 @@ describe('KitchenStationService', () => {
         ...mockKitchenStation,
         status: KitchenStationStatus.DELETED,
       };
-      jest.spyOn(kitchenStationRepository, 'findOne').mockResolvedValue(mockKitchenStation as any);
-      jest.spyOn(kitchenStationRepository, 'save').mockResolvedValue(deletedKitchenStation as any);
+      jest
+        .spyOn(kitchenStationRepository, 'findOne')
+        .mockResolvedValue(mockKitchenStation as unknown as KitchenStation);
+      jest
+        .spyOn(kitchenStationRepository, 'save')
+        .mockResolvedValue(deletedKitchenStation as unknown as KitchenStation);
 
       const result = await service.remove(1, 1);
 
@@ -393,23 +439,17 @@ describe('KitchenStationService', () => {
     });
 
     it('should throw BadRequestException if id is invalid', async () => {
-      await expect(service.remove(0, 1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.remove(0, 1)).rejects.toThrow(BadRequestException);
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.remove(1, undefined as any)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.remove(1, 0)).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw NotFoundException if kitchen station not found', async () => {
       jest.spyOn(kitchenStationRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.remove(999, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.remove(999, 1)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ConflictException if kitchen station is already deleted', async () => {
@@ -417,11 +457,11 @@ describe('KitchenStationService', () => {
         ...mockKitchenStation,
         status: KitchenStationStatus.DELETED,
       };
-      jest.spyOn(kitchenStationRepository, 'findOne').mockResolvedValue(deletedStation as any);
+      jest
+        .spyOn(kitchenStationRepository, 'findOne')
+        .mockResolvedValue(deletedStation as unknown as KitchenStation);
 
-      await expect(service.remove(1, 1)).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.remove(1, 1)).rejects.toThrow(ConflictException);
       await expect(service.remove(1, 1)).rejects.toThrow(
         'Kitchen station is already deleted',
       );

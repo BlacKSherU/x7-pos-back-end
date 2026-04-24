@@ -1,4 +1,13 @@
-import { IsOptional, IsString, IsNumber, IsEnum, Min, Max, IsDateString, IsBoolean } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsEnum,
+  Min,
+  Max,
+  IsDateString,
+  IsBoolean,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { MarketingAutomationTrigger } from '../constants/marketing-automation-trigger.enum';

@@ -19,13 +19,13 @@ export class CreatePayrollTaxDetailDto {
   @MaxLength(100)
   tax_type: string;
 
-  @ApiProperty({ example: 19.00, description: 'Tax percentage (0-100)' })
+  @ApiProperty({ example: 19.0, description: 'Tax percentage (0-100)' })
   @IsNumber()
   @Min(0)
   @Max(100)
   percentage: number;
 
-  @ApiProperty({ example: 15000.50, description: 'Tax amount' })
+  @ApiProperty({ example: 15000.5, description: 'Tax amount' })
   @IsNumber()
   @Min(0)
   amount: number;

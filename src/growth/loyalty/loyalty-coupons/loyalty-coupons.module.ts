@@ -8,11 +8,7 @@ import { LoyaltyReward } from '../loyalty-reward/entities/loyalty-reward.entity'
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      LoyaltyCoupon,
-      LoyaltyCustomer,
-      LoyaltyReward,
-    ]),
+    TypeOrmModule.forFeature([LoyaltyCoupon, LoyaltyCustomer, LoyaltyReward]),
   ],
   controllers: [LoyaltyCouponsController],
   providers: [LoyaltyCouponsService],

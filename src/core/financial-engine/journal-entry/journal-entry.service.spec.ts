@@ -1,10 +1,9 @@
-/* eslint-disable @typescript-eslint/unbound-method, @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import { Test, TestingModule } from '@nestjs/testing';
 import { JournalEntryService } from './journal-entry.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { JournalEntry } from './entities/journal-entry.entity';
 import { JournalEntryLine } from 'src/core/financial-engine/journal-entry-line/entities/journal-entry-line.entity';
-
 
 import { LedgerAccount } from '../ledger-accounts/entities/ledger-account.entity';
 import { Company } from 'src/platform-saas/companies/entities/company.entity';
@@ -127,14 +126,22 @@ describe('JournalEntryService', () => {
     lines: [
       {
         id: mockLine.id,
-        account: { id: mockLedgerAccount.id, code: mockLedgerAccount.code, name: mockLedgerAccount.name },
+        account: {
+          id: mockLedgerAccount.id,
+          code: mockLedgerAccount.code,
+          name: mockLedgerAccount.name,
+        },
         debit: 1000,
         credit: 0,
         description: mockLine.description ?? null,
       },
       {
         id: mockLine2.id,
-        account: { id: mockLedgerAccount.id, code: mockLedgerAccount.code, name: mockLedgerAccount.name },
+        account: {
+          id: mockLedgerAccount.id,
+          code: mockLedgerAccount.code,
+          name: mockLedgerAccount.name,
+        },
         debit: 0,
         credit: 1000,
         description: mockLine2.description ?? null,
@@ -195,9 +202,18 @@ describe('JournalEntryService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         JournalEntryService,
-        { provide: getRepositoryToken(JournalEntry), useValue: mockJournalEntryRepo },
-        { provide: getRepositoryToken(JournalEntryLine), useValue: mockJournalEntryLineRepo },
-        { provide: getRepositoryToken(LedgerAccount), useValue: mockLedgerAccountRepo },
+        {
+          provide: getRepositoryToken(JournalEntry),
+          useValue: mockJournalEntryRepo,
+        },
+        {
+          provide: getRepositoryToken(JournalEntryLine),
+          useValue: mockJournalEntryLineRepo,
+        },
+        {
+          provide: getRepositoryToken(LedgerAccount),
+          useValue: mockLedgerAccountRepo,
+        },
         { provide: getRepositoryToken(Company), useValue: mockCompanyRepo },
         { provide: getRepositoryToken(Merchant), useValue: mockMerchantRepo },
       ],
@@ -206,7 +222,7 @@ describe('JournalEntryService', () => {
     service = module.get<JournalEntryService>(JournalEntryService);
 
     jest.clearAllMocks();
-    jest.spyOn(console, 'error').mockImplementation(() => { });
+    jest.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => jest.restoreAllMocks());
@@ -257,7 +273,9 @@ describe('JournalEntryService', () => {
       jest.spyOn(merchantRepo, 'findOne').mockResolvedValueOnce(mockMerchant);
       jest.spyOn(companyRepo, 'findOneBy').mockResolvedValueOnce(null);
 
-      await expect(service.create(mockMerchant.id, mockCreateDto)).rejects.toThrow();
+      await expect(
+        service.create(mockMerchant.id, mockCreateDto),
+      ).rejects.toThrow();
     });
 
     it('should throw ConflictException if entry_number already exists', async () => {
@@ -269,7 +287,9 @@ describe('JournalEntryService', () => {
       jest.spyOn(companyRepo, 'findOneBy').mockResolvedValueOnce(mockCompany);
       jest.spyOn(jeRepo, 'findOne').mockResolvedValueOnce(mockJournalEntry); // duplicate
 
-      await expect(service.create(mockMerchant.id, mockCreateDto)).rejects.toThrow();
+      await expect(
+        service.create(mockMerchant.id, mockCreateDto),
+      ).rejects.toThrow();
     });
 
     it('should throw BadRequestException when entry is not balanced', async () => {
@@ -289,9 +309,9 @@ describe('JournalEntryService', () => {
         ],
       };
 
-      await expect(service.create(mockMerchant.id, unbalancedDto)).rejects.toThrow(
-        /not balanced/i,
-      );
+      await expect(
+        service.create(mockMerchant.id, unbalancedDto),
+      ).rejects.toThrow(/not balanced/i);
     });
 
     it('should throw BadRequestException when lines array is empty', async () => {
@@ -303,10 +323,13 @@ describe('JournalEntryService', () => {
       jest.spyOn(companyRepo, 'findOneBy').mockResolvedValueOnce(mockCompany);
       jest.spyOn(jeRepo, 'findOne').mockResolvedValueOnce(null);
 
-      const emptyLinesDto: CreateJournalEntryDto = { ...mockCreateDto, lines: [] };
-      await expect(service.create(mockMerchant.id, emptyLinesDto)).rejects.toThrow(
-        /at least one line/i,
-      );
+      const emptyLinesDto: CreateJournalEntryDto = {
+        ...mockCreateDto,
+        lines: [],
+      };
+      await expect(
+        service.create(mockMerchant.id, emptyLinesDto),
+      ).rejects.toThrow(/at least one line/i);
     });
 
     it('should throw NotFoundException if a ledger account is inactive or not found', async () => {
@@ -320,9 +343,9 @@ describe('JournalEntryService', () => {
       jest.spyOn(jeRepo, 'findOne').mockResolvedValueOnce(null);
       jest.spyOn(ledgerRepo, 'findOneBy').mockResolvedValueOnce(null); // account not found
 
-      await expect(service.create(mockMerchant.id, mockCreateDto)).rejects.toThrow(
-        /not found/i,
-      );
+      await expect(
+        service.create(mockMerchant.id, mockCreateDto),
+      ).rejects.toThrow(/not found/i);
     });
   });
 
@@ -371,9 +394,12 @@ describe('JournalEntryService', () => {
         mockMerchant.id,
       );
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('entry.status = :status', {
-        status: JournalEntryStatus.POSTED,
-      });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'entry.status = :status',
+        {
+          status: JournalEntryStatus.POSTED,
+        },
+      );
     });
 
     it('should apply reference_type filter when provided', async () => {
@@ -383,7 +409,10 @@ describe('JournalEntryService', () => {
       mockQueryBuilder.getCount.mockResolvedValueOnce(0);
       mockQueryBuilder.getMany.mockResolvedValueOnce([]);
 
-      await service.findAll({ ...mockQuery, reference_type: 'ORDER' }, mockMerchant.id);
+      await service.findAll(
+        { ...mockQuery, reference_type: 'ORDER' },
+        mockMerchant.id,
+      );
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
         'entry.reference_type = :reference_type',
@@ -402,7 +431,10 @@ describe('JournalEntryService', () => {
       jest.spyOn(merchantRepo, 'findOne').mockResolvedValueOnce(mockMerchant);
       jest.spyOn(jeRepo, 'findOne').mockResolvedValueOnce(mockJournalEntry);
 
-      const result = await service.findOne(mockJournalEntry.id, mockMerchant.id);
+      const result = await service.findOne(
+        mockJournalEntry.id,
+        mockMerchant.id,
+      );
 
       expect(result.statusCode).toBe(200);
       expect(result.message).toBe('Journal Entry retrieved successfully');
@@ -424,7 +456,9 @@ describe('JournalEntryService', () => {
     it('should throw BadRequestException for invalid IDs', async () => {
       await expect(service.findOne(0, mockMerchant.id)).rejects.toThrow();
       await expect(service.findOne(-1, mockMerchant.id)).rejects.toThrow();
-      await expect(service.findOne(null as any, mockMerchant.id)).rejects.toThrow();
+      await expect(
+        service.findOne(null as any, mockMerchant.id),
+      ).rejects.toThrow();
     });
   });
 
@@ -441,14 +475,19 @@ describe('JournalEntryService', () => {
       };
 
       jest.spyOn(merchantRepo, 'findOne').mockResolvedValue(mockMerchant);
-      jest.spyOn(jeRepo, 'findOne')
+      jest
+        .spyOn(jeRepo, 'findOne')
         .mockResolvedValueOnce(mockJournalEntry) // initial load
-        .mockResolvedValueOnce(updatedEntry);    // fetchOne after save
+        .mockResolvedValueOnce(updatedEntry); // fetchOne after save
       jest.spyOn(jeRepo, 'save').mockResolvedValueOnce(updatedEntry);
 
-      const result = await service.update(mockJournalEntry.id, mockMerchant.id, mockUpdateDto);
+      const result = await service.update(
+        mockJournalEntry.id,
+        mockMerchant.id,
+        mockUpdateDto,
+      );
 
-      expect(result.statusCode).toBe(201);
+      expect(result.statusCode).toBe(200);
       expect(result.message).toBe('Journal Entry Updated successfully');
     });
 
@@ -456,7 +495,10 @@ describe('JournalEntryService', () => {
       const merchantRepo = service['merchantRepository'];
       const jeRepo = service['journalEntryRepository'];
 
-      const postedEntry: JournalEntry = { ...mockJournalEntry, status: JournalEntryStatus.POSTED };
+      const postedEntry: JournalEntry = {
+        ...mockJournalEntry,
+        status: JournalEntryStatus.POSTED,
+      };
 
       jest.spyOn(merchantRepo, 'findOne').mockResolvedValueOnce(mockMerchant);
       jest.spyOn(jeRepo, 'findOne').mockResolvedValueOnce(postedEntry);
@@ -498,8 +540,12 @@ describe('JournalEntryService', () => {
     });
 
     it('should throw BadRequestException for invalid IDs', async () => {
-      await expect(service.update(0, mockMerchant.id, mockUpdateDto)).rejects.toThrow();
-      await expect(service.update(-1, mockMerchant.id, mockUpdateDto)).rejects.toThrow();
+      await expect(
+        service.update(0, mockMerchant.id, mockUpdateDto),
+      ).rejects.toThrow();
+      await expect(
+        service.update(-1, mockMerchant.id, mockUpdateDto),
+      ).rejects.toThrow();
     });
   });
 

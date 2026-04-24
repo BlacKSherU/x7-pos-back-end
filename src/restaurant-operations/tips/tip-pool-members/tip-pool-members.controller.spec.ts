@@ -5,7 +5,13 @@ import { CreateTipPoolMemberDto } from './dto/create-tip-pool-member.dto';
 
 describe('TipPoolMembersController', () => {
   let controller: TipPoolMembersController;
-  const mockService = { create: jest.fn(), findAll: jest.fn(), findOne: jest.fn(), update: jest.fn(), remove: jest.fn() };
+  const mockService = {
+    create: jest.fn(),
+    findAll: jest.fn(),
+    findOne: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+  };
   const mockReq = { user: { merchant: { id: 1 } } };
 
   beforeEach(async () => {
@@ -20,7 +26,12 @@ describe('TipPoolMembersController', () => {
   it('should be defined', () => expect(controller).toBeDefined());
 
   it('create', async () => {
-    const dto: CreateTipPoolMemberDto = { tipPoolId: 1, collaboratorId: 1, role: 'waiter', weight: 10 };
+    const dto: CreateTipPoolMemberDto = {
+      tipPoolId: 1,
+      collaboratorId: 1,
+      role: 'waiter',
+      weight: 10,
+    };
     mockService.create.mockResolvedValue({ statusCode: 201, data: {} });
     await controller.create(dto, mockReq);
     expect(mockService.create).toHaveBeenCalledWith(dto, 1);

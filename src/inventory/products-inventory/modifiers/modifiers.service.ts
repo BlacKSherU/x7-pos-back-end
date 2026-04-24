@@ -24,7 +24,7 @@ export class ModifiersService {
     private readonly productRepository: Repository<Product>,
     @Inject(forwardRef(() => ProductsService))
     private readonly productsService: ProductsService,
-  ) { }
+  ) {}
 
   async create(
     merchant_id: number,
@@ -219,14 +219,14 @@ export class ModifiersService {
         break;
       case 'Updated':
         response = {
-          statusCode: 201,
+          statusCode: 200,
           message: `Modifier ${createdUpdateDelete} successfully`,
           data: result,
         };
         break;
       case 'Deleted':
         response = {
-          statusCode: 201,
+          statusCode: 200,
           message: `Modifier ${createdUpdateDelete} successfully`,
           data: result,
         };

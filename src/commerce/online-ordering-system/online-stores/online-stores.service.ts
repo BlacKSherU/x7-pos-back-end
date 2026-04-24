@@ -1,12 +1,31 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, Like } from 'typeorm';
+import {
+  Repository,
+  Between,
+  Like,
+  type FindOptionsOrder,
+  type FindOptionsWhere,
+  type QueryDeepPartialEntity,
+} from 'typeorm';
 import { OnlineStore } from './entities/online-store.entity';
 import { Merchant } from '../../../platform-saas/merchants/entities/merchant.entity';
 import { CreateOnlineStoreDto } from './dto/create-online-store.dto';
 import { UpdateOnlineStoreDto } from './dto/update-online-store.dto';
-import { GetOnlineStoreQueryDto, OnlineStoreSortBy } from './dto/get-online-store-query.dto';
-import { OnlineStoreResponseDto, OneOnlineStoreResponseDto } from './dto/online-store-response.dto';
+import {
+  GetOnlineStoreQueryDto,
+  OnlineStoreSortBy,
+} from './dto/get-online-store-query.dto';
+import {
+  OnlineStoreResponseDto,
+  OneOnlineStoreResponseDto,
+} from './dto/online-store-response.dto';
 import { PaginatedOnlineStoreResponseDto } from './dto/paginated-online-store-response.dto';
 import { OnlineStoreStatus } from './constants/online-store-status.enum';
 
@@ -19,11 +38,15 @@ export class OnlineStoresService {
     private readonly merchantRepository: Repository<Merchant>,
   ) {}
 
-  async create(createOnlineStoreDto: CreateOnlineStoreDto, authenticatedUserMerchantId: number): Promise<OneOnlineStoreResponseDto> {
-
+  async create(
+    createOnlineStoreDto: CreateOnlineStoreDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneOnlineStoreResponseDto> {
     // Validate user permissions - must be associated with a merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to create online stores');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to create online stores',
+      );
     }
 
     // Validate merchant exists
@@ -36,7 +59,10 @@ export class OnlineStoresService {
     }
 
     // Business rule validation: subdomain must not be empty
-    if (!createOnlineStoreDto.subdomain || createOnlineStoreDto.subdomain.trim().length === 0) {
+    if (
+      !createOnlineStoreDto.subdomain ||
+      createOnlineStoreDto.subdomain.trim().length === 0
+    ) {
       throw new BadRequestException('Subdomain cannot be empty');
     }
 
@@ -54,11 +80,16 @@ export class OnlineStoresService {
     });
 
     if (existingStore) {
-      throw new ConflictException(`An online store with subdomain '${createOnlineStoreDto.subdomain}' already exists for this merchant`);
+      throw new ConflictException(
+        `An online store with subdomain '${createOnlineStoreDto.subdomain}' already exists for this merchant`,
+      );
     }
 
     // Business rule validation: theme must not be empty
-    if (!createOnlineStoreDto.theme || createOnlineStoreDto.theme.trim().length === 0) {
+    if (
+      !createOnlineStoreDto.theme ||
+      createOnlineStoreDto.theme.trim().length === 0
+    ) {
       throw new BadRequestException('Theme cannot be empty');
     }
 
@@ -67,7 +98,10 @@ export class OnlineStoresService {
     }
 
     // Business rule validation: currency must not be empty
-    if (!createOnlineStoreDto.currency || createOnlineStoreDto.currency.trim().length === 0) {
+    if (
+      !createOnlineStoreDto.currency ||
+      createOnlineStoreDto.currency.trim().length === 0
+    ) {
       throw new BadRequestException('Currency cannot be empty');
     }
 
@@ -76,7 +110,10 @@ export class OnlineStoresService {
     }
 
     // Business rule validation: timezone must not be empty
-    if (!createOnlineStoreDto.timezone || createOnlineStoreDto.timezone.trim().length === 0) {
+    if (
+      !createOnlineStoreDto.timezone ||
+      createOnlineStoreDto.timezone.trim().length === 0
+    ) {
       throw new BadRequestException('Timezone cannot be empty');
     }
 
@@ -113,11 +150,15 @@ export class OnlineStoresService {
     };
   }
 
-  async findAll(query: GetOnlineStoreQueryDto, authenticatedUserMerchantId: number): Promise<PaginatedOnlineStoreResponseDto> {
-
+  async findAll(
+    query: GetOnlineStoreQueryDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<PaginatedOnlineStoreResponseDto> {
     // Validate user has merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to access online stores');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to access online stores',
+      );
     }
 
     // Validate pagination parameters
@@ -133,7 +174,9 @@ export class OnlineStoresService {
     if (query.createdDate) {
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
       if (!dateRegex.test(query.createdDate)) {
-        throw new BadRequestException('Created date must be in YYYY-MM-DD format');
+        throw new BadRequestException(
+          'Created date must be in YYYY-MM-DD format',
+        );
       }
     }
 
@@ -142,7 +185,7 @@ export class OnlineStoresService {
     const skip = (page - 1) * limit;
 
     // Build where conditions
-    const whereConditions: any = {
+    const whereConditions: FindOptionsWhere<OnlineStore> = {
       merchant_id: authenticatedUserMerchantId,
       status: query.status || OnlineStoreStatus.ACTIVE,
     };
@@ -171,27 +214,39 @@ export class OnlineStoresService {
     }
 
     // Build order conditions
-    const orderConditions: any = {};
+    const sortDir = query.sortOrder || 'DESC';
+    let orderConditions: FindOptionsOrder<OnlineStore>;
     if (query.sortBy) {
-      const sortField = query.sortBy === OnlineStoreSortBy.SUBDOMAIN ? 'subdomain' :
-                       query.sortBy === OnlineStoreSortBy.THEME ? 'theme' :
-                       query.sortBy === OnlineStoreSortBy.CREATED_AT ? 'created_at' :
-                       query.sortBy === OnlineStoreSortBy.UPDATED_AT ? 'updated_at' : 'id';
-      orderConditions[sortField] = query.sortOrder || 'DESC';
+      switch (query.sortBy) {
+        case OnlineStoreSortBy.SUBDOMAIN:
+          orderConditions = { subdomain: sortDir };
+          break;
+        case OnlineStoreSortBy.THEME:
+          orderConditions = { theme: sortDir };
+          break;
+        case OnlineStoreSortBy.CREATED_AT:
+          orderConditions = { created_at: sortDir };
+          break;
+        case OnlineStoreSortBy.UPDATED_AT:
+          orderConditions = { updated_at: sortDir };
+          break;
+        default:
+          orderConditions = { id: sortDir };
+      }
     } else {
-      orderConditions.created_at = 'DESC';
+      orderConditions = { created_at: 'DESC' };
     }
 
-
     // Execute query
-    const [onlineStores, total] = await this.onlineStoreRepository.findAndCount({
-      where: whereConditions,
-      relations: ['merchant'],
-      order: orderConditions,
-      skip,
-      take: limit,
-    });
-
+    const [onlineStores, total] = await this.onlineStoreRepository.findAndCount(
+      {
+        where: whereConditions,
+        relations: ['merchant'],
+        order: orderConditions,
+        skip,
+        take: limit,
+      },
+    );
 
     // Calculate pagination metadata
     const totalPages = Math.ceil(total / limit);
@@ -210,26 +265,32 @@ export class OnlineStoresService {
     return {
       statusCode: 200,
       message: 'Online stores retrieved successfully',
-      data: onlineStores.map(store => this.formatOnlineStoreResponse(store)),
+      data: onlineStores.map((store) => this.formatOnlineStoreResponse(store)),
       paginationMeta,
     };
   }
 
-  async findOne(id: number, authenticatedUserMerchantId: number): Promise<OneOnlineStoreResponseDto> {
-
+  async findOne(
+    id: number,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneOnlineStoreResponseDto> {
     // Validate ID
-      if (!id || id <= 0) {
-      throw new BadRequestException('Online store ID must be a valid positive number');
+    if (!id || id <= 0) {
+      throw new BadRequestException(
+        'Online store ID must be a valid positive number',
+      );
     }
 
     // Validate user has merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to access online stores');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to access online stores',
+      );
     }
 
     // Find online store
     const onlineStore = await this.onlineStoreRepository.findOne({
-      where: { 
+      where: {
         id,
         merchant_id: authenticatedUserMerchantId,
         status: OnlineStoreStatus.ACTIVE,
@@ -248,21 +309,28 @@ export class OnlineStoresService {
     };
   }
 
-  async update(id: number, updateOnlineStoreDto: UpdateOnlineStoreDto, authenticatedUserMerchantId: number): Promise<OneOnlineStoreResponseDto> {
-
+  async update(
+    id: number,
+    updateOnlineStoreDto: UpdateOnlineStoreDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneOnlineStoreResponseDto> {
     // Validate ID
     if (!id || id <= 0) {
-      throw new BadRequestException('Online store ID must be a valid positive number');
+      throw new BadRequestException(
+        'Online store ID must be a valid positive number',
+      );
     }
 
     // Validate user has merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to update online stores');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to update online stores',
+      );
     }
 
     // Find existing online store
     const existingOnlineStore = await this.onlineStoreRepository.findOne({
-      where: { 
+      where: {
         id,
         merchant_id: authenticatedUserMerchantId,
         status: OnlineStoreStatus.ACTIVE,
@@ -276,7 +344,10 @@ export class OnlineStoresService {
 
     // Business rule validation: subdomain must not be empty if provided
     if (updateOnlineStoreDto.subdomain !== undefined) {
-      if (!updateOnlineStoreDto.subdomain || updateOnlineStoreDto.subdomain.trim().length === 0) {
+      if (
+        !updateOnlineStoreDto.subdomain ||
+        updateOnlineStoreDto.subdomain.trim().length === 0
+      ) {
         throw new BadRequestException('Subdomain cannot be empty');
       }
       if (updateOnlineStoreDto.subdomain.length > 100) {
@@ -284,7 +355,10 @@ export class OnlineStoresService {
       }
 
       // Check uniqueness if subdomain is being changed
-      if (updateOnlineStoreDto.subdomain.toLowerCase() !== existingOnlineStore.subdomain) {
+      if (
+        updateOnlineStoreDto.subdomain.toLowerCase() !==
+        existingOnlineStore.subdomain
+      ) {
         const existingStore = await this.onlineStoreRepository.findOne({
           where: {
             subdomain: updateOnlineStoreDto.subdomain.toLowerCase(),
@@ -294,14 +368,19 @@ export class OnlineStoresService {
         });
 
         if (existingStore) {
-          throw new ConflictException(`An online store with subdomain '${updateOnlineStoreDto.subdomain}' already exists for this merchant`);
+          throw new ConflictException(
+            `An online store with subdomain '${updateOnlineStoreDto.subdomain}' already exists for this merchant`,
+          );
         }
       }
     }
 
     // Business rule validation: theme must not be empty if provided
     if (updateOnlineStoreDto.theme !== undefined) {
-      if (!updateOnlineStoreDto.theme || updateOnlineStoreDto.theme.trim().length === 0) {
+      if (
+        !updateOnlineStoreDto.theme ||
+        updateOnlineStoreDto.theme.trim().length === 0
+      ) {
         throw new BadRequestException('Theme cannot be empty');
       }
       if (updateOnlineStoreDto.theme.length > 100) {
@@ -311,7 +390,10 @@ export class OnlineStoresService {
 
     // Business rule validation: currency must not be empty if provided
     if (updateOnlineStoreDto.currency !== undefined) {
-      if (!updateOnlineStoreDto.currency || updateOnlineStoreDto.currency.trim().length === 0) {
+      if (
+        !updateOnlineStoreDto.currency ||
+        updateOnlineStoreDto.currency.trim().length === 0
+      ) {
         throw new BadRequestException('Currency cannot be empty');
       }
       if (updateOnlineStoreDto.currency.length > 10) {
@@ -321,7 +403,10 @@ export class OnlineStoresService {
 
     // Business rule validation: timezone must not be empty if provided
     if (updateOnlineStoreDto.timezone !== undefined) {
-      if (!updateOnlineStoreDto.timezone || updateOnlineStoreDto.timezone.trim().length === 0) {
+      if (
+        !updateOnlineStoreDto.timezone ||
+        updateOnlineStoreDto.timezone.trim().length === 0
+      ) {
         throw new BadRequestException('Timezone cannot be empty');
       }
       if (updateOnlineStoreDto.timezone.length > 50) {
@@ -330,12 +415,19 @@ export class OnlineStoresService {
     }
 
     // Update online store
-    const updateData: any = {};
-    if (updateOnlineStoreDto.subdomain !== undefined) updateData.subdomain = updateOnlineStoreDto.subdomain.toLowerCase().trim();
-    if (updateOnlineStoreDto.isActive !== undefined) updateData.is_active = updateOnlineStoreDto.isActive;
-    if (updateOnlineStoreDto.theme !== undefined) updateData.theme = updateOnlineStoreDto.theme.trim();
-    if (updateOnlineStoreDto.currency !== undefined) updateData.currency = updateOnlineStoreDto.currency.trim().toUpperCase();
-    if (updateOnlineStoreDto.timezone !== undefined) updateData.timezone = updateOnlineStoreDto.timezone.trim();
+    const updateData: QueryDeepPartialEntity<OnlineStore> = {};
+    if (updateOnlineStoreDto.subdomain !== undefined)
+      updateData.subdomain = updateOnlineStoreDto.subdomain
+        .toLowerCase()
+        .trim();
+    if (updateOnlineStoreDto.isActive !== undefined)
+      updateData.is_active = updateOnlineStoreDto.isActive;
+    if (updateOnlineStoreDto.theme !== undefined)
+      updateData.theme = updateOnlineStoreDto.theme.trim();
+    if (updateOnlineStoreDto.currency !== undefined)
+      updateData.currency = updateOnlineStoreDto.currency.trim().toUpperCase();
+    if (updateOnlineStoreDto.timezone !== undefined)
+      updateData.timezone = updateOnlineStoreDto.timezone.trim();
 
     await this.onlineStoreRepository.update(id, updateData);
 
@@ -356,21 +448,27 @@ export class OnlineStoresService {
     };
   }
 
-  async remove(id: number, authenticatedUserMerchantId: number): Promise<OneOnlineStoreResponseDto> {
-
+  async remove(
+    id: number,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneOnlineStoreResponseDto> {
     // Validate ID
     if (!id || id <= 0) {
-      throw new BadRequestException('Online store ID must be a valid positive number');
+      throw new BadRequestException(
+        'Online store ID must be a valid positive number',
+      );
     }
 
     // Validate user has merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to delete online stores');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to delete online stores',
+      );
     }
 
     // Find existing online store
     const existingOnlineStore = await this.onlineStoreRepository.findOne({
-      where: { 
+      where: {
         id,
         merchant_id: authenticatedUserMerchantId,
         status: OnlineStoreStatus.ACTIVE,
@@ -398,7 +496,9 @@ export class OnlineStoresService {
     };
   }
 
-  private formatOnlineStoreResponse(onlineStore: OnlineStore): OnlineStoreResponseDto {
+  private formatOnlineStoreResponse(
+    onlineStore: OnlineStore,
+  ): OnlineStoreResponseDto {
     return {
       id: onlineStore.id,
       merchantId: onlineStore.merchant_id,

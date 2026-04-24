@@ -1,12 +1,25 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MarketingAutomation } from './entities/marketing-automation.entity';
 import { Merchant } from '../../../platform-saas/merchants/entities/merchant.entity';
 import { CreateMarketingAutomationDto } from './dto/create-marketing-automation.dto';
 import { UpdateMarketingAutomationDto } from './dto/update-marketing-automation.dto';
-import { GetMarketingAutomationQueryDto, MarketingAutomationSortBy } from './dto/get-marketing-automation-query.dto';
-import { MarketingAutomationResponseDto, OneMarketingAutomationResponseDto, PaginatedMarketingAutomationResponseDto } from './dto/marketing-automation-response.dto';
+import {
+  GetMarketingAutomationQueryDto,
+  MarketingAutomationSortBy,
+} from './dto/get-marketing-automation-query.dto';
+import {
+  MarketingAutomationResponseDto,
+  OneMarketingAutomationResponseDto,
+  PaginatedMarketingAutomationResponseDto,
+} from './dto/marketing-automation-response.dto';
 import { MarketingAutomationStatus } from './constants/marketing-automation-status.enum';
 
 @Injectable()
@@ -18,10 +31,15 @@ export class MarketingAutomationsService {
     private readonly merchantRepository: Repository<Merchant>,
   ) {}
 
-  async create(createMarketingAutomationDto: CreateMarketingAutomationDto, authenticatedUserMerchantId: number | null | undefined): Promise<OneMarketingAutomationResponseDto> {
+  async create(
+    createMarketingAutomationDto: CreateMarketingAutomationDto,
+    authenticatedUserMerchantId: number | null | undefined,
+  ): Promise<OneMarketingAutomationResponseDto> {
     // Validate user permissions - must be associated with a merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to create marketing automations');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to create marketing automations',
+      );
     }
 
     // Validate merchant exists
@@ -34,7 +52,10 @@ export class MarketingAutomationsService {
     }
 
     // Business rule validation: name must not be empty
-    if (!createMarketingAutomationDto.name || createMarketingAutomationDto.name.trim().length === 0) {
+    if (
+      !createMarketingAutomationDto.name ||
+      createMarketingAutomationDto.name.trim().length === 0
+    ) {
       throw new BadRequestException('Name cannot be empty');
     }
 
@@ -47,7 +68,9 @@ export class MarketingAutomationsService {
       try {
         JSON.parse(createMarketingAutomationDto.actionPayload);
       } catch (error) {
-        throw new BadRequestException('Action payload must be a valid JSON string');
+        throw new BadRequestException(
+          'Action payload must be a valid JSON string',
+        );
       }
     }
 
@@ -57,20 +80,28 @@ export class MarketingAutomationsService {
     marketingAutomation.name = createMarketingAutomationDto.name.trim();
     marketingAutomation.trigger = createMarketingAutomationDto.trigger;
     marketingAutomation.action = createMarketingAutomationDto.action;
-    marketingAutomation.action_payload = createMarketingAutomationDto.actionPayload || null;
-    marketingAutomation.active = createMarketingAutomationDto.active !== undefined ? createMarketingAutomationDto.active : true;
+    marketingAutomation.action_payload =
+      createMarketingAutomationDto.actionPayload || null;
+    marketingAutomation.active =
+      createMarketingAutomationDto.active !== undefined
+        ? createMarketingAutomationDto.active
+        : true;
     marketingAutomation.status = MarketingAutomationStatus.ACTIVE;
 
-    const savedMarketingAutomation = await this.marketingAutomationRepository.save(marketingAutomation);
+    const savedMarketingAutomation =
+      await this.marketingAutomationRepository.save(marketingAutomation);
 
     // Fetch the complete marketing automation with relations
-    const completeMarketingAutomation = await this.marketingAutomationRepository.findOne({
-      where: { id: savedMarketingAutomation.id },
-      relations: ['merchant'],
-    });
+    const completeMarketingAutomation =
+      await this.marketingAutomationRepository.findOne({
+        where: { id: savedMarketingAutomation.id },
+        relations: ['merchant'],
+      });
 
     if (!completeMarketingAutomation) {
-      throw new NotFoundException('Marketing automation not found after creation');
+      throw new NotFoundException(
+        'Marketing automation not found after creation',
+      );
     }
 
     return {
@@ -80,10 +111,15 @@ export class MarketingAutomationsService {
     };
   }
 
-  async findAll(query: GetMarketingAutomationQueryDto, authenticatedUserMerchantId: number | null | undefined): Promise<PaginatedMarketingAutomationResponseDto> {
+  async findAll(
+    query: GetMarketingAutomationQueryDto,
+    authenticatedUserMerchantId: number | null | undefined,
+  ): Promise<PaginatedMarketingAutomationResponseDto> {
     // Validate user has merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to access marketing automations');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to access marketing automations',
+      );
     }
 
     // Validate pagination parameters
@@ -99,7 +135,9 @@ export class MarketingAutomationsService {
     if (query.createdDate) {
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
       if (!dateRegex.test(query.createdDate)) {
-        throw new BadRequestException('Created date must be in YYYY-MM-DD format');
+        throw new BadRequestException(
+          'Created date must be in YYYY-MM-DD format',
+        );
       }
     }
 
@@ -111,42 +149,63 @@ export class MarketingAutomationsService {
     const queryBuilder = this.marketingAutomationRepository
       .createQueryBuilder('automation')
       .leftJoinAndSelect('automation.merchant', 'merchant')
-      .where('automation.merchant_id = :merchantId', { merchantId: authenticatedUserMerchantId });
+      .where('automation.merchant_id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      });
 
     // Exclude deleted automations by default
-    queryBuilder.andWhere('automation.status != :deletedStatus', { deletedStatus: MarketingAutomationStatus.DELETED });
+    queryBuilder.andWhere('automation.status != :deletedStatus', {
+      deletedStatus: MarketingAutomationStatus.DELETED,
+    });
 
     if (query.name) {
-      queryBuilder.andWhere('automation.name ILIKE :name', { name: `%${query.name}%` });
+      queryBuilder.andWhere('automation.name ILIKE :name', {
+        name: `%${query.name}%`,
+      });
     }
 
     if (query.trigger) {
-      queryBuilder.andWhere('automation.trigger = :trigger', { trigger: query.trigger });
+      queryBuilder.andWhere('automation.trigger = :trigger', {
+        trigger: query.trigger,
+      });
     }
 
     if (query.action) {
-      queryBuilder.andWhere('automation.action = :action', { action: query.action });
+      queryBuilder.andWhere('automation.action = :action', {
+        action: query.action,
+      });
     }
 
     if (query.active !== undefined) {
-      queryBuilder.andWhere('automation.active = :active', { active: query.active });
+      queryBuilder.andWhere('automation.active = :active', {
+        active: query.active,
+      });
     }
 
     if (query.createdDate) {
       const startDate = new Date(query.createdDate);
       const endDate = new Date(query.createdDate);
       endDate.setDate(endDate.getDate() + 1);
-      queryBuilder.andWhere('automation.created_at >= :startDate', { startDate });
+      queryBuilder.andWhere('automation.created_at >= :startDate', {
+        startDate,
+      });
       queryBuilder.andWhere('automation.created_at < :endDate', { endDate });
     }
 
     // Build order conditions
     if (query.sortBy) {
-      const sortField = query.sortBy === MarketingAutomationSortBy.NAME ? 'automation.name' :
-                       query.sortBy === MarketingAutomationSortBy.TRIGGER ? 'automation.trigger' :
-                       query.sortBy === MarketingAutomationSortBy.ACTION ? 'automation.action' :
-                       query.sortBy === MarketingAutomationSortBy.CREATED_AT ? 'automation.created_at' :
-                       query.sortBy === MarketingAutomationSortBy.UPDATED_AT ? 'automation.updated_at' : 'automation.id';
+      const sortField =
+        query.sortBy === MarketingAutomationSortBy.NAME
+          ? 'automation.name'
+          : query.sortBy === MarketingAutomationSortBy.TRIGGER
+            ? 'automation.trigger'
+            : query.sortBy === MarketingAutomationSortBy.ACTION
+              ? 'automation.action'
+              : query.sortBy === MarketingAutomationSortBy.CREATED_AT
+                ? 'automation.created_at'
+                : query.sortBy === MarketingAutomationSortBy.UPDATED_AT
+                  ? 'automation.updated_at'
+                  : 'automation.id';
       queryBuilder.orderBy(sortField, query.sortOrder || 'DESC');
     } else {
       queryBuilder.orderBy('automation.created_at', 'DESC');
@@ -174,20 +233,29 @@ export class MarketingAutomationsService {
     return {
       statusCode: 200,
       message: 'Marketing automations retrieved successfully',
-      data: marketingAutomations.map(automation => this.formatMarketingAutomationResponse(automation)),
+      data: marketingAutomations.map((automation) =>
+        this.formatMarketingAutomationResponse(automation),
+      ),
       paginationMeta,
     };
   }
 
-  async findOne(id: number, authenticatedUserMerchantId: number | null | undefined): Promise<OneMarketingAutomationResponseDto> {
+  async findOne(
+    id: number,
+    authenticatedUserMerchantId: number | null | undefined,
+  ): Promise<OneMarketingAutomationResponseDto> {
     // Validate ID
     if (!id || id <= 0) {
-      throw new BadRequestException('Marketing automation ID must be a valid positive number');
+      throw new BadRequestException(
+        'Marketing automation ID must be a valid positive number',
+      );
     }
 
     // Validate user has merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to access marketing automations');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to access marketing automations',
+      );
     }
 
     // Find marketing automation
@@ -195,8 +263,12 @@ export class MarketingAutomationsService {
       .createQueryBuilder('automation')
       .leftJoinAndSelect('automation.merchant', 'merchant')
       .where('automation.id = :id', { id })
-      .andWhere('automation.merchant_id = :merchantId', { merchantId: authenticatedUserMerchantId })
-      .andWhere('automation.status != :deletedStatus', { deletedStatus: MarketingAutomationStatus.DELETED })
+      .andWhere('automation.merchant_id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
+      .andWhere('automation.status != :deletedStatus', {
+        deletedStatus: MarketingAutomationStatus.DELETED,
+      })
       .getOne();
 
     if (!marketingAutomation) {
@@ -210,15 +282,23 @@ export class MarketingAutomationsService {
     };
   }
 
-  async update(id: number, updateMarketingAutomationDto: UpdateMarketingAutomationDto, authenticatedUserMerchantId: number | null | undefined): Promise<OneMarketingAutomationResponseDto> {
+  async update(
+    id: number,
+    updateMarketingAutomationDto: UpdateMarketingAutomationDto,
+    authenticatedUserMerchantId: number | null | undefined,
+  ): Promise<OneMarketingAutomationResponseDto> {
     // Validate ID
     if (!id || id <= 0) {
-      throw new BadRequestException('Marketing automation ID must be a valid positive number');
+      throw new BadRequestException(
+        'Marketing automation ID must be a valid positive number',
+      );
     }
 
     // Validate user has merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to update marketing automations');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to update marketing automations',
+      );
     }
 
     // Find existing marketing automation
@@ -226,8 +306,12 @@ export class MarketingAutomationsService {
       .createQueryBuilder('automation')
       .leftJoinAndSelect('automation.merchant', 'merchant')
       .where('automation.id = :id', { id })
-      .andWhere('automation.merchant_id = :merchantId', { merchantId: authenticatedUserMerchantId })
-      .andWhere('automation.status != :deletedStatus', { deletedStatus: MarketingAutomationStatus.DELETED })
+      .andWhere('automation.merchant_id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
+      .andWhere('automation.status != :deletedStatus', {
+        deletedStatus: MarketingAutomationStatus.DELETED,
+      })
       .getOne();
 
     if (!existingMarketingAutomation) {
@@ -236,7 +320,10 @@ export class MarketingAutomationsService {
 
     // Business rule validation: name must not be empty if provided
     if (updateMarketingAutomationDto.name !== undefined) {
-      if (!updateMarketingAutomationDto.name || updateMarketingAutomationDto.name.trim().length === 0) {
+      if (
+        !updateMarketingAutomationDto.name ||
+        updateMarketingAutomationDto.name.trim().length === 0
+      ) {
         throw new BadRequestException('Name cannot be empty');
       }
       if (updateMarketingAutomationDto.name.length > 255) {
@@ -245,32 +332,46 @@ export class MarketingAutomationsService {
     }
 
     // Validate action payload is valid JSON if provided
-    if (updateMarketingAutomationDto.actionPayload !== undefined && updateMarketingAutomationDto.actionPayload !== null) {
+    if (
+      updateMarketingAutomationDto.actionPayload !== undefined &&
+      updateMarketingAutomationDto.actionPayload !== null
+    ) {
       try {
         JSON.parse(updateMarketingAutomationDto.actionPayload);
       } catch (error) {
-        throw new BadRequestException('Action payload must be a valid JSON string');
+        throw new BadRequestException(
+          'Action payload must be a valid JSON string',
+        );
       }
     }
 
     // Update marketing automation
     const updateData: any = {};
-    if (updateMarketingAutomationDto.name !== undefined) updateData.name = updateMarketingAutomationDto.name.trim();
-    if (updateMarketingAutomationDto.trigger !== undefined) updateData.trigger = updateMarketingAutomationDto.trigger;
-    if (updateMarketingAutomationDto.action !== undefined) updateData.action = updateMarketingAutomationDto.action;
-    if (updateMarketingAutomationDto.actionPayload !== undefined) updateData.action_payload = updateMarketingAutomationDto.actionPayload || null;
-    if (updateMarketingAutomationDto.active !== undefined) updateData.active = updateMarketingAutomationDto.active;
+    if (updateMarketingAutomationDto.name !== undefined)
+      updateData.name = updateMarketingAutomationDto.name.trim();
+    if (updateMarketingAutomationDto.trigger !== undefined)
+      updateData.trigger = updateMarketingAutomationDto.trigger;
+    if (updateMarketingAutomationDto.action !== undefined)
+      updateData.action = updateMarketingAutomationDto.action;
+    if (updateMarketingAutomationDto.actionPayload !== undefined)
+      updateData.action_payload =
+        updateMarketingAutomationDto.actionPayload || null;
+    if (updateMarketingAutomationDto.active !== undefined)
+      updateData.active = updateMarketingAutomationDto.active;
 
     await this.marketingAutomationRepository.update(id, updateData);
 
     // Fetch updated marketing automation
-    const updatedMarketingAutomation = await this.marketingAutomationRepository.findOne({
-      where: { id },
-      relations: ['merchant'],
-    });
+    const updatedMarketingAutomation =
+      await this.marketingAutomationRepository.findOne({
+        where: { id },
+        relations: ['merchant'],
+      });
 
     if (!updatedMarketingAutomation) {
-      throw new NotFoundException('Marketing automation not found after update');
+      throw new NotFoundException(
+        'Marketing automation not found after update',
+      );
     }
 
     return {
@@ -280,15 +381,22 @@ export class MarketingAutomationsService {
     };
   }
 
-  async remove(id: number, authenticatedUserMerchantId: number | null | undefined): Promise<OneMarketingAutomationResponseDto> {
+  async remove(
+    id: number,
+    authenticatedUserMerchantId: number | null | undefined,
+  ): Promise<OneMarketingAutomationResponseDto> {
     // Validate ID
     if (!id || id <= 0) {
-      throw new BadRequestException('Marketing automation ID must be a valid positive number');
+      throw new BadRequestException(
+        'Marketing automation ID must be a valid positive number',
+      );
     }
 
     // Validate user has merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to delete marketing automations');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to delete marketing automations',
+      );
     }
 
     // Find existing marketing automation
@@ -296,8 +404,12 @@ export class MarketingAutomationsService {
       .createQueryBuilder('automation')
       .leftJoinAndSelect('automation.merchant', 'merchant')
       .where('automation.id = :id', { id })
-      .andWhere('automation.merchant_id = :merchantId', { merchantId: authenticatedUserMerchantId })
-      .andWhere('automation.status != :deletedStatus', { deletedStatus: MarketingAutomationStatus.DELETED })
+      .andWhere('automation.merchant_id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
+      .andWhere('automation.status != :deletedStatus', {
+        deletedStatus: MarketingAutomationStatus.DELETED,
+      })
       .getOne();
 
     if (!existingMarketingAutomation) {
@@ -305,7 +417,9 @@ export class MarketingAutomationsService {
     }
 
     // Check if already deleted (should not happen due to query, but double-check)
-    if (existingMarketingAutomation.status === MarketingAutomationStatus.DELETED) {
+    if (
+      existingMarketingAutomation.status === MarketingAutomationStatus.DELETED
+    ) {
       throw new ConflictException('Marketing automation is already deleted');
     }
 
@@ -320,7 +434,9 @@ export class MarketingAutomationsService {
     };
   }
 
-  private formatMarketingAutomationResponse(marketingAutomation: MarketingAutomation): MarketingAutomationResponseDto {
+  private formatMarketingAutomationResponse(
+    marketingAutomation: MarketingAutomation,
+  ): MarketingAutomationResponseDto {
     return {
       id: marketingAutomation.id,
       merchantId: marketingAutomation.merchant_id,

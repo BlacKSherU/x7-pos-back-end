@@ -1,10 +1,7 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/unbound-method */
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { OnlineOrderController } from './online-order.controller';
 import { OnlineOrderService } from './online-order.service';
+import { OnlineOrderFulfillmentService } from './online-order-fulfillment.service';
 import { CreateOnlineOrderDto } from './dto/create-online-order.dto';
 import { UpdateOnlineOrderDto } from './dto/update-online-order.dto';
 import { GetOnlineOrderQueryDto } from './dto/get-online-order-query.dto';
@@ -13,6 +10,11 @@ import { PaginatedOnlineOrderResponseDto } from './dto/paginated-online-order-re
 import { OnlineOrderStatus } from './constants/online-order-status.enum';
 import { OnlineOrderType } from './constants/online-order-type.enum';
 import { OnlineOrderPaymentStatus } from './constants/online-order-payment-status.enum';
+import { OnlineOrderFulfillmentStatus } from './constants/online-order-fulfillment-status.enum';
+import { AuthenticatedUser } from '../../../auth/interfaces/authenticated-user.interface';
+import { Request as ExpressRequest } from 'express';
+
+type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
 
 describe('OnlineOrderController', () => {
   let controller: OnlineOrderController;
@@ -26,6 +28,11 @@ describe('OnlineOrderController', () => {
     remove: jest.fn(),
   };
 
+  const mockOnlineOrderFulfillmentService = {
+    acceptOnlineOrder: jest.fn(),
+    cancelOnlineOrder: jest.fn(),
+  };
+
   const mockUser = {
     id: 1,
     email: 'test@example.com',
@@ -36,7 +43,7 @@ describe('OnlineOrderController', () => {
 
   const mockRequest = {
     user: mockUser,
-  };
+  } as AuthenticatedRequest;
 
   const mockOnlineOrderResponse: OneOnlineOrderResponseDto = {
     statusCode: 201,
@@ -55,6 +62,10 @@ describe('OnlineOrderController', () => {
       updatedAt: new Date('2024-01-15T09:00:00Z'),
       totalAmount: 125.99,
       notes: 'Please deliver to the back door',
+      fulfillmentStatus: OnlineOrderFulfillmentStatus.ACCEPTED,
+      acceptedAt: new Date('2024-01-15T08:30:00Z'),
+      readyAt: null,
+      completedAt: null,
       merchant: {
         id: 1,
         name: 'Test Merchant',
@@ -96,6 +107,10 @@ describe('OnlineOrderController', () => {
           provide: OnlineOrderService,
           useValue: mockOnlineOrderService,
         },
+        {
+          provide: OnlineOrderFulfillmentService,
+          useValue: mockOnlineOrderFulfillmentService,
+        },
       ],
     }).compile();
 
@@ -113,7 +128,6 @@ describe('OnlineOrderController', () => {
       customerId: 5,
       type: OnlineOrderType.DELIVERY,
       paymentStatus: OnlineOrderPaymentStatus.PENDING,
-      totalAmount: 125.99,
       notes: 'Please deliver to the back door',
     };
 
@@ -175,7 +189,6 @@ describe('OnlineOrderController', () => {
   describe('PUT /online-orders/:id (update)', () => {
     const updateDto: UpdateOnlineOrderDto = {
       paymentStatus: OnlineOrderPaymentStatus.PAID,
-      totalAmount: 150.99,
     };
 
     it('should update an online order successfully', async () => {
@@ -187,14 +200,17 @@ describe('OnlineOrderController', () => {
         data: {
           ...mockOnlineOrderResponse.data,
           paymentStatus: OnlineOrderPaymentStatus.PAID,
-          totalAmount: 150.99,
         },
       };
       updateSpy.mockResolvedValue(updatedResponse);
 
       const result = await controller.update(1, updateDto, mockRequest);
 
-      expect(updateSpy).toHaveBeenCalledWith(1, updateDto, mockUser.merchant.id);
+      expect(updateSpy).toHaveBeenCalledWith(
+        1,
+        updateDto,
+        mockUser.merchant.id,
+      );
       expect(result).toEqual(updatedResponse);
       expect(result.statusCode).toBe(200);
       expect(result.message).toBe('Online order updated successfully');

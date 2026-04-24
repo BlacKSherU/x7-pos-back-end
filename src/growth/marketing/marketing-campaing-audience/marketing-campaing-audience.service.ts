@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MarketingCampaignAudience } from './entities/marketing-campaing-audience.entity';
@@ -6,8 +12,14 @@ import { MarketingCampaign } from '../marketing_campaing/entities/marketing_camp
 import { Customer } from 'src/core/business-partners/customers/entities/customer.entity';
 import { CreateMarketingCampaignAudienceDto } from './dto/create-marketing-campaing-audience.dto';
 import { UpdateMarketingCampaignAudienceDto } from './dto/update-marketing-campaing-audience.dto';
-import { GetMarketingCampaignAudienceQueryDto, MarketingCampaignAudienceSortBy } from './dto/get-marketing-campaign-audience-query.dto';
-import { MarketingCampaignAudienceResponseDto, OneMarketingCampaignAudienceResponseDto } from './dto/marketing-campaign-audience-response.dto';
+import {
+  GetMarketingCampaignAudienceQueryDto,
+  MarketingCampaignAudienceSortBy,
+} from './dto/get-marketing-campaign-audience-query.dto';
+import {
+  MarketingCampaignAudienceResponseDto,
+  OneMarketingCampaignAudienceResponseDto,
+} from './dto/marketing-campaign-audience-response.dto';
 import { PaginatedMarketingCampaignAudienceResponseDto } from './dto/paginated-marketing-campaign-audience-response.dto';
 import { MarketingCampaignAudienceStatus } from './constants/marketing-campaign-audience-status.enum';
 import { MarketingCampaignStatus } from '../marketing_campaing/constants/marketing-campaign-status.enum';
@@ -21,55 +33,88 @@ export class MarketingCampaingAudienceService {
     private readonly marketingCampaignRepository: Repository<MarketingCampaign>,
     @InjectRepository(Customer)
     private readonly customerRepository: Repository<Customer>,
-  ) { }
+  ) {}
 
-  async create(createMarketingCampaignAudienceDto: CreateMarketingCampaignAudienceDto, authenticatedUserMerchantId: number): Promise<OneMarketingCampaignAudienceResponseDto> {
+  async create(
+    createMarketingCampaignAudienceDto: CreateMarketingCampaignAudienceDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneMarketingCampaignAudienceResponseDto> {
     // Validate user permissions - must be associated with a merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to create marketing campaign audience entries');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to create marketing campaign audience entries',
+      );
     }
 
     // Validate marketing campaign exists and belongs to the merchant
     const marketingCampaign = await this.marketingCampaignRepository
       .createQueryBuilder('marketingCampaign')
-      .where('marketingCampaign.id = :id', { id: createMarketingCampaignAudienceDto.marketingCampaignId })
-      .andWhere('marketingCampaign.merchant_id = :merchantId', { merchantId: authenticatedUserMerchantId })
-      .andWhere('marketingCampaign.status != :deletedStatus', { deletedStatus: MarketingCampaignStatus.DELETED })
+      .where('marketingCampaign.id = :id', {
+        id: createMarketingCampaignAudienceDto.marketingCampaignId,
+      })
+      .andWhere('marketingCampaign.merchant_id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
+      .andWhere('marketingCampaign.status != :deletedStatus', {
+        deletedStatus: MarketingCampaignStatus.DELETED,
+      })
       .getOne();
 
     if (!marketingCampaign) {
-      throw new NotFoundException('Marketing campaign not found or does not belong to your merchant');
+      throw new NotFoundException(
+        'Marketing campaign not found or does not belong to your merchant',
+      );
     }
 
     // Validate customer exists and belongs to the merchant
     const customer = await this.customerRepository.findOne({
-      where: { id: createMarketingCampaignAudienceDto.customerId, merchantId: authenticatedUserMerchantId },
+      where: {
+        id: createMarketingCampaignAudienceDto.customerId,
+        merchantId: authenticatedUserMerchantId,
+      },
     });
 
     if (!customer) {
-      throw new NotFoundException('Customer not found or does not belong to your merchant');
+      throw new NotFoundException(
+        'Customer not found or does not belong to your merchant',
+      );
     }
 
     // Check if audience entry already exists
     const existingAudience = await this.marketingCampaignAudienceRepository
       .createQueryBuilder('audience')
-      .where('audience.marketing_campaign_id = :campaignId', { campaignId: createMarketingCampaignAudienceDto.marketingCampaignId })
-      .andWhere('audience.customer_id = :customerId', { customerId: createMarketingCampaignAudienceDto.customerId })
-      .andWhere('audience.status != :deletedStatus', { deletedStatus: MarketingCampaignAudienceStatus.DELETED })
+      .where('audience.marketing_campaign_id = :campaignId', {
+        campaignId: createMarketingCampaignAudienceDto.marketingCampaignId,
+      })
+      .andWhere('audience.customer_id = :customerId', {
+        customerId: createMarketingCampaignAudienceDto.customerId,
+      })
+      .andWhere('audience.status != :deletedStatus', {
+        deletedStatus: MarketingCampaignAudienceStatus.DELETED,
+      })
       .getOne();
 
     if (existingAudience) {
-      throw new ConflictException('This customer is already in the audience for this campaign');
+      throw new ConflictException(
+        'This customer is already in the audience for this campaign',
+      );
     }
 
     // Create marketing campaign audience entry
     const marketingCampaignAudience = new MarketingCampaignAudience();
-    marketingCampaignAudience.marketing_campaign_id = createMarketingCampaignAudienceDto.marketingCampaignId;
-    marketingCampaignAudience.customer_id = createMarketingCampaignAudienceDto.customerId;
-    marketingCampaignAudience.status = createMarketingCampaignAudienceDto.status || MarketingCampaignAudienceStatus.PENDING;
-    marketingCampaignAudience.error_message = createMarketingCampaignAudienceDto.errorMessage || null;
+    marketingCampaignAudience.marketing_campaign_id =
+      createMarketingCampaignAudienceDto.marketingCampaignId;
+    marketingCampaignAudience.customer_id =
+      createMarketingCampaignAudienceDto.customerId;
+    marketingCampaignAudience.status =
+      createMarketingCampaignAudienceDto.status ||
+      MarketingCampaignAudienceStatus.PENDING;
+    marketingCampaignAudience.error_message =
+      createMarketingCampaignAudienceDto.errorMessage || null;
 
-    const savedAudience = await this.marketingCampaignAudienceRepository.save(marketingCampaignAudience);
+    const savedAudience = await this.marketingCampaignAudienceRepository.save(
+      marketingCampaignAudience,
+    );
 
     // Fetch the complete audience entry with relations
     const completeAudience = await this.marketingCampaignAudienceRepository
@@ -80,7 +125,9 @@ export class MarketingCampaingAudienceService {
       .getOne();
 
     if (!completeAudience) {
-      throw new NotFoundException('Marketing campaign audience entry not found after creation');
+      throw new NotFoundException(
+        'Marketing campaign audience entry not found after creation',
+      );
     }
 
     return {
@@ -90,10 +137,15 @@ export class MarketingCampaingAudienceService {
     };
   }
 
-  async findAll(query: GetMarketingCampaignAudienceQueryDto, authenticatedUserMerchantId: number): Promise<PaginatedMarketingCampaignAudienceResponseDto> {
+  async findAll(
+    query: GetMarketingCampaignAudienceQueryDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<PaginatedMarketingCampaignAudienceResponseDto> {
     // Validate user has merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to access marketing campaign audience entries');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to access marketing campaign audience entries',
+      );
     }
 
     // Validate pagination parameters
@@ -109,7 +161,9 @@ export class MarketingCampaingAudienceService {
     if (query.createdDate) {
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
       if (!dateRegex.test(query.createdDate)) {
-        throw new BadRequestException('Created date must be in YYYY-MM-DD format');
+        throw new BadRequestException(
+          'Created date must be in YYYY-MM-DD format',
+        );
       }
     }
 
@@ -123,21 +177,31 @@ export class MarketingCampaingAudienceService {
       .leftJoinAndSelect('audience.marketingCampaign', 'marketingCampaign')
       .leftJoinAndSelect('audience.customer', 'customer')
       .leftJoin('marketingCampaign.merchant', 'merchant')
-      .where('merchant.id = :merchantId', { merchantId: authenticatedUserMerchantId });
+      .where('merchant.id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      });
 
     // Exclude deleted entries by default unless explicitly requested
     if (query.status) {
-      queryBuilder.andWhere('audience.status = :status', { status: query.status });
+      queryBuilder.andWhere('audience.status = :status', {
+        status: query.status,
+      });
     } else {
-      queryBuilder.andWhere('audience.status != :deletedStatus', { deletedStatus: MarketingCampaignAudienceStatus.DELETED });
+      queryBuilder.andWhere('audience.status != :deletedStatus', {
+        deletedStatus: MarketingCampaignAudienceStatus.DELETED,
+      });
     }
 
     if (query.marketingCampaignId) {
-      queryBuilder.andWhere('audience.marketing_campaign_id = :campaignId', { campaignId: query.marketingCampaignId });
+      queryBuilder.andWhere('audience.marketing_campaign_id = :campaignId', {
+        campaignId: query.marketingCampaignId,
+      });
     }
 
     if (query.customerId) {
-      queryBuilder.andWhere('audience.customer_id = :customerId', { customerId: query.customerId });
+      queryBuilder.andWhere('audience.customer_id = :customerId', {
+        customerId: query.customerId,
+      });
     }
 
     if (query.createdDate) {
@@ -150,13 +214,22 @@ export class MarketingCampaingAudienceService {
 
     // Build order conditions
     if (query.sortBy) {
-      const sortField = query.sortBy === MarketingCampaignAudienceSortBy.CREATED_AT ? 'audience.created_at' :
-        query.sortBy === MarketingCampaignAudienceSortBy.UPDATED_AT ? 'audience.updated_at' :
-          query.sortBy === MarketingCampaignAudienceSortBy.SENT_AT ? 'audience.sent_at' :
-            query.sortBy === MarketingCampaignAudienceSortBy.DELIVERED_AT ? 'audience.delivered_at' :
-              query.sortBy === MarketingCampaignAudienceSortBy.OPENED_AT ? 'audience.opened_at' :
-                query.sortBy === MarketingCampaignAudienceSortBy.CLICKED_AT ? 'audience.clicked_at' :
-                  query.sortBy === MarketingCampaignAudienceSortBy.STATUS ? 'audience.status' : 'audience.id';
+      const sortField =
+        query.sortBy === MarketingCampaignAudienceSortBy.CREATED_AT
+          ? 'audience.created_at'
+          : query.sortBy === MarketingCampaignAudienceSortBy.UPDATED_AT
+            ? 'audience.updated_at'
+            : query.sortBy === MarketingCampaignAudienceSortBy.SENT_AT
+              ? 'audience.sent_at'
+              : query.sortBy === MarketingCampaignAudienceSortBy.DELIVERED_AT
+                ? 'audience.delivered_at'
+                : query.sortBy === MarketingCampaignAudienceSortBy.OPENED_AT
+                  ? 'audience.opened_at'
+                  : query.sortBy === MarketingCampaignAudienceSortBy.CLICKED_AT
+                    ? 'audience.clicked_at'
+                    : query.sortBy === MarketingCampaignAudienceSortBy.STATUS
+                      ? 'audience.status'
+                      : 'audience.id';
       queryBuilder.orderBy(sortField, query.sortOrder || 'DESC');
     } else {
       queryBuilder.orderBy('audience.created_at', 'DESC');
@@ -184,20 +257,29 @@ export class MarketingCampaingAudienceService {
     return {
       statusCode: 200,
       message: 'Marketing campaign audience entries retrieved successfully',
-      data: audienceEntries.map(entry => this.formatMarketingCampaignAudienceResponse(entry)),
+      data: audienceEntries.map((entry) =>
+        this.formatMarketingCampaignAudienceResponse(entry),
+      ),
       paginationMeta,
     };
   }
 
-  async findOne(id: number, authenticatedUserMerchantId: number): Promise<OneMarketingCampaignAudienceResponseDto> {
+  async findOne(
+    id: number,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneMarketingCampaignAudienceResponseDto> {
     // Validate ID
     if (!id || id <= 0) {
-      throw new BadRequestException('Marketing campaign audience ID must be a valid positive number');
+      throw new BadRequestException(
+        'Marketing campaign audience ID must be a valid positive number',
+      );
     }
 
     // Validate user has merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to access marketing campaign audience entries');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to access marketing campaign audience entries',
+      );
     }
 
     // Find audience entry
@@ -207,12 +289,18 @@ export class MarketingCampaingAudienceService {
       .leftJoinAndSelect('audience.customer', 'customer')
       .leftJoin('marketingCampaign.merchant', 'merchant')
       .where('audience.id = :id', { id })
-      .andWhere('merchant.id = :merchantId', { merchantId: authenticatedUserMerchantId })
-      .andWhere('audience.status != :deletedStatus', { deletedStatus: MarketingCampaignAudienceStatus.DELETED })
+      .andWhere('merchant.id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
+      .andWhere('audience.status != :deletedStatus', {
+        deletedStatus: MarketingCampaignAudienceStatus.DELETED,
+      })
       .getOne();
 
     if (!audienceEntry) {
-      throw new NotFoundException('Marketing campaign audience entry not found');
+      throw new NotFoundException(
+        'Marketing campaign audience entry not found',
+      );
     }
 
     return {
@@ -222,15 +310,23 @@ export class MarketingCampaingAudienceService {
     };
   }
 
-  async update(id: number, updateMarketingCampaignAudienceDto: UpdateMarketingCampaignAudienceDto, authenticatedUserMerchantId: number): Promise<OneMarketingCampaignAudienceResponseDto> {
+  async update(
+    id: number,
+    updateMarketingCampaignAudienceDto: UpdateMarketingCampaignAudienceDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneMarketingCampaignAudienceResponseDto> {
     // Validate ID
     if (!id || id <= 0) {
-      throw new BadRequestException('Marketing campaign audience ID must be a valid positive number');
+      throw new BadRequestException(
+        'Marketing campaign audience ID must be a valid positive number',
+      );
     }
 
     // Validate user has merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to update marketing campaign audience entries');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to update marketing campaign audience entries',
+      );
     }
 
     // Find existing audience entry
@@ -240,65 +336,102 @@ export class MarketingCampaingAudienceService {
       .leftJoinAndSelect('audience.customer', 'customer')
       .leftJoin('marketingCampaign.merchant', 'merchant')
       .where('audience.id = :id', { id })
-      .andWhere('merchant.id = :merchantId', { merchantId: authenticatedUserMerchantId })
-      .andWhere('audience.status != :deletedStatus', { deletedStatus: MarketingCampaignAudienceStatus.DELETED })
+      .andWhere('merchant.id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
+      .andWhere('audience.status != :deletedStatus', {
+        deletedStatus: MarketingCampaignAudienceStatus.DELETED,
+      })
       .getOne();
 
     if (!existingAudience) {
-      throw new NotFoundException('Marketing campaign audience entry not found');
+      throw new NotFoundException(
+        'Marketing campaign audience entry not found',
+      );
     }
 
     // Validate marketing campaign if provided
     if (updateMarketingCampaignAudienceDto.marketingCampaignId !== undefined) {
       const marketingCampaign = await this.marketingCampaignRepository
         .createQueryBuilder('marketingCampaign')
-        .where('marketingCampaign.id = :id', { id: updateMarketingCampaignAudienceDto.marketingCampaignId })
-        .andWhere('marketingCampaign.merchant_id = :merchantId', { merchantId: authenticatedUserMerchantId })
-        .andWhere('marketingCampaign.status != :deletedStatus', { deletedStatus: MarketingCampaignStatus.DELETED })
+        .where('marketingCampaign.id = :id', {
+          id: updateMarketingCampaignAudienceDto.marketingCampaignId,
+        })
+        .andWhere('marketingCampaign.merchant_id = :merchantId', {
+          merchantId: authenticatedUserMerchantId,
+        })
+        .andWhere('marketingCampaign.status != :deletedStatus', {
+          deletedStatus: MarketingCampaignStatus.DELETED,
+        })
         .getOne();
 
       if (!marketingCampaign) {
-        throw new NotFoundException('Marketing campaign not found or does not belong to your merchant');
+        throw new NotFoundException(
+          'Marketing campaign not found or does not belong to your merchant',
+        );
       }
     }
 
     // Validate customer if provided
     if (updateMarketingCampaignAudienceDto.customerId !== undefined) {
       const customer = await this.customerRepository.findOne({
-        where: { id: updateMarketingCampaignAudienceDto.customerId, merchantId: authenticatedUserMerchantId },
+        where: {
+          id: updateMarketingCampaignAudienceDto.customerId,
+          merchantId: authenticatedUserMerchantId,
+        },
       });
 
       if (!customer) {
-        throw new NotFoundException('Customer not found or does not belong to your merchant');
+        throw new NotFoundException(
+          'Customer not found or does not belong to your merchant',
+        );
       }
 
       // Check if new combination already exists (if both campaign and customer are being updated)
-      if (updateMarketingCampaignAudienceDto.marketingCampaignId !== undefined) {
-        const existingCombination = await this.marketingCampaignAudienceRepository
-          .createQueryBuilder('audience')
-          .where('audience.marketing_campaign_id = :campaignId', { campaignId: updateMarketingCampaignAudienceDto.marketingCampaignId })
-          .andWhere('audience.customer_id = :customerId', { customerId: updateMarketingCampaignAudienceDto.customerId })
-          .andWhere('audience.id != :id', { id })
-          .andWhere('audience.status != :deletedStatus', { deletedStatus: MarketingCampaignAudienceStatus.DELETED })
-          .getOne();
+      if (
+        updateMarketingCampaignAudienceDto.marketingCampaignId !== undefined
+      ) {
+        const existingCombination =
+          await this.marketingCampaignAudienceRepository
+            .createQueryBuilder('audience')
+            .where('audience.marketing_campaign_id = :campaignId', {
+              campaignId:
+                updateMarketingCampaignAudienceDto.marketingCampaignId,
+            })
+            .andWhere('audience.customer_id = :customerId', {
+              customerId: updateMarketingCampaignAudienceDto.customerId,
+            })
+            .andWhere('audience.id != :id', { id })
+            .andWhere('audience.status != :deletedStatus', {
+              deletedStatus: MarketingCampaignAudienceStatus.DELETED,
+            })
+            .getOne();
 
         if (existingCombination) {
-          throw new ConflictException('This customer is already in the audience for this campaign');
+          throw new ConflictException(
+            'This customer is already in the audience for this campaign',
+          );
         }
       }
     }
 
     // Validate error message length if provided
     if (updateMarketingCampaignAudienceDto.errorMessage !== undefined) {
-      if (updateMarketingCampaignAudienceDto.errorMessage && updateMarketingCampaignAudienceDto.errorMessage.length > 500) {
-        throw new BadRequestException('Error message cannot exceed 500 characters');
+      if (
+        updateMarketingCampaignAudienceDto.errorMessage &&
+        updateMarketingCampaignAudienceDto.errorMessage.length > 500
+      ) {
+        throw new BadRequestException(
+          'Error message cannot exceed 500 characters',
+        );
       }
     }
 
     // Update audience entry
     const updateData: any = {};
     if (updateMarketingCampaignAudienceDto.marketingCampaignId !== undefined) {
-      updateData.marketing_campaign_id = updateMarketingCampaignAudienceDto.marketingCampaignId;
+      updateData.marketing_campaign_id =
+        updateMarketingCampaignAudienceDto.marketingCampaignId;
     }
     if (updateMarketingCampaignAudienceDto.customerId !== undefined) {
       updateData.customer_id = updateMarketingCampaignAudienceDto.customerId;
@@ -307,7 +440,8 @@ export class MarketingCampaingAudienceService {
       updateData.status = updateMarketingCampaignAudienceDto.status;
     }
     if (updateMarketingCampaignAudienceDto.errorMessage !== undefined) {
-      updateData.error_message = updateMarketingCampaignAudienceDto.errorMessage || null;
+      updateData.error_message =
+        updateMarketingCampaignAudienceDto.errorMessage || null;
     }
 
     await this.marketingCampaignAudienceRepository.update(id, updateData);
@@ -321,7 +455,9 @@ export class MarketingCampaingAudienceService {
       .getOne();
 
     if (!updatedAudience) {
-      throw new NotFoundException('Marketing campaign audience entry not found after update');
+      throw new NotFoundException(
+        'Marketing campaign audience entry not found after update',
+      );
     }
 
     return {
@@ -331,15 +467,22 @@ export class MarketingCampaingAudienceService {
     };
   }
 
-  async remove(id: number, authenticatedUserMerchantId: number): Promise<OneMarketingCampaignAudienceResponseDto> {
+  async remove(
+    id: number,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneMarketingCampaignAudienceResponseDto> {
     // Validate ID
     if (!id || id <= 0) {
-      throw new BadRequestException('Marketing campaign audience ID must be a valid positive number');
+      throw new BadRequestException(
+        'Marketing campaign audience ID must be a valid positive number',
+      );
     }
 
     // Validate user has merchant
     if (!authenticatedUserMerchantId) {
-      throw new ForbiddenException('You must be associated with a merchant to delete marketing campaign audience entries');
+      throw new ForbiddenException(
+        'You must be associated with a merchant to delete marketing campaign audience entries',
+      );
     }
 
     // Find existing audience entry
@@ -349,17 +492,25 @@ export class MarketingCampaingAudienceService {
       .leftJoinAndSelect('audience.customer', 'customer')
       .leftJoin('marketingCampaign.merchant', 'merchant')
       .where('audience.id = :id', { id })
-      .andWhere('merchant.id = :merchantId', { merchantId: authenticatedUserMerchantId })
-      .andWhere('audience.status != :deletedStatus', { deletedStatus: MarketingCampaignAudienceStatus.DELETED })
+      .andWhere('merchant.id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
+      .andWhere('audience.status != :deletedStatus', {
+        deletedStatus: MarketingCampaignAudienceStatus.DELETED,
+      })
       .getOne();
 
     if (!existingAudience) {
-      throw new NotFoundException('Marketing campaign audience entry not found');
+      throw new NotFoundException(
+        'Marketing campaign audience entry not found',
+      );
     }
 
     // Check if already deleted (should not happen due to query, but double-check)
     if (existingAudience.status === MarketingCampaignAudienceStatus.DELETED) {
-      throw new ConflictException('Marketing campaign audience entry is already deleted');
+      throw new ConflictException(
+        'Marketing campaign audience entry is already deleted',
+      );
     }
 
     // Perform logical deletion
@@ -373,7 +524,9 @@ export class MarketingCampaingAudienceService {
     };
   }
 
-  private formatMarketingCampaignAudienceResponse(audience: MarketingCampaignAudience): MarketingCampaignAudienceResponseDto {
+  private formatMarketingCampaignAudienceResponse(
+    audience: MarketingCampaignAudience,
+  ): MarketingCampaignAudienceResponseDto {
     return {
       id: audience.id,
       marketingCampaignId: audience.marketing_campaign_id,

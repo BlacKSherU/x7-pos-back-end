@@ -7,8 +7,6 @@ import {
   Put,
   Delete,
   ParseIntPipe,
-  HttpCode,
-  HttpStatus,
   UseGuards,
   Request,
   Query,
@@ -31,7 +29,8 @@ import {
   ApiForbiddenResponse,
   ApiQuery,
 } from '@nestjs/swagger';
-import { CashDrawerHistoryResponseDto, OneCashDrawerHistoryResponseDto } from './dto/cash-drawer-history-response.dto';
+import { AuthenticatedUser } from '../../../auth/interfaces/authenticated-user.interface';
+import { OneCashDrawerHistoryResponseDto } from './dto/cash-drawer-history-response.dto';
 import { GetCashDrawerHistoryQueryDto } from './dto/get-cash-drawer-history-query.dto';
 import { PaginatedCashDrawerHistoryResponseDto } from './dto/paginated-cash-drawer-history-response.dto';
 import { Roles } from 'src/auth/decorators/roles.decorator';
@@ -48,7 +47,9 @@ import { CashDrawerHistoryStatus } from './constants/cash-drawer-history-status.
 @Controller('cash-drawer-history')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class CashDrawerHistoryController {
-  constructor(private readonly cashDrawerHistoryService: CashDrawerHistoryService) {}
+  constructor(
+    private readonly cashDrawerHistoryService: CashDrawerHistoryService,
+  ) {}
 
   @Post()
   @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
@@ -59,31 +60,33 @@ export class CashDrawerHistoryController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Create a new Cash Drawer History record',
-    description: 'Creates a new cash drawer history record for the authenticated user\'s merchant. Only portal administrators and merchant administrators can create cash drawer history records. The cash drawer and collaborators must exist and belong to the merchant.'
+    description:
+      "Creates a new cash drawer history record for the authenticated user's merchant. Only portal administrators and merchant administrators can create cash drawer history records. The cash drawer and collaborators must exist and belong to the merchant.",
   })
   @ApiCreatedResponse({
     description: 'Cash drawer history created successfully',
     type: OneCashDrawerHistoryResponseDto,
   })
-  @ApiBadRequestResponse({ 
+  @ApiBadRequestResponse({
     description: 'Invalid input data or validation errors',
     type: ErrorResponse,
   })
-  @ApiUnauthorizedResponse({ 
+  @ApiUnauthorizedResponse({
     description: 'Unauthorized - Invalid or missing authentication token',
     type: ErrorResponse,
   })
-  @ApiForbiddenResponse({ 
-    description: 'Forbidden - You can only create cash drawer history for cash drawers belonging to your merchant',
+  @ApiForbiddenResponse({
+    description:
+      'Forbidden - You can only create cash drawer history for cash drawers belonging to your merchant',
     type: ErrorResponse,
   })
-  @ApiNotFoundResponse({ 
+  @ApiNotFoundResponse({
     description: 'Cash drawer or Collaborator not found',
     type: ErrorResponse,
   })
-  @ApiBody({ 
+  @ApiBody({
     type: CreateCashDrawerHistoryDto,
     description: 'Cash drawer history creation data',
     examples: {
@@ -91,20 +94,23 @@ export class CashDrawerHistoryController {
         summary: 'Create cash drawer history record',
         value: {
           cashDrawerId: 1,
-          openingBalance: 100.00,
-          closingBalance: 150.50,
+          openingBalance: 100.0,
+          closingBalance: 150.5,
           openedBy: 1,
           closedBy: 2,
-        }
-      }
-    }
+        },
+      },
+    },
   })
   async create(
     @Body() dto: CreateCashDrawerHistoryDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneCashDrawerHistoryResponseDto> {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.cashDrawerHistoryService.create(dto, authenticatedUserMerchantId);
+    const authenticatedUserMerchantId = req.merchant?.id;
+    return this.cashDrawerHistoryService.create(
+      dto,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Get()
@@ -116,95 +122,101 @@ export class CashDrawerHistoryController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Get all Cash Drawer History records with pagination and filters',
-    description: 'Retrieves a paginated list of cash drawer history records for the authenticated user\'s merchant. Supports filtering by cash drawer, collaborators, status, and creation date.'
+    description:
+      "Retrieves a paginated list of cash drawer history records for the authenticated user's merchant. Supports filtering by cash drawer, collaborators, status, and creation date.",
   })
   @ApiQuery({
     name: 'page',
     required: false,
     type: Number,
     description: 'Page number for pagination (minimum 1)',
-    example: 1
+    example: 1,
   })
   @ApiQuery({
     name: 'limit',
     required: false,
     type: Number,
     description: 'Number of items per page (1-100)',
-    example: 10
+    example: 10,
   })
   @ApiQuery({
     name: 'cashDrawerId',
     required: false,
     type: Number,
     description: 'Filter by cash drawer ID',
-    example: 1
+    example: 1,
   })
   @ApiQuery({
     name: 'openedBy',
     required: false,
     type: Number,
     description: 'Filter by collaborator who opened the cash drawer',
-    example: 1
+    example: 1,
   })
   @ApiQuery({
     name: 'closedBy',
     required: false,
     type: Number,
     description: 'Filter by collaborator who closed the cash drawer',
-    example: 2
+    example: 2,
   })
   @ApiQuery({
     name: 'status',
     required: false,
     enum: CashDrawerHistoryStatus,
     description: 'Filter by status (active, deleted)',
-    example: CashDrawerHistoryStatus.ACTIVE
+    example: CashDrawerHistoryStatus.ACTIVE,
   })
   @ApiQuery({
     name: 'createdDate',
     required: false,
     type: String,
     description: 'Filter by creation date (YYYY-MM-DD format)',
-    example: '2023-10-01'
+    example: '2023-10-01',
   })
   @ApiQuery({
     name: 'sortBy',
     required: false,
     enum: ['openingBalance', 'closingBalance', 'createdAt', 'updatedAt'],
     description: 'Field to sort by',
-    example: 'createdAt'
+    example: 'createdAt',
   })
   @ApiQuery({
     name: 'sortOrder',
     required: false,
     enum: ['ASC', 'DESC'],
     description: 'Sort order',
-    example: 'DESC'
+    example: 'DESC',
   })
-  @ApiOkResponse({ 
-    description: 'Paginated list of cash drawer history records retrieved successfully',
+  @ApiOkResponse({
+    description:
+      'Paginated list of cash drawer history records retrieved successfully',
     type: PaginatedCashDrawerHistoryResponseDto,
   })
-  @ApiUnauthorizedResponse({ 
+  @ApiUnauthorizedResponse({
     description: 'Unauthorized - Invalid or missing authentication token',
     type: ErrorResponse,
   })
-  @ApiForbiddenResponse({ 
-    description: 'Forbidden - User must be associated with a merchant to view cash drawer history',
+  @ApiForbiddenResponse({
+    description:
+      'Forbidden - User must be associated with a merchant to view cash drawer history',
     type: ErrorResponse,
   })
-  @ApiBadRequestResponse({ 
+  @ApiBadRequestResponse({
     description: 'Invalid query parameters',
     type: ErrorResponse,
   })
   async findAll(
     @Query() query: GetCashDrawerHistoryQueryDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<PaginatedCashDrawerHistoryResponseDto> {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.cashDrawerHistoryService.findAll(query, authenticatedUserMerchantId);
+    const authenticatedUserMerchantId = req.merchant?.id;
+    return this.cashDrawerHistoryService.findAll(
+      query,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Get(':id')
@@ -216,25 +228,39 @@ export class CashDrawerHistoryController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Get a Cash Drawer History record by ID',
-    description: 'Retrieves a specific cash drawer history record by its ID. Users can only access cash drawer history records from their own merchant.'
+    description:
+      'Retrieves a specific cash drawer history record by its ID. Users can only access cash drawer history records from their own merchant.',
   })
   @ApiParam({ name: 'id', type: Number, description: 'Cash drawer history ID' })
-  @ApiOkResponse({ 
+  @ApiOkResponse({
     description: 'Cash drawer history found successfully',
-    type: OneCashDrawerHistoryResponseDto
+    type: OneCashDrawerHistoryResponseDto,
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
-  @ApiForbiddenResponse({ description: 'Forbidden - You can only view cash drawer history from your own merchant', type: ErrorResponse })
-  @ApiNotFoundResponse({ description: 'Cash drawer history not found', type: ErrorResponse })
-  @ApiBadRequestResponse({ description: 'Invalid cash drawer history ID', type: ErrorResponse })
+  @ApiForbiddenResponse({
+    description:
+      'Forbidden - You can only view cash drawer history from your own merchant',
+    type: ErrorResponse,
+  })
+  @ApiNotFoundResponse({
+    description: 'Cash drawer history not found',
+    type: ErrorResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid cash drawer history ID',
+    type: ErrorResponse,
+  })
   async findOne(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneCashDrawerHistoryResponseDto> {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.cashDrawerHistoryService.findOne(id, authenticatedUserMerchantId);
+    const authenticatedUserMerchantId = req.merchant?.id;
+    return this.cashDrawerHistoryService.findOne(
+      id,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Put(':id')
@@ -246,62 +272,68 @@ export class CashDrawerHistoryController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Update a Cash Drawer History record by ID',
-    description: 'Updates an existing cash drawer history record for the authenticated user\'s merchant. Only portal administrators and merchant administrators can update cash drawer history records. All fields are optional.'
+    description:
+      "Updates an existing cash drawer history record for the authenticated user's merchant. Only portal administrators and merchant administrators can update cash drawer history records. All fields are optional.",
   })
-  @ApiParam({ 
-    name: 'id', 
-    type: Number, 
+  @ApiParam({
+    name: 'id',
+    type: Number,
     description: 'Cash drawer history ID to update',
-    example: 1
+    example: 1,
   })
-  @ApiOkResponse({ 
-    description: 'Cash drawer history updated successfully', 
+  @ApiOkResponse({
+    description: 'Cash drawer history updated successfully',
     type: OneCashDrawerHistoryResponseDto,
   })
-  @ApiUnauthorizedResponse({ 
+  @ApiUnauthorizedResponse({
     description: 'Unauthorized - Invalid or missing authentication token',
     type: ErrorResponse,
   })
-  @ApiForbiddenResponse({ 
-    description: 'Forbidden - You can only update cash drawer history from your own merchant',
+  @ApiForbiddenResponse({
+    description:
+      'Forbidden - You can only update cash drawer history from your own merchant',
     type: ErrorResponse,
   })
-  @ApiNotFoundResponse({ 
+  @ApiNotFoundResponse({
     description: 'Cash drawer history, Cash drawer or Collaborator not found',
     type: ErrorResponse,
   })
-  @ApiBadRequestResponse({ 
+  @ApiBadRequestResponse({
     description: 'Invalid input data or ID',
     type: ErrorResponse,
   })
-  @ApiBody({ 
+  @ApiBody({
     type: UpdateCashDrawerHistoryDto,
     description: 'Cash drawer history update data (all fields optional)',
     examples: {
       example1: {
         summary: 'Update opening and closing balance',
         value: {
-          openingBalance: 120.00,
-          closingBalance: 180.50,
-        }
+          openingBalance: 120.0,
+          closingBalance: 180.5,
+        },
       },
       example2: {
         summary: 'Update closed by collaborator',
         value: {
           closedBy: 3,
-        }
-      }
-    }
+        },
+      },
+    },
   })
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateCashDrawerHistoryDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneCashDrawerHistoryResponseDto> {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.cashDrawerHistoryService.update(id, dto, authenticatedUserMerchantId);
+    const authenticatedUserMerchantId = req.merchant?.id;
+    return this.cashDrawerHistoryService.update(
+      id,
+      dto,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Delete(':id')
@@ -313,25 +345,46 @@ export class CashDrawerHistoryController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Soft delete a Cash Drawer History record by ID',
-    description: 'Performs a soft delete by changing the cash drawer history status to "deleted". Only merchant administrators can delete cash drawer history records from their own merchant.'
+    description:
+      'Performs a soft delete by changing the cash drawer history status to "deleted". Only merchant administrators can delete cash drawer history records from their own merchant.',
   })
-  @ApiParam({ name: 'id', type: Number, description: 'Cash drawer history ID to delete' })
-  @ApiOkResponse({ 
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'Cash drawer history ID to delete',
+  })
+  @ApiOkResponse({
     description: 'Cash drawer history soft deleted successfully',
-    type: OneCashDrawerHistoryResponseDto
+    type: OneCashDrawerHistoryResponseDto,
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
-  @ApiForbiddenResponse({ description: 'Forbidden - You can only delete cash drawer history from your own merchant', type: ErrorResponse })
-  @ApiNotFoundResponse({ description: 'Cash drawer history not found', type: ErrorResponse })
-  @ApiBadRequestResponse({ description: 'Invalid cash drawer history ID', type: ErrorResponse })
-  @ApiConflictResponse({ description: 'Cash drawer history is already deleted', type: ErrorResponse })
+  @ApiForbiddenResponse({
+    description:
+      'Forbidden - You can only delete cash drawer history from your own merchant',
+    type: ErrorResponse,
+  })
+  @ApiNotFoundResponse({
+    description: 'Cash drawer history not found',
+    type: ErrorResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid cash drawer history ID',
+    type: ErrorResponse,
+  })
+  @ApiConflictResponse({
+    description: 'Cash drawer history is already deleted',
+    type: ErrorResponse,
+  })
   async remove(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: any,
+    @Request() req: AuthenticatedUser,
   ): Promise<OneCashDrawerHistoryResponseDto> {
-    const authenticatedUserMerchantId = req.user?.merchant?.id;
-    return this.cashDrawerHistoryService.remove(id, authenticatedUserMerchantId);
+    const authenticatedUserMerchantId = req.merchant?.id;
+    return this.cashDrawerHistoryService.remove(
+      id,
+      authenticatedUserMerchantId,
+    );
   }
 }

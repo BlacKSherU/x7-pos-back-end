@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/unbound-method */
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { OnlineOrderItemController } from './online-order-item.controller';
 import { OnlineOrderItemService } from './online-order-item.service';
@@ -11,6 +7,10 @@ import { GetOnlineOrderItemQueryDto } from './dto/get-online-order-item-query.dt
 import { OneOnlineOrderItemResponseDto } from './dto/online-order-item-response.dto';
 import { PaginatedOnlineOrderItemResponseDto } from './dto/paginated-online-order-item-response.dto';
 import { OnlineOrderItemStatus } from './constants/online-order-item-status.enum';
+import { AuthenticatedUser } from '../../../auth/interfaces/authenticated-user.interface';
+import { Request as ExpressRequest } from 'express';
+
+type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
 
 describe('OnlineOrderItemController', () => {
   let controller: OnlineOrderItemController;
@@ -34,7 +34,7 @@ describe('OnlineOrderItemController', () => {
 
   const mockRequest = {
     user: mockUser,
-  };
+  } as AuthenticatedRequest;
 
   const mockOnlineOrderItemResponse: OneOnlineOrderItemResponseDto = {
     statusCode: 201,
@@ -49,6 +49,8 @@ describe('OnlineOrderItemController', () => {
       modifiers: { extraSauce: true, size: 'large' },
       notes: 'Extra sauce on the side',
       status: OnlineOrderItemStatus.ACTIVE,
+      orderItemId: null,
+      kitchenLineStatus: null,
       createdAt: new Date('2024-01-15T08:00:00Z'),
       updatedAt: new Date('2024-01-15T09:00:00Z'),
       onlineOrder: {
@@ -95,7 +97,9 @@ describe('OnlineOrderItemController', () => {
       ],
     }).compile();
 
-    controller = module.get<OnlineOrderItemController>(OnlineOrderItemController);
+    controller = module.get<OnlineOrderItemController>(
+      OnlineOrderItemController,
+    );
     service = module.get<OnlineOrderItemService>(OnlineOrderItemService);
   });
 
@@ -113,7 +117,6 @@ describe('OnlineOrderItemController', () => {
       productId: 5,
       variantId: 3,
       quantity: 2,
-      unitPrice: 15.99,
       modifiers: { extraSauce: true, size: 'large' },
       notes: 'Extra sauce on the side',
     };
@@ -131,7 +134,8 @@ describe('OnlineOrderItemController', () => {
     });
 
     it('should handle service errors during creation', async () => {
-      const errorMessage = 'Online order not found or you do not have access to it';
+      const errorMessage =
+        'Online order not found or you do not have access to it';
       const createSpy = jest.spyOn(service, 'create');
       createSpy.mockRejectedValue(new Error(errorMessage));
 
@@ -183,7 +187,10 @@ describe('OnlineOrderItemController', () => {
 
       await controller.findAll(queryWithFilters, mockRequest);
 
-      expect(findAllSpy).toHaveBeenCalledWith(queryWithFilters, mockUser.merchant.id);
+      expect(findAllSpy).toHaveBeenCalledWith(
+        queryWithFilters,
+        mockUser.merchant.id,
+      );
     });
   });
 
@@ -215,7 +222,6 @@ describe('OnlineOrderItemController', () => {
   describe('PUT /online-order-items/:id (update)', () => {
     const updateDto: UpdateOnlineOrderItemDto = {
       quantity: 3,
-      unitPrice: 18.99,
     };
 
     it('should update an online order item successfully', async () => {
@@ -227,14 +233,17 @@ describe('OnlineOrderItemController', () => {
         data: {
           ...mockOnlineOrderItemResponse.data,
           quantity: 3,
-          unitPrice: 18.99,
         },
       };
       updateSpy.mockResolvedValue(updatedResponse);
 
       const result = await controller.update(1, updateDto, mockRequest);
 
-      expect(updateSpy).toHaveBeenCalledWith(1, updateDto, mockUser.merchant.id);
+      expect(updateSpy).toHaveBeenCalledWith(
+        1,
+        updateDto,
+        mockUser.merchant.id,
+      );
       expect(result).toEqual(updatedResponse);
       expect(result.statusCode).toBe(200);
       expect(result.message).toBe('Online order item updated successfully');
@@ -245,10 +254,14 @@ describe('OnlineOrderItemController', () => {
       const updateSpy = jest.spyOn(service, 'update');
       updateSpy.mockRejectedValue(new Error(errorMessage));
 
-      await expect(controller.update(1, updateDto, mockRequest)).rejects.toThrow(
-        errorMessage,
+      await expect(
+        controller.update(1, updateDto, mockRequest),
+      ).rejects.toThrow(errorMessage);
+      expect(updateSpy).toHaveBeenCalledWith(
+        1,
+        updateDto,
+        mockUser.merchant.id,
       );
-      expect(updateSpy).toHaveBeenCalledWith(1, updateDto, mockUser.merchant.id);
     });
   });
 

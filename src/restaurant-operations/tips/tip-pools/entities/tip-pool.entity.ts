@@ -48,7 +48,10 @@ export class TipPool {
   @JoinColumn({ name: 'shift_id' })
   shift: Shift;
 
-  @ApiProperty({ example: 'Morning Shift Pool', description: 'Name of the tip pool' })
+  @ApiProperty({
+    example: 'Morning Shift Pool',
+    description: 'Name of the tip pool',
+  })
   @Column({ type: 'varchar', length: 150 })
   name: string;
 
@@ -60,8 +63,14 @@ export class TipPool {
   @Column({ type: 'varchar', length: 50, name: 'distribution_type' })
   distribution_type: TipPoolDistributionType;
 
-  @ApiProperty({ example: 150.50, description: 'Total amount in the pool' })
-  @Column({ type: 'decimal', precision: 12, scale: 2, name: 'total_amount', default: 0 })
+  @ApiProperty({ example: 150.5, description: 'Total amount in the pool' })
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    name: 'total_amount',
+    default: 0,
+  })
   total_amount: number;
 
   @ApiProperty({
@@ -85,7 +94,10 @@ export class TipPool {
   })
   record_status: TipPoolRecordStatus;
 
-  @ApiProperty({ example: '2024-01-15T10:00:00Z', description: 'When the pool was closed (nullable)' })
+  @ApiProperty({
+    example: '2024-01-15T10:00:00Z',
+    description: 'When the pool was closed (nullable)',
+  })
   @Column({ type: 'timestamp', name: 'closed_at', nullable: true })
   closed_at: Date | null;
 

@@ -1,11 +1,14 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/unbound-method */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { Repository } from 'typeorm';
+import { Repository, type SelectQueryBuilder } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException, ForbiddenException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { OnlineOrderItemService } from './online-order-item.service';
 import { OnlineOrderItem } from './entities/online-order-item.entity';
 import { OnlineOrder } from '../online-order/entities/online-order.entity';
@@ -13,7 +16,10 @@ import { Product } from '../../../inventory/products-inventory/products/entities
 import { Variant } from '../../../inventory/products-inventory/variants/entities/variant.entity';
 import { CreateOnlineOrderItemDto } from './dto/create-online-order-item.dto';
 import { UpdateOnlineOrderItemDto } from './dto/update-online-order-item.dto';
-import { GetOnlineOrderItemQueryDto, OnlineOrderItemSortBy } from './dto/get-online-order-item-query.dto';
+import {
+  GetOnlineOrderItemQueryDto,
+  OnlineOrderItemSortBy,
+} from './dto/get-online-order-item-query.dto';
 import { OnlineStoreStatus } from '../online-stores/constants/online-store-status.enum';
 import { OnlineOrderStatus } from '../online-order/constants/online-order-status.enum';
 import { OnlineOrderItemStatus } from './constants/online-order-item-status.enum';
@@ -76,7 +82,6 @@ describe('OnlineOrderItemService', () => {
     scheduled_at: null,
     placed_at: new Date('2024-01-15T08:00:00Z'),
     updated_at: new Date('2024-01-15T09:00:00Z'),
-    total_amount: 125.99,
     notes: null,
     store: mockOnlineStore,
   };
@@ -110,7 +115,6 @@ describe('OnlineOrderItemService', () => {
     product_id: 5,
     variant_id: 3,
     quantity: 2,
-    unit_price: 15.99,
     modifiers: { extraSauce: true, size: 'large' },
     notes: 'Extra sauce on the side',
     status: OnlineOrderItemStatus.ACTIVE,
@@ -119,6 +123,7 @@ describe('OnlineOrderItemService', () => {
     onlineOrder: mockOnlineOrder,
     product: mockProduct,
     variant: mockVariant,
+    orderItem: null,
   };
 
   const mockQueryBuilder = {
@@ -188,19 +193,32 @@ describe('OnlineOrderItemService', () => {
       productId: 5,
       variantId: 3,
       quantity: 2,
-      unitPrice: 15.99,
       modifiers: { extraSauce: true, size: 'large' },
       notes: 'Extra sauce on the side',
     };
 
     it('should create an online order item successfully', async () => {
-      jest.spyOn(onlineOrderRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(mockOnlineOrder as any);
-      jest.spyOn(productRepository, 'findOne').mockResolvedValue(mockProduct as any);
-      jest.spyOn(variantRepository, 'findOne').mockResolvedValue(mockVariant as any);
+      jest
+        .spyOn(onlineOrderRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineOrder>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        mockOnlineOrder as unknown as OnlineOrder,
+      );
+      jest
+        .spyOn(productRepository, 'findOne')
+        .mockResolvedValue(mockProduct as unknown as Product);
+      jest
+        .spyOn(variantRepository, 'findOne')
+        .mockResolvedValue(mockVariant as unknown as Variant);
       const savedItem = { ...mockOnlineOrderItem, id: 1 };
-      jest.spyOn(onlineOrderItemRepository, 'save').mockResolvedValue(savedItem as any);
-      jest.spyOn(onlineOrderItemRepository, 'findOne').mockResolvedValue(mockOnlineOrderItem as any);
+      jest
+        .spyOn(onlineOrderItemRepository, 'save')
+        .mockResolvedValue(savedItem as unknown as OnlineOrderItem);
+      jest
+        .spyOn(onlineOrderItemRepository, 'findOne')
+        .mockResolvedValue(mockOnlineOrderItem as unknown as OnlineOrderItem);
 
       const result = await service.create(createOnlineOrderItemDto, 1);
 
@@ -216,7 +234,7 @@ describe('OnlineOrderItemService', () => {
       expect(onlineOrderItemRepository.save).toHaveBeenCalled();
       expect(onlineOrderItemRepository.findOne).toHaveBeenCalledWith({
         where: { id: savedItem.id },
-        relations: ['onlineOrder', 'product', 'variant'],
+        relations: ['onlineOrder', 'product', 'variant', 'orderItem'],
       });
       expect(result.statusCode).toBe(201);
       expect(result.message).toBe('Online order item created successfully');
@@ -229,13 +247,29 @@ describe('OnlineOrderItemService', () => {
         ...createOnlineOrderItemDto,
         variantId: undefined,
       };
-      const itemWithoutVariant = { ...mockOnlineOrderItem, variant_id: null, variant: null };
-      jest.spyOn(onlineOrderRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(mockOnlineOrder as any);
-      jest.spyOn(productRepository, 'findOne').mockResolvedValue(mockProduct as any);
+      const itemWithoutVariant = {
+        ...mockOnlineOrderItem,
+        variant_id: null,
+        variant: null,
+      };
+      jest
+        .spyOn(onlineOrderRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineOrder>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        mockOnlineOrder as unknown as OnlineOrder,
+      );
+      jest
+        .spyOn(productRepository, 'findOne')
+        .mockResolvedValue(mockProduct as unknown as Product);
       const savedItem = { ...itemWithoutVariant, id: 1 };
-      jest.spyOn(onlineOrderItemRepository, 'save').mockResolvedValue(savedItem as any);
-      jest.spyOn(onlineOrderItemRepository, 'findOne').mockResolvedValue(itemWithoutVariant as any);
+      jest
+        .spyOn(onlineOrderItemRepository, 'save')
+        .mockResolvedValue(savedItem as unknown as OnlineOrderItem);
+      jest
+        .spyOn(onlineOrderItemRepository, 'findOne')
+        .mockResolvedValue(itemWithoutVariant as unknown as OnlineOrderItem);
 
       const result = await service.create(dtoWithoutVariant, 1);
 
@@ -244,16 +278,28 @@ describe('OnlineOrderItemService', () => {
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.create(createOnlineOrderItemDto, undefined as any)).rejects.toThrow(
-        ForbiddenException,
-      );
-      await expect(service.create(createOnlineOrderItemDto, undefined as any)).rejects.toThrow(
+      await expect(
+        service.create(
+          createOnlineOrderItemDto,
+          undefined as unknown as number,
+        ),
+      ).rejects.toThrow(ForbiddenException);
+      await expect(
+        service.create(
+          createOnlineOrderItemDto,
+          undefined as unknown as number,
+        ),
+      ).rejects.toThrow(
         'You must be associated with a merchant to create online order items',
       );
     });
 
     it('should throw NotFoundException if online order not found', async () => {
-      jest.spyOn(onlineOrderRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(onlineOrderRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineOrder>,
+        );
       mockQueryBuilder.getOne.mockResolvedValue(null);
 
       await expect(service.create(createOnlineOrderItemDto, 1)).rejects.toThrow(
@@ -265,8 +311,14 @@ describe('OnlineOrderItemService', () => {
     });
 
     it('should throw NotFoundException if product not found', async () => {
-      jest.spyOn(onlineOrderRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(mockOnlineOrder as any);
+      jest
+        .spyOn(onlineOrderRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineOrder>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        mockOnlineOrder as unknown as OnlineOrder,
+      );
       jest.spyOn(productRepository, 'findOne').mockResolvedValue(null);
 
       await expect(service.create(createOnlineOrderItemDto, 1)).rejects.toThrow(
@@ -279,9 +331,17 @@ describe('OnlineOrderItemService', () => {
 
     it('should throw ForbiddenException if product belongs to different merchant', async () => {
       const differentMerchantProduct = { ...mockProduct, merchantId: 2 };
-      jest.spyOn(onlineOrderRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(mockOnlineOrder as any);
-      jest.spyOn(productRepository, 'findOne').mockResolvedValue(differentMerchantProduct as any);
+      jest
+        .spyOn(onlineOrderRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineOrder>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        mockOnlineOrder as unknown as OnlineOrder,
+      );
+      jest
+        .spyOn(productRepository, 'findOne')
+        .mockResolvedValue(differentMerchantProduct as unknown as Product);
 
       await expect(service.create(createOnlineOrderItemDto, 1)).rejects.toThrow(
         ForbiddenException,
@@ -292,9 +352,17 @@ describe('OnlineOrderItemService', () => {
     });
 
     it('should throw NotFoundException if variant not found', async () => {
-      jest.spyOn(onlineOrderRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(mockOnlineOrder as any);
-      jest.spyOn(productRepository, 'findOne').mockResolvedValue(mockProduct as any);
+      jest
+        .spyOn(onlineOrderRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineOrder>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        mockOnlineOrder as unknown as OnlineOrder,
+      );
+      jest
+        .spyOn(productRepository, 'findOne')
+        .mockResolvedValue(mockProduct as unknown as Product);
       jest.spyOn(variantRepository, 'findOne').mockResolvedValue(null);
 
       await expect(service.create(createOnlineOrderItemDto, 1)).rejects.toThrow(
@@ -307,10 +375,20 @@ describe('OnlineOrderItemService', () => {
 
     it('should throw BadRequestException if variant does not belong to product', async () => {
       const variantWithDifferentProduct = { ...mockVariant, productId: 10 };
-      jest.spyOn(onlineOrderRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(mockOnlineOrder as any);
-      jest.spyOn(productRepository, 'findOne').mockResolvedValue(mockProduct as any);
-      jest.spyOn(variantRepository, 'findOne').mockResolvedValue(variantWithDifferentProduct as any);
+      jest
+        .spyOn(onlineOrderRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineOrder>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        mockOnlineOrder as unknown as OnlineOrder,
+      );
+      jest
+        .spyOn(productRepository, 'findOne')
+        .mockResolvedValue(mockProduct as unknown as Product);
+      jest
+        .spyOn(variantRepository, 'findOne')
+        .mockResolvedValue(variantWithDifferentProduct as unknown as Variant);
 
       await expect(service.create(createOnlineOrderItemDto, 1)).rejects.toThrow(
         BadRequestException,
@@ -321,11 +399,24 @@ describe('OnlineOrderItemService', () => {
     });
 
     it('should throw BadRequestException if quantity is less than 1', async () => {
-      const dtoWithInvalidQuantity = { ...createOnlineOrderItemDto, quantity: 0 };
-      jest.spyOn(onlineOrderRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(mockOnlineOrder as any);
-      jest.spyOn(productRepository, 'findOne').mockResolvedValue(mockProduct as any);
-      jest.spyOn(variantRepository, 'findOne').mockResolvedValue(mockVariant as any);
+      const dtoWithInvalidQuantity = {
+        ...createOnlineOrderItemDto,
+        quantity: 0,
+      };
+      jest
+        .spyOn(onlineOrderRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineOrder>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        mockOnlineOrder as unknown as OnlineOrder,
+      );
+      jest
+        .spyOn(productRepository, 'findOne')
+        .mockResolvedValue(mockProduct as unknown as Product);
+      jest
+        .spyOn(variantRepository, 'findOne')
+        .mockResolvedValue(mockVariant as unknown as Variant);
 
       await expect(service.create(dtoWithInvalidQuantity, 1)).rejects.toThrow(
         BadRequestException,
@@ -335,27 +426,25 @@ describe('OnlineOrderItemService', () => {
       );
     });
 
-    it('should throw BadRequestException if unit price is negative', async () => {
-      const dtoWithInvalidPrice = { ...createOnlineOrderItemDto, unitPrice: -1 };
-      jest.spyOn(onlineOrderRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(mockOnlineOrder as any);
-      jest.spyOn(productRepository, 'findOne').mockResolvedValue(mockProduct as any);
-      jest.spyOn(variantRepository, 'findOne').mockResolvedValue(mockVariant as any);
-
-      await expect(service.create(dtoWithInvalidPrice, 1)).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.create(dtoWithInvalidPrice, 1)).rejects.toThrow(
-        'Unit price must be greater than or equal to 0',
-      );
-    });
-
     it('should throw BadRequestException if modifiers is not a valid object', async () => {
-      const dtoWithInvalidModifiers = { ...createOnlineOrderItemDto, modifiers: [] as any };
-      jest.spyOn(onlineOrderRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(mockOnlineOrder as any);
-      jest.spyOn(productRepository, 'findOne').mockResolvedValue(mockProduct as any);
-      jest.spyOn(variantRepository, 'findOne').mockResolvedValue(mockVariant as any);
+      const dtoWithInvalidModifiers = {
+        ...createOnlineOrderItemDto,
+        modifiers: [] as unknown as Record<string, unknown>,
+      };
+      jest
+        .spyOn(onlineOrderRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineOrder>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        mockOnlineOrder as unknown as OnlineOrder,
+      );
+      jest
+        .spyOn(productRepository, 'findOne')
+        .mockResolvedValue(mockProduct as unknown as Product);
+      jest
+        .spyOn(variantRepository, 'findOne')
+        .mockResolvedValue(mockVariant as unknown as Variant);
 
       await expect(service.create(dtoWithInvalidModifiers, 1)).rejects.toThrow(
         BadRequestException,
@@ -373,8 +462,15 @@ describe('OnlineOrderItemService', () => {
     };
 
     it('should return paginated list of online order items', async () => {
-      jest.spyOn(onlineOrderItemRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockOnlineOrderItem] as any, 1]);
+      jest
+        .spyOn(onlineOrderItemRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineOrderItem>,
+        );
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([
+        [mockOnlineOrderItem] as unknown as OnlineOrderItem[],
+        1,
+      ]);
 
       const result = await service.findAll(query, 1);
 
@@ -388,10 +484,12 @@ describe('OnlineOrderItemService', () => {
     });
 
     it('should throw ForbiddenException when user has no merchant_id', async () => {
-      await expect(service.findAll(query, undefined as any)).rejects.toThrow(
-        ForbiddenException,
-      );
-      await expect(service.findAll(query, undefined as any)).rejects.toThrow(
+      await expect(
+        service.findAll(query, undefined as unknown as number),
+      ).rejects.toThrow(ForbiddenException);
+      await expect(
+        service.findAll(query, undefined as unknown as number),
+      ).rejects.toThrow(
         'You must be associated with a merchant to access online order items',
       );
     });
@@ -403,21 +501,43 @@ describe('OnlineOrderItemService', () => {
         productId: 5,
         variantId: 3,
       };
-      jest.spyOn(onlineOrderItemRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockOnlineOrderItem] as any, 1]);
+      jest
+        .spyOn(onlineOrderItemRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineOrderItem>,
+        );
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([
+        [mockOnlineOrderItem] as unknown as OnlineOrderItem[],
+        1,
+      ]);
 
       await service.findAll(queryWithFilters, 1);
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('onlineOrderItem.online_order_id = :onlineOrderId', { onlineOrderId: 1 });
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('onlineOrderItem.product_id = :productId', { productId: 5 });
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('onlineOrderItem.variant_id = :variantId', { variantId: 3 });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'onlineOrderItem.online_order_id = :onlineOrderId',
+        { onlineOrderId: 1 },
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'onlineOrderItem.product_id = :productId',
+        { productId: 5 },
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'onlineOrderItem.variant_id = :variantId',
+        { variantId: 3 },
+      );
     });
   });
 
   describe('findOne', () => {
     it('should return an online order item successfully', async () => {
-      jest.spyOn(onlineOrderItemRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(mockOnlineOrderItem as any);
+      jest
+        .spyOn(onlineOrderItemRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineOrderItem>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        mockOnlineOrderItem as unknown as OnlineOrderItem,
+      );
 
       const result = await service.findOne(1, 1);
 
@@ -428,21 +548,21 @@ describe('OnlineOrderItemService', () => {
     });
 
     it('should throw BadRequestException if id is invalid', async () => {
-      await expect(service.findOne(0, 1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.findOne(0, 1)).rejects.toThrow(BadRequestException);
       await expect(service.findOne(0, 1)).rejects.toThrow(
         'Online order item ID must be a valid positive number',
       );
     });
 
     it('should throw NotFoundException if online order item not found', async () => {
-      jest.spyOn(onlineOrderItemRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(onlineOrderItemRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineOrderItem>,
+        );
       mockQueryBuilder.getOne.mockResolvedValue(null);
 
-      await expect(service.findOne(1, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.findOne(1, 1)).rejects.toThrow(NotFoundException);
       await expect(service.findOne(1, 1)).rejects.toThrow(
         'Online order item not found',
       );
@@ -452,16 +572,25 @@ describe('OnlineOrderItemService', () => {
   describe('update', () => {
     const updateOnlineOrderItemDto: UpdateOnlineOrderItemDto = {
       quantity: 3,
-      unitPrice: 18.99,
     };
 
     it('should update an online order item successfully', async () => {
-      jest.spyOn(onlineOrderItemRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne
-        .mockResolvedValueOnce(mockOnlineOrderItem as any);
-      jest.spyOn(onlineOrderItemRepository, 'save').mockResolvedValue(mockOnlineOrderItem as any);
-      jest.spyOn(onlineOrderItemRepository, 'findOne')
-        .mockResolvedValueOnce({ ...mockOnlineOrderItem, quantity: 3, unit_price: 18.99 } as any);
+      jest
+        .spyOn(onlineOrderItemRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineOrderItem>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValueOnce(
+        mockOnlineOrderItem as unknown as OnlineOrderItem,
+      );
+      jest
+        .spyOn(onlineOrderItemRepository, 'save')
+        .mockResolvedValue(mockOnlineOrderItem as unknown as OnlineOrderItem);
+      jest.spyOn(onlineOrderItemRepository, 'findOne').mockResolvedValueOnce({
+        ...mockOnlineOrderItem,
+        quantity: 3,
+        orderItem: null,
+      } as unknown as OnlineOrderItem);
 
       const result = await service.update(1, updateOnlineOrderItemDto, 1);
 
@@ -472,34 +601,58 @@ describe('OnlineOrderItemService', () => {
     });
 
     it('should throw NotFoundException if online order item not found', async () => {
-      jest.spyOn(onlineOrderItemRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(onlineOrderItemRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineOrderItem>,
+        );
       mockQueryBuilder.getOne.mockResolvedValue(null);
 
-      await expect(service.update(1, updateOnlineOrderItemDto, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.update(1, updateOnlineOrderItemDto, 1),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ConflictException if online order item is already deleted', async () => {
-      const deletedItem = { ...mockOnlineOrderItem, status: OnlineOrderItemStatus.DELETED };
-      jest.spyOn(onlineOrderItemRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(deletedItem as any);
+      const deletedItem = {
+        ...mockOnlineOrderItem,
+        status: OnlineOrderItemStatus.DELETED,
+      };
+      jest
+        .spyOn(onlineOrderItemRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineOrderItem>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        deletedItem as unknown as OnlineOrderItem,
+      );
 
-      await expect(service.update(1, updateOnlineOrderItemDto, 1)).rejects.toThrow(
-        ConflictException,
-      );
-      await expect(service.update(1, updateOnlineOrderItemDto, 1)).rejects.toThrow(
-        'Cannot update a deleted online order item',
-      );
+      await expect(
+        service.update(1, updateOnlineOrderItemDto, 1),
+      ).rejects.toThrow(ConflictException);
+      await expect(
+        service.update(1, updateOnlineOrderItemDto, 1),
+      ).rejects.toThrow('Cannot update a deleted online order item');
     });
   });
 
   describe('remove', () => {
     it('should remove an online order item successfully', async () => {
-      const deletedItem = { ...mockOnlineOrderItem, status: OnlineOrderItemStatus.DELETED };
-      jest.spyOn(onlineOrderItemRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(mockOnlineOrderItem as any);
-      jest.spyOn(onlineOrderItemRepository, 'save').mockResolvedValue(deletedItem as any);
+      const deletedItem = {
+        ...mockOnlineOrderItem,
+        status: OnlineOrderItemStatus.DELETED,
+      };
+      jest
+        .spyOn(onlineOrderItemRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineOrderItem>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        mockOnlineOrderItem as unknown as OnlineOrderItem,
+      );
+      jest
+        .spyOn(onlineOrderItemRepository, 'save')
+        .mockResolvedValue(deletedItem as unknown as OnlineOrderItem);
 
       const result = await service.remove(1, 1);
 
@@ -510,22 +663,31 @@ describe('OnlineOrderItemService', () => {
     });
 
     it('should throw NotFoundException if online order item not found', async () => {
-      jest.spyOn(onlineOrderItemRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+      jest
+        .spyOn(onlineOrderItemRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineOrderItem>,
+        );
       mockQueryBuilder.getOne.mockResolvedValue(null);
 
-      await expect(service.remove(1, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.remove(1, 1)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ConflictException if online order item is already deleted', async () => {
-      const deletedItem = { ...mockOnlineOrderItem, status: OnlineOrderItemStatus.DELETED };
-      jest.spyOn(onlineOrderItemRepository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getOne.mockResolvedValue(deletedItem as any);
-
-      await expect(service.remove(1, 1)).rejects.toThrow(
-        ConflictException,
+      const deletedItem = {
+        ...mockOnlineOrderItem,
+        status: OnlineOrderItemStatus.DELETED,
+      };
+      jest
+        .spyOn(onlineOrderItemRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlineOrderItem>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue(
+        deletedItem as unknown as OnlineOrderItem,
       );
+
+      await expect(service.remove(1, 1)).rejects.toThrow(ConflictException);
       await expect(service.remove(1, 1)).rejects.toThrow(
         'Online order item is already deleted',
       );

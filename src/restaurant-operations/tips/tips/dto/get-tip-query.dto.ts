@@ -1,4 +1,11 @@
-import { IsOptional, IsNumber, IsEnum, Min, Max, IsDateString } from 'class-validator';
+import {
+  IsOptional,
+  IsNumber,
+  IsEnum,
+  Min,
+  Max,
+  IsDateString,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { TipMethod } from '../constants/tip-method.enum';

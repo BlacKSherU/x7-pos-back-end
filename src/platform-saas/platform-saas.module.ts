@@ -8,4 +8,4 @@ import { UsersModule } from './users/users.module';
   imports: [CompaniesModule, MerchantsModule, SubscriptionsModule, UsersModule],
   exports: [CompaniesModule, MerchantsModule, SubscriptionsModule, UsersModule],
 })
-export class PlatformSaasModule { }
+export class PlatformSaasModule {}

@@ -269,7 +269,9 @@ describe('LoyaltyCouponsController', () => {
   describe('Service Integration', () => {
     it('debería llamar a todos los métodos del servicio con los parámetros correctos', async () => {
       const query: GetLoyaltyCouponsQueryDto = { page: 1, limit: 10 };
-      const updateDto: UpdateLoyaltyCouponDto = { status: LoyaltyCouponStatus.REDEEMED };
+      const updateDto: UpdateLoyaltyCouponDto = {
+        status: LoyaltyCouponStatus.REDEEMED,
+      };
       const id = 1;
 
       mockLoyaltyCouponsService.create.mockResolvedValue({});
@@ -284,11 +286,27 @@ describe('LoyaltyCouponsController', () => {
       await controller.update(user, id, updateDto);
       await controller.remove(user, id);
 
-      expect(mockLoyaltyCouponsService.create).toHaveBeenCalledWith(user.merchant.id, createDto);
-      expect(mockLoyaltyCouponsService.findAll).toHaveBeenCalledWith(query, user.merchant.id);
-      expect(mockLoyaltyCouponsService.findOne).toHaveBeenCalledWith(id, user.merchant.id);
-      expect(mockLoyaltyCouponsService.update).toHaveBeenCalledWith(id, user.merchant.id, updateDto);
-      expect(mockLoyaltyCouponsService.remove).toHaveBeenCalledWith(id, user.merchant.id);
+      expect(mockLoyaltyCouponsService.create).toHaveBeenCalledWith(
+        user.merchant.id,
+        createDto,
+      );
+      expect(mockLoyaltyCouponsService.findAll).toHaveBeenCalledWith(
+        query,
+        user.merchant.id,
+      );
+      expect(mockLoyaltyCouponsService.findOne).toHaveBeenCalledWith(
+        id,
+        user.merchant.id,
+      );
+      expect(mockLoyaltyCouponsService.update).toHaveBeenCalledWith(
+        id,
+        user.merchant.id,
+        updateDto,
+      );
+      expect(mockLoyaltyCouponsService.remove).toHaveBeenCalledWith(
+        id,
+        user.merchant.id,
+      );
     });
   });
 });

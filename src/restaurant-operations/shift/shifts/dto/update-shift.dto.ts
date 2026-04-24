@@ -4,35 +4,35 @@ import { ShiftRole } from '../constants/shift-role.enum';
 import { ShiftStatus } from '../constants/shift-status.enum';
 
 export class UpdateShiftDto {
-  @ApiProperty({ 
-    example: '2024-01-15T08:00:00Z', 
-    description: 'Start time of the shift' 
+  @ApiProperty({
+    example: '2024-01-15T08:00:00Z',
+    description: 'Start time of the shift',
   })
   @IsDateString()
   @IsOptional()
   startTime?: string;
 
-  @ApiProperty({ 
-    example: '2024-01-15T16:00:00Z', 
-    description: 'End time of the shift (optional)' 
+  @ApiProperty({
+    example: '2024-01-15T16:00:00Z',
+    description: 'End time of the shift (optional)',
   })
   @IsDateString()
   @IsOptional()
   endTime?: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     enum: ShiftRole,
     example: ShiftRole.WAITER,
-    description: 'Role of the person working the shift' 
+    description: 'Role of the person working the shift',
   })
   @IsEnum(ShiftRole)
   @IsOptional()
   role?: ShiftRole;
 
-  @ApiProperty({ 
+  @ApiProperty({
     enum: ShiftStatus,
     example: ShiftStatus.ACTIVE,
-    description: 'Status of the shift' 
+    description: 'Status of the shift',
   })
   @IsEnum(ShiftStatus)
   @IsOptional()

@@ -15,7 +15,10 @@ import { GetLoyaltyCustomersQueryDto } from './dto/get-loyalty-customers-query.d
 import { AllPaginatedLoyaltyCustomerDto } from './dto/all-paginated-loyalty-customer.dto';
 import { LoyaltyTier } from '../loyalty-tier/entities/loyalty-tier.entity';
 import { Customer } from 'src/core/business-partners/customers/entities/customer.entity';
-import { findOrCreateAvailableTier, evaluateTierUpgrade } from '../loyalty-tier/loyalty-tier.helpers';
+import {
+  findOrCreateAvailableTier,
+  evaluateTierUpgrade,
+} from '../loyalty-tier/loyalty-tier.helpers';
 
 @Injectable()
 export class LoyaltyCustomerService {
@@ -28,14 +31,13 @@ export class LoyaltyCustomerService {
     private readonly loyaltyTierRepo: Repository<LoyaltyTier>,
     @InjectRepository(Customer)
     private readonly customerRepo: Repository<Customer>,
-  ) { }
+  ) {}
 
   async create(
     merchant_id: number,
     createLoyaltyCustomerDto: CreateLoyaltyCustomerDto,
   ): Promise<OneLoyaltyCustomerResponse> {
-    let { loyalty_program_id, customer_id } =
-      createLoyaltyCustomerDto;
+    let { loyalty_program_id, customer_id } = createLoyaltyCustomerDto;
 
     // Si no se proporciona ID, buscar el primero programa activo encontrado (por fecha de creación)
     if (!loyalty_program_id) {
@@ -128,7 +130,10 @@ export class LoyaltyCustomerService {
         await this.loyaltyCustomerRepository.save(newLoyaltyCustomer);
 
       // Evaluar si califica para un tier mejor de inmediato
-      const newTierOnCreate = await evaluateTierUpgrade(savedLoyaltyCustomer, this.loyaltyTierRepo);
+      const newTierOnCreate = await evaluateTierUpgrade(
+        savedLoyaltyCustomer,
+        this.loyaltyTierRepo,
+      );
       if (newTierOnCreate) {
         savedLoyaltyCustomer.loyaltyTierId = newTierOnCreate.id;
         await this.loyaltyCustomerRepository.save(savedLoyaltyCustomer);
@@ -139,7 +144,6 @@ export class LoyaltyCustomerService {
       ErrorHandler.handleDatabaseError(error);
     }
   }
-
 
   async findAll(
     query: GetLoyaltyCustomersQueryDto,
@@ -231,21 +235,21 @@ export class LoyaltyCustomerService {
         joined_at: lc.joinedAt,
         customer: lc.customer
           ? {
-            id: lc.customer.id,
-            name: lc.customer.name,
-          }
+              id: lc.customer.id,
+              name: lc.customer.name,
+            }
           : null,
         loyaltyProgram: lc.loyaltyProgram
           ? {
-            id: lc.loyaltyProgram.id,
-            name: lc.loyaltyProgram.name,
-          }
+              id: lc.loyaltyProgram.id,
+              name: lc.loyaltyProgram.name,
+            }
           : null,
         loyaltyTier: lc.loyaltyTier
           ? {
-            id: lc.loyaltyTier.id,
-            name: lc.loyaltyTier.name,
-          }
+              id: lc.loyaltyTier.id,
+              name: lc.loyaltyTier.name,
+            }
           : null,
       }));
 
@@ -305,21 +309,21 @@ export class LoyaltyCustomerService {
       joined_at: loyaltyCustomer.joinedAt,
       customer: loyaltyCustomer.customer
         ? {
-          id: loyaltyCustomer.customer.id,
-          name: loyaltyCustomer.customer.name,
-        }
+            id: loyaltyCustomer.customer.id,
+            name: loyaltyCustomer.customer.name,
+          }
         : null,
       loyaltyProgram: loyaltyCustomer.loyaltyProgram
         ? {
-          id: loyaltyCustomer.loyaltyProgram.id,
-          name: loyaltyCustomer.loyaltyProgram.name,
-        }
+            id: loyaltyCustomer.loyaltyProgram.id,
+            name: loyaltyCustomer.loyaltyProgram.name,
+          }
         : null,
       loyaltyTier: loyaltyCustomer.loyaltyTier
         ? {
-          id: loyaltyCustomer.loyaltyTier.id,
-          name: loyaltyCustomer.loyaltyTier.name,
-        }
+            id: loyaltyCustomer.loyaltyTier.id,
+            name: loyaltyCustomer.loyaltyTier.name,
+          }
         : null,
     };
 
@@ -335,14 +339,14 @@ export class LoyaltyCustomerService {
         break;
       case 'Updated':
         response = {
-          statusCode: 201,
+          statusCode: 200,
           message: `Loyalty Customer ${createdUpdateDelete} successfully`,
           data: dataForResponse,
         };
         break;
       case 'Deleted':
         response = {
-          statusCode: 201,
+          statusCode: 200,
           message: `Loyalty Customer ${createdUpdateDelete} successfully`,
           data: dataForResponse,
         };
@@ -366,7 +370,8 @@ export class LoyaltyCustomerService {
     if (!id || id <= 0) {
       ErrorHandler.invalidId('Loyalty Customer ID is incorrect');
     }
-    const { loyalty_tier_id, current_points, lifetime_points, ...other_data } = updateLoyaltyCustomerDto;
+    const { loyalty_tier_id, current_points, lifetime_points, ...other_data } =
+      updateLoyaltyCustomerDto;
 
     const loyaltyCustomer = await this.loyaltyCustomerRepository.findOne({
       where: {
@@ -394,8 +399,10 @@ export class LoyaltyCustomerService {
     }
 
     // Mapear campos snake_case a camelCase del modelo
-    if (current_points !== undefined) loyaltyCustomer.currentPoints = current_points;
-    if (lifetime_points !== undefined) loyaltyCustomer.lifetimePoints = lifetime_points;
+    if (current_points !== undefined)
+      loyaltyCustomer.currentPoints = current_points;
+    if (lifetime_points !== undefined)
+      loyaltyCustomer.lifetimePoints = lifetime_points;
 
     // Aplicar otros campos (como is_active)
     Object.assign(loyaltyCustomer, other_data);
@@ -406,7 +413,7 @@ export class LoyaltyCustomerService {
       if (lifetime_points !== undefined) {
         const newerTier = await evaluateTierUpgrade(
           loyaltyCustomer,
-          this.loyaltyTierRepo
+          this.loyaltyTierRepo,
         );
         if (newerTier) {
           loyaltyCustomer.loyaltyTierId = newerTier.id;

@@ -196,14 +196,14 @@ export class CategoryService {
         break;
       case 'Updated':
         response = {
-          statusCode: 201,
+          statusCode: 200,
           message: `Category ${createdUpdateDelete} successfully`,
           data: dataForResponse,
         };
         break;
       case 'Deleted':
         response = {
-          statusCode: 201,
+          statusCode: 200,
           message: `Category ${createdUpdateDelete} successfully`,
           data: dataForResponse,
         };
