@@ -1,5 +1,7 @@
 // src/customers/customers.module.ts
 import { Module } from '@nestjs/common';
+import { AuthModule } from 'src/auth/auth.module';
+
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CustomersController } from './customers.controller';
 import { CustomersService } from './customers.service';
@@ -9,7 +11,10 @@ import { Merchant } from 'src/platform-saas/merchants/entities/merchant.entity';
 import { Company } from 'src/platform-saas/companies/entities/company.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Customer, User, Merchant, Company])],
+  imports: [
+    AuthModule,
+    TypeOrmModule.forFeature([Customer, User, Merchant, Company]),
+  ],
   controllers: [CustomersController],
   providers: [CustomersService],
   exports: [CustomersService],

@@ -1,4 +1,5 @@
 import { Module, forwardRef } from '@nestjs/common';
+import { AuthModule } from 'src/auth/auth.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { OnlineOrderService } from './online-order.service';
 import { OnlineOrderController } from './online-order.controller';
@@ -15,7 +16,7 @@ import { KitchenOrderModule } from '../../../restaurant-operations/kitchen-displ
 import { OnlineOrderSyncModule } from './online-order-sync.module';
 
 @Module({
-  imports: [
+  imports: [AuthModule,
     TypeOrmModule.forFeature([
       OnlineOrder,
       OnlineStore,

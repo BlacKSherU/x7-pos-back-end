@@ -10,6 +10,10 @@ import {
   Patch,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -47,7 +51,8 @@ import { OneMovementResponse } from './dto/movement-response.dto';
 @ApiBearerAuth()
 @ApiTags('Stock Movements')
 @Controller('movements')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.STOCK_AND_STOCK_MOVEMENTS)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class MovementsController {
   constructor(private readonly movementsService: MovementsService) {}
 

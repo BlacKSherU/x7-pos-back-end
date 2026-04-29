@@ -12,6 +12,10 @@ import {
   ForbiddenException,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { TablesService } from './tables.service';
 import { CreateTableDto } from './dto/create-table.dto';
 import { UpdateTableDto } from './dto/update-table.dto';
@@ -44,7 +48,8 @@ import { RolesGuard } from 'src/auth/guards/roles.guard';
 @ApiTags('Tables')
 @ApiBearerAuth()
 @Controller('tables')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.TABLES)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class TablesController {
   constructor(private readonly tableService: TablesService) {}
 

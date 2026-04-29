@@ -15,9 +15,11 @@ import { OrderPayment } from '../order-payments/entities/order-payment.entity';
 import { OrderTax } from '../order-taxes/entities/order-tax.entity';
 import { OrderItemModifier } from '../order-item-modifiers/entities/order-item-modifier.entity';
 import { OnlineOrderSyncModule } from '../../../commerce/online-ordering-system/online-order/online-order-sync.module';
+import { AuthModule } from '../../../auth/auth.module';
 
 @Module({
   imports: [
+    AuthModule,
     OnlineOrderSyncModule,
     TypeOrmModule.forFeature([
       Order,

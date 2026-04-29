@@ -13,11 +13,21 @@ import { User } from '../platform-saas/users/entities/user.entity';
 import { Company } from '../platform-saas/companies/entities/company.entity';
 import { Merchant } from '../platform-saas/merchants/entities/merchant.entity';
 import { MailModule } from '../mail/mail.module';
+import { MerchantSubscription } from '../platform-saas/subscriptions/merchant-subscriptions/entities/merchant-subscription.entity';
+import { PlanFeature } from '../platform-saas/subscriptions/plan-features/entity/plan-features.entity';
+import { SubscriptionAccessService } from './subscription-access.service';
+import { FeatureAccessGuard } from './guards/feature-access.guard';
 
 @Module({
   imports: [
     ConfigModule,
-    TypeOrmModule.forFeature([User, Company, Merchant]),
+    TypeOrmModule.forFeature([
+      User,
+      Company,
+      Merchant,
+      MerchantSubscription,
+      PlanFeature,
+    ]),
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -31,6 +41,13 @@ import { MailModule } from '../mail/mail.module';
     UsersModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, RolesGuard],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    RolesGuard,
+    SubscriptionAccessService,
+    FeatureAccessGuard,
+  ],
+  exports: [FeatureAccessGuard, SubscriptionAccessService],
 })
 export class AuthModule {}

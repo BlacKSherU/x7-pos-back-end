@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from 'src/auth/auth.module';
+
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TipPoolsService } from './tip-pools.service';
 import { TipPoolsController } from './tip-pools.controller';
@@ -8,7 +10,7 @@ import { Merchant } from '../../../platform-saas/merchants/entities/merchant.ent
 import { Shift } from '../../shift/shifts/entities/shift.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([TipPool, Company, Merchant, Shift])],
+  imports: [AuthModule,TypeOrmModule.forFeature([TipPool, Company, Merchant, Shift])],
   controllers: [TipPoolsController],
   providers: [TipPoolsService],
   exports: [TipPoolsService],

@@ -11,6 +11,10 @@ import {
   Request,
   ParseIntPipe,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import {
   ApiTags,
   ApiOperation,
@@ -34,7 +38,8 @@ import { ErrorResponse } from 'src/common/dtos/error-response.dto';
 @ApiExtraModels(ErrorResponse)
 @ApiBearerAuth()
 @Controller('customers')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.CUSTOMERS)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class CustomersController {
   constructor(private readonly customersService: CustomersService) {}
 

@@ -11,6 +11,10 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { Request as ExpressRequest } from 'express';
 import { OnlineOrderService } from './online-order.service';
 import { OnlineOrderFulfillmentService } from './online-order-fulfillment.service';
@@ -50,7 +54,8 @@ type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
 @ApiTags('Online Orders')
 @ApiBearerAuth()
 @Controller('online-orders')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.ONLINE_ORDERS)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class OnlineOrderController {
   constructor(
     private readonly onlineOrderService: OnlineOrderService,

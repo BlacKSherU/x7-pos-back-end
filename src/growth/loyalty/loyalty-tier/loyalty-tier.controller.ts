@@ -10,6 +10,10 @@ import {
   ParseIntPipe,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -46,7 +50,8 @@ import { AllPaginatedLoyaltyTierDto } from './dto/all-paginated-loyalty-tier.dto
 @ApiBearerAuth()
 @ApiTags('Loyalty Tiers')
 @Controller('loyalty-tiers')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.LOYALTY_TIERS)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class LoyaltyTierController {
   constructor(private readonly loyaltyTierService: LoyaltyTierService) {}
 

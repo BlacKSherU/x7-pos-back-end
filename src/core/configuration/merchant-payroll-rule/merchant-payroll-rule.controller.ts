@@ -11,6 +11,10 @@ import {
   Patch,
   Delete,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import {
   ApiBody,
   ApiCreatedResponse,
@@ -42,12 +46,13 @@ import { UpdateMerchantPayrollRuleDto } from './dto/update-merchant-payroll-rule
 
 @ApiTags('Merchant Payroll Rule')
 @Controller('merchant-payroll-rule')
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.MERCHANT_PAYROLL_RULES)
 export class MerchantPayrollRuleController {
   constructor(
     private readonly merchantPayrollRuleService: MerchantPayrollRuleService,
   ) {}
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
@@ -143,7 +148,7 @@ export class MerchantPayrollRuleController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Get a list of Merchant Payroll Rules',
     description:
@@ -198,7 +203,7 @@ export class MerchantPayrollRuleController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Get a Merchant Payroll Rule by ID',
     description:
@@ -303,7 +308,7 @@ export class MerchantPayrollRuleController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Update a Merchant Payroll Rule by ID',
     description: 'Endpoint to update an existing Merchant Payroll Rule.',
@@ -409,7 +414,7 @@ export class MerchantPayrollRuleController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Delete a Merchant Payroll Rule by ID',
     description: 'Endpoint to delete an existing Merchant Payroll Rule.',

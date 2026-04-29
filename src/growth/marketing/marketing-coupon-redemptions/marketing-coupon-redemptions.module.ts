@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from 'src/auth/auth.module';
+
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MarketingCouponRedemptionsService } from './marketing-coupon-redemptions.service';
 import { MarketingCouponRedemptionsController } from './marketing-coupon-redemptions.controller';
@@ -8,7 +10,7 @@ import { Order } from '../../../restaurant-operations/pos/orders/entities/order.
 import { Customer } from '../../../core/business-partners/customers/entities/customer.entity';
 
 @Module({
-  imports: [
+  imports: [AuthModule,
     TypeOrmModule.forFeature([
       MarketingCouponRedemption,
       MarketingCoupon,

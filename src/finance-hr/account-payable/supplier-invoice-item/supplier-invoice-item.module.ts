@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from 'src/auth/auth.module';
+
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SupplierInvoiceItemService } from './supplier-invoice-item.service';
 import { SupplierInvoiceItemController } from './supplier-invoice-item.controller';
@@ -7,7 +9,7 @@ import { SupplierInvoice } from '../supplier-invoices/entities/supplier-invoice.
 import { Product } from 'src/inventory/products-inventory/products/entities/product.entity';
 
 @Module({
-  imports: [
+  imports: [AuthModule,
     TypeOrmModule.forFeature([SupplierInvoiceItem, SupplierInvoice, Product]),
   ],
   controllers: [SupplierInvoiceItemController],

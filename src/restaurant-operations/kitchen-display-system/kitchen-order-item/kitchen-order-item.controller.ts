@@ -13,6 +13,10 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { Request as ExpressRequest } from 'express';
 import { KitchenOrderItemService } from './kitchen-order-item.service';
 import { CreateKitchenOrderItemDto } from './dto/create-kitchen-order-item.dto';
@@ -50,7 +54,8 @@ type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
 @ApiTags('Kitchen Order Items')
 @ApiBearerAuth()
 @Controller('kitchen-order-items')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.KITCHEN_ORDER_ITEMS)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class KitchenOrderItemController {
   constructor(
     private readonly kitchenOrderItemService: KitchenOrderItemService,

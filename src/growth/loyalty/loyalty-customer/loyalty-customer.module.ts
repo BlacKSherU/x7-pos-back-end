@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from 'src/auth/auth.module';
+
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { LoyaltyCustomerService } from './loyalty-customer.service';
 import { LoyaltyCustomerController } from './loyalty-customer.controller';
@@ -9,7 +11,7 @@ import { LoyaltyTier } from '../loyalty-tier/entities/loyalty-tier.entity';
 import { Customer } from 'src/core/business-partners/customers/entities/customer.entity';
 
 @Module({
-  imports: [
+  imports: [AuthModule,
     TypeOrmModule.forFeature([
       LoyaltyCustomer,
       LoyaltyProgram,

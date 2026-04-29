@@ -164,7 +164,6 @@ describe('OrderItemService', () => {
       productId: 1,
       variantId: 1,
       quantity: 2,
-      price: 125.5,
       discount: 10.0,
       notes: 'Extra sauce',
     };
@@ -394,11 +393,12 @@ describe('OrderItemService', () => {
         orderId: 1,
         productId: 1,
         quantity: 2,
-        price: 125.5,
         discount: 10.0,
       };
       const orderItemWithoutVariant = {
         ...mockOrderItem,
+        price: '10.99',
+        total_price: '11.98',
         variant_id: null,
         variant: null,
       };
@@ -419,7 +419,7 @@ describe('OrderItemService', () => {
 
       expect(result.statusCode).toBe(201);
       expect(result.data.variantId).toBeNull();
-      expect(result.data.totalPrice).toBe(241);
+      expect(result.data.totalPrice).toBe(11.98);
     });
 
     it('should throw NotFoundException if order item not found after creation', async () => {

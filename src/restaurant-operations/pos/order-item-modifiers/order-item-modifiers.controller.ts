@@ -13,6 +13,10 @@ import {
   Query,
   Request,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { Request as ExpressRequest } from 'express';
 import { OrderItemModifiersService } from './order-item-modifiers.service';
 import { CreateOrderItemModifierDto } from './dto/create-order-item-modifier.dto';
@@ -51,7 +55,8 @@ type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
 @ApiTags('Order item modifiers')
 @ApiBearerAuth()
 @Controller('order-item-modifiers')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.ORDER_ITEM_MODIFIERS)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class OrderItemModifiersController {
   constructor(
     private readonly orderItemModifiersService: OrderItemModifiersService,

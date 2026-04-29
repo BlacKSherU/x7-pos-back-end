@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from 'src/auth/auth.module';
+
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ReceiptTaxService } from './receipt-tax.service';
 import { ReceiptTaxController } from './receipt-tax.controller';
@@ -9,7 +11,7 @@ import { Order } from 'src/restaurant-operations/pos/orders/entities/order.entit
 import { ReceiptsModule } from '../receipts/receipts.module';
 
 @Module({
-  imports: [
+  imports: [AuthModule,
     TypeOrmModule.forFeature([ReceiptTax, Receipt, ReceiptItem, Order]),
     ReceiptsModule,
   ],

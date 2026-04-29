@@ -13,6 +13,10 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { Request as ExpressRequest } from 'express';
 import { KitchenDisplayDeviceService } from './kitchen-display-device.service';
 import { CreateKitchenDisplayDeviceDto } from './dto/create-kitchen-display-device.dto';
@@ -49,7 +53,8 @@ type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
 @ApiTags('Kitchen Display Devices')
 @ApiBearerAuth()
 @Controller('kitchen-display-devices')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.KITCHEN_DISPLAY_DEVICES)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class KitchenDisplayDeviceController {
   constructor(
     private readonly kitchenDisplayDeviceService: KitchenDisplayDeviceService,

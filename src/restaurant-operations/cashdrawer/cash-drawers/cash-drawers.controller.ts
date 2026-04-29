@@ -12,6 +12,10 @@ import {
   ParseIntPipe,
   Put,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import {
   ApiTags,
   ApiOperation,
@@ -56,7 +60,8 @@ import { Scope } from '../../../platform-saas/users/constants/scope.enum';
   PaginatedCashDrawersResponseDto,
 )
 @Controller('cash-drawers')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.CASH_DRAWERS)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class CashDrawersController {
   constructor(private readonly cashDrawersService: CashDrawersService) {}
 

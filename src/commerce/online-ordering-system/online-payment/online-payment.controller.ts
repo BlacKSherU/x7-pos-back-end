@@ -13,6 +13,10 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { Request as ExpressRequest } from 'express';
 import { OnlinePaymentService } from './online-payment.service';
 import { CreateOnlinePaymentDto } from './dto/create-online-payment.dto';
@@ -50,7 +54,8 @@ import { OnlineOrderPaymentStatus } from '../online-order/constants/online-order
 @ApiTags('Online Payments')
 @ApiBearerAuth()
 @Controller('online-payments')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.ONLINE_PAYMENTS)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class OnlinePaymentController {
   constructor(private readonly onlinePaymentService: OnlinePaymentService) {}
 

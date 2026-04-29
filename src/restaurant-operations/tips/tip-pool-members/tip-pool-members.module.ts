@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from 'src/auth/auth.module';
+
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TipPoolMembersService } from './tip-pool-members.service';
 import { TipPoolMembersController } from './tip-pool-members.controller';
@@ -7,7 +9,7 @@ import { TipPool } from '../tip-pools/entities/tip-pool.entity';
 import { Collaborator } from 'src/finance-hr/hr/collaborators/entities/collaborator.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([TipPoolMember, TipPool, Collaborator])],
+  imports: [AuthModule,TypeOrmModule.forFeature([TipPoolMember, TipPool, Collaborator])],
   controllers: [TipPoolMembersController],
   providers: [TipPoolMembersService],
   exports: [TipPoolMembersService],

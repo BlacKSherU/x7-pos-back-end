@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from 'src/auth/auth.module';
+
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { OnlineMenuCategoryService } from './online-menu-category.service';
 import { OnlineMenuCategoryController } from './online-menu-category.controller';
@@ -7,7 +9,7 @@ import { OnlineMenu } from '../online-menu/entities/online-menu.entity';
 import { Category } from '../../../inventory/products-inventory/category/entities/category.entity';
 
 @Module({
-  imports: [
+  imports: [AuthModule,
     TypeOrmModule.forFeature([OnlineMenuCategory, OnlineMenu, Category]),
   ],
   controllers: [OnlineMenuCategoryController],

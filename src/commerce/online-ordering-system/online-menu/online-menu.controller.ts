@@ -11,6 +11,10 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { Request as ExpressRequest } from 'express';
 import { OnlineMenuService } from './online-menu.service';
 import { CreateOnlineMenuDto } from './dto/create-online-menu.dto';
@@ -46,7 +50,8 @@ import { ErrorResponse } from 'src/common/dtos/error-response.dto';
 @ApiTags('Online Menus')
 @ApiBearerAuth()
 @Controller('online-menus')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.ONLINE_MENUS)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class OnlineMenuController {
   constructor(private readonly onlineMenuService: OnlineMenuService) {}
 

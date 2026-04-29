@@ -11,6 +11,10 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { AuthenticatedUser } from '../../../auth/interfaces/authenticated-user.interface';
 import { CollaboratorTimeEntriesService } from './collaborator-time-entries.service';
 import { CreateTimeEntryDto } from './dto/create-time-entry.dto';
@@ -41,7 +45,8 @@ import { RolesGuard } from 'src/auth/guards/roles.guard';
 @ApiTags('Collaborator time entries')
 @ApiBearerAuth()
 @Controller('collaborator-time-entries')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.COLLABORATOR_TIME_ENTRIES)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class CollaboratorTimeEntriesController {
   constructor(
     private readonly collaboratorTimeEntriesService: CollaboratorTimeEntriesService,

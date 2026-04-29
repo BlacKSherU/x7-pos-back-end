@@ -11,6 +11,10 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { TipPoolsService } from './tip-pools.service';
 import { CreateTipPoolDto } from './dto/create-tip-pool.dto';
 import { UpdateTipPoolDto } from './dto/update-tip-pool.dto';
@@ -46,7 +50,8 @@ import { ErrorResponse } from 'src/common/dtos/error-response.dto';
 @ApiTags('Tip Pools')
 @ApiBearerAuth()
 @Controller('tip-pools')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.TIPS_POOLS)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class TipPoolsController {
   constructor(private readonly tipPoolsService: TipPoolsService) {}
 

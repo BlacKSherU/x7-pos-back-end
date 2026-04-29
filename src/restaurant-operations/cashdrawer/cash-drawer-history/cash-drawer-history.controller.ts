@@ -11,6 +11,10 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { CashDrawerHistoryService } from './cash-drawer-history.service';
 import { CreateCashDrawerHistoryDto } from './dto/create-cash-drawer-history.dto';
 import { UpdateCashDrawerHistoryDto } from './dto/update-cash-drawer-history.dto';
@@ -45,7 +49,8 @@ import { CashDrawerHistoryStatus } from './constants/cash-drawer-history-status.
 @ApiTags('Cash Drawer History')
 @ApiBearerAuth()
 @Controller('cash-drawer-history')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.CASH_DRAWER_HISTORY)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class CashDrawerHistoryController {
   constructor(
     private readonly cashDrawerHistoryService: CashDrawerHistoryService,

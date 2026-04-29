@@ -11,6 +11,10 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { MarketingCouponRedemptionsService } from './marketing-coupon-redemptions.service';
 import { CreateMarketingCouponRedemptionDto } from './dto/create-marketing-coupon-redemption.dto';
 import { UpdateMarketingCouponRedemptionDto } from './dto/update-marketing-coupon-redemption.dto';
@@ -46,7 +50,8 @@ import { ErrorResponse } from 'src/common/dtos/error-response.dto';
 @ApiTags('Marketing Coupon Redemptions')
 @ApiBearerAuth()
 @Controller('marketing-coupon-redemptions')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.MARKETING_COUPON_REDEMPTION)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class MarketingCouponRedemptionsController {
   constructor(
     private readonly marketingCouponRedemptionsService: MarketingCouponRedemptionsService,

@@ -1,4 +1,5 @@
 import { forwardRef, Module } from '@nestjs/common';
+import { AuthModule } from 'src/auth/auth.module';
 import { PurchaseOrderItemService } from './purchase-order-item.service';
 import { PurchaseOrderItemController } from './purchase-order-item.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -12,7 +13,7 @@ import { ProductsModule } from '../products/products.module';
 import { VariantsModule } from '../variants/variants.module';
 
 @Module({
-  imports: [
+  imports: [AuthModule,
     TypeOrmModule.forFeature([
       PurchaseOrderItem,
       PurchaseOrder,

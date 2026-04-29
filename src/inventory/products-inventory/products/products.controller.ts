@@ -10,6 +10,10 @@ import {
   ParseIntPipe,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -44,7 +48,8 @@ import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interf
 @ApiExtraModels(ErrorResponse)
 @ApiBearerAuth()
 @Controller('products')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.PRODUCT_MANAGEMENT)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 

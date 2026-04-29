@@ -47,14 +47,15 @@ export class CreateOrderItemDto {
   @IsPositive()
   quantity: number;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 125.5,
-    description: 'Price of the item',
+    description:
+      'Unit price for this line. If omitted, it is taken from the variant (if variantId is set) or the product base price, like online order items.',
   })
+  @IsOptional()
   @IsNumber()
-  @IsNotEmpty()
   @Min(0)
-  price: number;
+  price?: number;
 
   @ApiPropertyOptional({
     example: 10.0,

@@ -10,6 +10,10 @@ import {
   ParseIntPipe,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { VariantsService } from './variants.service';
 import { CreateVariantDto } from './dto/create-variant.dto';
 import { UpdateVariantDto } from './dto/update-variant.dto';
@@ -42,7 +46,8 @@ import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interf
 @ApiExtraModels(ErrorResponse)
 @ApiBearerAuth()
 @Controller('variants')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.VARIANTS_MANAGEMENT)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class VariantsController {
   constructor(private readonly variantsService: VariantsService) {}
 

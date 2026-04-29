@@ -10,6 +10,10 @@ import {
   ParseIntPipe,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { ModifiersService } from './modifiers.service';
 import { CreateModifierDto } from './dto/create-modifier.dto';
 import { UpdateModifierDto } from './dto/update-modifier.dto';
@@ -42,7 +46,8 @@ import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interf
 @ApiExtraModels(ErrorResponse)
 @ApiBearerAuth()
 @Controller('modifiers')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.MODIFIERS_MANAGEMENT)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class ModifiersController {
   constructor(private readonly modifiersService: ModifiersService) {}
 

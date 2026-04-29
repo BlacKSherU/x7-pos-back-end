@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from 'src/auth/auth.module';
+
 import { JournalEntryService } from './journal-entry.service';
 import { JournalEntryController } from './journal-entry.controller';
 import { JournalEntry } from './entities/journal-entry.entity';
@@ -10,7 +12,7 @@ import { Merchant } from 'src/platform-saas/merchants/entities/merchant.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 @Module({
-  imports: [
+  imports: [AuthModule,
     TypeOrmModule.forFeature([
       JournalEntry,
       JournalEntryLine,

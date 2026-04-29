@@ -13,6 +13,10 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { Request as ExpressRequest } from 'express';
 import { OnlineDeliveryInfoService } from './online-delivery-info.service';
 import { CreateOnlineDeliveryInfoDto } from './dto/create-online-delivery-info.dto';
@@ -49,7 +53,8 @@ import { ErrorResponse } from 'src/common/dtos/error-response.dto';
 @ApiTags('Online Delivery Info')
 @ApiBearerAuth()
 @Controller('online-delivery-info')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.ONLINE_DELIVERY_INFO)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class OnlineDeliveryInfoController {
   constructor(
     private readonly onlineDeliveryInfoService: OnlineDeliveryInfoService,

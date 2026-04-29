@@ -10,6 +10,10 @@ import {
   ParseIntPipe,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { JournalEntryLineService } from './journal-entry-line.service';
 import { CreateJournalEntryLineDto } from './dto/create-journal-entry-line.dto';
 import { UpdateJournalEntryLineDto } from './dto/update-journal-entry-line.dto';
@@ -43,10 +47,11 @@ import {
 
 @ApiTags('Journal Entry Lines')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
 @Scopes(Scope.MERCHANT_WEB)
 @Controller('journal-entries/:entryId/lines')
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.JOURNAL_ENTRY_LINES)
 export class JournalEntryLineController {
   constructor(
     private readonly journalEntryLineService: JournalEntryLineService,

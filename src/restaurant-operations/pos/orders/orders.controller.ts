@@ -11,6 +11,10 @@ import {
   ParseIntPipe,
   Put,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { Request as ExpressRequest } from 'express';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -49,8 +53,9 @@ type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
 @ApiTags('Orders')
 @ApiBearerAuth()
 @ApiExtraModels(ErrorResponse)
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 @Controller('orders')
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.ORDERS)
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 

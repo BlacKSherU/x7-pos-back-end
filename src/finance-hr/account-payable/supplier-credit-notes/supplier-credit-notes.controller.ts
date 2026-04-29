@@ -10,6 +10,10 @@ import {
   UseGuards,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import {
   ApiTags,
   ApiOperation,
@@ -45,7 +49,8 @@ import { PaginatedSupplierCreditNotesResponseDto } from './dto/paginated-supplie
 @ApiTags('Supplier credit notes (Account payable)')
 @ApiBearerAuth()
 @Controller('supplier-credit-notes')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.SUPPLIER_CREDIT_NOTES)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 @ApiExtraModels(
   OneSupplierCreditNoteResponseDto,
   PaginatedSupplierCreditNotesResponseDto,

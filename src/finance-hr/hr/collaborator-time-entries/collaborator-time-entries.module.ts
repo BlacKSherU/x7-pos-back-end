@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from 'src/auth/auth.module';
+
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TimeEntry } from './entities/time-entry.entity';
 import { CollaboratorTimeEntriesService } from './collaborator-time-entries.service';
@@ -9,7 +11,7 @@ import { Collaborator } from '../collaborators/entities/collaborator.entity';
 import { Shift } from 'src/restaurant-operations/shift/shifts/entities/shift.entity';
 
 @Module({
-  imports: [
+  imports: [AuthModule,
     TypeOrmModule.forFeature([
       TimeEntry,
       Company,

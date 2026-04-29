@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from 'src/auth/auth.module';
+
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ShiftAssignmentsService } from './shift-assignments.service';
 import { ShiftAssignmentsController } from './shift-assignments.controller';
@@ -7,7 +9,10 @@ import { Shift } from '../shifts/entities/shift.entity';
 import { Collaborator } from 'src/finance-hr/hr/collaborators/entities/collaborator.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ShiftAssignment, Shift, Collaborator])],
+  imports: [
+    AuthModule,
+    TypeOrmModule.forFeature([ShiftAssignment, Shift, Collaborator]),
+  ],
   controllers: [ShiftAssignmentsController],
   providers: [ShiftAssignmentsService],
   exports: [ShiftAssignmentsService],

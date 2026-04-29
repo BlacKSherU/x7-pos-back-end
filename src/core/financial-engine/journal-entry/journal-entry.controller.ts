@@ -10,6 +10,10 @@ import {
   ParseIntPipe,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { JournalEntryService } from './journal-entry.service';
 import { CreateJournalEntryDto } from './dto/create-journal-entry.dto';
 import { UpdateJournalEntryDto } from './dto/update-journal-entry.dto';
@@ -44,7 +48,8 @@ import {
 @ApiExtraModels(ErrorResponse)
 @ApiBearerAuth()
 @Controller('journal-entry')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.JOURNAL_ENTRIES)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class JournalEntryController {
   constructor(private readonly journalEntryService: JournalEntryService) {}
 

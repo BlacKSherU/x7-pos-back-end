@@ -11,6 +11,10 @@ import {
   Patch,
   Delete,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import {
   ApiBody,
   ApiCreatedResponse,
@@ -42,12 +46,13 @@ import { UpdateMerchantTaxRuleDto } from './dto/update-merchant-tax-rule.dto';
 
 @ApiTags('Merchant Tax Rule')
 @Controller('merchant-tax-rule')
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.MERCHANT_TAX_RULES)
 export class MerchantTaxRuleController {
   constructor(
     private readonly merchantTaxRuleService: MerchantTaxRuleService,
   ) {}
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
@@ -142,7 +147,7 @@ export class MerchantTaxRuleController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Get a list of Merchant Tax Rules',
     description: 'Endpoint to retrieve a paginated list of Merchant Tax Rules.',
@@ -196,7 +201,7 @@ export class MerchantTaxRuleController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Get a Merchant Tax Rule by ID',
     description: 'Endpoint to retrieve a single Merchant Tax Rule by its ID.',
@@ -298,7 +303,7 @@ export class MerchantTaxRuleController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Update a Merchant Tax Rule by ID',
     description: 'Endpoint to update an existing Merchant Tax Rule.',
@@ -403,7 +408,7 @@ export class MerchantTaxRuleController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Delete a Merchant Tax Rule by ID',
     description: 'Endpoint to delete an existing Merchant Tax Rule.',

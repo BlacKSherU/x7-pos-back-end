@@ -13,6 +13,10 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { Request as ExpressRequest } from 'express';
 import { KitchenEventLogService } from './kitchen-event-log.service';
 import { CreateKitchenEventLogDto } from './dto/create-kitchen-event-log.dto';
@@ -51,7 +55,8 @@ type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
 @ApiTags('Kitchen Event Logs')
 @ApiBearerAuth()
 @Controller('kitchen-event-logs')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.KITCHEN_EVENT_LOG)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class KitchenEventLogController {
   constructor(
     private readonly kitchenEventLogService: KitchenEventLogService,

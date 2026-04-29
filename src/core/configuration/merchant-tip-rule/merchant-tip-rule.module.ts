@@ -1,5 +1,7 @@
 //src/core/configuration/merchant-tip-rule/merchant-tip-rule.module.ts
 import { Module } from '@nestjs/common';
+import { AuthModule } from 'src/auth/auth.module';
+
 import { MerchantTipRuleController } from './merchant-tip-rule.controller';
 import { MerchantTipRuleService } from './merchant-tip-rule.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -9,7 +11,7 @@ import { Configuration } from '../entity/configuration-entity';
 import { User } from 'src/platform-saas/users/entities/user.entity';
 
 @Module({
-  imports: [
+  imports: [AuthModule,
     TypeOrmModule.forFeature([Company, MerchantTipRule, Configuration, User]),
   ],
   controllers: [MerchantTipRuleController],

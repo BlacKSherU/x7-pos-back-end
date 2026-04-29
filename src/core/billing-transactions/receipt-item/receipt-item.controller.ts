@@ -11,6 +11,10 @@ import {
   Request,
   ParseIntPipe,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { ReceiptItemService } from './receipt-item.service';
 import { CreateReceiptItemDto } from './dto/create-receipt-item.dto';
 import { UpdateReceiptItemDto } from './dto/update-receipt-item.dto';
@@ -47,8 +51,9 @@ import { Scope } from 'src/platform-saas/users/constants/scope.enum';
 @ApiTags('Receipt Items')
 @ApiBearerAuth()
 @ApiExtraModels(ErrorResponse)
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 @Controller('receipt-items')
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.RECEIPT_ITEMS)
 export class ReceiptItemController {
   constructor(private readonly receiptItemService: ReceiptItemService) {}
 

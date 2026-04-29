@@ -1,5 +1,7 @@
 //src/core/configuration/merchant-payroll-rule/merchant-payroll-rule.module.ts
 import { Module } from '@nestjs/common';
+import { AuthModule } from 'src/auth/auth.module';
+
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Company } from 'src/platform-saas/companies/entities/company.entity';
 import { Configuration } from '../entity/configuration-entity';
@@ -9,7 +11,7 @@ import { MerchantPayrollRuleController } from './merchant-payroll-rule.controlle
 import { MerchantPayrollRuleService } from './merchant-payroll-rule.service';
 
 @Module({
-  imports: [
+  imports: [AuthModule,
     TypeOrmModule.forFeature([
       Company,
       MerchantPayrollRule,

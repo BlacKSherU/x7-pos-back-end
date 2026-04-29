@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from 'src/auth/auth.module';
+
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TipsService } from './tips.service';
 import { TipsController } from './tips.controller';
@@ -8,7 +10,7 @@ import { Merchant } from '../../../platform-saas/merchants/entities/merchant.ent
 import { Order } from '../../../restaurant-operations/pos/orders/entities/order.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Tip, Company, Merchant, Order])],
+  imports: [AuthModule,TypeOrmModule.forFeature([Tip, Company, Merchant, Order])],
   controllers: [TipsController],
   providers: [TipsService],
   exports: [TipsService],

@@ -11,6 +11,10 @@ import {
   Patch,
   Delete,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import {
   ApiBody,
   ApiCreatedResponse,
@@ -42,12 +46,13 @@ import { UpdateMerchantOvertimeRuleDto } from './dto/update-merchant-overtime-ru
 
 @ApiTags('Merchant Overtime Rule')
 @Controller('merchant-overtime-rule')
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.MERCHANT_OVERTIME_RULES)
 export class MerchantOvertimeRuleController {
   constructor(
     private readonly merchantOvertimeRuleService: MerchantOvertimeRuleService,
   ) {}
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
@@ -144,7 +149,7 @@ export class MerchantOvertimeRuleController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Get a list of Merchant Overtime Rules',
     description:
@@ -199,7 +204,7 @@ export class MerchantOvertimeRuleController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Get a Merchant Overtime Rule by ID',
     description:
@@ -305,7 +310,7 @@ export class MerchantOvertimeRuleController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Update a Merchant Overtime Rule by ID',
     description: 'Endpoint to update an existing Merchant Overtime Rule.',
@@ -412,7 +417,7 @@ export class MerchantOvertimeRuleController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Delete a Merchant Overtime Rule by ID',
     description: 'Endpoint to delete an existing Merchant Overtime Rule.',

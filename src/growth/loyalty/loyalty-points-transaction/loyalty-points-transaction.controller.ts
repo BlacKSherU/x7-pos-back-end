@@ -10,6 +10,10 @@ import {
   UseGuards,
   ParseIntPipe,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { LoyaltyPointsTransactionService } from './loyalty-points-transaction.service';
 import { CreateLoyaltyPointsTransactionDto } from './dto/create-loyalty-points-transaction.dto';
 import { UpdateLoyaltyPointsTransactionDto } from './dto/update-loyalty-points-transaction.dto';
@@ -49,7 +53,8 @@ import {
 @ApiBearerAuth()
 @ApiTags('Loyalty Points Transactions')
 @Controller('loyalty-points-transactions')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.LOYALTY_POINT_TRANSACTIONS)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class LoyaltyPointsTransactionController {
   constructor(
     private readonly loyaltyPointsTransactionService: LoyaltyPointsTransactionService,

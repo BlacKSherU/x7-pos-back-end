@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from 'src/auth/auth.module';
+
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MarketingCouponsService } from './marketing-coupons.service';
 import { MarketingCouponsController } from './marketing-coupons.controller';
@@ -6,7 +8,7 @@ import { MarketingCoupon } from './entities/marketing-coupon.entity';
 import { Merchant } from '../../../platform-saas/merchants/entities/merchant.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([MarketingCoupon, Merchant])],
+  imports: [AuthModule,TypeOrmModule.forFeature([MarketingCoupon, Merchant])],
   controllers: [MarketingCouponsController],
   providers: [MarketingCouponsService],
   exports: [MarketingCouponsService],

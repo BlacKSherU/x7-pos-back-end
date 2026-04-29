@@ -12,6 +12,10 @@ import {
   Patch,
   Delete,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import {
   ApiBadRequestResponse,
   ApiBody,
@@ -43,10 +47,11 @@ import { UpdateQRMenuDto } from './dto/update-qr-menu.dto';
 
 @ApiTags('QR Menu')
 @Controller('qr-menu')
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.QR_CODE_MENUS)
 export class QrMenuController {
   constructor(private readonly qrMenuService: QrMenuService) {}
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
@@ -133,7 +138,7 @@ export class QrMenuController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Get All QR Menu',
     description: 'Endpoint for get ALL of the QR Menu.',
@@ -186,7 +191,7 @@ export class QrMenuController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Get a QR Menu by ID',
     description: 'Endpoint to retrieve a specific QR Menu using its ID.',
@@ -281,7 +286,7 @@ export class QrMenuController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Update a QR Menu',
     description: 'Endpoint to update an existing QR Menu by its ID.',
@@ -379,7 +384,7 @@ export class QrMenuController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Delete a QR Menu',
     description: 'Endpoint to delete an existing QR Menu by its ID.',

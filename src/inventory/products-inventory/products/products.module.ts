@@ -1,4 +1,5 @@
 import { forwardRef, Module } from '@nestjs/common';
+import { AuthModule } from 'src/auth/auth.module';
 import { ProductsService } from './products.service';
 import { ProductsController } from './products.controller';
 import { Product } from './entities/product.entity';
@@ -11,7 +12,7 @@ import { Modifier } from '../modifiers/entities/modifier.entity';
 import { ModifiersModule } from '../modifiers/modifiers.module';
 import { VariantsModule } from '../variants/variants.module';
 @Module({
-  imports: [
+  imports: [AuthModule,
     TypeOrmModule.forFeature([
       Product,
       Merchant,

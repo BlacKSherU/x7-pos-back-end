@@ -10,6 +10,10 @@ import {
   Patch,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -46,7 +50,8 @@ import { OneLoyaltyProgramResponse } from './dto/loyalty-program-response.dto';
 @ApiBearerAuth()
 @ApiTags('Loyalty Programs')
 @Controller('loyalty-programs')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.LOYALTY_PROGRAMS)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class LoyaltyProgramsController {
   constructor(
     private readonly loyaltyProgramsService: LoyaltyProgramsService,

@@ -11,6 +11,10 @@ import {
   Request,
   ParseIntPipe,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { ReceiptTaxService } from './receipt-tax.service';
 import { CreateReceiptTaxDto } from './dto/create-receipt-tax.dto';
 import { UpdateReceiptTaxDto } from './dto/update-receipt-tax.dto';
@@ -48,8 +52,9 @@ import { ReceiptTaxScope } from './constants/receipt-tax-scope.enum';
 @ApiTags('Receipt Taxes')
 @ApiBearerAuth()
 @ApiExtraModels(ErrorResponse)
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 @Controller('receipt-taxes')
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.RECEIPTS_TAXES)
 export class ReceiptTaxController {
   constructor(private readonly receiptTaxService: ReceiptTaxService) {}
 

@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from 'src/auth/auth.module';
+
 import { TablesService } from './tables.service';
 import { TablesController } from './tables.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -9,7 +11,7 @@ import { FloorPlan } from '../floor-plan/entity/floor-plan.entity';
 import { FloorZone } from '../floor-zone/entity/floor-zone.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Table, Merchant, FloorPlan, FloorZone])],
+  imports: [AuthModule,TypeOrmModule.forFeature([Table, Merchant, FloorPlan, FloorZone])],
   controllers: [TablesController],
   providers: [TablesService, IsUniqueField],
   exports: [IsUniqueField],

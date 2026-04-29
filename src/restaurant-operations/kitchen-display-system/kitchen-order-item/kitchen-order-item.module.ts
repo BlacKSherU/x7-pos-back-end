@@ -1,4 +1,5 @@
 import { Module, forwardRef } from '@nestjs/common';
+import { AuthModule } from 'src/auth/auth.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { KitchenOrderItemService } from './kitchen-order-item.service';
 import { KitchenOrderItemController } from './kitchen-order-item.controller';
@@ -10,7 +11,7 @@ import { Variant } from '../../../inventory/products-inventory/variants/entities
 import { KitchenOrderModule } from '../kitchen-order/kitchen-order.module';
 
 @Module({
-  imports: [
+  imports: [AuthModule,
     TypeOrmModule.forFeature([
       KitchenOrderItem,
       KitchenOrder,

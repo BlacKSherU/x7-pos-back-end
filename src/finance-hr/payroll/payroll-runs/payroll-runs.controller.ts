@@ -10,6 +10,10 @@ import {
   UseGuards,
   Query,
 } from '@nestjs/common';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
+
 import { PayrollRunsService } from './payroll-runs.service';
 import { CreatePayrollRunDto } from './dto/create-payroll-run.dto';
 import { UpdatePayrollRunDto } from './dto/update-payroll-run.dto';
@@ -43,7 +47,8 @@ import { PayrollRunSortBy } from './dto/get-payroll-runs-query.dto';
 @ApiTags('Payroll runs')
 @ApiBearerAuth()
 @Controller('payroll-runs')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.PAYROLL_RUNS)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 @ApiExtraModels(OnePayrollRunResponseDto, PaginatedPayrollRunsResponseDto)
 export class PayrollRunsController {
   constructor(private readonly payrollRunsService: PayrollRunsService) {}

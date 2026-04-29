@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from 'src/auth/auth.module';
+
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MarketingCampaingAudienceService } from './marketing-campaing-audience.service';
 import { MarketingCampaingAudienceController } from './marketing-campaing-audience.controller';
@@ -7,7 +9,7 @@ import { MarketingCampaign } from '../marketing_campaing/entities/marketing_camp
 import { Customer } from 'src/core/business-partners/customers/entities/customer.entity';
 
 @Module({
-  imports: [
+  imports: [AuthModule,
     TypeOrmModule.forFeature([
       MarketingCampaignAudience,
       MarketingCampaign,
