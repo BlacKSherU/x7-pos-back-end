@@ -6,7 +6,7 @@ import { SelectQueryBuilder } from 'typeorm';
 import { DeliveryAssignmentService } from './delivery-assignment.service';
 import { DeliveryAssignment } from './entity/delivery-assignment.entity';
 import { DeliveryDriver } from '../delivery-driver/entity/delivery-driver.entity';
-import { Order } from 'src/orders/entities/order.entity';
+import { Order } from 'src/restaurant-operations/pos/orders/entities/order.entity';
 import { DeliveryStatus } from '../constants/delivery-status.enum';
 import { CreateDeliveryAssignmentDto } from './dto/create-delivery-assignment.dto';
 import { UpdateDeliveryAssignmentDto } from './dto/update-delivery-assignment.dto';

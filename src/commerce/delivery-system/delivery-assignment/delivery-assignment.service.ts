@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { ErrorHandler } from 'src/common/utils/error-handler.util';
 import { DeliveryAssignment } from './entity/delivery-assignment.entity';
-import { Order } from 'src/orders/entities/order.entity';
+import { Order } from 'src/restaurant-operations/pos/orders/entities/order.entity';
 import { DeliveryDriver } from '../delivery-driver/entity/delivery-driver.entity';
 import { CreateDeliveryAssignmentDto } from './dto/create-delivery-assignment.dto';
 import { OneDeliveryAssignmentResponseDto } from './dto/delivery-assignment-response.dto';
