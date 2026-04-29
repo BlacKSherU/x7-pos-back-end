@@ -69,6 +69,11 @@ export enum ErrorMessage {
   MERCHANT_TAX_RULE_NOT_FOUND = 'Merchant Tax Rule not found',
   FLOOR_PLAN_NOT_FOUND = 'Floor Plan not found',
   FLOOR_ZONE_NOT_FOUND = 'Floor Zone not found',
+  DELIVERY_ZONE_NOT_FOUND = 'Delivery Zone not found',
+  DELIVERY_FEE_NOT_FOUND = 'Delivery Fee not found',
+  DELIVERY_DRIVER_NOT_FOUND = 'Delivery Driver not found',
+  DELIVERY_ASSIGNMENT_NOT_FOUND = 'Delivery Assignment not found',
+  DELIVERY_TRACKING_NOT_FOUND = 'Delivery Tracking not found',
 
   // 409 Conflict
   EMAIL_ALREADY_EXISTS = 'Email address is already registered',

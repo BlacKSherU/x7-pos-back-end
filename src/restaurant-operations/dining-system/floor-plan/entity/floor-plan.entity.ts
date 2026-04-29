@@ -55,7 +55,7 @@ export class FloorPlan {
 
   @ApiProperty({
     example: 'active',
-    description: 'Status of the configuration',
+    description: 'Status of the floor plan',
   })
   @Column({ type: 'varchar', length: 50 })
   status: string;

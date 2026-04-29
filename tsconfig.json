@@ -3,6 +3,7 @@
   "compilerOptions": {
     "ignoreDeprecations": "6.0",
     "module": "commonjs",
+    "types": ["jest", "node"],
     "declaration": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,
