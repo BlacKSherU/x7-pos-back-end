@@ -59,6 +59,16 @@ export class User {
   scope: Scope;
 
   @ApiProperty({
+    enum: Scope,
+    isArray: true,
+    description:
+      'Enabled access scopes (preferred over single scope); falls back to scope when empty',
+    required: false,
+  })
+  @Column({ type: 'text', array: true, nullable: true })
+  scopes: Scope[] | null;
+
+  @ApiProperty({
     example: 'reset-token-123',
     description: 'Password reset token',
     required: false,

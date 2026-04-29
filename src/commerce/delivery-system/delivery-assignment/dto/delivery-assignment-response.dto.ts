@@ -1,7 +1,7 @@
 //src/commerce/delivery-system/delivery-assignment/dto/delivery-assignment-response.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
 import { SuccessResponse } from 'src/common/dtos/success-response.dto';
-import { Order } from 'src/orders/entities/order.entity';
+import { Order } from 'src/restaurant-operations/pos/orders/entities/order.entity';
 import { DeliveryDriver } from '../../delivery-driver/entity/delivery-driver.entity';
 import { DeliveryStatus } from '../../constants/delivery-status.enum';
 

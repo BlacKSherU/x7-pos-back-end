@@ -9,7 +9,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { DeliveryDriver } from 'src/commerce/delivery-system/delivery-driver/entity/delivery-driver.entity';
-import { Order } from 'src/orders/entities/order.entity';
+import { Order } from 'src/restaurant-operations/pos/orders/entities/order.entity';
 import { DeliveryStatus } from '../../constants/delivery-status.enum';
 
 @Entity({ name: 'delivery_assignments' })
