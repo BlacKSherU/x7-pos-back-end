@@ -12,6 +12,7 @@ import {
   ForbiddenException,
   Query,
 } from '@nestjs/common';
+import { Request as ExpressRequest } from 'express';
 import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
 import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
 import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
@@ -163,10 +164,10 @@ export class TablesController {
   })
   async create(
     @Body() dto: CreateTableDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: ExpressRequest & { user?: AuthenticatedUser },
   ): Promise<OneTableResponseDto> {
-    // Get the merchant_id of the authenticated user
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUser = req.user as AuthenticatedUser | undefined;
+    const authenticatedUserMerchantId = authenticatedUser?.merchant?.id;
 
     // Validate that the user has a merchant_id
     if (!authenticatedUserMerchantId) {
@@ -328,10 +329,10 @@ export class TablesController {
   })
   async findAll(
     @Query() query: GetTablesQueryDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: ExpressRequest & { user?: AuthenticatedUser },
   ): Promise<PaginatedTablesResponseDto> {
-    // Get the merchant_id of the authenticated user
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUser = req.user as AuthenticatedUser | undefined;
+    const authenticatedUserMerchantId = authenticatedUser?.merchant?.id;
 
     // Validate that the user has a merchant_id
     if (!authenticatedUserMerchantId) {
@@ -434,10 +435,10 @@ export class TablesController {
   })
   async findOne(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: AuthenticatedUser,
+    @Request() req: ExpressRequest & { user?: AuthenticatedUser },
   ): Promise<OneTableResponseDto> {
-    // Get the merchant_id of the authenticated user
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUser = req.user as AuthenticatedUser | undefined;
+    const authenticatedUserMerchantId = authenticatedUser?.merchant?.id;
 
     // Validate that the user has a merchant_id
     if (!authenticatedUserMerchantId) {
@@ -590,10 +591,10 @@ export class TablesController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateTableDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: ExpressRequest & { user?: AuthenticatedUser },
   ): Promise<OneTableResponseDto> {
-    // Get the merchant_id of the authenticated user
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUser = req.user as AuthenticatedUser | undefined;
+    const authenticatedUserMerchantId = authenticatedUser?.merchant?.id;
 
     // Validate that the user has a merchant_id
     if (!authenticatedUserMerchantId) {
@@ -719,10 +720,10 @@ export class TablesController {
   })
   async remove(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: AuthenticatedUser,
+    @Request() req: ExpressRequest & { user?: AuthenticatedUser },
   ): Promise<OneTableResponseDto> {
-    // Get the merchant_id of the authenticated user
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUser = req.user as AuthenticatedUser | undefined;
+    const authenticatedUserMerchantId = authenticatedUser?.merchant?.id;
 
     // Validate that the user has a merchant_id
     if (!authenticatedUserMerchantId) {

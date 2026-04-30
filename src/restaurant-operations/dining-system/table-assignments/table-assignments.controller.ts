@@ -10,7 +10,9 @@ import {
   ParseIntPipe,
   Query,
   Request,
+  ForbiddenException,
 } from '@nestjs/common';
+import { Request as ExpressRequest } from 'express';
 import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
 import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
 import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
@@ -216,9 +218,15 @@ export class TableAssignmentsController {
   })
   async create(
     @Body() createTableAssignmentDto: CreateTableAssignmentDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: ExpressRequest & { user?: AuthenticatedUser },
   ): Promise<OneTableAssignmentResponseDto> {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUser = req.user as AuthenticatedUser | undefined;
+    const authenticatedUserMerchantId = authenticatedUser?.merchant?.id;
+    if (!authenticatedUserMerchantId) {
+      throw new ForbiddenException(
+        'User must be associated with a merchant to create table assignments',
+      );
+    }
     return this.tableAssignmentsService.create(
       createTableAssignmentDto,
       authenticatedUserMerchantId,
@@ -360,9 +368,15 @@ export class TableAssignmentsController {
   })
   async findAll(
     @Query() query: GetTableAssignmentsQueryDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: ExpressRequest & { user?: AuthenticatedUser },
   ): Promise<PaginatedTableAssignmentsResponseDto> {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUser = req.user as AuthenticatedUser | undefined;
+    const authenticatedUserMerchantId = authenticatedUser?.merchant?.id;
+    if (!authenticatedUserMerchantId) {
+      throw new ForbiddenException(
+        'User must be associated with a merchant to view table assignments',
+      );
+    }
     return this.tableAssignmentsService.findAll(
       query,
       authenticatedUserMerchantId,
@@ -465,9 +479,15 @@ export class TableAssignmentsController {
   })
   async findOne(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: AuthenticatedUser,
+    @Request() req: ExpressRequest & { user?: AuthenticatedUser },
   ): Promise<OneTableAssignmentResponseDto> {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUser = req.user as AuthenticatedUser | undefined;
+    const authenticatedUserMerchantId = authenticatedUser?.merchant?.id;
+    if (!authenticatedUserMerchantId) {
+      throw new ForbiddenException(
+        'User must be associated with a merchant to view table assignments',
+      );
+    }
     return this.tableAssignmentsService.findOne(
       id,
       authenticatedUserMerchantId,
@@ -595,9 +615,15 @@ export class TableAssignmentsController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateTableAssignmentDto: UpdateTableAssignmentDto,
-    @Request() req: AuthenticatedUser,
+    @Request() req: ExpressRequest & { user?: AuthenticatedUser },
   ): Promise<OneTableAssignmentResponseDto> {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUser = req.user as AuthenticatedUser | undefined;
+    const authenticatedUserMerchantId = authenticatedUser?.merchant?.id;
+    if (!authenticatedUserMerchantId) {
+      throw new ForbiddenException(
+        'User must be associated with a merchant to update table assignments',
+      );
+    }
     return this.tableAssignmentsService.update(
       id,
       updateTableAssignmentDto,
@@ -701,9 +727,15 @@ export class TableAssignmentsController {
   })
   async remove(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req: AuthenticatedUser,
+    @Request() req: ExpressRequest & { user?: AuthenticatedUser },
   ): Promise<OneTableAssignmentResponseDto> {
-    const authenticatedUserMerchantId = req.merchant?.id;
+    const authenticatedUser = req.user as AuthenticatedUser | undefined;
+    const authenticatedUserMerchantId = authenticatedUser?.merchant?.id;
+    if (!authenticatedUserMerchantId) {
+      throw new ForbiddenException(
+        'User must be associated with a merchant to delete table assignments',
+      );
+    }
     return this.tableAssignmentsService.remove(id, authenticatedUserMerchantId);
   }
 }
