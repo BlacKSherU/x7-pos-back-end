@@ -95,6 +95,11 @@ export class OnlinePaymentService {
     const savedOnlinePayment =
       await this.onlinePaymentRepository.save(onlinePayment);
 
+    if (createOnlinePaymentDto.status) {
+      onlineOrder.payment_status = createOnlinePaymentDto.status;
+      await this.onlineOrderRepository.save(onlineOrder);
+    }
+
     const completeOnlinePayment = await this.onlinePaymentRepository.findOne({
       where: { id: savedOnlinePayment.id },
       relations: ['onlineOrder'],
@@ -409,6 +414,13 @@ export class OnlinePaymentService {
 
     if (updateOnlinePaymentDto.status !== undefined) {
       existingOnlinePayment.status = updateOnlinePaymentDto.status;
+      if (existingOnlinePayment.onlineOrder) {
+        existingOnlinePayment.onlineOrder.payment_status =
+          updateOnlinePaymentDto.status;
+        await this.onlineOrderRepository.save(
+          existingOnlinePayment.onlineOrder,
+        );
+      }
     }
 
     if (updateOnlinePaymentDto.processedAt !== undefined) {

@@ -5,6 +5,7 @@ import {
   Body,
   Param,
   Put,
+  Patch,
   Delete,
   ParseIntPipe,
   UseGuards,
@@ -32,6 +33,7 @@ import {
   ApiBody,
   ApiForbiddenResponse,
   ApiQuery,
+  ApiConflictResponse,
 } from '@nestjs/swagger';
 import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
 import { OneOnlineMenuItemResponseDto } from './dto/online-menu-item-response.dto';
@@ -91,6 +93,11 @@ export class OnlineMenuItemController {
       'Online menu, product, or variant not found or you do not have access to it',
     type: ErrorResponse,
   })
+  @ApiConflictResponse({
+    description:
+      'Conflict - This product and variant combination is already associated with this menu',
+    type: ErrorResponse,
+  })
   @ApiBody({
     type: CreateOnlineMenuItemDto,
     description: 'Online menu item creation data',
@@ -136,7 +143,12 @@ export class OnlineMenuItemController {
   }
 
   @Get()
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(
+    UserRole.PORTAL_ADMIN,
+    UserRole.PORTAL_USER,
+    UserRole.MERCHANT_ADMIN,
+    UserRole.MERCHANT_USER,
+  )
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -221,6 +233,13 @@ export class OnlineMenuItemController {
     description: 'Sort order',
     example: 'DESC',
   })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    type: String,
+    description: 'Filter by lifecycle status (active, deleted, or ALL)',
+    example: 'active',
+  })
   @ApiOkResponse({
     description: 'Paginated list of online menu items retrieved successfully',
     type: PaginatedOnlineMenuItemResponseDto,
@@ -250,7 +269,12 @@ export class OnlineMenuItemController {
   }
 
   @Get(':id')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(
+    UserRole.PORTAL_ADMIN,
+    UserRole.PORTAL_USER,
+    UserRole.MERCHANT_ADMIN,
+    UserRole.MERCHANT_USER,
+  )
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -351,6 +375,65 @@ export class OnlineMenuItemController {
     },
   })
   async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateOnlineMenuItemDto,
+    @Request() req: AuthenticatedRequest,
+  ): Promise<OneOnlineMenuItemResponseDto> {
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
+    return this.onlineMenuItemService.update(
+      id,
+      dto,
+      authenticatedUserMerchantId,
+    );
+  }
+
+  @Patch(':id')
+  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Scopes(
+    Scope.ADMIN_PORTAL,
+    Scope.MERCHANT_WEB,
+    Scope.MERCHANT_ANDROID,
+    Scope.MERCHANT_IOS,
+    Scope.MERCHANT_CLOVER,
+  )
+  @ApiOperation({
+    summary: 'Partially update an Online Menu Item by ID',
+    description:
+      'Partially updates an existing online menu item (e.g. availability, price override, display order, or status).',
+  })
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'Online menu item ID to update',
+    example: 1,
+  })
+  @ApiOkResponse({
+    description: 'Online menu item updated successfully',
+    type: OneOnlineMenuItemResponseDto,
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing authentication token',
+    type: ErrorResponse,
+  })
+  @ApiForbiddenResponse({
+    description:
+      'Forbidden - You can only update online menu items from your own merchant',
+    type: ErrorResponse,
+  })
+  @ApiNotFoundResponse({
+    description: 'Online menu item not found',
+    type: ErrorResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid input data or ID',
+    type: ErrorResponse,
+  })
+  @ApiConflictResponse({
+    description:
+      'Conflict - This product and variant combination is already associated with this menu',
+    type: ErrorResponse,
+  })
+  async patch(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateOnlineMenuItemDto,
     @Request() req: AuthenticatedRequest,

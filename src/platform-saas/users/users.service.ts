@@ -216,6 +216,31 @@ export class UsersService {
     };
   }
 
+  /**
+   * Users of every merchant in the authenticated user's company. The company always
+   * comes from the session, never from the request, so nobody can list another company.
+   */
+  async findByCompany(
+    authenticatedUser: AuthenticatedUser,
+  ): Promise<AllUsersResponseDto> {
+    const companyId = authenticatedUser.merchant?.companyId;
+    if (!companyId) {
+      ErrorHandler.notFound(ErrorMessage.COMPANY_NOT_FOUND);
+    }
+
+    const users = await this.userRepo.find({
+      where: { merchant: { companyId } },
+      relations: ['merchant'],
+      order: { merchantId: 'ASC', id: 'ASC' },
+    });
+
+    return {
+      statusCode: 200,
+      message: 'Users retrieved successfully',
+      data: users.map(toSafeUser),
+    };
+  }
+
   /** `authenticatedUser` is set for API lookups; internal callers (password reset) omit it. */
   async findByEmail(
     email: string,

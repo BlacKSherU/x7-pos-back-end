@@ -31,6 +31,10 @@ export function formatOnlineOrderToDto(
     acceptedAt: onlineOrder.accepted_at,
     readyAt: onlineOrder.ready_at,
     completedAt: onlineOrder.completed_at,
+    stationId:
+      onlineOrder.kitchenOrders?.[0]?.station_id ??
+      onlineOrder.station_id ??
+      null,
     merchant: {
       id: onlineOrder.merchant.id,
       name: onlineOrder.merchant.name,
@@ -48,6 +52,9 @@ export function formatOnlineOrderToDto(
       id: onlineOrder.customer.id,
       name: onlineOrder.customer.name,
       email: onlineOrder.customer.email,
+      phone: onlineOrder.customer.phone || undefined,
+      address: onlineOrder.customer.address || undefined,
+      city: onlineOrder.customer.city || undefined,
     },
   };
 

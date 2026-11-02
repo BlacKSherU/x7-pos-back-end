@@ -7,6 +7,7 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { OnlineMenuCategoryService } from './online-menu-category.service';
 import { OnlineMenuCategory } from './entities/online-menu-category.entity';
@@ -30,6 +31,7 @@ describe('OnlineMenuCategoryService', () => {
   const mockOnlineMenuCategoryRepository = {
     create: jest.fn(),
     save: jest.fn(),
+    find: jest.fn().mockResolvedValue([]),
     findOne: jest.fn(),
     update: jest.fn(),
     remove: jest.fn(),
@@ -271,7 +273,7 @@ describe('OnlineMenuCategoryService', () => {
       ).rejects.toThrow('You can only use categories from your own merchant');
     });
 
-    it('should throw BadRequestException if category already associated with menu', async () => {
+    it('should throw ConflictException if category already associated with menu', async () => {
       jest
         .spyOn(onlineMenuRepository, 'createQueryBuilder')
         .mockReturnValue(
@@ -291,7 +293,7 @@ describe('OnlineMenuCategoryService', () => {
 
       await expect(
         service.create(createOnlineMenuCategoryDto, 1),
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toThrow(ConflictException);
       await expect(
         service.create(createOnlineMenuCategoryDto, 1),
       ).rejects.toThrow('This category is already associated with this menu');
@@ -321,7 +323,7 @@ describe('OnlineMenuCategoryService', () => {
         BadRequestException,
       );
       await expect(service.create(dtoWithNegativeOrder, 1)).rejects.toThrow(
-        'Display order must be greater than or equal to 0',
+        'Display order must be an integer greater than or equal to 0',
       );
     });
   });
@@ -629,7 +631,7 @@ describe('OnlineMenuCategoryService', () => {
         BadRequestException,
       );
       await expect(service.update(1, dtoWithNegativeOrder, 1)).rejects.toThrow(
-        'Display order must be greater than or equal to 0',
+        'Display order must be an integer greater than or equal to 0',
       );
     });
   });

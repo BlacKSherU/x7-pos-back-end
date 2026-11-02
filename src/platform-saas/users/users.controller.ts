@@ -89,6 +89,32 @@ export class UsersController {
     return this.usersService.findAll(query);
   }
 
+  // Declared before ':id' so that 'company' is not parsed as a user id.
+  @Get('company')
+  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Scopes(
+    Scope.ADMIN_PORTAL,
+    Scope.MERCHANT_WEB,
+    Scope.MERCHANT_ANDROID,
+    Scope.MERCHANT_IOS,
+    Scope.MERCHANT_CLOVER,
+  )
+  @ApiOperation({
+    summary:
+      "Get the users of every merchant in the authenticated user's company",
+  })
+  @ApiOkResponse({
+    description: 'Users of the company, ordered by merchant',
+    type: AllUsersResponseDto,
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiNotFoundResponse({ description: 'The user has no company' })
+  findByCompany(
+    @Req() req: Request & { user: AuthenticatedUser },
+  ): Promise<AllUsersResponseDto> {
+    return this.usersService.findByCompany(req.user);
+  }
+
   @Get(':id')
   @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
   @Scopes(

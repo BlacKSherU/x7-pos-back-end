@@ -29,6 +29,21 @@ describe('Schema created by the migrations (e2e)', () => {
     expect(upQueries.map((q) => q.query)).toEqual([]);
   });
 
+  // Sin RLS, la API REST de Supabase expone la tabla a anon/authenticated: cada migración
+  // que crea una tabla debe incluir su ALTER TABLE ... ENABLE ROW LEVEL SECURITY.
+  it('enables RLS on every table in public', async () => {
+    const rows = await e2e.dataSource.query<{ relname: string }[]>(
+      `SELECT c.relname
+         FROM pg_class c
+         JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'public'
+          AND c.relkind IN ('r', 'p')
+          AND NOT c.relrowsecurity
+        ORDER BY 1`,
+    );
+    expect(rows.map((r) => r.relname)).toEqual([]);
+  });
+
   // Las entidades los declaran con synchronize: false; solo la migración los crea.
   it.each([
     [

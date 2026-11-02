@@ -36,6 +36,7 @@ describe('OnlinePaymentService', () => {
 
   const mockOnlineOrderRepository = {
     findOne: jest.fn(),
+    save: jest.fn(),
     createQueryBuilder: jest.fn(),
   };
 

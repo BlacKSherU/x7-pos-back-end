@@ -5,6 +5,7 @@ import {
   Body,
   Param,
   Put,
+  Patch,
   Delete,
   ParseIntPipe,
   UseGuards,
@@ -127,7 +128,12 @@ export class OnlineMenuCategoryController {
   }
 
   @Get()
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(
+    UserRole.PORTAL_ADMIN,
+    UserRole.PORTAL_USER,
+    UserRole.MERCHANT_ADMIN,
+    UserRole.MERCHANT_USER,
+  )
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -226,7 +232,12 @@ export class OnlineMenuCategoryController {
   }
 
   @Get(':id')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(
+    UserRole.PORTAL_ADMIN,
+    UserRole.PORTAL_USER,
+    UserRole.MERCHANT_ADMIN,
+    UserRole.MERCHANT_USER,
+  )
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -335,6 +346,43 @@ export class OnlineMenuCategoryController {
     },
   })
   async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateOnlineMenuCategoryDto,
+    @Request() req: AuthenticatedRequest,
+  ): Promise<OneOnlineMenuCategoryResponseDto> {
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
+    return this.onlineMenuCategoryService.update(
+      id,
+      dto,
+      authenticatedUserMerchantId,
+    );
+  }
+
+  @Patch(':id')
+  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Scopes(
+    Scope.ADMIN_PORTAL,
+    Scope.MERCHANT_WEB,
+    Scope.MERCHANT_ANDROID,
+    Scope.MERCHANT_IOS,
+    Scope.MERCHANT_CLOVER,
+  )
+  @ApiOperation({
+    summary: 'Partially update an Online Menu Category by ID',
+    description:
+      'Partially updates an existing online menu category (e.g. display order, status).',
+  })
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'Online menu category ID to update',
+    example: 1,
+  })
+  @ApiOkResponse({
+    description: 'Online menu category updated successfully',
+    type: OneOnlineMenuCategoryResponseDto,
+  })
+  async patch(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateOnlineMenuCategoryDto,
     @Request() req: AuthenticatedRequest,

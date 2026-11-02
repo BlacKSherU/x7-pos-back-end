@@ -7,6 +7,7 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { OnlineMenuItemService } from './online-menu-item.service';
 import { OnlineMenuItem } from './entities/online-menu-item.entity';
@@ -126,11 +127,19 @@ describe('OnlineMenuItemService', () => {
     orderBy: jest.fn().mockReturnThis(),
     skip: jest.fn().mockReturnThis(),
     take: jest.fn().mockReturnThis(),
+    select: jest.fn().mockReturnThis(),
+    update: jest.fn().mockReturnThis(),
+    set: jest.fn().mockReturnThis(),
+    execute: jest.fn().mockResolvedValue({ affected: 1 }),
+    getRawOne: jest.fn().mockResolvedValue({ maxOrder: 0 }),
     getOne: jest.fn(),
     getManyAndCount: jest.fn(),
   };
 
   beforeEach(async () => {
+    mockOnlineMenuItemRepository.createQueryBuilder.mockReturnValue(
+      mockQueryBuilder,
+    );
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OnlineMenuItemService,
@@ -380,7 +389,7 @@ describe('OnlineMenuItemService', () => {
       );
     });
 
-    it('should throw BadRequestException if item already exists', async () => {
+    it('should throw ConflictException if item already exists', async () => {
       jest
         .spyOn(onlineMenuRepository, 'createQueryBuilder')
         .mockReturnValue(
@@ -400,7 +409,7 @@ describe('OnlineMenuItemService', () => {
         .mockResolvedValue(mockOnlineMenuItem as unknown as OnlineMenuItem);
 
       await expect(service.create(createOnlineMenuItemDto, 1)).rejects.toThrow(
-        BadRequestException,
+        ConflictException,
       );
       await expect(service.create(createOnlineMenuItemDto, 1)).rejects.toThrow(
         'This product and variant combination is already associated with this menu',

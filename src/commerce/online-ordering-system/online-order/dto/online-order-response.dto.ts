@@ -37,6 +37,24 @@ export class BasicCustomerInfoDto {
 
   @ApiProperty({ example: 'john@example.com', description: 'Customer email' })
   email: string;
+
+  @ApiPropertyOptional({
+    example: '+1 555-0192',
+    description: 'Customer phone number',
+  })
+  phone?: string;
+
+  @ApiPropertyOptional({
+    example: '123 Main St',
+    description: 'Customer address',
+  })
+  address?: string;
+
+  @ApiPropertyOptional({
+    example: 'Miami',
+    description: 'Customer city',
+  })
+  city?: string;
 }
 
 export class OnlineOrderResponseDto {
@@ -129,6 +147,13 @@ export class OnlineOrderResponseDto {
 
   @ApiProperty({ nullable: true })
   completedAt: Date | null;
+
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'Target Kitchen Station ID',
+    nullable: true,
+  })
+  stationId?: number | null;
 
   @ApiProperty({
     type: () => BasicMerchantInfoDto,

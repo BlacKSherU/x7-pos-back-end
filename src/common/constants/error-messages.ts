@@ -42,6 +42,7 @@ export enum ErrorMessage {
   MOVEMENT_NOT_FOUND = 'Movement not found',
   APPLICATION_NOT_FOUND = 'Application not found',
   MERCHANT_SUBSCRIPTION_NOT_FOUND = 'Merchant Subscription not found',
+  COMPANY_SUBSCRIPTION_NOT_FOUND = 'Company Subscription not found',
   PLAN_APPLICATION_NOT_FOUND = 'Plan Application not found',
   SUBSCRIPTION_PLAN_NOT_FOUND = 'Subscription Plan not found',
   SUBSCRIPTION_APPLICATION_NOT_FOUND = 'Subscription Application not found',

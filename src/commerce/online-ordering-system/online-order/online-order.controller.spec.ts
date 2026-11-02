@@ -214,6 +214,7 @@ describe('OnlineOrderController', () => {
         1,
         updateDto,
         mockUser.merchant.id,
+        mockUser.id,
       );
       expect(result).toEqual(updatedResponse);
       expect(result.statusCode).toBe(200);

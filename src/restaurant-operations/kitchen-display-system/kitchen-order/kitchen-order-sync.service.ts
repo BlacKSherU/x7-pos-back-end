@@ -82,6 +82,7 @@ export class KitchenOrderSyncService {
     if (becameFullyPaid) {
       this.ordersService.emitOrderFullyPaid(orderId);
     }
+    await this.ordersService.syncOnlineOrderFromPosOrder(orderId);
   }
 
   /**
@@ -140,6 +141,11 @@ export class KitchenOrderSyncService {
         !ko.completed_at
       ) {
         patch.completed_at = now;
+      } else if (
+        nextBusiness !== KitchenOrderBusinessStatus.COMPLETED &&
+        ko.completed_at
+      ) {
+        patch.completed_at = null;
       }
       await manager.getRepository(KitchenOrder).update(ko.id, patch);
     }

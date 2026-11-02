@@ -121,7 +121,12 @@ export class OnlineMenuController {
   }
 
   @Get()
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(
+    UserRole.PORTAL_ADMIN,
+    UserRole.PORTAL_USER,
+    UserRole.MERCHANT_ADMIN,
+    UserRole.MERCHANT_USER,
+  )
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -216,7 +221,12 @@ export class OnlineMenuController {
   }
 
   @Get(':id')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(
+    UserRole.PORTAL_ADMIN,
+    UserRole.PORTAL_USER,
+    UserRole.MERCHANT_ADMIN,
+    UserRole.MERCHANT_USER,
+  )
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,

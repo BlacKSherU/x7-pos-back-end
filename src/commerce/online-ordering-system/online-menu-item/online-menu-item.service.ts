@@ -124,7 +124,52 @@ export class OnlineMenuItemService {
     });
 
     if (existingItem) {
-      throw new BadRequestException(
+      if (existingItem.status === OnlineMenuItemStatus.DELETED) {
+        existingItem.status =
+          createOnlineMenuItemDto.status !== undefined
+            ? createOnlineMenuItemDto.status
+            : OnlineMenuItemStatus.ACTIVE;
+        existingItem.is_available =
+          createOnlineMenuItemDto.isAvailable !== undefined
+            ? createOnlineMenuItemDto.isAvailable
+            : true;
+        existingItem.price_override =
+          createOnlineMenuItemDto.priceOverride !== undefined
+            ? createOnlineMenuItemDto.priceOverride
+            : null;
+        let restoredOrder = createOnlineMenuItemDto.displayOrder;
+        if (!restoredOrder || restoredOrder <= 0) {
+          const maxOrderRecord = await this.onlineMenuItemRepository
+            .createQueryBuilder('item')
+            .where('item.menu_id = :menuId', {
+              menuId: createOnlineMenuItemDto.menuId,
+            })
+            .andWhere('item.status = :status', {
+              status: OnlineMenuItemStatus.ACTIVE,
+            })
+            .select('MAX(item.display_order)', 'maxOrder')
+            .getRawOne();
+          restoredOrder =
+            (maxOrderRecord?.maxOrder ? Number(maxOrderRecord.maxOrder) : 0) +
+            1;
+        }
+        existingItem.display_order = restoredOrder;
+
+        const restoredItem =
+          await this.onlineMenuItemRepository.save(existingItem);
+        const completeRestored = await this.onlineMenuItemRepository.findOne({
+          where: { id: restoredItem.id },
+          relations: ['menu', 'product', 'variant'],
+        });
+
+        return {
+          statusCode: 201,
+          message: 'Online menu item restored and bound successfully',
+          data: this.formatOnlineMenuItemResponse(completeRestored!),
+        };
+      }
+
+      throw new ConflictException(
         'This product and variant combination is already associated with this menu',
       );
     }
@@ -137,12 +182,47 @@ export class OnlineMenuItemService {
 
     if (
       createOnlineMenuItemDto.priceOverride !== undefined &&
-      createOnlineMenuItemDto.priceOverride !== null &&
-      createOnlineMenuItemDto.priceOverride < 0
+      createOnlineMenuItemDto.priceOverride !== null
     ) {
-      throw new BadRequestException(
-        'Price override must be greater than or equal to 0',
-      );
+      if (createOnlineMenuItemDto.priceOverride < 0) {
+        throw new BadRequestException(
+          'Price override must be greater than or equal to 0',
+        );
+      }
+      const priceStr = createOnlineMenuItemDto.priceOverride.toString();
+      const parts = priceStr.split('.');
+      if (parts.length > 1 && parts[1].length > 2) {
+        throw new BadRequestException(
+          'Price override must have at most 2 decimal places',
+        );
+      }
+    }
+
+    let finalOrder = createOnlineMenuItemDto.displayOrder;
+    if (!finalOrder || finalOrder <= 0) {
+      const maxOrderRecord = await this.onlineMenuItemRepository
+        .createQueryBuilder('item')
+        .where('item.menu_id = :menuId', {
+          menuId: createOnlineMenuItemDto.menuId,
+        })
+        .andWhere('item.status = :status', {
+          status: OnlineMenuItemStatus.ACTIVE,
+        })
+        .select('MAX(item.display_order)', 'maxOrder')
+        .getRawOne();
+      finalOrder =
+        (maxOrderRecord?.maxOrder ? Number(maxOrderRecord.maxOrder) : 0) + 1;
+    } else {
+      // Shift existing active items with display_order >= finalOrder up by 1
+      // so the new item gets the exact position specified by the user
+      await this.onlineMenuItemRepository
+        .createQueryBuilder()
+        .update(OnlineMenuItem)
+        .set({ display_order: () => 'display_order + 1' })
+        .where('menu_id = :menuId', { menuId: createOnlineMenuItemDto.menuId })
+        .andWhere('status = :status', { status: OnlineMenuItemStatus.ACTIVE })
+        .andWhere('display_order >= :targetOrder', { targetOrder: finalOrder })
+        .execute();
     }
 
     const onlineMenuItem = new OnlineMenuItem();
@@ -157,7 +237,11 @@ export class OnlineMenuItemService {
       createOnlineMenuItemDto.priceOverride !== undefined
         ? createOnlineMenuItemDto.priceOverride
         : null;
-    onlineMenuItem.display_order = createOnlineMenuItemDto.displayOrder;
+    onlineMenuItem.display_order = finalOrder;
+    onlineMenuItem.status =
+      createOnlineMenuItemDto.status !== undefined
+        ? createOnlineMenuItemDto.status
+        : OnlineMenuItemStatus.ACTIVE;
 
     const savedOnlineMenuItem =
       await this.onlineMenuItemRepository.save(onlineMenuItem);
@@ -219,10 +303,17 @@ export class OnlineMenuItemService {
       .where('merchant.id = :merchantId', {
         merchantId: authenticatedUserMerchantId,
       })
-      .andWhere('store.status = :status', { status: OnlineStoreStatus.ACTIVE })
-      .andWhere('onlineMenuItem.status != :deletedStatus', {
+      .andWhere('store.status = :status', { status: OnlineStoreStatus.ACTIVE });
+
+    if (query.status && query.status.toUpperCase() !== 'ALL') {
+      queryBuilder.andWhere('onlineMenuItem.status = :status', {
+        status: query.status.toLowerCase(),
+      });
+    } else if (!query.status) {
+      queryBuilder.andWhere('onlineMenuItem.status != :deletedStatus', {
         deletedStatus: OnlineMenuItemStatus.DELETED,
       });
+    }
 
     if (query.menuId) {
       queryBuilder.andWhere('onlineMenuItem.menu_id = :menuId', {
@@ -376,17 +467,19 @@ export class OnlineMenuItemService {
         merchantId: authenticatedUserMerchantId,
       })
       .andWhere('store.status = :status', { status: OnlineStoreStatus.ACTIVE })
-      .andWhere('onlineMenuItem.status != :deletedStatus', {
-        deletedStatus: OnlineMenuItemStatus.DELETED,
-      })
       .getOne();
 
     if (!existingOnlineMenuItem) {
       throw new NotFoundException('Online menu item not found');
     }
 
-    if (existingOnlineMenuItem.status === OnlineMenuItemStatus.DELETED) {
-      throw new ConflictException('Cannot update a deleted online menu item');
+    if (
+      existingOnlineMenuItem.status === OnlineMenuItemStatus.DELETED &&
+      updateOnlineMenuItemDto.status !== OnlineMenuItemStatus.ACTIVE
+    ) {
+      throw new ConflictException(
+        'Cannot update a deleted online menu item. Set status to active to restore it.',
+      );
     }
 
     if (updateOnlineMenuItemDto.menuId !== undefined) {
@@ -486,8 +579,12 @@ export class OnlineMenuItemService {
         where: whereCondition,
       });
 
-      if (existingItem && existingItem.id !== id) {
-        throw new BadRequestException(
+      if (
+        existingItem &&
+        existingItem.id !== id &&
+        existingItem.status === OnlineMenuItemStatus.ACTIVE
+      ) {
+        throw new ConflictException(
           'This product and variant combination is already associated with this menu',
         );
       }
@@ -504,12 +601,20 @@ export class OnlineMenuItemService {
 
     if (
       updateOnlineMenuItemDto.priceOverride !== undefined &&
-      updateOnlineMenuItemDto.priceOverride !== null &&
-      updateOnlineMenuItemDto.priceOverride < 0
+      updateOnlineMenuItemDto.priceOverride !== null
     ) {
-      throw new BadRequestException(
-        'Price override must be greater than or equal to 0',
-      );
+      if (updateOnlineMenuItemDto.priceOverride < 0) {
+        throw new BadRequestException(
+          'Price override must be greater than or equal to 0',
+        );
+      }
+      const priceStr = updateOnlineMenuItemDto.priceOverride.toString();
+      const parts = priceStr.split('.');
+      if (parts.length > 1 && parts[1].length > 2) {
+        throw new BadRequestException(
+          'Price override must have at most 2 decimal places',
+        );
+      }
     }
 
     const updateData: QueryDeepPartialEntity<OnlineMenuItem> = {};
@@ -523,8 +628,51 @@ export class OnlineMenuItemService {
       updateData.is_available = updateOnlineMenuItemDto.isAvailable;
     if (updateOnlineMenuItemDto.priceOverride !== undefined)
       updateData.price_override = updateOnlineMenuItemDto.priceOverride;
-    if (updateOnlineMenuItemDto.displayOrder !== undefined)
+    if (updateOnlineMenuItemDto.displayOrder !== undefined) {
+      const currentItem = await this.onlineMenuItemRepository.findOne({
+        where: { id },
+      });
+      if (
+        currentItem &&
+        currentItem.display_order !== updateOnlineMenuItemDto.displayOrder
+      ) {
+        const targetMenuId =
+          updateOnlineMenuItemDto.menuId || currentItem.menu_id;
+        const newOrder = updateOnlineMenuItemDto.displayOrder;
+        const oldOrder = currentItem.display_order;
+
+        if (newOrder < oldOrder) {
+          await this.onlineMenuItemRepository
+            .createQueryBuilder()
+            .update(OnlineMenuItem)
+            .set({ display_order: () => 'display_order + 1' })
+            .where('menu_id = :menuId', { menuId: targetMenuId })
+            .andWhere('status = :status', {
+              status: OnlineMenuItemStatus.ACTIVE,
+            })
+            .andWhere('display_order >= :newOrder', { newOrder })
+            .andWhere('display_order < :oldOrder', { oldOrder })
+            .andWhere('id != :id', { id })
+            .execute();
+        } else if (newOrder > oldOrder) {
+          await this.onlineMenuItemRepository
+            .createQueryBuilder()
+            .update(OnlineMenuItem)
+            .set({ display_order: () => 'display_order - 1' })
+            .where('menu_id = :menuId', { menuId: targetMenuId })
+            .andWhere('status = :status', {
+              status: OnlineMenuItemStatus.ACTIVE,
+            })
+            .andWhere('display_order <= :newOrder', { newOrder })
+            .andWhere('display_order > :oldOrder', { oldOrder })
+            .andWhere('id != :id', { id })
+            .execute();
+        }
+      }
       updateData.display_order = updateOnlineMenuItemDto.displayOrder;
+    }
+    if (updateOnlineMenuItemDto.status !== undefined)
+      updateData.status = updateOnlineMenuItemDto.status;
 
     await this.onlineMenuItemRepository.update(id, updateData);
 

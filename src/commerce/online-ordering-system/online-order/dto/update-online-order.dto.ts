@@ -8,6 +8,7 @@ import {
 } from 'class-validator';
 import { OnlineOrderType } from '../constants/online-order-type.enum';
 import { OnlineOrderPaymentStatus } from '../constants/online-order-payment-status.enum';
+import { OnlineOrderFulfillmentStatus } from '../constants/online-order-fulfillment-status.enum';
 
 export class UpdateOnlineOrderDto {
   @ApiPropertyOptional({
@@ -83,4 +84,51 @@ export class UpdateOnlineOrderDto {
   @IsString({ message: 'Notes must be a string' })
   @MaxLength(5000, { message: 'Notes must not exceed 5000 characters' })
   notes?: string | null;
+
+  @ApiPropertyOptional({
+    example: OnlineOrderFulfillmentStatus.ACCEPTED,
+    enum: OnlineOrderFulfillmentStatus,
+    description: 'Fulfillment lifecycle status for customer-facing order',
+  })
+  @IsOptional()
+  @IsEnum(OnlineOrderFulfillmentStatus, {
+    message: 'Fulfillment status must be a valid fulfillment status',
+  })
+  fulfillmentStatus?: OnlineOrderFulfillmentStatus;
+
+  @ApiPropertyOptional({
+    example: '2024-01-15T08:05:00Z',
+    description: 'Timestamp when the order was accepted',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString({ message: 'Accepted at must be a valid date string' })
+  acceptedAt?: string | null;
+
+  @ApiPropertyOptional({
+    example: '2024-01-15T08:20:00Z',
+    description: 'Timestamp when the order became ready',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString({ message: 'Ready at must be a valid date string' })
+  readyAt?: string | null;
+
+  @ApiPropertyOptional({
+    example: '2024-01-15T08:45:00Z',
+    description: 'Timestamp when the order was completed',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString({ message: 'Completed at must be a valid date string' })
+  completedAt?: string | null;
+
+  @ApiPropertyOptional({
+    example: 6,
+    description: 'Target Kitchen Station ID for KDS routing',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsNumber({}, { message: 'Station ID must be a number' })
+  stationId?: number | null;
 }

@@ -1,0 +1,155 @@
+﻿No.,Category,Application,Feature,Asignado,Columna1,Plan Quick Service,Plan Full Restaurant,Plan Enterprise,Saas Owner View,Merchant View,Es HUB View?,Status en SaaS,Status en Merchant,Feature ID,Feature key
+1,Platform SaaS,Platform SaaS Dashboard,Desarrollado pero falta pulir,,,Yes,Yes,Yes,Yes,Yes,,,Yes,1,CENTRAL_BACKOFFICE
+1,Platform SaaS,Restaurant Dashboard,Desarrollado pero falta pulir,,,Yes,Yes,Yes,,Yes,,,Yes,2,CLIENT_BACKOFFICE
+1,Platform SaaS,Companies,Companies HUB View (Application Dashboard),,,Yes,Yes,Yes,Yes,Yes,Yes,,,,
+1,Platform SaaS,Companies,Company profile,,,Yes,Yes,Yes,,Yes,,,Yes,3,COMPANIES
+1,Platform SaaS,Companies,Company configuration,,,Yes,Yes,Yes,,Yes,,,,3,COMPANIES
+1,Platform SaaS,Merchants,Merchants HUB View (Application Dashboard),,,Yes,Yes,Yes,Yes,Yes,Yes,,,,
+1,Platform SaaS,Merchants,Merchants & Tenants Provisioning,,,Yes,Yes,Yes,Yes,,,,,4,MERCHANTS
+1,Platform SaaS,Merchants,Global Merchants Directory,,,Yes,Yes,Yes,Yes,,,,,4,MERCHANTS
+1,Platform SaaS,Merchants,Company Merchants Directory,,,Yes,Yes,Yes,,Yes,,,Yes,4,MERCHANTS
+1,Platform SaaS,Subscription System,Subscription HUB View (Application Dashboard),,,Yes,Yes,Yes,Yes,Yes,Yes,,,,
+1,Platform SaaS,Subscription System,Merchant Subscription Link,Alejandro,Convertir en sub-module de Platform Saas,Yes,Yes,Yes,,Yes,,,,7,MERCHANT_SUBSCRIPTIONS
+1,Platform SaaS,Subscription System,Merchant Subscription Payments,Alejandro,Convertir en sub-module de Platform Saas,Yes,Yes,Yes,,Yes,,,,12,SUBSCRIPTION_PAYMENTS
+1,Platform SaaS,Subscription System,Applications,Alejandro,Convertir en sub-module de Platform Saas,Yes,Yes,Yes,Yes,,,Yes,,5,APPLICATIONS
+1,Platform SaaS,Subscription System,Features,Alejandro,Convertir en sub-module de Platform Saas,Yes,Yes,Yes,Yes,,,Yes,,6,SUBSCRIPTION_FEATURES_CATALOG
+1,Platform SaaS,Subscription System,Merchant Subscriptions,Alejandro,Convertir en sub-module de Platform Saas,Yes,Yes,Yes,Yes,,,,,7,MERCHANT_SUBSCRIPTIONS
+1,Platform SaaS,Subscription System,Plan applications,Alejandro,Convertir en sub-module de Platform Saas,Yes,Yes,Yes,Yes,,,Yes,,8,PLAN_APPLICATIONS
+1,Platform SaaS,Subscription System,Plan features,Alejandro,Convertir en sub-module de Platform Saas,Yes,Yes,Yes,Yes,,,Yes,,9,PLAN_FEATURES
+1,Platform SaaS,Subscription System,Subcription Plans,Alejandro,Convertir en sub-module de Platform Saas,Yes,Yes,Yes,Yes,,,Yes,,10,SUBSCRIPTION_PLANS
+1,Platform SaaS,Subscription System,Subscription Applications,Alejandro,Convertir en sub-module de Platform Saas,Yes,Yes,Yes,Yes,,,,,11,SUBSCRIPTION_APPLICATIONS
+1,Platform SaaS,Subscription System,Subscription payments,Alejandro,Convertir en sub-module de Platform Saas,Yes,Yes,Yes,Yes,,,,,12,SUBSCRIPTION_PAYMENTS
+1,Platform SaaS,Users,Users HUB View (Application Dashboard),,,Yes,Yes,Yes,Yes,Yes,Yes,,,,
+1,Platform SaaS,Users,Global Users Directory,,,Yes,Yes,Yes,Yes,,,,,13,USERS
+1,Platform SaaS,Users,Company Users Directory,,,Yes,Yes,Yes,,Yes,,,Yes,13,USERS
+2,CORE,Billing / Transactions,Billing / Transactions HUB View (Application Dashboard),Antonio,,Yes,Yes,Yes,,Yes,Yes,,,,
+2,CORE,Billing / Transactions,Receipts,Antonio,,Yes,Yes,Yes,,Yes,,,,15,RECEIPTS
+2,CORE,Billing / Transactions,Receipt items,Antonio,,Yes,Yes,Yes,,Yes,,,,14,RECEIPT_ITEMS
+2,CORE,Billing / Transactions,Receipts taxes,Antonio,,Yes,Yes,Yes,,Yes,,,,16,RECEIPTS_TAXES
+2,CORE,Configuration,Configurations HUB View (Application Dashboard),,,Yes,Yes,Yes,,Yes,Yes,,Yes,,
+2,CORE,Configuration,Merchant Overtime Rules,Alejandro,Convertir en sub-module de CORE,,Yes,Yes,,Yes,,,Yes,17,MERCHANT_OVERTIME_RULES
+2,CORE,Configuration,Merchant Payroll Rules,Alejandro,Convertir en sub-module de CORE,,Yes,Yes,,Yes,,,Yes,18,MERCHANT_PAYROLL_RULES
+2,CORE,Configuration,Merchant Tax Rules,Alejandro,Convertir en sub-module de CORE,,Yes,Yes,,Yes,,,Yes,19,MERCHANT_TAX_RULES
+2,CORE,Configuration,Merchant Tips Rules,Alejandro,Convertir en sub-module de CORE,,Yes,Yes,,Yes,,,Yes,20,MERCHANT_TIPS_RULES
+2,CORE,Financial Engine,Financial Engine HUB View (Application Dashboard),,,,Yes,Yes,,Yes,Yes,,,,
+2,CORE,Financial Engine,Journal Entries,Antonio,Convertir en sub-module de CORE,,Yes,Yes,,Yes,,,Yes,21,JOURNAL_ENTRIES
+2,CORE,Financial Engine,Journal Entries lines,Antonio,Convertir en sub-module de CORE,,Yes,Yes,,Yes,,,Yes,22,JOURNAL_ENTRY_LINES
+2,CORE,Financial Engine,Ledger Accounts,Antonio,Convertir en sub-module de CORE,,Yes,Yes,,Yes,,,Yes,23,LEDGER_ACCOUNTS
+2,CORE,Business Partners,Business Partners HUB View (Application Dashboard),Miguel,Convertir en sub-module de CORE,Yes,Yes,Yes,,Yes,Yes,,,,
+2,CORE,Business Partners,Customers,Miguel,Convertir en sub-module de CORE,Yes,Yes,Yes,,Yes,,,Yes,24,CUSTOMERS
+2,CORE,Business Partners,Suppliers,Miguel,Convertir en sub-module de CORE,,Yes,Yes,,Yes,,,Yes,25,SUPPLIERS
+3,Finance & HR,Accounts Payable,Accounts Payable HUB View (Application Dashboard),Miguel,Convertir en sub-module de Finance & HR,,Yes,Yes,,Yes,Yes,,,,
+3,Finance & HR,Accounts Payable,Supplier Credit Notes,Miguel,Convertir en sub-module de Finance & HR,,Yes,Yes,,Yes,,,Yes,26,SUPPLIER_CREDIT_NOTES
+3,Finance & HR,Accounts Payable,Supplier Invoices,Miguel,Convertir en sub-module de Finance & HR,,Yes,Yes,,Yes,,,Yes,28,SUPPLIER_INVOICES
+3,Finance & HR,Accounts Payable,Supplier Invoice Items,Miguel,Convertir en sub-module de Finance & HR,,Yes,Yes,,Yes,,,Yes,27,SUPPLIER_INVOICE_ITEMS
+3,Finance & HR,Accounts Payable,Supplier Payments,Miguel,Convertir en sub-module de Finance & HR,,Yes,Yes,,Yes,,,Yes,30,SUPPLIER_PAYMENTS
+3,Finance & HR,Accounts Payable,Supplier Payment Items,Miguel,Convertir en sub-module de Finance & HR,,Yes,Yes,,Yes,,,Yes,29,SUPPLIER_PAYMENT_ITEMS
+3,Finance & HR,Accounts Payable,Supplier Payments Allocation,Miguel,Convertir en sub-module de Finance & HR,,Yes,Yes,,Yes,,,Yes,31,SUPPLIER_PAYMENTS_ALLOCATION
+3,Finance & HR,HR,HR HUB View (Application Dashboard),Miguel,Convertir en sub-module de Finance & HR,,Yes,Yes,,Yes,Yes,,,,
+3,Finance & HR,HR,Collaborators,Miguel,Convertir en sub-module de Finance & HR,,Yes,Yes,,Yes,,,Yes,32,COLLABORATORS
+3,Finance & HR,HR,Collaborators Contracts,Miguel,Convertir en sub-module de Finance & HR,,Yes,Yes,,Yes,,,Yes,33,COLLABORATOR_CONTRACTS
+3,Finance & HR,HR,Collaborators Time Entries,Miguel,Convertir en sub-module de Finance & HR,,Yes,Yes,,Yes,,,Yes,34,COLLABORATOR_TIME_ENTRIES
+3,Finance & HR,Payrolls,Payroll HUB View (Application Dashboard),Miguel,Convertir en sub-module de Finance & HR,,Yes,Yes,,Yes,Yes,,,,
+3,Finance & HR,Payrolls,Payroll Adjustements,Miguel,Convertir en sub-module de Finance & HR,,Yes,Yes,,Yes,,,,35,PAYROLL_ADJUSTMENTS
+3,Finance & HR,Payrolls,Payroll Entries,Miguel,Convertir en sub-module de Finance & HR,,Yes,Yes,,Yes,,,,36,PAYROLL_ENTRIES
+3,Finance & HR,Payrolls,Payroll Runs,Miguel,Convertir en sub-module de Finance & HR,,Yes,Yes,,Yes,,,,37,PAYROLL_RUNS
+3,Finance & HR,Payrolls,Payroll Tax Detail,Miguel,Convertir en sub-module de Finance & HR,,Yes,Yes,,Yes,,,,38,PAYROLL_TAX_DETAIL
+4,Inventory,Food Costing,Food Costing HUB View (Application Dashboard),Antonio,,,Yes,Yes,,Yes,Yes,,,,
+4,Inventory,Food Costing,Actual Cost Variance,Antonio,,,Yes,Yes,,Yes,,,,39,ACTUAL_COST_VARIANCE
+4,Inventory,Food Costing,Recipes,Antonio,,,Yes,Yes,,Yes,,,Yes,41,RECIPES
+4,Inventory,Food Costing,Recipe Ingredients,Antonio,,,Yes,Yes,,Yes,,,,40,RECIPE_INGREDIENTS
+4,Inventory,Food Costing,Theoretical Cost,Antonio,,,Yes,Yes,,Yes,,,,42,THEORETICAL_COST
+4,Inventory,Products,Product HUB View (Application Dashboard),Antonio,,Yes,Yes,Yes,,Yes,Yes,,Yes,,
+4,Inventory,Products,Category Management,Antonio,,Yes,Yes,Yes,,Yes,,,Yes,43,CATEGORY_MANAGEMENT
+4,Inventory,Products,Product Managment,Antonio,,Yes,Yes,Yes,,Yes,,,Yes,45,PRODUCT_MANAGEMENT
+4,Inventory,Products,Modifiers Management,Antonio,,Yes,Yes,Yes,,Yes,,,Yes,44,MODIFIERS_MANAGEMENT
+4,Inventory,Products,Variants Management,Antonio,,Yes,Yes,Yes,,Yes,,,Yes,49,VARIANTS_MANAGEMENT
+4,Inventory,Raw materials,Raw materials HUB View (Application Dashboard),,,,Yes,Yes,,Yes,Yes,,Yes,,
+4,Inventory,Raw materials,Raw materials Categories,,,,Yes,Yes,,Yes,,,Yes,45,PRODUCT_MANAGEMENT
+4,Inventory,Raw materials,Raw materials Workspace,Antonio,,,Yes,Yes,,Yes,,,Yes,45,PRODUCT_MANAGEMENT
+4,Inventory,Raw materials,Procurement & Purchase Orders,Antonio,,,Yes,Yes,,Yes,,,Yes,46,PURCHASE_ORDERS_MANAGEMENT
+4,Inventory,Raw materials,Stock locations & Balance workspace,Antonio,,,Yes,Yes,,Yes,,,Yes,47,STOCK_AND_STOCK_MOVEMENTS
+4,Inventory,Raw materials,Stock movements log,Antonio,,,Yes,Yes,,Yes,,,Yes,47,STOCK_AND_STOCK_MOVEMENTS
+4,Inventory,Raw materials,Storage locations,Antonio,,,Yes,Yes,,Yes,,,Yes,47,STOCK_AND_STOCK_MOVEMENTS
+5,Restaurant Operations,Dining System,Dining System HUB View (Application Dashboard),Alejandro,,,Yes,Yes,,Yes,Yes,,,,
+5,Restaurant Operations,Dining System,Floor plans,Alejandro,,,Yes,Yes,,Yes,,,Yes,50,FLOOR_PLANS
+5,Restaurant Operations,Dining System,Table Zones,Miguel,,,Yes,Yes,,Yes,,,Yes,52,TABLE_ZONES
+5,Restaurant Operations,Dining System,Tables,Alejandro,,Yes,Yes,Yes,,Yes,,,Yes,53,TABLES
+5,Restaurant Operations,Dining System,Table asignments,Miguel,,,Yes,Yes,,Yes,,,Yes,51,TABLE_ASSIGNMENTS
+5,Restaurant Operations,Kitchen Display System,Kitchen Display System HUB View (Application Dashboard),Miguel,,,Yes,Yes,,Yes,Yes,,Yes,,
+5,Restaurant Operations,Kitchen Display System,Kitchen Display Stations,Miguel,,,Yes,Yes,,Yes,,,Yes,58,KITCHEN_STATIONS
+5,Restaurant Operations,Kitchen Display System,Kitchen Display Devices,Miguel,,,Yes,Yes,,Yes,,,Yes,54,KITCHEN_DISPLAY_DEVICES
+5,Restaurant Operations,Kitchen Display System,Kitchen Orders,Miguel,,,Yes,Yes,,Yes,,,Yes,57,KITCHEN_ORDERS
+5,Restaurant Operations,Kitchen Display System,Kitchen Order Items,Miguel,,,Yes,Yes,,Yes,,,Yes,56,KITCHEN_ORDER_ITEMS
+5,Restaurant Operations,Kitchen Display System,Kitchen Event Log,Miguel,,,Yes,Yes,,Yes,,,Yes,55,KITCHEN_EVENT_LOG
+5,Restaurant Operations,Kitchen Display System,Kitchen Performance,Miguel,,,Yes,Yes,,Yes,,,Yes,117,KITCHEN_PERFORMANCE (nueva)
+5,Restaurant Operations,POS,Orders HUB View (Application Dashboard),,,Yes,Yes,Yes,,Yes,Yes,,,,
+5,Restaurant Operations,POS,Orders,,,Yes,Yes,Yes,,Yes,,,,63,ORDERS
+5,Restaurant Operations,POS,Order Items,Miguel,,Yes,Yes,Yes,,Yes,,,,60,ORDER_ITEMS
+5,Restaurant Operations,POS,Order Item Modifiers,,,Yes,Yes,Yes,,Yes,,,,64,ORDER_ITEM_MODIFIERS
+5,Restaurant Operations,POS,Order Taxes,,,Yes,Yes,Yes,,Yes,,,,62,ORDER_TAXES
+5,Restaurant Operations,POS,Order Discounts,Miguel,,Yes,Yes,Yes,,Yes,,,,59,ORDER_DISCOUNTS
+5,Restaurant Operations,POS,Order Payments,Miguel,,Yes,Yes,Yes,,Yes,,,,61,ORDER_PAYMENTS
+5,Restaurant Operations,Cash Drawers,Cash Drawers HUB View (Application Dashboard),Miguel,,Yes,Yes,Yes,,Yes,Yes,,,,
+5,Restaurant Operations,Cash Drawers,Cash Drawers,Miguel,,Yes,Yes,Yes,,Yes,,,Yes,66,CASH_DRAWERS
+5,Restaurant Operations,Cash Drawers,Cash Drawers Shifts,Miguel,,Yes,Yes,Yes,,Yes,,,Yes,66,CASH_DRAWERS
+5,Restaurant Operations,Cash Drawers,Cash Drawer Transactions,Miguel,,Yes,Yes,Yes,,Yes,,,Yes,67,CASH_TRANSACTIONS
+5,Restaurant Operations,Cash Drawers,Cash Drawer Movements,Miguel,,Yes,Yes,Yes,,Yes,,,Yes,66,CASH_DRAWERS
+5,Restaurant Operations,Cash Drawers,Cash Drawer History,Miguel,,,Yes,Yes,,Yes,,,Yes,65,CASH_DRAWER_HISTORY
+5,Restaurant Operations,Shifts,Shift HUB View (Application Dashboard),Miguel,,Yes,Yes,Yes,,Yes,Yes,,Yes,,
+5,Restaurant Operations,Shifts,Shift Assignment,Miguel,,Yes,Yes,Yes,,Yes,,,Yes,68,SHIFT_ASSIGNMENT
+5,Restaurant Operations,Shifts,Shifts,Miguel,,Yes,Yes,Yes,,Yes,,,Yes,69,SHIFTS
+5,Restaurant Operations,Tips,Tips HUB View (Application Dashboard),Miguel,,,Yes,Yes,,Yes,Yes,,Yes,,
+5,Restaurant Operations,Tips,Tips pools,Miguel,,,Yes,Yes,,Yes,,,Yes,75,TIPS_POOLS
+5,Restaurant Operations,Tips,Tip pool members,Miguel,,,Yes,Yes,,Yes,,,Yes,71,TIP_POOL_MEMBERS
+5,Restaurant Operations,Tips,Tips,Miguel,,,Yes,Yes,,Yes,,,Yes,73,TIPS
+5,Restaurant Operations,Tips,Tip movements,Miguel,,,Yes,Yes,,Yes,,,Yes,70,TIP_MOVEMENTS
+5,Restaurant Operations,Tips,Tips Allocations,Miguel,,,Yes,Yes,,Yes,,,Yes,74,TIPS_ALLOCATIONS
+5,Restaurant Operations,Tips,Tip settlements,Miguel,,,Yes,Yes,,Yes,,,Yes,72,TIP_SETTLEMENTS
+5,Restaurant Operations,Reservations,Reservations HUB View (Application Dashboard),Antonio,,,Yes,Yes,,Yes,Yes,,,,
+5,Restaurant Operations,Reservations,Reservations,Antonio,,,Yes,Yes,,Yes,,,Yes,76,RESERVATIONS
+5,Restaurant Operations,Reservations,Reservation Guests,Antonio,,,Yes,Yes,,Yes,,,Yes,77,RESERVATION_GUESTS
+5,Restaurant Operations,Reservations,Reservation Notes,Antonio,,,Yes,Yes,,Yes,,,Yes,78,RESERVATION_NOTES
+5,Restaurant Operations,Reservations,Reservation Status History,Antonio,,,Yes,Yes,,Yes,,,Yes,79,RESERVATION_STATUS_HISTORY
+5,Restaurant Operations,Reservations,Reservation Tables,Antonio,,,Yes,Yes,,Yes,,,Yes,80,RESERVATION_TABLES
+5,Restaurant Operations,Table Turnover Optimization,Aun por definir,,,,,Yes,,Yes,,,,81,TABLE_TURNOVER_OPTIMIZATION
+6,Commerce,Delivery Management,Delivery Management HUB View (Application Dashboard),Alejandro,,,Yes,Yes,,Yes,Yes,,,,
+6,Commerce,Delivery Management,Delivery Assignments,Alejandro,,,Yes,Yes,,Yes,,,Yes,82,DELIVERY_ASSIGNMENTS
+6,Commerce,Delivery Management,Delivery Drivers,Alejandro,,,Yes,Yes,,Yes,,,Yes,83,DELIVERY_DRIVERS
+6,Commerce,Delivery Management,Delivery Fees,Alejandro,,,Yes,Yes,,Yes,,,Yes,84,DELIVERY_FEES
+6,Commerce,Delivery Management,Delivery Tracking,Alejandro,,,Yes,Yes,,Yes,,,Yes,85,DELIVERY_TRACKING
+6,Commerce,Delivery Management,Delivery Zones,Alejandro,,,Yes,Yes,,Yes,,,Yes,86,DELIVERY_ZONES
+6,Commerce,Online Ordering System,Online Ordering System HUB View (Application Dashboard),Miguel,,,Yes,Yes,,Yes,Yes,,Yes,,
+6,Commerce,Online Ordering System,Online Stores,Miguel,,,Yes,Yes,,Yes,,,Yes,94,ONLINE_STORES
+6,Commerce,Online Ordering System,Online Menus,Miguel,,,Yes,Yes,,Yes,,,Yes,90,ONLINE_MENUS
+6,Commerce,Online Ordering System,Online Menu Categories,Miguel,,,Yes,Yes,,Yes,,,Yes,88,ONLINE_MENU_CATEGORIES
+6,Commerce,Online Ordering System,Online Menu Items,Miguel,,,Yes,Yes,,Yes,,,Yes,89,ONLINE_MENU_ITEMS
+6,Commerce,Online Ordering System,Online Orders,Miguel,,Yes,Yes,Yes,,Yes,,,Yes,92,ONLINE_ORDERS
+6,Commerce,Online Ordering System,Online Order Items,Miguel,,Yes,Yes,Yes,,Yes,,,Yes,91,ONLINE_ORDER_ITEMS
+6,Commerce,Online Ordering System,Online Payments,Miguel,,Yes,Yes,Yes,,Yes,,,,93,ONLINE_PAYMENTS
+6,Commerce,Online Ordering System,Online Delivery Info,Miguel,,,Yes,Yes,,Yes,,,,87,ONLINE_DELIVERY_INFO
+6,Commerce,QR Code System,QR Code System HUB View (Application Dashboard),Alejandro,,,Yes,Yes,,Yes,Yes,,Yes,,
+6,Commerce,QR Code System,QR Code Locations,Alejandro,,,Yes,Yes,,Yes,,,Yes,95,QR_CODE_LOCATIONS
+6,Commerce,QR Code System,QR Code Menus,Alejandro,,,Yes,Yes,,Yes,,,Yes,98,QR_CODE_MENUS
+6,Commerce,QR Code System,QR Code Menu Sections,Alejandro,,,Yes,Yes,,Yes,,,Yes,97,QR_CODE_MENU_SECTIONS
+6,Commerce,QR Code System,QR Code Menu Items,Alejandro,,,Yes,Yes,,Yes,,,Yes,96,QR_CODE_MENU_ITEMS
+6,Commerce,QR Code System,QR Code Orders,Alejandro,,,Yes,Yes,,Yes,,,Yes,99,QR_CODE_ORDERS
+6,Commerce,QR Code System,QR Code Order Items,Alejandro,,,Yes,Yes,,Yes,,,Yes,100,QR_ORDER_ITEMS
+7,Growth,Loyalty System,Loyalty System HUB View (Application Dashboard),Antonio,,,,Yes,,Yes,Yes,,,,
+7,Growth,Loyalty System,Loyalty costumers,Antonio,,,,Yes,,Yes,,,,101,LOYALTY_CUSTOMERS
+7,Growth,Loyalty System,Loyalty coupons,Antonio,,,,Yes,,Yes,,,,102,LOYALTY_COUPONS
+7,Growth,Loyalty System,Loyalty point transactions,Antonio,,,,Yes,,Yes,,,,103,LOYALTY_POINT_TRANSACTIONS
+7,Growth,Loyalty System,Loyalty Programs,Antonio,,,,Yes,,Yes,,,,104,LOYALTY_PROGRAMS
+7,Growth,Loyalty System,Loyalty rewards,Antonio,,,,Yes,,Yes,,,,105,LOYALTY_REWARDS
+7,Growth,Loyalty System,Loyalty rewards redemptions,Antonio,,,,Yes,,Yes,,,,106,LOYALTY_REWARDS_REDEMPTIONS
+7,Growth,Loyalty System,Loyalty tiers,Antonio,,,,Yes,,Yes,,,,107,LOYALTY_TIERS
+7,Growth,Marketing System,Marketing System HUB View (Application Dashboard),Miguel,,,,Yes,,Yes,Yes,,,,
+7,Growth,Marketing System,Marketing Automation,Miguel,,,,Yes,,Yes,,,,108,MARKETING_AUTOMATION
+7,Growth,Marketing System,Marketing Automation Action,Miguel,,,,Yes,,Yes,,,,109,MARKETING_AUTOMATION_ACTION
+7,Growth,Marketing System,Marketing Campaign,Miguel,,,,Yes,,Yes,,,,110,MARKETING_CAMPAIGN
+7,Growth,Marketing System,Marketing Campaign Audience,Miguel,,,,Yes,,Yes,,,,111,MARKETING_CAMPAIGN_AUDIENCE
+7,Growth,Marketing System,Marketing Coupon,Miguel,,,,Yes,,Yes,,,,112,MARKETING_COUPON
+7,Growth,Marketing System,Marketing Coupon Redemption,Miguel,,,,Yes,,Yes,,,,113,MARKETING_COUPON_REDEMPTION
+7,Growth,Marketing System,Marketing Message Log,Miguel,,,,Yes,,Yes,,,,114,MARKETING_MESSAGE_LOG
+7,Growth,Marketing System,Marketing Segment,Miguel,,,,Yes,,Yes,,,,115,MARKETING_SEGMENT
+7,Growth,Marketing System,Marketing Segment Rule,Miguel,,,,Yes,,Yes,,,,116,MARKETING_SEGMENT_RULE

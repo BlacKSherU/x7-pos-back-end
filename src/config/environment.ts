@@ -2,6 +2,7 @@
 //
 // Entorno de ejecución: qué valores se aceptan al arrancar y qué código solo existe fuera
 // de producción.
+import { parsePaymentCredentialsKey } from '../core/payments/utils/credentials-cipher.service';
 
 export const NODE_ENVS = ['development', 'test', 'production'] as const;
 
@@ -87,6 +88,17 @@ export function validateEnv(
     'JWT_REFRESH_SECRET',
   ]) {
     if (isBlank(config[name])) errors.push(`${name} is required`);
+  }
+
+  // Opcional al arrancar (sin ella no se pueden guardar credenciales de pasarela), pero
+  // una clave mal formada se detecta aquí y no al primer cobro.
+  if (
+    !isBlank(config.PAYMENT_CREDENTIALS_KEY) &&
+    !parsePaymentCredentialsKey(config.PAYMENT_CREDENTIALS_KEY as string)
+  ) {
+    errors.push(
+      'PAYMENT_CREDENTIALS_KEY must be 32 bytes, as 64 hex characters or base64',
+    );
   }
 
   if (nodeEnv === 'production') {

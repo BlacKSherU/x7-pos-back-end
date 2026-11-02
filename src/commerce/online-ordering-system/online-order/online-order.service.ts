@@ -4,9 +4,10 @@ import {
   BadRequestException,
   ForbiddenException,
   ConflictException,
+  Optional,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, SelectQueryBuilder } from 'typeorm';
+import { Repository, SelectQueryBuilder, DataSource } from 'typeorm';
 import { OnlineOrder } from './entities/online-order.entity';
 import { OnlineStore } from '../online-stores/entities/online-store.entity';
 import { Order } from '../../../restaurant-operations/pos/orders/entities/order.entity';
@@ -23,6 +24,8 @@ import { PaginatedOnlineOrderResponseDto } from './dto/paginated-online-order-re
 import { OnlineStoreStatus } from '../online-stores/constants/online-store-status.enum';
 import { OnlineOrderStatus } from './constants/online-order-status.enum';
 import { OnlineOrderFulfillmentStatus } from './constants/online-order-fulfillment-status.enum';
+import { OnlineOrderPaymentStatus } from './constants/online-order-payment-status.enum';
+import { OrderPayment } from '../../../restaurant-operations/pos/order-payments/entities/order-payment.entity';
 import { formatOnlineOrderToDto } from './online-order.mapper';
 import {
   computeOnlineOrderTotalAmount,
@@ -42,6 +45,8 @@ export class OnlineOrderService {
     private readonly customerRepository: Repository<Customer>,
     @InjectRepository(OnlineOrderItem)
     private readonly onlineOrderItemRepository: Repository<OnlineOrderItem>,
+    @Optional()
+    private readonly dataSource?: DataSource,
   ) {}
 
   /** Joins lines online, kitchen and relationships for nested response (list/detail). */
@@ -141,6 +146,9 @@ export class OnlineOrderService {
       ? new Date(createOnlineOrderDto.placedAt)
       : null;
     onlineOrder.notes = createOnlineOrderDto.notes || null;
+    onlineOrder.station_id = createOnlineOrderDto.stationId
+      ? Number(createOnlineOrderDto.stationId)
+      : null;
     onlineOrder.fulfillment_status = OnlineOrderFulfillmentStatus.RECEIVED;
     onlineOrder.accepted_at = null;
     onlineOrder.ready_at = null;
@@ -224,11 +232,28 @@ export class OnlineOrderService {
         .where('merchant.id = :merchantId', {
           merchantId: authenticatedUserMerchantId,
         }),
-    )
-      .andWhere('store.status = :status', { status: OnlineStoreStatus.ACTIVE })
-      .andWhere('onlineOrder.status != :deletedStatus', {
+    ).andWhere('store.status = :status', { status: OnlineStoreStatus.ACTIVE });
+
+    if (query.status && query.status.toUpperCase() === 'ALL') {
+      // allow both active and deleted
+    } else if (query.status && query.status.toUpperCase() === 'DELETED') {
+      queryBuilder.andWhere('onlineOrder.status = :deletedStatus', {
         deletedStatus: OnlineOrderStatus.DELETED,
       });
+    } else {
+      queryBuilder.andWhere('onlineOrder.status != :deletedStatus', {
+        deletedStatus: OnlineOrderStatus.DELETED,
+      });
+    }
+
+    if (query.fulfillmentStatus) {
+      queryBuilder.andWhere(
+        'onlineOrder.fulfillment_status = :fulfillmentStatus',
+        {
+          fulfillmentStatus: query.fulfillmentStatus,
+        },
+      );
+    }
 
     if (query.storeId) {
       queryBuilder.andWhere('onlineOrder.store_id = :storeId', {
@@ -388,6 +413,7 @@ export class OnlineOrderService {
     id: number,
     updateOnlineOrderDto: UpdateOnlineOrderDto,
     authenticatedUserMerchantId: number,
+    userId?: number,
   ): Promise<OneOnlineOrderResponseDto> {
     if (!id || id <= 0) {
       throw new BadRequestException(
@@ -423,6 +449,39 @@ export class OnlineOrderService {
 
     if (existingOnlineOrder.status === OnlineOrderStatus.DELETED) {
       throw new ConflictException('Cannot update a deleted online order');
+    }
+
+    if (
+      existingOnlineOrder.fulfillment_status ===
+        OnlineOrderFulfillmentStatus.COMPLETED ||
+      existingOnlineOrder.fulfillment_status ===
+        OnlineOrderFulfillmentStatus.CANCELLED
+    ) {
+      throw new BadRequestException(
+        `Cannot edit an online order in '${existingOnlineOrder.fulfillment_status}' status`,
+      );
+    }
+
+    const isEditingDetails =
+      updateOnlineOrderDto.customerId !== undefined ||
+      updateOnlineOrderDto.storeId !== undefined ||
+      updateOnlineOrderDto.type !== undefined ||
+      updateOnlineOrderDto.notes !== undefined ||
+      updateOnlineOrderDto.scheduledAt !== undefined ||
+      updateOnlineOrderDto.paymentStatus !== undefined;
+
+    const currentFulfillmentStatus =
+      existingOnlineOrder.fulfillment_status ||
+      OnlineOrderFulfillmentStatus.RECEIVED;
+
+    if (
+      isEditingDetails &&
+      currentFulfillmentStatus !== OnlineOrderFulfillmentStatus.RECEIVED &&
+      currentFulfillmentStatus !== OnlineOrderFulfillmentStatus.ACCEPTED
+    ) {
+      throw new BadRequestException(
+        `Order details can only be edited when order is in 'received' or 'accepted' stage (current: '${currentFulfillmentStatus}')`,
+      );
     }
 
     if (updateOnlineOrderDto.storeId !== undefined) {
@@ -497,6 +556,78 @@ export class OnlineOrderService {
 
     if (updateOnlineOrderDto.paymentStatus !== undefined) {
       existingOnlineOrder.payment_status = updateOnlineOrderDto.paymentStatus;
+      if (existingOnlineOrder.order_id && this.dataSource) {
+        const posOrderId = existingOnlineOrder.order_id;
+        try {
+          const orderPaymentRepo = this.dataSource.getRepository(OrderPayment);
+          if (
+            updateOnlineOrderDto.paymentStatus === OnlineOrderPaymentStatus.PAID
+          ) {
+            const posOrder = await this.dataSource
+              .getRepository(Order)
+              .findOne({
+                where: { id: posOrderId },
+              });
+            if (posOrder) {
+              const existingOp = await orderPaymentRepo.findOne({
+                where: { order_id: posOrderId, source: 'ONLINE' },
+              });
+              if (!existingOp) {
+                const op = new OrderPayment();
+                op.order_id = posOrderId;
+                op.amount = Number(posOrder.total);
+                op.method = 'online';
+                op.provider = 'online_order';
+                op.reference = `ONLINE-#${existingOnlineOrder.id}`;
+                op.tip_amount = 0;
+                op.is_refund = false;
+                op.source = 'ONLINE';
+                op.shift_id = null;
+                await orderPaymentRepo.save(op);
+              }
+            }
+          } else if (
+            updateOnlineOrderDto.paymentStatus ===
+              OnlineOrderPaymentStatus.PENDING ||
+            updateOnlineOrderDto.paymentStatus ===
+              OnlineOrderPaymentStatus.FAILED
+          ) {
+            await orderPaymentRepo.delete({
+              order_id: posOrderId,
+              source: 'ONLINE',
+            });
+          }
+          const allPayments = await orderPaymentRepo.find({
+            where: { order_id: posOrderId },
+          });
+          const paidTotal = allPayments.reduce(
+            (acc, p) =>
+              acc + (p.is_refund ? -Number(p.amount) : Number(p.amount)),
+            0,
+          );
+          const currentOrder = await this.dataSource
+            .getRepository(Order)
+            .findOne({
+              where: { id: posOrderId },
+            });
+          if (currentOrder) {
+            const balanceDue = Math.max(
+              0,
+              Number(currentOrder.total) - paidTotal,
+            );
+            const isPaid = balanceDue === 0 && paidTotal > 0;
+            await this.dataSource.query(
+              `UPDATE orders SET paid_total = $1, balance_due = $2, is_paid = $3 WHERE id = $4`,
+              [paidTotal, balanceDue, isPaid, posOrderId],
+            );
+          }
+        } catch (paymentErr) {
+          console.error(
+            'Failed to sync POS payment from online order payment status:',
+            paymentErr,
+          );
+        }
+      }
     }
 
     if (updateOnlineOrderDto.scheduledAt !== undefined) {
@@ -515,8 +646,80 @@ export class OnlineOrderService {
       existingOnlineOrder.notes = updateOnlineOrderDto.notes;
     }
 
+    if (updateOnlineOrderDto.fulfillmentStatus !== undefined) {
+      existingOnlineOrder.fulfillment_status =
+        updateOnlineOrderDto.fulfillmentStatus;
+      const fs = updateOnlineOrderDto.fulfillmentStatus;
+      const now = new Date();
+      if (
+        fs === OnlineOrderFulfillmentStatus.ACCEPTED &&
+        !existingOnlineOrder.accepted_at
+      ) {
+        existingOnlineOrder.accepted_at = now;
+      } else if (
+        (fs === OnlineOrderFulfillmentStatus.READY ||
+          fs === OnlineOrderFulfillmentStatus.READY_FOR_PICKUP ||
+          fs === OnlineOrderFulfillmentStatus.OUT_FOR_DELIVERY) &&
+        !existingOnlineOrder.ready_at
+      ) {
+        existingOnlineOrder.ready_at = now;
+      } else if (
+        fs === OnlineOrderFulfillmentStatus.COMPLETED &&
+        !existingOnlineOrder.completed_at
+      ) {
+        existingOnlineOrder.completed_at = now;
+      }
+    }
+
+    if (updateOnlineOrderDto.acceptedAt !== undefined) {
+      existingOnlineOrder.accepted_at = updateOnlineOrderDto.acceptedAt
+        ? new Date(updateOnlineOrderDto.acceptedAt)
+        : null;
+    }
+
+    if (updateOnlineOrderDto.readyAt !== undefined) {
+      existingOnlineOrder.ready_at = updateOnlineOrderDto.readyAt
+        ? new Date(updateOnlineOrderDto.readyAt)
+        : null;
+    }
+
+    if (updateOnlineOrderDto.completedAt !== undefined) {
+      existingOnlineOrder.completed_at = updateOnlineOrderDto.completedAt
+        ? new Date(updateOnlineOrderDto.completedAt)
+        : null;
+    }
+
     const updatedOnlineOrder =
       await this.onlineOrderRepository.save(existingOnlineOrder);
+
+    if (updateOnlineOrderDto.fulfillmentStatus !== undefined) {
+      await this.syncKitchenAndPosFromFulfillmentStatus(
+        existingOnlineOrder.id,
+        existingOnlineOrder.order_id,
+        updateOnlineOrderDto.fulfillmentStatus,
+        userId,
+      );
+    }
+
+    if (updateOnlineOrderDto.stationId !== undefined) {
+      existingOnlineOrder.station_id = updateOnlineOrderDto.stationId
+        ? Number(updateOnlineOrderDto.stationId)
+        : null;
+      await this.onlineOrderRepository.update(
+        { id, merchant_id: authenticatedUserMerchantId },
+        { station_id: existingOnlineOrder.station_id },
+      );
+      if (this.dataSource) {
+        await this.dataSource.query(
+          `UPDATE kitchen_order SET station_id = $1 WHERE online_order_id = $2 AND merchant_id = $3`,
+          [
+            existingOnlineOrder.station_id,
+            existingOnlineOrder.id,
+            authenticatedUserMerchantId,
+          ],
+        );
+      }
+    }
 
     const completeOnlineOrder = await this.addOnlineOrderDetailJoins(
       this.onlineOrderRepository
@@ -611,5 +814,449 @@ export class OnlineOrderService {
       message: 'Online order deleted successfully',
       data: formatOnlineOrderToDto(complete, totalAmount),
     };
+  }
+
+  async updateFulfillmentStatus(
+    id: number,
+    fulfillmentStatus: OnlineOrderFulfillmentStatus,
+    authenticatedUserMerchantId: number,
+    userId?: number,
+  ): Promise<OneOnlineOrderResponseDto> {
+    return this.update(
+      id,
+      { fulfillmentStatus },
+      authenticatedUserMerchantId,
+      userId,
+    );
+  }
+
+  private async syncKitchenAndPosFromFulfillmentStatus(
+    onlineOrderId: number,
+    posOrderId: number | null,
+    status: OnlineOrderFulfillmentStatus,
+    userId?: number,
+  ): Promise<void> {
+    if (!this.dataSource) return;
+    try {
+      // Find kitchen orders and resolve station if missing
+      const koRows = await this.dataSource.query(
+        `SELECT ko.id, ko.station_id, ko.merchant_id
+         FROM kitchen_order ko
+         WHERE ko.online_order_id = $1 ${posOrderId ? 'OR ko.order_id = $2' : ''};`,
+        posOrderId ? [onlineOrderId, posOrderId] : [onlineOrderId],
+      );
+
+      for (const ko of koRows) {
+        if (!ko.station_id && ko.merchant_id) {
+          const stRow = await this.dataSource.query(
+            `SELECT id FROM kitchen_station
+             WHERE merchant_id = $1 AND status = 'active'
+             ORDER BY display_order ASC, id ASC LIMIT 1;`,
+            [ko.merchant_id],
+          );
+          if (stRow.length > 0) {
+            ko.station_id = stRow[0].id;
+            await this.dataSource.query(
+              `UPDATE kitchen_order SET station_id = $1 WHERE id = $2;`,
+              [ko.station_id, ko.id],
+            );
+          }
+        }
+      }
+
+      if (status === OnlineOrderFulfillmentStatus.IN_PREPARATION) {
+        // 1. Advance KDS kitchen orders to 'started' (or recall from completed)
+        await this.dataSource.query(
+          `UPDATE kitchen_order
+           SET business_status = 'started',
+               started_at = COALESCE(started_at, NOW()),
+               completed_at = NULL
+           WHERE (online_order_id = $1 ${posOrderId ? 'OR order_id = $2' : ''})
+             AND business_status IN ('pending', 'held', 'completed');`,
+          posOrderId ? [onlineOrderId, posOrderId] : [onlineOrderId],
+        );
+
+        // 2. Advance KDS kitchen order items to 'in_preparation'
+        await this.dataSource.query(
+          `UPDATE kitchen_order_item
+           SET preparation_status = 'in_preparation',
+               hold_until = NULL,
+               fired_at = COALESCE(fired_at, NOW()),
+               started_at = COALESCE(started_at, NOW()),
+               completed_at = NULL,
+               prepared_quantity = 0
+           WHERE kitchen_order_id IN (
+             SELECT id FROM kitchen_order
+             WHERE online_order_id = $1 ${posOrderId ? 'OR order_id = $2' : ''}
+           )
+           AND preparation_status IN ('pending', 'held', 'ready');`,
+          posOrderId ? [onlineOrderId, posOrderId] : [onlineOrderId],
+        );
+
+        // 3. Create INICIO or RECALL audit log in kitchen_event_log
+        for (const ko of koRows) {
+          const wasCompleted = await this.dataSource.query(
+            `SELECT 1 FROM kitchen_event_log
+             WHERE kitchen_order_id = $1
+               AND event_type IN ('servido', 'listo')
+               AND status = 'active'
+             LIMIT 1;`,
+            [ko.id],
+          );
+          if (wasCompleted.length > 0) {
+            await this.dataSource.query(
+              `DELETE FROM kitchen_event_log
+               WHERE kitchen_order_id = $1
+                 AND event_type IN ('servido', 'listo');`,
+              [ko.id],
+            );
+            await this.dataSource.query(
+              `INSERT INTO kitchen_event_log (kitchen_order_id, station_id, user_id, event_type, event_time, status, message)
+               VALUES ($1, $2, $3, 'recall', NOW(), 'active', $4);`,
+              [
+                ko.id,
+                ko.station_id || null,
+                userId || null,
+                `Order #KO-${ko.id} recalled to kitchen`,
+              ],
+            );
+          } else {
+            const exists = await this.dataSource.query(
+              `SELECT 1 FROM kitchen_event_log
+               WHERE kitchen_order_id = $1
+                 AND kitchen_order_item_id IS NULL
+                 AND event_type = 'inicio'
+                 AND status = 'active'
+               LIMIT 1;`,
+              [ko.id],
+            );
+            if (exists.length === 0) {
+              await this.dataSource.query(
+                `INSERT INTO kitchen_event_log (kitchen_order_id, station_id, user_id, event_type, event_time, status, message)
+                 VALUES ($1, $2, $3, 'inicio', NOW(), 'active', $4);`,
+                [
+                  ko.id,
+                  ko.station_id || null,
+                  userId || null,
+                  `Order #${ko.id} received and started in kitchen`,
+                ],
+              );
+            }
+          }
+        }
+
+        // 4. Update POS lines and order
+        if (posOrderId) {
+          await this.dataSource.query(
+            `UPDATE order_item
+             SET kitchen_status = 'in_preparation'
+             WHERE order_id = $1 AND kitchen_status IN ('pending', 'sent', 'ready');`,
+            [posOrderId],
+          );
+          await this.dataSource.query(
+            `UPDATE orders
+             SET kitchen_status = 'preparing',
+                 ready_at = NULL
+             WHERE id = $1;`,
+            [posOrderId],
+          );
+        }
+
+        // 5. Update Online Order and items
+        await this.dataSource.query(
+          `UPDATE online_order_item
+           SET kitchen_line_status = 'in_preparation'
+           WHERE online_order_id = $1;`,
+          [onlineOrderId],
+        );
+        await this.dataSource.query(
+          `UPDATE online_order
+           SET ready_at = NULL,
+               completed_at = NULL
+           WHERE id = $1;`,
+          [onlineOrderId],
+        );
+      } else if (
+        status === OnlineOrderFulfillmentStatus.READY ||
+        status === OnlineOrderFulfillmentStatus.READY_FOR_PICKUP ||
+        status === OnlineOrderFulfillmentStatus.OUT_FOR_DELIVERY ||
+        status === OnlineOrderFulfillmentStatus.COMPLETED
+      ) {
+        await this.dataSource.query(
+          `UPDATE kitchen_order
+           SET business_status = 'completed',
+               completed_at = COALESCE(completed_at, NOW())
+           WHERE (online_order_id = $1 ${posOrderId ? 'OR order_id = $2' : ''})
+             AND business_status != 'completed';`,
+          posOrderId ? [onlineOrderId, posOrderId] : [onlineOrderId],
+        );
+
+        await this.dataSource.query(
+          `UPDATE kitchen_order_item
+           SET preparation_status = 'ready',
+               completed_at = COALESCE(completed_at, NOW())
+           WHERE kitchen_order_id IN (
+             SELECT id FROM kitchen_order
+             WHERE online_order_id = $1 ${posOrderId ? 'OR order_id = $2' : ''}
+           )
+           AND preparation_status != 'ready';`,
+          posOrderId ? [onlineOrderId, posOrderId] : [onlineOrderId],
+        );
+
+        // Ensure LISTO event for all active items
+        const koiReadyRows = await this.dataSource.query(
+          `SELECT koi.id, koi.kitchen_order_id, p.name AS product_name, ko.station_id
+           FROM kitchen_order_item koi
+           JOIN kitchen_order ko ON ko.id = koi.kitchen_order_id
+           LEFT JOIN product p ON p.id = koi.product_id
+           WHERE (ko.online_order_id = $1 ${posOrderId ? 'OR ko.order_id = $2' : ''})
+             AND koi.status = 'active';`,
+          posOrderId ? [onlineOrderId, posOrderId] : [onlineOrderId],
+        );
+        for (const item of koiReadyRows) {
+          const itemListoExists = await this.dataSource.query(
+            `SELECT 1 FROM kitchen_event_log
+             WHERE kitchen_order_item_id = $1
+               AND event_type = 'listo'
+               AND status = 'active'
+             LIMIT 1;`,
+            [item.id],
+          );
+          if (itemListoExists.length === 0) {
+            await this.dataSource.query(
+              `INSERT INTO kitchen_event_log (kitchen_order_id, kitchen_order_item_id, station_id, user_id, event_type, event_time, status, message)
+               VALUES ($1, $2, $3, $4, 'listo', NOW(), 'active', $5);`,
+              [
+                item.kitchen_order_id,
+                item.id,
+                item.station_id || null,
+                userId || null,
+                `Item #${item.id} (${item.product_name || 'Dish'}) reached quantity and is READY`,
+              ],
+            );
+          }
+        }
+
+        // Ensure SERVIDO event for the order
+        for (const ko of koRows) {
+          const servidoExists = await this.dataSource.query(
+            `SELECT 1 FROM kitchen_event_log
+             WHERE kitchen_order_id = $1
+               AND kitchen_order_item_id IS NULL
+               AND event_type = 'servido'
+               AND status = 'active'
+             LIMIT 1;`,
+            [ko.id],
+          );
+          if (servidoExists.length === 0) {
+            await this.dataSource.query(
+              `INSERT INTO kitchen_event_log (kitchen_order_id, station_id, user_id, event_type, event_time, status, message)
+               VALUES ($1, $2, $3, 'servido', NOW(), 'active', $4);`,
+              [
+                ko.id,
+                ko.station_id || null,
+                userId || null,
+                `Order #${ko.id} status transitioned to completed`,
+              ],
+            );
+          }
+        }
+
+        if (posOrderId) {
+          await this.dataSource.query(
+            `UPDATE order_item
+             SET kitchen_status = 'ready'
+             WHERE order_id = $1 AND kitchen_status != 'ready';`,
+            [posOrderId],
+          );
+          await this.dataSource.query(
+            `UPDATE orders
+             SET kitchen_status = 'ready'
+             WHERE id = $1;`,
+            [posOrderId],
+          );
+        }
+
+        await this.dataSource.query(
+          `UPDATE online_order_item
+           SET kitchen_line_status = 'ready'
+           WHERE online_order_id = $1;`,
+          [onlineOrderId],
+        );
+
+        if (status === OnlineOrderFulfillmentStatus.COMPLETED && posOrderId) {
+          await this.dataSource.query(
+            `UPDATE orders
+             SET status = 'completed',
+                 closed_at = COALESCE(closed_at, NOW())
+             WHERE id = $1;`,
+            [posOrderId],
+          );
+        }
+      } else if (status === OnlineOrderFulfillmentStatus.ACCEPTED) {
+        // Revert KDS comanda & items to pending
+        await this.dataSource.query(
+          `UPDATE kitchen_order
+           SET business_status = 'pending',
+               started_at = NULL
+           WHERE (online_order_id = $1 ${posOrderId ? 'OR order_id = $2' : ''})
+             AND business_status != 'cancelled';`,
+          posOrderId ? [onlineOrderId, posOrderId] : [onlineOrderId],
+        );
+        await this.dataSource.query(
+          `UPDATE kitchen_order_item
+           SET preparation_status = 'pending',
+               started_at = NULL
+           WHERE kitchen_order_id IN (
+             SELECT id FROM kitchen_order
+             WHERE online_order_id = $1 ${posOrderId ? 'OR order_id = $2' : ''}
+           )
+           AND preparation_status != 'cancelled';`,
+          posOrderId ? [onlineOrderId, posOrderId] : [onlineOrderId],
+        );
+        for (const ko of koRows) {
+          await this.dataSource.query(
+            `DELETE FROM kitchen_event_log
+             WHERE kitchen_order_id = $1
+               AND event_type IN ('inicio', 'listo', 'servido');`,
+            [ko.id],
+          );
+        }
+        if (posOrderId) {
+          await this.dataSource.query(
+            `UPDATE order_item
+             SET kitchen_status = 'pending'
+             WHERE order_id = $1 AND kitchen_status != 'cancelled';`,
+            [posOrderId],
+          );
+          await this.dataSource.query(
+            `UPDATE orders
+             SET kitchen_status = 'pending',
+                 preparing_at = NULL,
+                 ready_at = NULL
+             WHERE id = $1;`,
+            [posOrderId],
+          );
+        }
+        await this.dataSource.query(
+          `UPDATE online_order_item
+           SET kitchen_line_status = 'pending'
+           WHERE online_order_id = $1;`,
+          [onlineOrderId],
+        );
+        await this.dataSource.query(
+          `UPDATE online_order
+           SET ready_at = NULL,
+               completed_at = NULL
+           WHERE id = $1;`,
+          [onlineOrderId],
+        );
+      } else if (status === OnlineOrderFulfillmentStatus.RECEIVED) {
+        // Rollback all kitchen logs and reset milestone timestamps
+        await this.dataSource.query(
+          `UPDATE kitchen_order
+           SET business_status = 'pending',
+               started_at = NULL
+           WHERE (online_order_id = $1 ${posOrderId ? 'OR order_id = $2' : ''})
+             AND business_status != 'cancelled';`,
+          posOrderId ? [onlineOrderId, posOrderId] : [onlineOrderId],
+        );
+        await this.dataSource.query(
+          `UPDATE kitchen_order_item
+           SET preparation_status = 'pending',
+               started_at = NULL
+           WHERE kitchen_order_id IN (
+             SELECT id FROM kitchen_order
+             WHERE online_order_id = $1 ${posOrderId ? 'OR order_id = $2' : ''}
+           )
+           AND preparation_status != 'cancelled';`,
+          posOrderId ? [onlineOrderId, posOrderId] : [onlineOrderId],
+        );
+        for (const ko of koRows) {
+          await this.dataSource.query(
+            `DELETE FROM kitchen_event_log
+             WHERE kitchen_order_id = $1
+               AND event_type IN ('inicio', 'listo', 'servido');`,
+            [ko.id],
+          );
+        }
+        if (posOrderId) {
+          await this.dataSource.query(
+            `UPDATE order_item
+             SET kitchen_status = 'pending'
+             WHERE order_id = $1 AND kitchen_status != 'cancelled';`,
+            [posOrderId],
+          );
+          await this.dataSource.query(
+            `UPDATE orders
+             SET kitchen_status = 'pending',
+                 preparing_at = NULL,
+                 ready_at = NULL
+             WHERE id = $1;`,
+            [posOrderId],
+          );
+        }
+        await this.dataSource.query(
+          `UPDATE online_order_item
+           SET kitchen_line_status = 'pending'
+           WHERE online_order_id = $1;`,
+          [onlineOrderId],
+        );
+        await this.dataSource.query(
+          `UPDATE online_order
+           SET accepted_at = NULL,
+               ready_at = NULL,
+               completed_at = NULL
+           WHERE id = $1;`,
+          [onlineOrderId],
+        );
+      } else if (status === OnlineOrderFulfillmentStatus.CANCELLED) {
+        await this.dataSource.query(
+          `UPDATE kitchen_order
+           SET business_status = 'cancelled',
+               cancelled_at = COALESCE(cancelled_at, NOW())
+           WHERE (online_order_id = $1 ${posOrderId ? 'OR order_id = $2' : ''});`,
+          posOrderId ? [onlineOrderId, posOrderId] : [onlineOrderId],
+        );
+        await this.dataSource.query(
+          `UPDATE kitchen_order_item
+           SET preparation_status = 'cancelled'
+           WHERE kitchen_order_id IN (
+             SELECT id FROM kitchen_order
+             WHERE online_order_id = $1 ${posOrderId ? 'OR order_id = $2' : ''}
+           );`,
+          posOrderId ? [onlineOrderId, posOrderId] : [onlineOrderId],
+        );
+
+        for (const ko of koRows) {
+          const cancelExists = await this.dataSource.query(
+            `SELECT 1 FROM kitchen_event_log
+             WHERE kitchen_order_id = $1
+               AND kitchen_order_item_id IS NULL
+               AND event_type = 'cancelado'
+               AND status = 'active'
+             LIMIT 1;`,
+            [ko.id],
+          );
+          if (cancelExists.length === 0) {
+            await this.dataSource.query(
+              `INSERT INTO kitchen_event_log (kitchen_order_id, station_id, user_id, event_type, event_time, status, message)
+               VALUES ($1, $2, $3, 'cancelado', NOW(), 'active', $4);`,
+              [
+                ko.id,
+                ko.station_id || null,
+                userId || null,
+                `Order #${ko.id} cancelled in kitchen`,
+              ],
+            );
+          }
+        }
+      }
+    } catch (err) {
+      console.error(
+        'Failed to sync kitchen/pos status from online order fulfillment:',
+        err,
+      );
+    }
   }
 }

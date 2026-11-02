@@ -5,7 +5,9 @@ import {
   IsBoolean,
   IsOptional,
   Min,
+  IsEnum,
 } from 'class-validator';
+import { OnlineMenuItemStatus } from '../constants/online-menu-item-status.enum';
 
 export class CreateOnlineMenuItemDto {
   @ApiProperty({ example: 1, description: 'Identifier of the Online Menu' })
@@ -42,10 +44,16 @@ export class CreateOnlineMenuItemDto {
 
   @ApiPropertyOptional({
     example: 15.99,
-    description: 'Price override for this item in the menu',
+    description:
+      'Price override for this item in the menu (precision: 10, scale: 2)',
   })
   @IsOptional()
-  @IsNumber({}, { message: 'Price override must be a number' })
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    {
+      message: 'Price override must be a number with at most 2 decimal places',
+    },
+  )
   @Min(0, { message: 'Price override must be greater than or equal to 0' })
   priceOverride?: number | null;
 
@@ -57,4 +65,15 @@ export class CreateOnlineMenuItemDto {
   @IsNotEmpty({ message: 'Display order is required' })
   @Min(0, { message: 'Display order must be greater than or equal to 0' })
   displayOrder: number;
+
+  @ApiPropertyOptional({
+    example: OnlineMenuItemStatus.ACTIVE,
+    enum: OnlineMenuItemStatus,
+    description: 'Logical status for creation (active, deleted)',
+  })
+  @IsOptional()
+  @IsEnum(OnlineMenuItemStatus, {
+    message: 'Status must be active or deleted',
+  })
+  status?: OnlineMenuItemStatus;
 }

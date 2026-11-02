@@ -78,4 +78,13 @@ export class CreateOnlineOrderDto {
   @IsString({ message: 'Notes must be a string' })
   @MaxLength(5000, { message: 'Notes must not exceed 5000 characters' })
   notes?: string | null;
+
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'Target Kitchen Station ID',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsNumber({}, { message: 'Station ID must be a number' })
+  stationId?: number | null;
 }

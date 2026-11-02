@@ -3,6 +3,7 @@ import { FinancialEngineModule } from './financial-engine/financial-engine.modul
 import { BillingTransactionsModule } from './billing-transactions/billing-transactions.module';
 import { BusinessPartnersModule } from './business-partners/business-partners.module';
 import { ConfigurationModule } from './configuration/configuration.module';
+import { PaymentsModule } from './payments/payments.module';
 
 @Module({
   imports: [
@@ -10,12 +11,14 @@ import { ConfigurationModule } from './configuration/configuration.module';
     BusinessPartnersModule,
     ConfigurationModule,
     FinancialEngineModule,
+    PaymentsModule,
   ],
   exports: [
     BillingTransactionsModule,
     BusinessPartnersModule,
     ConfigurationModule,
     FinancialEngineModule,
+    PaymentsModule,
   ],
 })
 export class CoreModule {}

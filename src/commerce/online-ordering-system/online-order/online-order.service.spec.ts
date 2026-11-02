@@ -20,6 +20,7 @@ import { OnlineStoreStatus } from '../online-stores/constants/online-store-statu
 import { OnlineOrderStatus } from './constants/online-order-status.enum';
 import { OnlineOrderType } from './constants/online-order-type.enum';
 import { OnlineOrderPaymentStatus } from './constants/online-order-payment-status.enum';
+import { OnlineOrderFulfillmentStatus } from './constants/online-order-fulfillment-status.enum';
 import { OnlineOrderItem } from '../online-order-item/entities/online-order-item.entity';
 
 describe('OnlineOrderService', () => {
@@ -100,6 +101,7 @@ describe('OnlineOrderService', () => {
     status: OnlineOrderStatus.ACTIVE,
     type: OnlineOrderType.DELIVERY,
     payment_status: OnlineOrderPaymentStatus.PENDING,
+    fulfillment_status: OnlineOrderFulfillmentStatus.RECEIVED,
     scheduled_at: null,
     placed_at: new Date('2024-01-15T08:00:00Z'),
     updated_at: new Date('2024-01-15T09:00:00Z'),

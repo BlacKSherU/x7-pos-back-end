@@ -91,14 +91,44 @@ export class OnlineMenuCategoryService {
       });
 
     if (existingCategoryInMenu) {
-      throw new BadRequestException(
+      if (existingCategoryInMenu.status === OnlineMenuCategoryStatus.DELETED) {
+        existingCategoryInMenu.status =
+          createOnlineMenuCategoryDto.status || OnlineMenuCategoryStatus.ACTIVE;
+        existingCategoryInMenu.display_order =
+          createOnlineMenuCategoryDto.displayOrder;
+        await this.onlineMenuCategoryRepository.save(existingCategoryInMenu);
+
+        await this.resequenceMenu(
+          createOnlineMenuCategoryDto.menuId,
+          existingCategoryInMenu.id,
+          createOnlineMenuCategoryDto.displayOrder,
+        );
+
+        const completeOnlineMenuCategory =
+          await this.onlineMenuCategoryRepository.findOne({
+            where: { id: existingCategoryInMenu.id },
+            relations: ['menu', 'category'],
+          });
+
+        return {
+          statusCode: 201,
+          message: 'Online menu category reactivated successfully',
+          data: this.formatOnlineMenuCategoryResponse(
+            completeOnlineMenuCategory!,
+          ),
+        };
+      }
+      throw new ConflictException(
         'This category is already associated with this menu',
       );
     }
 
-    if (createOnlineMenuCategoryDto.displayOrder < 0) {
+    if (
+      createOnlineMenuCategoryDto.displayOrder < 0 ||
+      !Number.isInteger(createOnlineMenuCategoryDto.displayOrder)
+    ) {
       throw new BadRequestException(
-        'Display order must be greater than or equal to 0',
+        'Display order must be an integer greater than or equal to 0',
       );
     }
 
@@ -106,9 +136,18 @@ export class OnlineMenuCategoryService {
     onlineMenuCategory.menu_id = createOnlineMenuCategoryDto.menuId;
     onlineMenuCategory.category_id = createOnlineMenuCategoryDto.categoryId;
     onlineMenuCategory.display_order = createOnlineMenuCategoryDto.displayOrder;
+    onlineMenuCategory.status =
+      createOnlineMenuCategoryDto.status || OnlineMenuCategoryStatus.ACTIVE;
 
     const savedOnlineMenuCategory =
       await this.onlineMenuCategoryRepository.save(onlineMenuCategory);
+
+    // Resequence menu items so requested display order shifts existing items sequentially
+    await this.resequenceMenu(
+      createOnlineMenuCategoryDto.menuId,
+      savedOnlineMenuCategory.id,
+      createOnlineMenuCategoryDto.displayOrder,
+    );
 
     const completeOnlineMenuCategory =
       await this.onlineMenuCategoryRepository.findOne({
@@ -169,10 +208,17 @@ export class OnlineMenuCategoryService {
       .where('merchant.id = :merchantId', {
         merchantId: authenticatedUserMerchantId,
       })
-      .andWhere('store.status = :status', { status: OnlineStoreStatus.ACTIVE })
-      .andWhere('onlineMenuCategory.status != :deletedStatus', {
+      .andWhere('store.status = :status', { status: OnlineStoreStatus.ACTIVE });
+
+    if (query.status && query.status.toUpperCase() !== 'ALL') {
+      queryBuilder.andWhere('onlineMenuCategory.status = :status', {
+        status: query.status.toLowerCase(),
+      });
+    } else if (!query.status) {
+      queryBuilder.andWhere('onlineMenuCategory.status != :deletedStatus', {
         deletedStatus: OnlineMenuCategoryStatus.DELETED,
       });
+    }
 
     if (query.menuId) {
       queryBuilder.andWhere('onlineMenuCategory.menu_id = :menuId', {
@@ -308,9 +354,6 @@ export class OnlineMenuCategoryService {
         merchantId: authenticatedUserMerchantId,
       })
       .andWhere('store.status = :status', { status: OnlineStoreStatus.ACTIVE })
-      .andWhere('onlineMenuCategory.status != :deletedStatus', {
-        deletedStatus: OnlineMenuCategoryStatus.DELETED,
-      })
       .getOne();
 
     if (!existingOnlineMenuCategory) {
@@ -318,10 +361,11 @@ export class OnlineMenuCategoryService {
     }
 
     if (
-      existingOnlineMenuCategory.status === OnlineMenuCategoryStatus.DELETED
+      existingOnlineMenuCategory.status === OnlineMenuCategoryStatus.DELETED &&
+      updateOnlineMenuCategoryDto.status !== OnlineMenuCategoryStatus.ACTIVE
     ) {
       throw new ConflictException(
-        'Cannot update a deleted online menu category',
+        'Cannot update a deleted online menu category. Set status to active to restore it.',
       );
     }
 
@@ -363,20 +407,33 @@ export class OnlineMenuCategoryService {
           'You can only use categories from your own merchant',
         );
       }
+    }
 
-      const menuIdToCheck =
-        updateOnlineMenuCategoryDto.menuId ||
-        existingOnlineMenuCategory.menu_id;
+    const menuIdToCheck =
+      updateOnlineMenuCategoryDto.menuId || existingOnlineMenuCategory.menu_id;
+    const categoryIdToCheck =
+      updateOnlineMenuCategoryDto.categoryId ||
+      existingOnlineMenuCategory.category_id;
+
+    if (
+      updateOnlineMenuCategoryDto.menuId !== undefined ||
+      updateOnlineMenuCategoryDto.categoryId !== undefined ||
+      updateOnlineMenuCategoryDto.status === OnlineMenuCategoryStatus.ACTIVE
+    ) {
       const existingCategoryInMenu =
         await this.onlineMenuCategoryRepository.findOne({
           where: {
             menu_id: menuIdToCheck,
-            category_id: updateOnlineMenuCategoryDto.categoryId,
+            category_id: categoryIdToCheck,
           },
         });
 
-      if (existingCategoryInMenu && existingCategoryInMenu.id !== id) {
-        throw new BadRequestException(
+      if (
+        existingCategoryInMenu &&
+        existingCategoryInMenu.id !== id &&
+        existingCategoryInMenu.status === OnlineMenuCategoryStatus.ACTIVE
+      ) {
+        throw new ConflictException(
           'This category is already associated with this menu',
         );
       }
@@ -384,10 +441,11 @@ export class OnlineMenuCategoryService {
 
     if (
       updateOnlineMenuCategoryDto.displayOrder !== undefined &&
-      updateOnlineMenuCategoryDto.displayOrder < 0
+      (updateOnlineMenuCategoryDto.displayOrder < 0 ||
+        !Number.isInteger(updateOnlineMenuCategoryDto.displayOrder))
     ) {
       throw new BadRequestException(
-        'Display order must be greater than or equal to 0',
+        'Display order must be an integer greater than or equal to 0',
       );
     }
 
@@ -398,8 +456,34 @@ export class OnlineMenuCategoryService {
       updateData.category_id = updateOnlineMenuCategoryDto.categoryId;
     if (updateOnlineMenuCategoryDto.displayOrder !== undefined)
       updateData.display_order = updateOnlineMenuCategoryDto.displayOrder;
+    if (updateOnlineMenuCategoryDto.status !== undefined)
+      updateData.status = updateOnlineMenuCategoryDto.status;
 
     await this.onlineMenuCategoryRepository.update(id, updateData);
+
+    const targetMenuId =
+      updateOnlineMenuCategoryDto.menuId || existingOnlineMenuCategory.menu_id;
+
+    if (updateOnlineMenuCategoryDto.displayOrder !== undefined) {
+      await this.resequenceMenu(
+        targetMenuId,
+        id,
+        updateOnlineMenuCategoryDto.displayOrder,
+      );
+    } else if (
+      updateOnlineMenuCategoryDto.status === OnlineMenuCategoryStatus.DELETED
+    ) {
+      await this.resequenceMenu(targetMenuId);
+    } else if (
+      existingOnlineMenuCategory.status === OnlineMenuCategoryStatus.DELETED &&
+      updateOnlineMenuCategoryDto.status === OnlineMenuCategoryStatus.ACTIVE
+    ) {
+      await this.resequenceMenu(
+        targetMenuId,
+        id,
+        existingOnlineMenuCategory.display_order,
+      );
+    }
 
     const updatedOnlineMenuCategory =
       await this.onlineMenuCategoryRepository.findOne({
@@ -466,6 +550,8 @@ export class OnlineMenuCategoryService {
     const updatedOnlineMenuCategory =
       await this.onlineMenuCategoryRepository.save(existingOnlineMenuCategory);
 
+    await this.resequenceMenu(existingOnlineMenuCategory.menu_id);
+
     return {
       statusCode: 200,
       message: 'Online menu category deleted successfully',
@@ -493,5 +579,51 @@ export class OnlineMenuCategoryService {
         name: onlineMenuCategory.category.name,
       },
     };
+  }
+
+  /**
+   * Re-sequence categories in a digital menu so they are strictly sequential: 1, 2, 3...
+   * If targetItemId and targetOrder are provided, places that item at targetOrder and shifts other items.
+   */
+  private async resequenceMenu(
+    menuId: number,
+    targetItemId?: number,
+    targetOrder?: number,
+  ): Promise<void> {
+    const items = await this.onlineMenuCategoryRepository.find({
+      where: {
+        menu_id: menuId,
+        status: OnlineMenuCategoryStatus.ACTIVE,
+      },
+      order: { display_order: 'ASC', id: 'ASC' },
+    });
+
+    if (items.length === 0) return;
+
+    let orderedItems = [...items];
+
+    if (targetItemId !== undefined && targetOrder !== undefined) {
+      const otherItems = items.filter((item) => item.id !== targetItemId);
+      const targetItem = items.find((item) => item.id === targetItemId);
+
+      if (targetItem) {
+        const insertIndex = Math.max(
+          0,
+          Math.min(targetOrder - 1, otherItems.length),
+        );
+        otherItems.splice(insertIndex, 0, targetItem);
+        orderedItems = otherItems;
+      }
+    }
+
+    for (let i = 0; i < orderedItems.length; i++) {
+      const expectedOrder = i + 1;
+      if (orderedItems[i].display_order !== expectedOrder) {
+        await this.onlineMenuCategoryRepository.update(orderedItems[i].id, {
+          display_order: expectedOrder,
+        });
+        orderedItems[i].display_order = expectedOrder;
+      }
+    }
   }
 }

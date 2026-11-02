@@ -7,6 +7,8 @@ import { EntityManager } from 'typeorm';
 export const MerchantLockScope = {
   ORDER_NUMBERS: 7301,
   KITCHEN_STATIONS: 7302,
+  /** Keyed by company id: moving the default payment config between rows. */
+  COMPANY_PAYMENT_DEFAULT: 7303,
 } as const;
 
 export type MerchantLockScope =

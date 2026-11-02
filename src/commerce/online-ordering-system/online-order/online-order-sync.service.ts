@@ -59,11 +59,17 @@ export class OnlineOrderSyncService {
       if (!online.ready_at) {
         online.ready_at = new Date();
       }
-    }
-    if (fulfillment === OnlineOrderFulfillmentStatus.COMPLETED) {
+      online.completed_at = null;
+    } else if (fulfillment === OnlineOrderFulfillmentStatus.COMPLETED) {
       if (!online.completed_at) {
         online.completed_at = new Date();
       }
+      if (!online.ready_at) {
+        online.ready_at = new Date();
+      }
+    } else {
+      online.ready_at = null;
+      online.completed_at = null;
     }
     await this.onlineOrderRepository.save(online);
 
@@ -122,7 +128,7 @@ export class OnlineOrderSyncService {
           : OnlineOrderFulfillmentStatus.READY_FOR_PICKUP;
       case KitchenStatus.PREPARING:
       case KitchenStatus.SENT:
-        return OnlineOrderFulfillmentStatus.IN_KITCHEN;
+        return OnlineOrderFulfillmentStatus.IN_PREPARATION;
       case KitchenStatus.PENDING:
       default:
         return OnlineOrderFulfillmentStatus.ACCEPTED;

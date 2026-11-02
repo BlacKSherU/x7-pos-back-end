@@ -62,8 +62,16 @@ export class OnlineOrder {
     description: 'Identifier of the Order',
     nullable: true,
   })
-  @Column({ name: 'order_id', nullable: true })
+  @Column({ type: 'int', name: 'order_id', nullable: true })
   order_id: number | null;
+
+  @ApiProperty({
+    example: 1,
+    description: 'Identifier of the target Kitchen Station',
+    nullable: true,
+  })
+  @Column({ type: 'int', name: 'station_id', nullable: true })
+  station_id: number | null;
 
   @ManyToOne(() => Order, (o) => o.onlineOrders, {
     onDelete: 'SET NULL',

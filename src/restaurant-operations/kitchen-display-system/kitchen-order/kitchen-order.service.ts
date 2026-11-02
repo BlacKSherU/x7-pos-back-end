@@ -205,12 +205,6 @@ export class KitchenOrderService {
       );
     }
 
-    if (createKitchenOrderDto.orderId && createKitchenOrderDto.onlineOrderId) {
-      throw new BadRequestException(
-        'Cannot provide both orderId and onlineOrderId',
-      );
-    }
-
     let validOrderId: number | null = null;
     if (createKitchenOrderDto.orderId) {
       const order = await this.orderRepository.findOne({
@@ -243,20 +237,25 @@ export class KitchenOrderService {
     }
 
     if (createKitchenOrderDto.onlineOrderId) {
-      const onlineOrder = await this.onlineOrderRepository
-        .createQueryBuilder('onlineOrder')
-        .leftJoin('onlineOrder.store', 'store')
-        .leftJoin('store.merchant', 'merchant')
-        .where('onlineOrder.id = :orderId', {
-          orderId: createKitchenOrderDto.onlineOrderId,
-        })
-        .andWhere('merchant.id = :merchantId', {
-          merchantId: authenticatedUserMerchantId,
-        })
-        .andWhere('onlineOrder.status != :deletedStatus', {
-          deletedStatus: OnlineOrderStatus.DELETED,
-        })
-        .getOne();
+      const existingKoOnline = await this.kitchenOrderRepository.findOne({
+        where: {
+          online_order_id: createKitchenOrderDto.onlineOrderId,
+          merchant_id: authenticatedUserMerchantId,
+          status: KitchenOrderStatus.ACTIVE,
+        },
+      });
+      if (existingKoOnline) {
+        throw new ConflictException(
+          'An active kitchen order already exists for this online order',
+        );
+      }
+
+      const onlineOrder = await this.onlineOrderRepository.findOne({
+        where: {
+          id: createKitchenOrderDto.onlineOrderId,
+          merchant_id: authenticatedUserMerchantId,
+        },
+      });
 
       if (!onlineOrder) {
         throw new NotFoundException(
@@ -270,6 +269,22 @@ export class KitchenOrderService {
     let isRerouted = false;
     let originalStationNumber: number | null = null;
     let rerouteReason = '';
+
+    if (!targetStationId && authenticatedUserMerchantId) {
+      const defaultStation = await this.kitchenStationRepository.findOne({
+        where: {
+          merchant_id: authenticatedUserMerchantId,
+          status: KitchenStationStatus.ACTIVE,
+        },
+        order: {
+          display_order: 'ASC',
+          id: 'ASC',
+        },
+      });
+      if (defaultStation) {
+        targetStationId = defaultStation.id;
+      }
+    }
 
     if (createKitchenOrderDto.stationId) {
       const station = await this.kitchenStationRepository.findOne({
@@ -1301,6 +1316,11 @@ export class KitchenOrderService {
       }
     }
 
+    // Sincronizar agregados POS y Online Order
+    if (isRecall || updateKitchenOrderDto.businessStatus !== undefined) {
+      await this.syncPosAndOnlineOrder(updatedKitchenOrder, isRecall);
+    }
+
     const completeKitchenOrder = await this.kitchenOrderRepository.findOne({
       where: { id: updatedKitchenOrder.id },
       relations: KITCHEN_ORDER_DETAIL_RELATIONS,
@@ -1416,6 +1436,9 @@ export class KitchenOrderService {
     } catch (err) {
       this.logger.error('Failed to log RECALL event', errorStack(err));
     }
+
+    // 5. Synchronize POS order & Online Order back to in_preparation
+    await this.syncPosAndOnlineOrder(existingKitchenOrder, true);
 
     const response = await this.findOne(id, authenticatedUserMerchantId);
     return {
@@ -1741,6 +1764,79 @@ export class KitchenOrderService {
           }
         : null,
     };
+  }
+
+  private async syncPosAndOnlineOrder(
+    kitchenOrder: KitchenOrder,
+    isRecall: boolean = false,
+  ): Promise<void> {
+    try {
+      let targetOrderId = kitchenOrder.order_id;
+      if (!targetOrderId && kitchenOrder.online_order_id) {
+        const linkedOnline = await this.onlineOrderRepository.findOne({
+          where: { id: kitchenOrder.online_order_id },
+        });
+        if (linkedOnline?.order_id) {
+          targetOrderId = linkedOnline.order_id;
+        }
+      }
+
+      if (targetOrderId) {
+        await this.kitchenOrderSyncService.syncPosOrderFromKitchenOrders(
+          targetOrderId,
+        );
+      }
+
+      if (isRecall) {
+        const onlineOrderId =
+          kitchenOrder.online_order_id ||
+          (targetOrderId
+            ? (
+                await this.onlineOrderRepository.findOne({
+                  where: { order_id: targetOrderId },
+                })
+              )?.id
+            : null);
+
+        if (onlineOrderId) {
+          await this.dataSource.query(
+            `UPDATE online_order
+             SET fulfillment_status = 'in_preparation',
+                 ready_at = NULL,
+                 completed_at = NULL
+             WHERE id = $1;`,
+            [onlineOrderId],
+          );
+          await this.dataSource.query(
+            `UPDATE online_order_item
+             SET kitchen_line_status = 'in_preparation'
+             WHERE online_order_id = $1;`,
+            [onlineOrderId],
+          );
+        }
+
+        if (targetOrderId) {
+          await this.dataSource.query(
+            `UPDATE orders
+             SET kitchen_status = 'preparing',
+                 ready_at = NULL
+             WHERE id = $1;`,
+            [targetOrderId],
+          );
+          await this.dataSource.query(
+            `UPDATE order_item
+             SET kitchen_status = 'in_preparation'
+             WHERE order_id = $1;`,
+            [targetOrderId],
+          );
+        }
+      }
+    } catch (err) {
+      console.error(
+        'Failed to sync POS and online order from kitchen order:',
+        err,
+      );
+    }
   }
 
   async resetTestData(

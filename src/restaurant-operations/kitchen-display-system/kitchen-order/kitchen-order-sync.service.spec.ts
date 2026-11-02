@@ -34,6 +34,7 @@ describe('KitchenOrderSyncService', () => {
       .fn()
       .mockResolvedValue({ becameFullyPaid: false }),
     emitOrderFullyPaid: jest.fn(),
+    syncOnlineOrderFromPosOrder: jest.fn().mockResolvedValue(undefined),
   };
 
   beforeEach(async () => {

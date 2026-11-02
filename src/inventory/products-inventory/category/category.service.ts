@@ -110,9 +110,10 @@ export class CategoryService {
     // 4. Get total records
     const total = await queryBuilder.getCount();
 
-    // 5. Apply pagination and sorting
+    // 5. Apply pagination and sorting (Active categories first, Inactive last)
     const categories = await queryBuilder
-      .orderBy('category.name', 'ASC')
+      .orderBy('category.isActive', 'DESC')
+      .addOrderBy('category.name', 'ASC')
       .skip(skip)
       .take(limit)
       .getMany();

@@ -11,6 +11,7 @@ import { Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { OnlineOrderType } from '../constants/online-order-type.enum';
 import { OnlineOrderPaymentStatus } from '../constants/online-order-payment-status.enum';
+import { OnlineOrderFulfillmentStatus } from '../constants/online-order-fulfillment-status.enum';
 
 export enum OnlineOrderSortBy {
   ID = 'id',
@@ -79,6 +80,23 @@ export class GetOnlineOrderQueryDto {
   @IsOptional()
   @IsEnum(OnlineOrderPaymentStatus)
   paymentStatus?: OnlineOrderPaymentStatus;
+
+  @ApiPropertyOptional({
+    example: OnlineOrderFulfillmentStatus.RECEIVED,
+    enum: OnlineOrderFulfillmentStatus,
+    description: 'Filter by fulfillment status',
+  })
+  @IsOptional()
+  @IsEnum(OnlineOrderFulfillmentStatus)
+  fulfillmentStatus?: OnlineOrderFulfillmentStatus;
+
+  @ApiPropertyOptional({
+    example: 'ACTIVE',
+    description: 'Filter by logical status (ACTIVE, DELETED, ALL)',
+  })
+  @IsOptional()
+  @IsString()
+  status?: string;
 
   @ApiPropertyOptional({
     example: '2024-01-15',

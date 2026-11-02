@@ -172,6 +172,41 @@ describe('UsersService', () => {
     });
   });
 
+  describe('findByCompany', () => {
+    const adminOf = (companyId?: number) =>
+      ({
+        id: 10,
+        email: 'admin@test.com',
+        role: UserRole.MERCHANT_ADMIN,
+        scope: Scope.MERCHANT_WEB,
+        merchant: { id: 1, companyId },
+      }) as AuthenticatedUser;
+
+    it("lists the users of every merchant in the session's company", async () => {
+      const findSpy = jest.spyOn(userRepository, 'find');
+      findSpy.mockResolvedValue([mockUser as User]);
+
+      const result = await service.findByCompany(adminOf(7));
+
+      expect(findSpy).toHaveBeenCalledWith({
+        where: { merchant: { companyId: 7 } },
+        relations: ['merchant'],
+        order: { merchantId: 'ASC', id: 'ASC' },
+      });
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0]).not.toHaveProperty('password');
+    });
+
+    it('refuses a session without a company instead of listing everyone', async () => {
+      const findSpy = jest.spyOn(userRepository, 'find');
+
+      await expect(service.findByCompany(adminOf(undefined))).rejects.toThrow(
+        'Company not found',
+      );
+      expect(findSpy).not.toHaveBeenCalled();
+    });
+  });
+
   describe('findById', () => {
     it('should return a user by ID', async () => {
       const findOneBySpy = jest.spyOn(userRepository, 'findOneBy');

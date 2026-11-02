@@ -76,6 +76,7 @@ describe('UsersController', () => {
       findAll: jest.fn(),
       findOne: jest.fn(),
       findByMerchant: jest.fn(),
+      findByCompany: jest.fn(),
       findByEmail: jest.fn(),
       update: jest.fn(),
     };
@@ -226,6 +227,24 @@ describe('UsersController', () => {
         merchantId,
         mockAuthenticatedUser,
       );
+    });
+  });
+
+  describe('GET /users/company (findByCompany)', () => {
+    it('delegates with the session user, so the company comes from the token', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      const mockRequest = {
+        user: mockAuthenticatedUser,
+      } as any;
+
+      const findByCompanySpy = jest.spyOn(usersService, 'findByCompany');
+      findByCompanySpy.mockResolvedValue(mockAllUsersResponse);
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      const result = await controller.findByCompany(mockRequest);
+
+      expect(findByCompanySpy).toHaveBeenCalledWith(mockAuthenticatedUser);
+      expect(result).toEqual(mockAllUsersResponse);
     });
   });
 

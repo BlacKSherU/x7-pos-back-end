@@ -15,6 +15,16 @@ import { OrdersModule } from '../../../restaurant-operations/pos/orders/orders.m
 import { KitchenOrderModule } from '../../../restaurant-operations/kitchen-display-system/kitchen-order/kitchen-order.module';
 import { OnlineOrderSyncModule } from './online-order-sync.module';
 
+const devControllers: any[] = [];
+try {
+  const sim = (require as any)('./online-order-simulator.controller');
+  if (sim && sim.OnlineOrderSimulatorController) {
+    devControllers.push(sim.OnlineOrderSimulatorController);
+  }
+} catch {
+  // Ignored when simulator file is removed
+}
+
 @Module({
   imports: [
     AuthModule,
@@ -31,7 +41,7 @@ import { OnlineOrderSyncModule } from './online-order-sync.module';
     forwardRef(() => KitchenOrderModule),
     OnlineOrderSyncModule,
   ],
-  controllers: [OnlineOrderController],
+  controllers: [OnlineOrderController, ...devControllers],
   providers: [OnlineOrderService, OnlineOrderFulfillmentService],
   exports: [OnlineOrderService, OnlineOrderFulfillmentService],
 })

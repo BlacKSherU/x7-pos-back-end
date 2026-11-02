@@ -1630,6 +1630,11 @@ export class OrdersService {
     }
     if (nextKitchen === KitchenStatus.READY && !order.ready_at) {
       order.ready_at = new Date();
+    } else if (nextKitchen !== KitchenStatus.READY && order.ready_at) {
+      order.ready_at = null;
+    }
+    if (nextKitchen === KitchenStatus.PENDING && order.preparing_at) {
+      order.preparing_at = null;
     }
 
     applyPaidDerivedFields(order);

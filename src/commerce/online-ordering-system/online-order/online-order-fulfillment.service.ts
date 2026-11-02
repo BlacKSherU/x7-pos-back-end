@@ -32,6 +32,9 @@ import {
 } from './online-order-pricing.util';
 import { Product } from '../../../inventory/products-inventory/products/entities/product.entity';
 import { Variant } from '../../../inventory/products-inventory/variants/entities/variant.entity';
+import { Order } from '../../../restaurant-operations/pos/orders/entities/order.entity';
+import { OrderPayment } from '../../../restaurant-operations/pos/order-payments/entities/order-payment.entity';
+import { OnlineOrderPaymentStatus } from './constants/online-order-payment-status.enum';
 
 function mapOnlineTypeToOrderType(t: OnlineOrderType): OrderType {
   switch (t) {
@@ -62,6 +65,8 @@ export class OnlineOrderFulfillmentService {
   async acceptOnlineOrder(
     onlineOrderId: number,
     merchantId: number,
+    userId?: number,
+    stationId?: number,
   ): Promise<OneOnlineOrderResponseDto> {
     if (!merchantId) {
       throw new ForbiddenException(
@@ -76,6 +81,12 @@ export class OnlineOrderFulfillmentService {
       throw new NotFoundException('Online order not found');
     }
     if (precheck.order_id) {
+      if (stationId) {
+        await this.dataSource.query(
+          `UPDATE kitchen_order SET station_id = $1 WHERE online_order_id = $2 AND merchant_id = $3`,
+          [Number(stationId), onlineOrderId, merchantId],
+        );
+      }
       return this.onlineOrderService.findOne(onlineOrderId, merchantId);
     }
 
@@ -95,6 +106,12 @@ export class OnlineOrderFulfillmentService {
       }
       if (oo.order_id) {
         await queryRunner.commitTransaction();
+        if (stationId) {
+          await this.dataSource.query(
+            `UPDATE kitchen_order SET station_id = $1 WHERE online_order_id = $2 AND merchant_id = $3`,
+            [Number(stationId), onlineOrderId, merchantId],
+          );
+        }
         return this.onlineOrderService.findOne(onlineOrderId, merchantId);
       }
       if (oo.status === OnlineOrderStatus.DELETED) {
@@ -188,6 +205,9 @@ export class OnlineOrderFulfillmentService {
       oo.order_id = order.id;
       oo.fulfillment_status = OnlineOrderFulfillmentStatus.ACCEPTED;
       oo.accepted_at = new Date();
+      if (stationId) {
+        oo.station_id = Number(stationId);
+      }
       await queryRunner.manager.save(OnlineOrder, oo);
 
       await queryRunner.commitTransaction();
@@ -200,10 +220,47 @@ export class OnlineOrderFulfillmentService {
 
     await this.ordersService.syncOrderAggregates(posOrderId);
 
+    if (precheck.payment_status === OnlineOrderPaymentStatus.PAID) {
+      const posOrder = await this.dataSource.getRepository(Order).findOne({
+        where: { id: posOrderId },
+      });
+      if (posOrder) {
+        const orderPaymentRepo = this.dataSource.getRepository(OrderPayment);
+        const existingOp = await orderPaymentRepo.findOne({
+          where: { order_id: posOrderId, source: 'ONLINE' },
+        });
+        if (!existingOp) {
+          const op = new OrderPayment();
+          op.order_id = posOrderId;
+          op.amount = Number(posOrder.total);
+          op.method = 'online';
+          op.provider = 'online_order';
+          op.reference = `ONLINE-#${onlineOrderId}`;
+          op.tip_amount = 0;
+          op.is_refund = false;
+          op.source = 'ONLINE';
+          op.shift_id = null;
+          await orderPaymentRepo.save(op);
+          await this.ordersService.syncOrderAggregates(posOrderId);
+        }
+      }
+    }
+
+    const effectiveStationId = stationId
+      ? Number(stationId)
+      : precheck.station_id
+        ? Number(precheck.station_id)
+        : undefined;
+
     try {
       await this.kitchenOrderService.create(
-        { orderId: posOrderId },
+        {
+          orderId: posOrderId,
+          onlineOrderId,
+          stationId: effectiveStationId,
+        },
         merchantId,
+        userId,
       );
     } catch (e) {
       if (!(e instanceof ConflictException)) {

@@ -1,0 +1,125 @@
+txt_feature_id,txt_name,txt_application,txt_plan,txt_is_saas,backend_key,backend_id,como
+saas-dashboard,SaaS Dashboard,central-backoffice,1,1,CENTRAL_BACKOFFICE,1,manual
+reports,Reports,client-backoffice,1,1,CLIENT_BACKOFFICE,2,manual
+companies-dashboard,Companies Configuration Dashboard,companies,1,1,COMPANIES,3,manual
+merchants-provisioning,Merchants & Tenants Provisioning,merchants,1,1,MERCHANTS,4,manual
+company-profile,Company Profile,companies,1,0,COMPANIES,3,manual
+company-configurations,Company Configurations,companies,1,0,COMPANIES,3,manual
+merchant-directory,Merchant Directory,merchants,1,0,MERCHANTS,4,manual
+apps-config,Applications Configuration,subscription-system,1,1,APPLICATIONS,5,manual
+features-control,Features Control & Flags,subscription-system,1,1,SUBSCRIPTION_FEATURES_CATALOG,6,manual
+merchant-subs-link,Merchant Subscriptions Link,subscription-system,1,1,MERCHANT_SUBSCRIPTIONS,7,manual
+plan-apps-rules,Plan Applications Rules,subscription-system,1,1,PLAN_APPLICATIONS,8,manual
+plan-features-mapping,Plan Features Mapping,subscription-system,1,1,PLAN_FEATURES,9,manual
+sub-plans-core,Subscription Plans Core,subscription-system,1,1,SUBSCRIPTION_PLANS,10,manual
+sub-apps-mapping,Subscription Applications Mapping,subscription-system,1,1,SUBSCRIPTION_APPLICATIONS,11,manual
+sub-payments-billing,Subscription Payments Billing,subscription-system,1,0,SUBSCRIPTION_PAYMENTS,12,manual
+users-auth-profiles,Users & Authorization Profiles,users,1,1,USERS,13,manual
+user-management,Team User Management,users,1,0,USERS,13,manual
+receipt-items,Receipt items engine,billing-transactions,1,0,RECEIPT_ITEMS,14,clave igual
+receipt-orders,Receipts Processing,billing-transactions,1,0,RECEIPTS,15,manual
+receipt-taxes,Receipts taxes allocation,billing-transactions,1,0,RECEIPTS_TAXES,16,manual
+merchant-overtime-rules,Merchant Overtime Rules,configuration,2,0,MERCHANT_OVERTIME_RULES,17,clave igual
+merchant-payroll-rules,Merchant Payroll Rules,configuration,2,0,MERCHANT_PAYROLL_RULES,18,clave igual
+merchant-tax-rules,Merchant Tax Rules,configuration,2,0,MERCHANT_TAX_RULES,19,clave igual
+merchant-tips-rules,Merchant Tips Rules,configuration,2,0,MERCHANT_TIPS_RULES,20,clave igual
+journal-entries,Journal Entries Engine,financial-engine,2,0,JOURNAL_ENTRIES,21,clave igual
+journal-entries-lines,Journal Entries lines ledger,financial-engine,2,0,JOURNAL_ENTRY_LINES,22,manual
+ledger-accounts,Ledger Accounts setup,financial-engine,2,0,LEDGER_ACCOUNTS,23,clave igual
+customers,Customers Hub (CRM),business-partners,1,0,CUSTOMERS,24,clave igual
+suppliers,Suppliers Base,business-partners,2,0,SUPPLIERS,25,clave igual
+supplier-credit-notes,Supplier Credit Notes,accounts-payable,2,0,SUPPLIER_CREDIT_NOTES,26,clave igual
+supplier-invoice-items,Supplier Invoice Items Tracker,accounts-payable,2,0,SUPPLIER_INVOICE_ITEMS,27,clave igual
+supplier-invoices,Supplier Invoices Control,accounts-payable,2,0,SUPPLIER_INVOICES,28,clave igual
+supplier-payment-items,Supplier Payment Items Ledger,accounts-payable,2,0,SUPPLIER_PAYMENT_ITEMS,29,clave igual
+supplier-payments,Supplier Payments Hub,accounts-payable,2,0,SUPPLIER_PAYMENTS,30,clave igual
+supplier-payments-allocation,Supplier Payments Allocation,accounts-payable,2,0,SUPPLIER_PAYMENTS_ALLOCATION,31,clave igual
+collaborators,Collaborators Database,hr,2,0,COLLABORATORS,32,clave igual
+collaborators-contracts,Collaborators Contracts,hr,2,0,COLLABORATOR_CONTRACTS,33,manual
+collaborators-time-entries,Collaborators Time Entries Control,hr,2,0,COLLABORATOR_TIME_ENTRIES,34,manual
+payroll-adjustments,Payroll Adjustments System,payrolls,2,0,PAYROLL_ADJUSTMENTS,35,clave igual
+payroll-entries,Payroll Entries Log,payrolls,2,0,PAYROLL_ENTRIES,36,clave igual
+payroll-runs,Payroll Runs Engine,payrolls,2,0,PAYROLL_RUNS,37,clave igual
+payroll-tax-detail,Payroll Tax Detail Analytic,payrolls,2,0,PAYROLL_TAX_DETAIL,38,clave igual
+actual-cost-variance,Actual Cost Variance,food-costing,2,0,ACTUAL_COST_VARIANCE,39,clave igual
+recipe-ingredients,Recipe Ingredients Breakdown,food-costing,2,0,RECIPE_INGREDIENTS,40,clave igual
+recipes,Recipes Composition,food-costing,2,0,RECIPES,41,clave igual
+theoretical-cost,Theoretical Cost Model,food-costing,2,0,THEORETICAL_COST,42,clave igual
+categories,Category Management,products-inventory,1,0,CATEGORY_MANAGEMENT,43,manual
+products,Product Management Matrix,products-inventory,1,0,PRODUCT_MANAGEMENT,45,manual
+variants,Variants Management,products-inventory,1,0,VARIANTS_MANAGEMENT,49,manual
+modifiers,Modifiers Management,products-inventory,1,0,MODIFIERS_MANAGEMENT,44,manual
+purchase-orders,Purchase Orders Management,raw-materials,2,0,PURCHASE_ORDERS_MANAGEMENT,46,manual
+stock-movements,Stock and Stock Movements Management,raw-materials,2,0,STOCK_AND_STOCK_MOVEMENTS,47,manual
+raw-materials,Raw Materials Workspace,raw-materials,2,0,PRODUCT_MANAGEMENT,45,manual
+raw-material-categories,Raw Material Categories,raw-materials,2,0,PRODUCT_MANAGEMENT,45,manual
+locations,Inventory Locations,raw-materials,2,0,STOCK_AND_STOCK_MOVEMENTS,47,manual
+floor-plans,Floor plans designer,dining-system,2,0,FLOOR_PLANS,50,clave igual
+table-assignments,Table assignments matrix,dining-system,2,0,TABLE_ASSIGNMENTS,51,clave igual
+table-zones,Table Zones config,dining-system,2,0,TABLE_ZONES,52,clave igual
+tables,Tables Architecture,dining-system,1,0,TABLES,53,clave igual
+kitchen-display-devices,Kitchen Display Devices,kitchen-display-system,2,0,KITCHEN_DISPLAY_DEVICES,54,clave igual
+kitchen-event-log,Kitchen Event Log,kitchen-display-system,2,0,KITCHEN_EVENT_LOG,55,clave igual
+kitchen-order-items,Kitchen Order Items tracking,kitchen-display-system,1,0,KITCHEN_ORDER_ITEMS,56,clave igual
+kitchen-orders,Kitchen Orders Queue,kitchen-display-system,1,0,KITCHEN_ORDERS,57,clave igual
+kitchen-stations,Kitchen Stations routing,kitchen-display-system,2,0,KITCHEN_STATIONS,58,clave igual
+order-discounts,Order Discounts module,pos,1,0,ORDER_DISCOUNTS,59,clave igual
+order-items,Order Items entry,pos,1,0,ORDER_ITEMS,60,clave igual
+order-payments,Order Payments terminal,pos,1,0,ORDER_PAYMENTS,61,clave igual
+order-taxes,Order Taxes calculations,pos,1,0,ORDER_TAXES,62,clave igual
+orders,Orders Hub Core,pos,1,0,ORDERS,63,clave igual
+order-item-modifiers,Order Item Modifiers logic,pos,1,0,ORDER_ITEM_MODIFIERS,64,clave igual
+cash-drawer-history,Cash Drawer History logs,cash-drawers,2,0,CASH_DRAWER_HISTORY,65,clave igual
+cash-drawers,Cash Drawers sessions,cash-drawers,2,0,CASH_DRAWERS,66,clave igual
+cash-shifts,Cash Shifts sessions,cash-drawers,2,0,CASH_DRAWERS,66,manual
+cash-transactions,Cash Transactions journal,cash-drawers,2,0,CASH_TRANSACTIONS,67,clave igual
+cash-movements,Cash Movements directory,cash-drawers,2,0,CASH_DRAWERS,66,manual
+shift-assignment,Shift Assignment Matrix,shifts,2,0,SHIFT_ASSIGNMENT,68,clave igual
+shifts,Shifts Scheduler,shifts,2,0,SHIFTS,69,clave igual
+tip-movements,Tip movements history,tips,2,0,TIP_MOVEMENTS,70,clave igual
+tip-pool-members,Tip pool members layout,tips,2,0,TIP_POOL_MEMBERS,71,clave igual
+tip-settlements,Tip settlements engine,tips,2,0,TIP_SETTLEMENTS,72,clave igual
+tips,Tips Ledger Core,tips,2,0,TIPS,73,clave igual
+tips-allocations,Tips Allocations formulas,tips,2,0,TIPS_ALLOCATIONS,74,clave igual
+tips-pools,Tips pools rules,tips,2,0,TIPS_POOLS,75,clave igual
+reservations,Reservations Calendar Book,reservations,2,0,RESERVATIONS,76,clave igual
+reservation-guests,Reservation Guests CRM profiles,reservations,3,0,RESERVATION_GUESTS,77,clave igual
+reservation-notes,Reservation Notes logs,reservations,2,0,RESERVATION_NOTES,78,clave igual
+reservation-status-history,Reservation Status History,reservations,2,0,RESERVATION_STATUS_HISTORY,79,clave igual
+reservation-tables,Reservation Tables Assignment,reservations,2,0,RESERVATION_TABLES,80,clave igual
+table-turnover,Table Turnover Optimization,table-turnover,2,0,TABLE_TURNOVER_OPTIMIZATION,81,manual
+delivery-assignments,Delivery Assignments matrix,delivery-management,2,0,DELIVERY_ASSIGNMENTS,82,clave igual
+delivery-drivers,Delivery Drivers console,delivery-management,2,0,DELIVERY_DRIVERS,83,clave igual
+delivery-fees,Delivery Fees tier rules,delivery-management,2,0,DELIVERY_FEES,84,clave igual
+delivery-tracking,Delivery Tracking Map,delivery-management,2,0,DELIVERY_TRACKING,85,clave igual
+delivery-zones,Delivery Zones Geofencing,delivery-management,2,0,DELIVERY_ZONES,86,clave igual
+online-delivery-info,Online Delivery Info configurations,online-ordering,2,0,ONLINE_DELIVERY_INFO,87,clave igual
+online-menu-categories,Online Menu Categories structure,online-ordering,2,0,ONLINE_MENU_CATEGORIES,88,clave igual
+online-menu-items,Online Menu Items catalog,online-ordering,2,0,ONLINE_MENU_ITEMS,89,clave igual
+online-menus,Online Menus custom publish,online-ordering,2,0,ONLINE_MENUS,90,clave igual
+online-order-items,Online Order Items cart,online-ordering,1,0,ONLINE_ORDER_ITEMS,91,clave igual
+online-orders,Online Orders dispatch engine,online-ordering,1,0,ONLINE_ORDERS,92,clave igual
+online-payments,Online Payments Gateway integrations,online-ordering,2,0,ONLINE_PAYMENTS,93,clave igual
+online-stores,Online Stores Web Portal templates,online-ordering,2,0,ONLINE_STORES,94,clave igual
+qr-code-locations,QR Code Locations anchors,qr-code,2,0,QR_CODE_LOCATIONS,95,clave igual
+qr-code-menu-items,QR Code Menu Items routing,qr-code,2,0,QR_CODE_MENU_ITEMS,96,clave igual
+qr-code-menu-sections,QR Code Menu Sections,qr-code,2,0,QR_CODE_MENU_SECTIONS,97,clave igual
+qr-code-menus,QR Code Menus deployment,qr-code,2,0,QR_CODE_MENUS,98,clave igual
+qr-code-orders,QR Code Orders dispatch link,qr-code,2,0,QR_CODE_ORDERS,99,clave igual
+qr-order-items,QR Order Items parsing,qr-code,2,0,QR_ORDER_ITEMS,100,clave igual
+loyalty-customers,Loyalty customers profiles,loyalty-system,3,0,LOYALTY_CUSTOMERS,101,clave igual
+loyalty-coupons,Loyalty coupons engine,loyalty-system,3,0,LOYALTY_COUPONS,102,clave igual
+loyalty-point-transactions,Loyalty point transactions ledger,loyalty-system,3,0,LOYALTY_POINT_TRANSACTIONS,103,clave igual
+loyalty-programs,Loyalty Programs parameters,loyalty-system,3,0,LOYALTY_PROGRAMS,104,clave igual
+loyalty-rewards,Loyalty rewards catalogue,loyalty-system,3,0,LOYALTY_REWARDS,105,clave igual
+loyalty-rewards-redemptions,Loyalty rewards redemptions engine,loyalty-system,3,0,LOYALTY_REWARDS_REDEMPTIONS,106,clave igual
+loyalty-tiers,Loyalty tiers structure,loyalty-system,3,0,LOYALTY_TIERS,107,clave igual
+marketing-automation,Marketing Automation CRM workflows,marketing-system,3,0,MARKETING_AUTOMATION,108,clave igual
+marketing-automation-action,Marketing Automation Trigger Actions,marketing-system,3,0,MARKETING_AUTOMATION_ACTION,109,clave igual
+marketing-campaign,Marketing Campaign manager,marketing-system,3,0,MARKETING_CAMPAIGN,110,clave igual
+marketing-campaign-audience,Marketing Campaign Audience lists,marketing-system,3,0,MARKETING_CAMPAIGN_AUDIENCE,111,clave igual
+marketing-coupon,Marketing Coupon definitions,marketing-system,3,0,MARKETING_COUPON,112,clave igual
+marketing-coupon-redemption,Marketing Coupon Redemption logs,marketing-system,3,0,MARKETING_COUPON_REDEMPTION,113,clave igual
+marketing-message-log,Marketing Message Dispatch Logs,marketing-system,3,0,MARKETING_MESSAGE_LOG,114,clave igual
+marketing-segment,Marketing Dynamic Segments,marketing-system,3,0,MARKETING_SEGMENT,115,clave igual
+marketing-segment-rule,Marketing Segment Rule builder,marketing-system,3,0,MARKETING_SEGMENT_RULE,116,clave igual

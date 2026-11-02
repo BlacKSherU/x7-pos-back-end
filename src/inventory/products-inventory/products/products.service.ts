@@ -182,9 +182,10 @@ export class ProductsService {
     // 6. Get total records
     const total = await queryBuilder.getCount();
 
-    // 7. Apply pagination and sorting
+    // 7. Apply pagination and sorting (Active products first, Inactive last)
     const products = await queryBuilder
-      .orderBy('product.name', 'ASC')
+      .orderBy('product.isActive', 'DESC')
+      .addOrderBy('product.name', 'ASC')
       .skip(skip)
       .take(limit)
       .getMany();

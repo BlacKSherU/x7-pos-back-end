@@ -33,6 +33,7 @@ describe('ProductsService', () => {
     andWhere: jest.Mock;
     getCount: jest.Mock;
     orderBy: jest.Mock;
+    addOrderBy: jest.Mock;
     skip: jest.Mock;
     take: jest.Mock;
     getMany: jest.Mock;
@@ -149,6 +150,7 @@ describe('ProductsService', () => {
       where: jest.fn().mockReturnThis(),
       andWhere: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
+      addOrderBy: jest.fn().mockReturnThis(),
       skip: jest.fn().mockReturnThis(),
       take: jest.fn().mockReturnThis(),
       getCount: jest.fn(),
@@ -293,6 +295,10 @@ describe('ProductsService', () => {
         { merchantId: mockMerchant.id },
       );
       expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith(
+        'product.isActive',
+        'DESC',
+      );
+      expect(mockQueryBuilder.addOrderBy).toHaveBeenCalledWith(
         'product.name',
         'ASC',
       );
@@ -341,6 +347,10 @@ describe('ProductsService', () => {
         { merchantId: mockMerchant.id },
       );
       expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith(
+        'product.isActive',
+        'DESC',
+      );
+      expect(mockQueryBuilder.addOrderBy).toHaveBeenCalledWith(
         'product.name',
         'ASC',
       );
