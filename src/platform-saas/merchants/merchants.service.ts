@@ -435,7 +435,10 @@ export class MerchantsService {
     userCompanyId: number,
     requestedCompanyId?: number,
   ): number {
-    if (user.role === UserRole.PORTAL_ADMIN) {
+    if (
+      user.role === UserRole.PORTAL_ADMIN ||
+      user.role === UserRole.SUPER_ADMIN
+    ) {
       return requestedCompanyId ?? userCompanyId;
     }
 
@@ -452,7 +455,10 @@ export class MerchantsService {
     merchant: Merchant,
     user: AuthenticatedUser,
   ): Promise<void> {
-    if (user.role === UserRole.PORTAL_ADMIN) {
+    if (
+      user.role === UserRole.PORTAL_ADMIN ||
+      user.role === UserRole.SUPER_ADMIN
+    ) {
       return;
     }
 

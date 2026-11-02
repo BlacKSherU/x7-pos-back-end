@@ -20,6 +20,7 @@ describe('RealtimeAuthService', () => {
 
   const mockSubscriptionAccessService = {
     getSubscriptionAccessForCompany: jest.fn(),
+    calculateEffectiveFeatures: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -66,10 +67,12 @@ describe('RealtimeAuthService', () => {
       isActive: true,
     });
 
-    mockSubscriptionAccessService.getSubscriptionAccessForCompany.mockResolvedValueOnce(
+    mockSubscriptionAccessService.calculateEffectiveFeatures.mockResolvedValueOnce(
       {
         planId: 1,
         authorizedFeatureIds: [1, 2],
+        shiftRole: null,
+        collaboratorId: undefined,
       },
     );
 
@@ -84,13 +87,20 @@ describe('RealtimeAuthService', () => {
       companyId: 55,
       planId: 1,
       authorizedFeatureIds: [1, 2],
+      shiftRole: null,
+      collaboratorId: undefined,
     });
     expect(mockUserRepository.findOne).toHaveBeenCalledWith({
       where: { id: 10 },
       relations: ['merchant'],
     });
     expect(
-      mockSubscriptionAccessService.getSubscriptionAccessForCompany,
-    ).toHaveBeenCalledWith(55);
+      mockSubscriptionAccessService.calculateEffectiveFeatures,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 10,
+        email: 'a@b.com',
+      }),
+    );
   });
 });

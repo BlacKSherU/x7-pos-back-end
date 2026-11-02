@@ -24,11 +24,15 @@ import {
   ApiOkResponse,
   ApiParam,
   ApiNotFoundResponse,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Scopes } from 'src/auth/decorators/scopes.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
 import { UserRole } from 'src/platform-saas/users/constants/role.enum';
 import { Scope } from 'src/platform-saas/users/constants/scope.enum';
 import { DeliveryFeeService } from './delivery-fee.service';
@@ -45,11 +49,14 @@ import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
 
 @ApiTags('Commerce - Delivery System - Delivery Fee')
+@ApiBearerAuth()
 @Controller('delivery-fee')
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.DELIVERY_FEES)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class DeliveryFeeController {
   constructor(private readonly deliveryFeeService: DeliveryFeeService) {}
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.MERCHANT_ANDROID,
@@ -137,7 +144,7 @@ export class DeliveryFeeController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Quote the delivery fee of an order',
     description:
@@ -160,7 +167,7 @@ export class DeliveryFeeController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Get a list of Delivery Fees',
     description: 'Endpoint to retrieve a paginated list of Delivery Fees.',
@@ -214,7 +221,7 @@ export class DeliveryFeeController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Delivery fee KPI summary',
     description:
@@ -249,7 +256,7 @@ export class DeliveryFeeController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Get a Delivery Fee by ID',
     description: 'Endpoint to retrieve a single Delivery Fee by its ID.',
@@ -339,7 +346,7 @@ export class DeliveryFeeController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Update a Delivery Fee by ID',
     description: 'Endpoint to update an existing Delivery Fee.',
@@ -437,7 +444,7 @@ export class DeliveryFeeController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Delete a Delivery Fee by ID',
     description: 'Endpoint to delete an existing Delivery Fee.',

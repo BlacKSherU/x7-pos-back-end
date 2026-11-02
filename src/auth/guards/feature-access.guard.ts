@@ -33,6 +33,10 @@ export class FeatureAccessGuard implements CanActivate {
       throw new UnauthorizedException('User not found in request');
     }
 
+    if (user.role === UserRole.SUPER_ADMIN) {
+      return true;
+    }
+
     const isMerchantUser =
       user.role === UserRole.MERCHANT_ADMIN ||
       user.role === UserRole.MERCHANT_USER;

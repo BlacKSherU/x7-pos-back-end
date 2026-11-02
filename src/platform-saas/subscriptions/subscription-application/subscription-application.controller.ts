@@ -109,7 +109,7 @@ export class SubscriptionApplicationController {
     return this.subscriptionApplicationService.create(dto);
   }
   @Get()
-  @Roles(UserRole.PORTAL_ADMIN)
+  @Roles(UserRole.PORTAL_ADMIN, UserRole.PORTAL_USER)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_ANDROID,
@@ -163,7 +163,7 @@ export class SubscriptionApplicationController {
     return this.subscriptionApplicationService.findAll(query);
   }
   @Get(':id')
-  @Roles(UserRole.PORTAL_ADMIN)
+  @Roles(UserRole.PORTAL_ADMIN, UserRole.PORTAL_USER)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,

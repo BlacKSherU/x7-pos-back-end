@@ -3,9 +3,8 @@ import {
   hashToken,
   isPasswordResetTokenLive,
 } from 'src/platform-saas/users/auth-tokens.util';
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/unbound-method */
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { DataSource, Repository } from 'typeorm';
@@ -27,11 +26,7 @@ import { OnboardingRegisterDto } from './dto/onboarding-register.dto';
 import { UsersService } from '../platform-saas/users/users.service';
 import { MailService } from '../mail/mail.service';
 import { LoginDto } from './dto/login.dto';
-import {
-  SubscriptionAccessService,
-  MSG_COMPANY_SUBSCRIPTION_OUTDATED,
-  MSG_NO_COMPANY_PLAN,
-} from './subscription-access.service';
+import { SubscriptionAccessService } from './subscription-access.service';
 import { UserRole } from '../platform-saas/users/constants/role.enum';
 import { getAllSubscriptionFeatureIds } from '../common/subscription/subscription-feature-ids';
 
@@ -99,6 +94,7 @@ describe('AuthService', () => {
 
   const mockSubscriptionAccessService = {
     getSubscriptionAccessForCompany: jest.fn(),
+    calculateEffectiveFeatures: jest.fn(),
   };
 
   const mockUser = {
@@ -197,8 +193,8 @@ describe('AuthService', () => {
 
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser as any);
       mockedBcrypt.compare.mockResolvedValue(true as never);
-      mockSubscriptionAccessService.getSubscriptionAccessForCompany.mockResolvedValue(
-        { planId, authorizedFeatureIds },
+      mockSubscriptionAccessService.calculateEffectiveFeatures.mockResolvedValue(
+        { planId, authorizedFeatureIds, shiftRole: null },
       );
       jest
         .spyOn(jwtService, 'sign')
@@ -219,8 +215,8 @@ describe('AuthService', () => {
         mockUser.password,
       );
       expect(
-        mockSubscriptionAccessService.getSubscriptionAccessForCompany,
-      ).toHaveBeenCalledWith(mockUser.merchant.companyId);
+        mockSubscriptionAccessService.calculateEffectiveFeatures,
+      ).toHaveBeenCalledWith(mockUser);
       expect(jwtService.sign).toHaveBeenCalledTimes(2);
       expect(usersService.updateRefreshToken).toHaveBeenCalledWith(
         mockUser.id,
@@ -238,6 +234,8 @@ describe('AuthService', () => {
           merchant: { id: mockUser.merchant.id },
           planId,
           authorizedFeatureIds,
+          shiftRole: null,
+          collaboratorId: undefined,
         },
       });
     });
@@ -298,8 +296,12 @@ describe('AuthService', () => {
 
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser as any);
       mockedBcrypt.compare.mockResolvedValue(true as never);
-      mockSubscriptionAccessService.getSubscriptionAccessForCompany.mockRejectedValue(
-        new UnauthorizedException(MSG_NO_COMPANY_PLAN),
+      mockSubscriptionAccessService.calculateEffectiveFeatures.mockResolvedValue(
+        {
+          planId: undefined,
+          authorizedFeatureIds: [],
+          shiftRole: null,
+        },
       );
       jest
         .spyOn(jwtService, 'sign')
@@ -321,8 +323,12 @@ describe('AuthService', () => {
 
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser as any);
       mockedBcrypt.compare.mockResolvedValue(true as never);
-      mockSubscriptionAccessService.getSubscriptionAccessForCompany.mockRejectedValue(
-        new UnauthorizedException(MSG_COMPANY_SUBSCRIPTION_OUTDATED),
+      mockSubscriptionAccessService.calculateEffectiveFeatures.mockResolvedValue(
+        {
+          planId: undefined,
+          authorizedFeatureIds: [],
+          shiftRole: null,
+        },
       );
       jest
         .spyOn(jwtService, 'sign')
@@ -352,6 +358,13 @@ describe('AuthService', () => {
         .spyOn(userRepository, 'findOne')
         .mockResolvedValue(portalUser as any);
       mockedBcrypt.compare.mockResolvedValue(true as never);
+      mockSubscriptionAccessService.calculateEffectiveFeatures.mockResolvedValue(
+        {
+          planId: undefined,
+          authorizedFeatureIds: catalogIds,
+          shiftRole: null,
+        },
+      );
       jest
         .spyOn(jwtService, 'sign')
         .mockReturnValueOnce(accessToken)
@@ -363,8 +376,8 @@ describe('AuthService', () => {
       const result = await service.login(loginDto);
 
       expect(
-        mockSubscriptionAccessService.getSubscriptionAccessForCompany,
-      ).not.toHaveBeenCalled();
+        mockSubscriptionAccessService.calculateEffectiveFeatures,
+      ).toHaveBeenCalledWith(portalUser);
       expect(result.user.planId).toBeUndefined();
       expect(result.user.authorizedFeatureIds).toEqual(catalogIds);
     });

@@ -9,4 +9,6 @@ export enum Scope {
   CLOVER_SDK = 'clover_sdk',
   PUBLIC_CHECKOUT = 'public_checkout',
   EXTERNAL_API = 'external_api',
+  KITCHEN_DEVICE = 'kitchen_device',
+  MERCHANT_DEVICE = 'merchant_device',
 }

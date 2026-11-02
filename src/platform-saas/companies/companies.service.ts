@@ -419,7 +419,10 @@ export class CompaniesService {
     companyId: number,
     user: AuthenticatedUser,
   ): Promise<void> {
-    if (user.role === UserRole.PORTAL_ADMIN) {
+    if (
+      user.role === UserRole.PORTAL_ADMIN ||
+      user.role === UserRole.SUPER_ADMIN
+    ) {
       return;
     }
 

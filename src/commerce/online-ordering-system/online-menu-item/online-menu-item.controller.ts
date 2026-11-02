@@ -58,7 +58,7 @@ export class OnlineMenuItemController {
   constructor(private readonly onlineMenuItemService: OnlineMenuItemService) {}
 
   @Post()
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -143,12 +143,7 @@ export class OnlineMenuItemController {
   }
 
   @Get()
-  @Roles(
-    UserRole.PORTAL_ADMIN,
-    UserRole.PORTAL_USER,
-    UserRole.MERCHANT_ADMIN,
-    UserRole.MERCHANT_USER,
-  )
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -269,12 +264,7 @@ export class OnlineMenuItemController {
   }
 
   @Get(':id')
-  @Roles(
-    UserRole.PORTAL_ADMIN,
-    UserRole.PORTAL_USER,
-    UserRole.MERCHANT_ADMIN,
-    UserRole.MERCHANT_USER,
-  )
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -315,7 +305,7 @@ export class OnlineMenuItemController {
   }
 
   @Put(':id')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -388,7 +378,7 @@ export class OnlineMenuItemController {
   }
 
   @Patch(':id')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -447,7 +437,7 @@ export class OnlineMenuItemController {
   }
 
   @Delete(':id')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,

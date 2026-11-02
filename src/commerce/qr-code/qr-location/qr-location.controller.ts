@@ -55,7 +55,7 @@ export class QRLocationController {
   constructor(private readonly qrLocationService: QRLocationService) {}
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -140,7 +140,7 @@ export class QRLocationController {
     return this.qrLocationService.create(dto, merchantScopeOf(user));
   }
   @Get()
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -194,7 +194,7 @@ export class QRLocationController {
     return this.qrLocationService.findAll(query, merchantScopeOf(user));
   }
   @Get(':id')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -293,7 +293,7 @@ export class QRLocationController {
     return qrLocation;
   }
   @Patch(':id')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -393,7 +393,7 @@ export class QRLocationController {
     return this.qrLocationService.update(id, dto, merchantScopeOf(user));
   }
   @Delete(':id')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,

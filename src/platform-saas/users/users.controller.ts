@@ -42,6 +42,10 @@ import {
   OneUserResponseDto,
   AllUsersResponseDto,
 } from './dtos/user-response.dto';
+import {
+  UserFeatureOverridesResponseDto,
+  UpdateFeatureOverridesDto,
+} from './dtos/user-feature-overrides.dto';
 import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
 
 @Controller('users')
@@ -76,7 +80,7 @@ export class UsersController {
   }
 
   @Get()
-  @Roles(UserRole.PORTAL_ADMIN)
+  @Roles(UserRole.PORTAL_ADMIN, UserRole.PORTAL_USER)
   @Scopes(Scope.ADMIN_PORTAL)
   @ApiOperation({ summary: 'Get all users' })
   @ApiOkResponse({
@@ -116,7 +120,7 @@ export class UsersController {
   }
 
   @Get(':id')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.PORTAL_ADMIN, UserRole.PORTAL_USER, UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -139,7 +143,7 @@ export class UsersController {
   }
 
   @Get('merchant/:merchantId')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.PORTAL_ADMIN, UserRole.PORTAL_USER, UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -163,7 +167,7 @@ export class UsersController {
   }
 
   @Get('email/:email')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.PORTAL_ADMIN, UserRole.PORTAL_USER, UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -264,7 +268,7 @@ export class UsersController {
   }
 
   @Get(':id/hr-summary')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.PORTAL_ADMIN, UserRole.PORTAL_USER, UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -287,5 +291,45 @@ export class UsersController {
     @Req() req: Request & { user: AuthenticatedUser },
   ): Promise<UserHrSummaryResponseDto> {
     return this.usersService.getHrSummary(id, req.user);
+  }
+
+  @Get(':id/feature-overrides')
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.SUPER_ADMIN)
+  @Scopes(Scope.MERCHANT_WEB, Scope.ADMIN_PORTAL)
+  @ApiOperation({
+    summary:
+      'Get feature overrides and base shift role permissions for a collaborator user',
+  })
+  @ApiParam({ name: 'id', type: Number, description: 'User ID' })
+  @ApiOkResponse({
+    description: 'User feature overrides and base permissions loaded',
+    type: UserFeatureOverridesResponseDto,
+  })
+  getFeatureOverrides(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: Request & { user: AuthenticatedUser },
+  ): Promise<UserFeatureOverridesResponseDto> {
+    return this.usersService.getFeatureOverrides(id, req.user);
+  }
+
+  @Put(':id/feature-overrides')
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.SUPER_ADMIN)
+  @Scopes(Scope.MERCHANT_WEB, Scope.ADMIN_PORTAL)
+  @ApiOperation({
+    summary:
+      'Update individual collaborator feature overrides (allow, deny, inherit)',
+  })
+  @ApiParam({ name: 'id', type: Number, description: 'User ID' })
+  @ApiBody({ type: UpdateFeatureOverridesDto })
+  @ApiOkResponse({
+    description: 'User feature overrides successfully persisted',
+    type: UserFeatureOverridesResponseDto,
+  })
+  updateFeatureOverrides(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateFeatureOverridesDto,
+    @Req() req: Request & { user: AuthenticatedUser },
+  ): Promise<UserFeatureOverridesResponseDto> {
+    return this.usersService.updateFeatureOverrides(id, dto, req.user);
   }
 }

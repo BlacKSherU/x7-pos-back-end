@@ -16,6 +16,9 @@ import { UpdateReservationDto } from './dto/update-reservation.dto';
 import { GetReservationsQueryDto } from './dto/get-reservations-query.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -35,7 +38,8 @@ import { AllPaginatedReservations } from './dto/all-paginated-reservations.dto';
 @ApiTags('Restaurant operations - Reservations - Reservation')
 @ApiBearerAuth()
 @Controller('reservation')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.RESERVATIONS)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class ReservationController {
   constructor(private readonly reservationService: ReservationService) {}
 

@@ -55,7 +55,7 @@ export class QROrderItemController {
   constructor(private readonly qrOrderItemService: QROrderItemService) {}
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -138,7 +138,7 @@ export class QROrderItemController {
     return this.qrOrderItemService.create(dto, merchantScopeOf(user));
   }
   @Get()
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -192,7 +192,7 @@ export class QROrderItemController {
     return this.qrOrderItemService.findAll(query, merchantScopeOf(user));
   }
   @Get(':id')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -291,7 +291,7 @@ export class QROrderItemController {
     return qrOrderItem;
   }
   @Patch(':id')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -391,7 +391,7 @@ export class QROrderItemController {
     return this.qrOrderItemService.update(id, dto, merchantScopeOf(user));
   }
   @Delete(':id')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,

@@ -55,7 +55,7 @@ export class QRMenuItemController {
   constructor(private readonly qrMenuItemService: QRMenuItemService) {}
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -146,7 +146,7 @@ export class QRMenuItemController {
     return this.qrMenuItemService.create(dto, merchantScopeOf(user));
   }
   @Get()
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -200,7 +200,7 @@ export class QRMenuItemController {
     return this.qrMenuItemService.findAll(query, merchantScopeOf(user));
   }
   @Get(':id')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -307,7 +307,7 @@ export class QRMenuItemController {
     return qrMenuItem;
   }
   @Patch(':id')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -415,7 +415,7 @@ export class QRMenuItemController {
     return this.qrMenuItemService.update(id, dto, merchantScopeOf(user));
   }
   @Delete(':id')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,

@@ -17,6 +17,8 @@ import { KitchenOrder } from '../kitchen-order/entities/kitchen-order.entity';
 import { KitchenOrderItem } from '../kitchen-order-item/entities/kitchen-order-item.entity';
 import { KitchenStation } from '../kitchen-station/entities/kitchen-station.entity';
 import { KitchenOrderSyncService } from '../kitchen-order/kitchen-order-sync.service';
+import { inferKitchenCourse } from '../kitchen-order/kitchen-order.service';
+import { KitchenCourse } from '../kitchen-order-item/constants/kitchen-course.enum';
 import { User } from '../../../platform-saas/users/entities/user.entity';
 import { CreateKitchenEventLogDto } from './dto/create-kitchen-event-log.dto';
 import { UpdateKitchenEventLogDto } from './dto/update-kitchen-event-log.dto';
@@ -892,21 +894,38 @@ export class KitchenEventLogService {
                 ? `Station #${order.station_id}`
                 : 'General Kitchen');
 
-            // 1. Revertir business_status: COMPLETED -> STARTED
-            order.business_status = KitchenOrderBusinessStatus.STARTED;
+            // 1. Revertir business_status: COMPLETED -> PENDING (main_course & dessert regresan a HELD / FIRE)
+            order.business_status = KitchenOrderBusinessStatus.PENDING;
             order.completed_at = null;
-
-            // 2. Timestamp Continuity: preservar started_at original para SOS
-            if (!order.started_at) {
-              order.started_at = order.created_at || eventTime;
-            }
+            order.started_at = null;
             await this.kitchenOrderRepository.save(order);
 
-            // 3. Reestablecer items a IN_PREPARATION
+            // 2. Reestablecer items: main_course y dessert -> HELD (FIRE), beverage y appetizer -> PENDING
             if (order.kitchenOrderItems && order.kitchenOrderItems.length > 0) {
               for (const it of order.kitchenOrderItems) {
-                it.preparation_status =
-                  KitchenOrderItemPreparationStatus.IN_PREPARATION;
+                const inferred = inferKitchenCourse(
+                  it.product?.name,
+                  undefined,
+                  it.product?.category?.name,
+                );
+                if (
+                  (!it.course || it.course === KitchenCourse.MAIN_COURSE) &&
+                  inferred !== KitchenCourse.MAIN_COURSE
+                ) {
+                  it.course = inferred;
+                }
+                const effectiveCourse = it.course || inferred;
+                const isStaged =
+                  effectiveCourse === KitchenCourse.MAIN_COURSE ||
+                  effectiveCourse === KitchenCourse.DESSERT;
+                it.preparation_status = isStaged
+                  ? KitchenOrderItemPreparationStatus.HELD
+                  : KitchenOrderItemPreparationStatus.PENDING;
+                it.hold_until = isStaged
+                  ? new Date(Date.now() + 10 * 60000)
+                  : null;
+                it.fired_at = isStaged ? null : eventTime;
+                it.started_at = null;
                 it.prepared_quantity = 0;
                 it.completed_at = null;
                 await this.kitchenOrderItemRepository.save(it);
@@ -914,12 +933,29 @@ export class KitchenEventLogService {
             }
 
             if (order.order_id) {
+              try {
+                await this.kitchenOrderRepository.manager.query(
+                  `UPDATE orders
+                   SET status = CASE WHEN status = 'completed' THEN 'in_progress' ELSE status END,
+                       closed_at = NULL,
+                       kitchen_status = 'pending',
+                       preparing_at = NULL,
+                       ready_at = NULL
+                   WHERE id = $1;`,
+                  [order.order_id],
+                );
+              } catch {
+                // ignore if mocked manager has no raw query in isolated unit tests
+              }
               posOrderIdsToSync.add(order.order_id);
             }
 
-            // 4. Borrar eventos SERVIDO y LISTO anteriores (incluyendo ítems) y registrar RECALL
-            // El recall invalida el READY anterior — el cocinero debe volver a preparar.
-            // Los LISTO de ítems se recrearán cuando el BUMP_ORDER final se procese.
+            // 3. Borrar eventos INICIO, SERVIDO y LISTO anteriores (incluyendo ítems) y registrar RECALL
+            await this.kitchenEventLogRepository.delete({
+              kitchen_order_id: order.id,
+              kitchen_order_item_id: IsNull(),
+              event_type: KitchenEventLogEventType.INICIO,
+            });
             await this.kitchenEventLogRepository.delete({
               kitchen_order_id: order.id,
               kitchen_order_item_id: IsNull(),

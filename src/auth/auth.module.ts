@@ -17,6 +17,9 @@ import { MerchantSubscription } from '../platform-saas/subscriptions/merchant-su
 import { PlanFeature } from '../platform-saas/subscriptions/plan-features/entity/plan-features.entity';
 import { CompanySubscription } from '../platform-saas/subscriptions/company-subscriptions/entities/company-subscription.entity';
 import { SubscriptionPlan } from '../platform-saas/subscriptions/subscription-plan/entity/subscription-plan.entity';
+import { FeatureShiftRole } from '../platform-saas/subscriptions/entities/feature-shift-role.entity';
+import { UserFeatureOverride } from '../platform-saas/subscriptions/entities/user-feature-override.entity';
+import { Collaborator } from '../finance-hr/hr/collaborators/entities/collaborator.entity';
 import { SubscriptionAccessService } from './subscription-access.service';
 import { FeatureAccessGuard } from './guards/feature-access.guard';
 
@@ -31,6 +34,9 @@ import { FeatureAccessGuard } from './guards/feature-access.guard';
       CompanySubscription,
       PlanFeature,
       SubscriptionPlan,
+      FeatureShiftRole,
+      UserFeatureOverride,
+      Collaborator,
     ]),
     PassportModule,
     JwtModule.registerAsync({

@@ -1,6 +1,10 @@
 import { Controller, Get, UseGuards, Query } from '@nestjs/common';
 import { KitchenAnalyticsService } from './kitchen-analytics.service';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
 import {
@@ -25,12 +29,13 @@ import { GetExecutiveAnalyticsQueryDto } from './dto/executive-analytics.dto';
 @ApiExtraModels(ErrorResponse, PrepTimeResponseDto, GetCancelledOrdersDto)
 @ApiTags('Restaurant operations - Kitchen Display System - Kitchen Analytics')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('kitchen-analytics')
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.KITCHEN_PERFORMANCE)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class KitchenAnalyticsController {
   constructor(private readonly service: KitchenAnalyticsService) {}
 
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -80,7 +85,7 @@ export class KitchenAnalyticsController {
   }
 
   @Get('cancelled-orders')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -174,7 +179,7 @@ export class KitchenAnalyticsController {
   }
 
   @Get('cancelled-orders/summary')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -247,7 +252,7 @@ export class KitchenAnalyticsController {
   }
 
   @Get('executive-summary')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -301,7 +306,7 @@ export class KitchenAnalyticsController {
   }
 
   @Get('station-efficiency')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -354,7 +359,7 @@ export class KitchenAnalyticsController {
   }
 
   @Get('bottlenecks')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -408,7 +413,7 @@ export class KitchenAnalyticsController {
   }
 
   @Get()
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,

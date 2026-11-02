@@ -26,11 +26,15 @@ import {
   ApiNotFoundResponse,
   ApiConflictResponse,
   ApiServiceUnavailableResponse,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Scopes } from 'src/auth/decorators/scopes.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
 import { UserRole } from 'src/platform-saas/users/constants/role.enum';
 import { Scope } from 'src/platform-saas/users/constants/scope.enum';
 import { DeliveryAssignmentService } from './delivery-assignment.service';
@@ -51,13 +55,16 @@ import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interf
 import { DELIVERY_DELAY_THRESHOLD_MINUTES } from './constants/delivery-assignment.constants';
 
 @ApiTags('Commerce - Delivery System - Delivery Assignment')
+@ApiBearerAuth()
 @Controller('delivery-assignment')
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.DELIVERY_ASSIGNMENTS)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class DeliveryAssignmentController {
   constructor(
     private readonly deliveryAssignmentService: DeliveryAssignmentService,
   ) {}
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.MERCHANT_ANDROID,
@@ -154,7 +161,7 @@ export class DeliveryAssignmentController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Quote a third-party (DSP) delivery',
     description:
@@ -187,7 +194,7 @@ export class DeliveryAssignmentController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Accept a DSP quote and dispatch the delivery',
     description:
@@ -215,7 +222,7 @@ export class DeliveryAssignmentController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Get a list of Delivery Assignments',
     description:
@@ -271,7 +278,7 @@ export class DeliveryAssignmentController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Dispatch KPI summary',
     description: `pending_dispatch: delivery orders with kitchen_status=ready and no open assignment. pending_assignments: assignments still PENDING. in_transit: PICKED_UP + IN_TRANSIT. avg_completion_minutes: assigned_at→delivered_at over deliveries of the last 24 h (null when none). delayed: ASSIGNED/PICKED_UP/IN_TRANSIT assigned more than ${DELIVERY_DELAY_THRESHOLD_MINUTES} minutes ago. in_house_share_pct / dsp_share_pct: split of open assignments (null when none). dsp_fee_today: sum of external_dsp_fee since server-local midnight.`,
@@ -309,7 +316,7 @@ export class DeliveryAssignmentController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Get a Delivery Assignment by ID',
     description: 'Endpoint to retrieve a single Delivery Assignment by its ID.',
@@ -400,7 +407,7 @@ export class DeliveryAssignmentController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Update a Delivery Assignment by ID',
     description:
@@ -499,7 +506,7 @@ export class DeliveryAssignmentController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Delete a Delivery Assignment by ID',
     description:

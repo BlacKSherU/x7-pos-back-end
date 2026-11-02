@@ -65,12 +65,7 @@ export class OnlineOrderController {
   ) {}
 
   @Post()
-  @Roles(
-    UserRole.PORTAL_ADMIN,
-    UserRole.PORTAL_USER,
-    UserRole.MERCHANT_ADMIN,
-    UserRole.MERCHANT_USER,
-  )
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -151,12 +146,7 @@ export class OnlineOrderController {
   }
 
   @Post(':id/accept')
-  @Roles(
-    UserRole.PORTAL_ADMIN,
-    UserRole.PORTAL_USER,
-    UserRole.MERCHANT_ADMIN,
-    UserRole.MERCHANT_USER,
-  )
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -191,12 +181,7 @@ export class OnlineOrderController {
   }
 
   @Post(':id/cancel')
-  @Roles(
-    UserRole.PORTAL_ADMIN,
-    UserRole.PORTAL_USER,
-    UserRole.MERCHANT_ADMIN,
-    UserRole.MERCHANT_USER,
-  )
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -223,12 +208,7 @@ export class OnlineOrderController {
   }
 
   @Patch(':id/fulfillment-status')
-  @Roles(
-    UserRole.PORTAL_ADMIN,
-    UserRole.PORTAL_USER,
-    UserRole.MERCHANT_ADMIN,
-    UserRole.MERCHANT_USER,
-  )
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -254,6 +234,7 @@ export class OnlineOrderController {
   ): Promise<OneOnlineOrderResponseDto> {
     const merchantId = req.user?.merchant?.id;
     const userId = req.user?.id;
+    let wasAcceptedJustNow = false;
     if (
       fulfillmentStatus &&
       fulfillmentStatus !== OnlineOrderFulfillmentStatus.RECEIVED &&
@@ -267,9 +248,13 @@ export class OnlineOrderController {
           userId,
           stationId ? Number(stationId) : undefined,
         );
+        wasAcceptedJustNow = true;
       }
     }
-    if (fulfillmentStatus === OnlineOrderFulfillmentStatus.ACCEPTED) {
+    if (
+      wasAcceptedJustNow &&
+      fulfillmentStatus === OnlineOrderFulfillmentStatus.ACCEPTED
+    ) {
       return this.onlineOrderService.findOne(id, merchantId);
     }
     return this.onlineOrderService.updateFulfillmentStatus(
@@ -281,12 +266,7 @@ export class OnlineOrderController {
   }
 
   @Get()
-  @Roles(
-    UserRole.PORTAL_ADMIN,
-    UserRole.PORTAL_USER,
-    UserRole.MERCHANT_ADMIN,
-    UserRole.MERCHANT_USER,
-  )
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -413,12 +393,7 @@ export class OnlineOrderController {
   }
 
   @Get(':id')
-  @Roles(
-    UserRole.PORTAL_ADMIN,
-    UserRole.PORTAL_USER,
-    UserRole.MERCHANT_ADMIN,
-    UserRole.MERCHANT_USER,
-  )
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -459,12 +434,7 @@ export class OnlineOrderController {
   }
 
   @Put(':id')
-  @Roles(
-    UserRole.PORTAL_ADMIN,
-    UserRole.PORTAL_USER,
-    UserRole.MERCHANT_ADMIN,
-    UserRole.MERCHANT_USER,
-  )
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -561,12 +531,7 @@ export class OnlineOrderController {
   }
 
   @Delete(':id')
-  @Roles(
-    UserRole.PORTAL_ADMIN,
-    UserRole.PORTAL_USER,
-    UserRole.MERCHANT_ADMIN,
-    UserRole.MERCHANT_USER,
-  )
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,

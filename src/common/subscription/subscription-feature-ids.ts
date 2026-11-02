@@ -1,6 +1,6 @@
 /**
  * Numeric `feature.id` from subscription reference seed (see
- * `src/database/seeds/reference-data.sql` INSERT INTO feature, ids 1–116).
+ * `src/database/seeds/reference-data.sql` INSERT INTO feature, 116 features).
  * Used with `@RequireFeature` / `FeatureAccessGuard`.
  */
 export const SUBSCRIPTION_FEATURE_IDS = {
@@ -61,7 +61,6 @@ export const SUBSCRIPTION_FEATURE_IDS = {
   PRODUCT_MANAGEMENT: 45,
   PURCHASE_ORDERS_MANAGEMENT: 46,
   STOCK_AND_STOCK_MOVEMENTS: 47,
-  SUPPLIERS_MANAGEMENT: 48,
   VARIANTS_MANAGEMENT: 49,
   // Dining
   FLOOR_PLANS: 50,
@@ -74,6 +73,7 @@ export const SUBSCRIPTION_FEATURE_IDS = {
   KITCHEN_ORDER_ITEMS: 56,
   KITCHEN_ORDERS: 57,
   KITCHEN_STATIONS: 58,
+  KITCHEN_PERFORMANCE: 117,
   // POS
   ORDER_DISCOUNTS: 59,
   ORDER_ITEMS: 60,

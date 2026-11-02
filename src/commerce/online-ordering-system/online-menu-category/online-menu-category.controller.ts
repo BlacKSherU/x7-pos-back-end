@@ -59,7 +59,7 @@ export class OnlineMenuCategoryController {
   ) {}
 
   @Post()
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -128,12 +128,7 @@ export class OnlineMenuCategoryController {
   }
 
   @Get()
-  @Roles(
-    UserRole.PORTAL_ADMIN,
-    UserRole.PORTAL_USER,
-    UserRole.MERCHANT_ADMIN,
-    UserRole.MERCHANT_USER,
-  )
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -232,12 +227,7 @@ export class OnlineMenuCategoryController {
   }
 
   @Get(':id')
-  @Roles(
-    UserRole.PORTAL_ADMIN,
-    UserRole.PORTAL_USER,
-    UserRole.MERCHANT_ADMIN,
-    UserRole.MERCHANT_USER,
-  )
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -285,7 +275,7 @@ export class OnlineMenuCategoryController {
   }
 
   @Put(':id')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -359,7 +349,7 @@ export class OnlineMenuCategoryController {
   }
 
   @Patch(':id')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -396,7 +386,7 @@ export class OnlineMenuCategoryController {
   }
 
   @Delete(':id')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,

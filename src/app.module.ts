@@ -37,7 +37,6 @@ import { RestaurantOperationsModule } from './restaurant-operations/restaurant-o
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
-        const isDev = config.get('NODE_ENV') === 'development';
         const useSSL = config.get('DB_SSL') === 'true';
 
         return {
@@ -48,8 +47,8 @@ import { RestaurantOperationsModule } from './restaurant-operations/restaurant-o
           password: config.get('DB_PASSWORD'),
           database: config.get('DB_NAME'),
 
-          // Only print SQL queries in development
-          logging: isDev,
+          // Only print SQL queries when DB_LOGGING=true
+          logging: config.get('DB_LOGGING') === 'true',
 
           // Automatic loading of all entities declared in each submodule (forFeature)
           autoLoadEntities: true,

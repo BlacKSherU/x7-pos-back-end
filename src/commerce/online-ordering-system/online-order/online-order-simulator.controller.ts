@@ -8,13 +8,15 @@ import { UserRole } from 'src/platform-saas/users/constants/role.enum';
 import { Request as ExpressRequest } from 'express';
 import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
 import { OnlineOrderService } from './online-order.service';
+import { inferKitchenCourse } from 'src/restaurant-operations/kitchen-display-system/kitchen-order/kitchen-order.service';
+import { KitchenCourse } from 'src/restaurant-operations/kitchen-display-system/kitchen-order-item/constants/kitchen-course.enum';
 
 type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
 
 @ApiTags('Online Orders (Dev Simulator)')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('online-orders')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class OnlineOrderSimulatorController {
   constructor(
     private readonly onlineOrderService: OnlineOrderService,
@@ -22,12 +24,7 @@ export class OnlineOrderSimulatorController {
   ) {}
 
   @Post('reset-test-data')
-  @Roles(
-    UserRole.PORTAL_ADMIN,
-    UserRole.PORTAL_USER,
-    UserRole.MERCHANT_ADMIN,
-    UserRole.MERCHANT_USER,
-  )
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
   @ApiOperation({
     summary:
       'Isolated dev simulator: Reset and re-seed Online Orders test data',
@@ -183,23 +180,63 @@ export class OnlineOrderSimulatorController {
       customerId = newCust[0]?.id;
     }
 
-    // 3. Ensure products exist
-    const prodRes = await this.dataSource.query(
-      `SELECT id FROM product WHERE "merchantId" = $1 LIMIT 2;`,
+    // 3. Ensure 1 real MAIN_COURSE food dish + 1 real BEVERAGE exist for this merchant
+    const prodRes: Array<{
+      id: number;
+      name: string | null;
+      category_name: string | null;
+    }> = await this.dataSource.query(
+      `SELECT p.id, p.name, c.name AS category_name
+       FROM product p
+       LEFT JOIN category c ON c.id = p."categoryId"
+       WHERE p."merchantId" = $1 AND COALESCE(p."isActive", true) = true
+       ORDER BY p.id ASC
+       LIMIT 50;`,
       [merchantId],
     );
-    let prod1Id = prodRes[0]?.id;
-    let prod2Id = prodRes[1]?.id;
 
-    if (!prod1Id) {
-      const anyProds = await this.dataSource.query(
-        `SELECT id FROM product LIMIT 2;`,
-      );
-      prod1Id = anyProds[0]?.id || 1;
-      prod2Id = anyProds[1]?.id || prod1Id;
-    } else if (!prod2Id) {
-      prod2Id = prod1Id;
+    let mainProd = prodRes.find(
+      (p) =>
+        inferKitchenCourse(p.name, undefined, p.category_name) ===
+        KitchenCourse.MAIN_COURSE,
+    );
+    let bevProd = prodRes.find(
+      (p) =>
+        inferKitchenCourse(p.name, undefined, p.category_name) ===
+        KitchenCourse.BEVERAGE,
+    );
+
+    if (!mainProd) {
+      const insertedMain: Array<{ id: number; name: string }> =
+        await this.dataSource.query(
+          `INSERT INTO product (name, sku, "basePrice", "merchantId", "isActive", stock)
+           VALUES ('Classic Smash Burger', $2, 14.90, $1, true, 50)
+           RETURNING id, name;`,
+          [merchantId, `MAIN-BURGER-${merchantId}`],
+        );
+      if (insertedMain[0]) {
+        mainProd = { ...insertedMain[0], category_name: 'Mains' };
+      }
     }
+
+    if (!bevProd) {
+      const insertedBev: Array<{ id: number; name: string }> =
+        await this.dataSource.query(
+          `INSERT INTO product (name, sku, "basePrice", "merchantId", "isActive", stock)
+           VALUES ('Iced Vanilla Latte', $2, 5.50, $1, true, 50)
+           RETURNING id, name;`,
+          [merchantId, `BEV-LATTE-${merchantId}`],
+        );
+      if (insertedBev[0]) {
+        bevProd = { ...insertedBev[0], category_name: 'Beverages' };
+      }
+    }
+
+    const prod1Id = mainProd?.id || prodRes[0]?.id || 1;
+    const prod2Id =
+      bevProd?.id && bevProd.id !== prod1Id
+        ? bevProd.id
+        : prodRes.find((p) => p.id !== prod1Id)?.id || prod1Id;
 
     // 4. SEED MODE: 5 orders (1 in each Kanban column)
     if (mode === 'seed') {
@@ -278,10 +315,10 @@ export class OnlineOrderSimulatorController {
 
           if (ko2) {
             await this.dataSource.query(
-              `INSERT INTO kitchen_order_item (kitchen_order_id, product_id, quantity, prepared_quantity, course, preparation_status, status)
+              `INSERT INTO kitchen_order_item (kitchen_order_id, product_id, quantity, prepared_quantity, course, preparation_status, hold_until, fired_at, status)
                VALUES
-               ($1, $2, 1, 0, 'main_course', 'pending', 'active'),
-               ($1, $3, 2, 0, 'beverage', 'pending', 'active');`,
+               ($1, $2, 1, 0, 'main_course', 'held', NOW() + INTERVAL '10 minutes', NULL, 'active'),
+               ($1, $3, 2, 0, 'beverage', 'pending', NULL, NOW(), 'active');`,
               [ko2, prod1Id, prod2Id],
             );
           }
@@ -332,7 +369,7 @@ export class OnlineOrderSimulatorController {
     if (newOrderId) {
       await this.dataSource.query(
         `INSERT INTO online_order_item (online_order_id, product_id, quantity, notes)
-         VALUES ($1, $2, 2, 'Extra sauce portion'), ($1, $3, 1, 'Artisan beverage');`,
+         VALUES ($1, $2, 1, 'Extra sauce on the side'), ($1, $3, 1, 'Light ice');`,
         [newOrderId, prod1Id, prod2Id],
       );
     }

@@ -40,6 +40,7 @@ import { KitchenOrderStatus } from '../kitchen-order/constants/kitchen-order-sta
 import { KitchenOrderBusinessStatus } from '../kitchen-order/constants/kitchen-order-business-status.enum';
 import { OrderItemStatus } from '../../../restaurant-operations/pos/order-item/constants/order-item-status.enum';
 import { KitchenOrderSyncService } from '../kitchen-order/kitchen-order-sync.service';
+import { inferKitchenCourse } from '../kitchen-order/kitchen-order.service';
 import { OrdersService } from '../../pos/orders/orders.service';
 import { KitchenEventLog } from '../kitchen-event-log/entities/kitchen-event-log.entity';
 import { KitchenEventLogEventType } from '../kitchen-event-log/constants/kitchen-event-log-event-type.enum';
@@ -1942,6 +1943,18 @@ export class KitchenOrderItemService {
       throw new Error('Product relation is not loaded for kitchen order item');
     }
 
+    const inferredCourse = inferKitchenCourse(
+      kitchenOrderItem.product.name,
+      undefined,
+      kitchenOrderItem.product.category?.name,
+    );
+    const resolvedCourse =
+      (!kitchenOrderItem.course ||
+        kitchenOrderItem.course === KitchenCourse.MAIN_COURSE) &&
+      inferredCourse !== KitchenCourse.MAIN_COURSE
+        ? inferredCourse
+        : kitchenOrderItem.course || KitchenCourse.MAIN_COURSE;
+
     return {
       id: kitchenOrderItem.id,
       kitchenOrderId: kitchenOrderItem.kitchen_order_id,
@@ -1951,7 +1964,7 @@ export class KitchenOrderItemService {
       quantity: kitchenOrderItem.quantity,
       preparedQuantity: kitchenOrderItem.prepared_quantity,
       preparationStatus: kitchenOrderItem.preparation_status,
-      course: kitchenOrderItem.course || KitchenCourse.MAIN_COURSE,
+      course: resolvedCourse,
       holdUntil: kitchenOrderItem.hold_until || null,
       firedAt: kitchenOrderItem.fired_at || null,
       status: kitchenOrderItem.status,

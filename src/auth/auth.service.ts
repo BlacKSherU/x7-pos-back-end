@@ -27,14 +27,9 @@ import { SubscriptionPlan } from '../platform-saas/subscriptions/subscription-pl
 import { LoginDto } from './dto/login.dto';
 import { OnboardingRegisterDto } from './dto/onboarding-register.dto';
 import { JwtPayload } from 'src/auth/interfaces/JwtPayload.interface';
-import {
-  MSG_COMPANY_SUBSCRIPTION_OUTDATED,
-  MSG_NO_COMPANY_PLAN,
-  SubscriptionAccessService,
-} from './subscription-access.service';
+import { SubscriptionAccessService } from './subscription-access.service';
 import { UserRole } from 'src/platform-saas/users/constants/role.enum';
 import { Scope } from 'src/platform-saas/users/constants/scope.enum';
-import { getAllSubscriptionFeatureIds } from 'src/common/subscription/subscription-feature-ids';
 import { availableUsername } from './utils/available-username.util';
 import { isDevelopmentEnv } from 'src/config/environment';
 
@@ -93,47 +88,12 @@ export class AuthService {
       );
     }
 
-    const isPortalStaff =
-      user.role === UserRole.PORTAL_ADMIN || user.role === UserRole.PORTAL_USER;
-
-    let planId: number | undefined;
-    let authorizedFeatureIds: number[] = [];
-
-    if (isPortalStaff) {
-      planId = undefined;
-      authorizedFeatureIds = getAllSubscriptionFeatureIds();
-    } else {
-      const companyId = user.merchant.companyId;
-      if (!companyId) {
-        throw new UnauthorizedException(
-          'User does not have an associated company',
-        );
-      }
-      try {
-        const access =
-          await this.subscriptionAccessService.getSubscriptionAccessForCompany(
-            companyId,
-          );
-        planId = access.planId;
-        authorizedFeatureIds = access.authorizedFeatureIds;
-      } catch (err) {
-        const message = (err as { message?: string }).message ?? '';
-        if (
-          message === MSG_NO_COMPANY_PLAN ||
-          message === MSG_COMPANY_SUBSCRIPTION_OUTDATED
-        ) {
-          planId = undefined;
-          authorizedFeatureIds = [];
-        } else {
-          this.logger.warn(
-            `Failed to evaluate subscription access for companyId: ${companyId}`,
-            err,
-          );
-          planId = undefined;
-          authorizedFeatureIds = [];
-        }
-      }
-    }
+    const effectiveAccess =
+      await this.subscriptionAccessService.calculateEffectiveFeatures(user);
+    const planId = effectiveAccess.planId;
+    const authorizedFeatureIds = effectiveAccess.authorizedFeatureIds;
+    const shiftRole = effectiveAccess.shiftRole;
+    const collaboratorId = effectiveAccess.collaboratorId;
 
     const payload = {
       sub: user.id,
@@ -171,6 +131,8 @@ export class AuthService {
         merchant: { id: user.merchant.id },
         planId,
         authorizedFeatureIds,
+        shiftRole,
+        collaboratorId,
       },
     };
   }

@@ -143,7 +143,10 @@ export class MerchantTaxRuleService {
       .leftJoin('merchantTaxRule.merchant', 'merchant')
       .select(TAX_RULE_SELECT_FIELDS);
 
-    if (user.role !== UserRole.PORTAL_ADMIN) {
+    if (
+      user.role !== UserRole.PORTAL_ADMIN &&
+      user.role !== UserRole.SUPER_ADMIN
+    ) {
       const { companyId } = await resolveMerchantContext(
         this.merchantRepository,
         user,

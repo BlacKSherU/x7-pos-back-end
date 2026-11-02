@@ -17,6 +17,9 @@ import { AllPaginatedReservationStatusHistory } from './dto/all-paginated-reserv
 import { GetReservationStatusHistoryQueryDto } from './dto/get-reservation-status-history-query.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { UserRole } from 'src/platform-saas/users/constants/role.enum';
 import { Scopes } from 'src/auth/decorators/scopes.decorator';
@@ -134,7 +137,8 @@ const UNAUTHORIZED_EXAMPLE = { message: 'Unauthorized', statusCode: 401 };
 @ApiTags('Restaurant operations - Reservations - Status History')
 @ApiBearerAuth()
 @Controller('reservation-status-history')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.RESERVATION_STATUS_HISTORY)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class ReservationStatusHistoryController {
   constructor(
     private readonly historyService: ReservationStatusHistoryService,

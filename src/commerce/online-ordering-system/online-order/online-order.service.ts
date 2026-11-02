@@ -453,9 +453,7 @@ export class OnlineOrderService {
 
     if (
       existingOnlineOrder.fulfillment_status ===
-        OnlineOrderFulfillmentStatus.COMPLETED ||
-      existingOnlineOrder.fulfillment_status ===
-        OnlineOrderFulfillmentStatus.CANCELLED
+      OnlineOrderFulfillmentStatus.CANCELLED
     ) {
       throw new BadRequestException(
         `Cannot edit an online order in '${existingOnlineOrder.fulfillment_status}' status`,
@@ -469,6 +467,19 @@ export class OnlineOrderService {
       updateOnlineOrderDto.notes !== undefined ||
       updateOnlineOrderDto.scheduledAt !== undefined ||
       updateOnlineOrderDto.paymentStatus !== undefined;
+
+    if (
+      existingOnlineOrder.fulfillment_status ===
+        OnlineOrderFulfillmentStatus.COMPLETED &&
+      (isEditingDetails ||
+        updateOnlineOrderDto.fulfillmentStatus === undefined ||
+        updateOnlineOrderDto.fulfillmentStatus ===
+          OnlineOrderFulfillmentStatus.COMPLETED)
+    ) {
+      throw new BadRequestException(
+        `Cannot edit an online order in '${existingOnlineOrder.fulfillment_status}' status`,
+      );
+    }
 
     const currentFulfillmentStatus =
       existingOnlineOrder.fulfillment_status ||
@@ -955,7 +966,9 @@ export class OnlineOrderService {
           );
           await this.dataSource.query(
             `UPDATE orders
-             SET kitchen_status = 'preparing',
+             SET status = CASE WHEN status = 'completed' THEN 'in_progress' ELSE status END,
+                 closed_at = NULL,
+                 kitchen_status = 'preparing',
                  ready_at = NULL
              WHERE id = $1;`,
             [posOrderId],
@@ -1094,19 +1107,24 @@ export class OnlineOrderService {
           );
         }
       } else if (status === OnlineOrderFulfillmentStatus.ACCEPTED) {
-        // Revert KDS comanda & items to pending
+        // Revert KDS comanda & items to pending (with main_course and dessert in HELD / FIRE)
         await this.dataSource.query(
           `UPDATE kitchen_order
            SET business_status = 'pending',
-               started_at = NULL
+               started_at = NULL,
+               completed_at = NULL
            WHERE (online_order_id = $1 ${posOrderId ? 'OR order_id = $2' : ''})
              AND business_status != 'cancelled';`,
           posOrderId ? [onlineOrderId, posOrderId] : [onlineOrderId],
         );
         await this.dataSource.query(
           `UPDATE kitchen_order_item
-           SET preparation_status = 'pending',
-               started_at = NULL
+           SET preparation_status = CASE WHEN course IN ('main_course', 'dessert') THEN 'held' ELSE 'pending' END,
+               hold_until = CASE WHEN course IN ('main_course', 'dessert') THEN NOW() + INTERVAL '10 minutes' ELSE NULL END,
+               fired_at = CASE WHEN course IN ('main_course', 'dessert') THEN NULL ELSE NOW() END,
+               started_at = NULL,
+               completed_at = NULL,
+               prepared_quantity = 0
            WHERE kitchen_order_id IN (
              SELECT id FROM kitchen_order
              WHERE online_order_id = $1 ${posOrderId ? 'OR order_id = $2' : ''}
@@ -1115,12 +1133,32 @@ export class OnlineOrderService {
           posOrderId ? [onlineOrderId, posOrderId] : [onlineOrderId],
         );
         for (const ko of koRows) {
+          const wasCompleted = await this.dataSource.query(
+            `SELECT 1 FROM kitchen_event_log
+             WHERE kitchen_order_id = $1
+               AND event_type IN ('servido', 'listo')
+               AND status = 'active'
+             LIMIT 1;`,
+            [ko.id],
+          );
           await this.dataSource.query(
             `DELETE FROM kitchen_event_log
              WHERE kitchen_order_id = $1
                AND event_type IN ('inicio', 'listo', 'servido');`,
             [ko.id],
           );
+          if (wasCompleted.length > 0) {
+            await this.dataSource.query(
+              `INSERT INTO kitchen_event_log (kitchen_order_id, station_id, user_id, event_type, event_time, status, message)
+               VALUES ($1, $2, $3, 'recall', NOW(), 'active', $4);`,
+              [
+                ko.id,
+                ko.station_id || null,
+                userId || null,
+                `Order #KO-${ko.id} recalled to kitchen`,
+              ],
+            );
+          }
         }
         if (posOrderId) {
           await this.dataSource.query(
@@ -1131,7 +1169,9 @@ export class OnlineOrderService {
           );
           await this.dataSource.query(
             `UPDATE orders
-             SET kitchen_status = 'pending',
+             SET status = CASE WHEN status = 'completed' THEN 'in_progress' ELSE status END,
+                 closed_at = NULL,
+                 kitchen_status = 'pending',
                  preparing_at = NULL,
                  ready_at = NULL
              WHERE id = $1;`,
