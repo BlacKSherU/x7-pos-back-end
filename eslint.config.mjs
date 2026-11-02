@@ -12,6 +12,7 @@ export default tseslint.config(
       'node_modules/**',
       '**/*.spec.ts',
       '**/*.e2e-spec.ts',
+      'test/e2e/run.js',
     ],
   },
   eslint.configs.recommended,
