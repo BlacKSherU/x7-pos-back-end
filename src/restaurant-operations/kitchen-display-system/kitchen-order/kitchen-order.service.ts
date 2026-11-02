@@ -33,9 +33,10 @@ import { Product } from '../../../inventory/products-inventory/products/entities
 import { Variant } from '../../../inventory/products-inventory/variants/entities/variant.entity';
 import { CreateKitchenOrderDto } from './dto/create-kitchen-order.dto';
 
-function inferKitchenCourse(
+export function inferKitchenCourse(
   productName?: string | null,
   explicitCourse?: string,
+  categoryName?: string | null,
 ): KitchenCourse {
   if (explicitCourse) {
     const norm = explicitCourse.toLowerCase().trim();
@@ -43,8 +44,8 @@ function inferKitchenCourse(
     if (norm === 'appetizer' || norm === 'starter')
       return KitchenCourse.APPETIZER;
     if (norm === 'dessert') return KitchenCourse.DESSERT;
-    if (norm === 'main_course' || norm === 'main')
-      return KitchenCourse.MAIN_COURSE;
+    // Note: Do not return MAIN_COURSE early here because callers often pass 'main_course'
+    // as an unverified default even for beverages or desserts. Check product name & category first!
   }
 
   const p = (productName || '').toLowerCase();
@@ -53,8 +54,14 @@ function inferKitchenCourse(
     p.includes('cappuccino') ||
     p.includes('latte') ||
     p.includes('cafe') ||
+    p.includes('café') ||
     p.includes('coffee') ||
     p.includes('espresso') ||
+    p.includes('americano') ||
+    p.includes('mocha') ||
+    p.includes('macchiato') ||
+    p.includes('matcha') ||
+    p.includes('frappe') ||
     p.includes('tea') ||
     p.includes('té') ||
     p.includes('beer') ||
@@ -62,19 +69,35 @@ function inferKitchenCourse(
     p.includes('vino') ||
     p.includes('wine') ||
     p.includes('soda') ||
+    p.includes('cola') ||
+    p.includes('pepsi') ||
+    p.includes('sprite') ||
+    p.includes('fanta') ||
+    p.includes('ginger ale') ||
     p.includes('juice') ||
     p.includes('jugo') ||
     p.includes('water') ||
     p.includes('agua') ||
+    p.includes('mineral') ||
+    p.includes('tonic') ||
     p.includes('cocktail') ||
+    p.includes('mojito') ||
+    p.includes('daiquiri') ||
+    p.includes('spritz') ||
+    p.includes('smoothie') ||
+    p.includes('milkshake') ||
+    p.includes('batido') ||
+    p.includes('refresco') ||
+    p.includes('gaseosa') ||
     p.includes('drink') ||
     p.includes('beverage') ||
-    p.includes('limonada')
+    p.includes('limonada') ||
+    p.includes('lemonade')
   ) {
     return KitchenCourse.BEVERAGE;
   }
 
-  // Desserts
+  // Desserts & Pastries
   if (
     p.includes('cake') ||
     p.includes('torta') ||
@@ -87,7 +110,26 @@ function inferKitchenCourse(
     p.includes('brownie') ||
     p.includes('cheesecake') ||
     p.includes('croissant') ||
-    p.includes('volcan')
+    p.includes('crossaint') ||
+    p.includes('croisant') ||
+    p.includes('medialuna') ||
+    p.includes('volcan') ||
+    p.includes('muffin') ||
+    p.includes('cookie') ||
+    p.includes('galleta') ||
+    p.includes('donut') ||
+    p.includes('dona') ||
+    p.includes('tiramisu') ||
+    p.includes('flan') ||
+    p.includes('churro') ||
+    p.includes('macaron') ||
+    p.includes('eclair') ||
+    p.includes('pastry') ||
+    p.includes('crepe') ||
+    p.includes('waffle') ||
+    p.includes('pan dulce') ||
+    p.includes('tart') ||
+    p.includes('tarta')
   ) {
     return KitchenCourse.DESSERT;
   }
@@ -111,6 +153,54 @@ function inferKitchenCourse(
     p.includes('roll')
   ) {
     return KitchenCourse.APPETIZER;
+  }
+
+  const c = (categoryName || '').toLowerCase();
+  if (c) {
+    if (
+      c.includes('beverage') ||
+      c.includes('drink') ||
+      c.includes('bebida') ||
+      c.includes('bar') ||
+      c.includes('coffee') ||
+      c.includes('café') ||
+      c.includes('cafe') ||
+      c.includes('tea') ||
+      c.includes('cocktail') ||
+      c.includes('wine') ||
+      c.includes('vino') ||
+      c.includes('beer') ||
+      c.includes('cerveza') ||
+      c.includes('juice') ||
+      c.includes('jugo') ||
+      c.includes('soda')
+    ) {
+      return KitchenCourse.BEVERAGE;
+    }
+    if (
+      c.includes('dessert') ||
+      c.includes('postre') ||
+      c.includes('bakery') ||
+      c.includes('pastry') ||
+      c.includes('panader') ||
+      c.includes('reposter') ||
+      c.includes('sweet') ||
+      c.includes('dulce')
+    ) {
+      return KitchenCourse.DESSERT;
+    }
+    if (
+      c.includes('appetizer') ||
+      c.includes('starter') ||
+      c.includes('entrada') ||
+      c.includes('tapas') ||
+      c.includes('salad') ||
+      c.includes('ensalada') ||
+      c.includes('soup') ||
+      c.includes('sopa')
+    ) {
+      return KitchenCourse.APPETIZER;
+    }
   }
 
   return KitchenCourse.MAIN_COURSE;
@@ -544,7 +634,41 @@ export class KitchenOrderService {
               status: OrderItemStatus.ACTIVE,
             },
           });
+
+          const productIds = Array.from(
+            new Set(
+              orderItems
+                .map((oi) => oi.product_id)
+                .filter((pid): pid is number => typeof pid === 'number'),
+            ),
+          );
+          const products =
+            productIds.length > 0
+              ? await queryRunner.manager.find(Product, {
+                  where: { id: In(productIds) },
+                  relations: ['category'],
+                })
+              : [];
+          const productMap = new Map(products.map((p) => [p.id, p]));
+          const orderPriority = savedKitchenOrder.priority ?? 0;
+          const isOrderAlreadyStarted =
+            savedKitchenOrder.business_status ===
+            KitchenOrderBusinessStatus.STARTED;
+
           for (const oi of orderItems) {
+            const prod = productMap.get(oi.product_id);
+            const assignedCourse = inferKitchenCourse(
+              prod?.name,
+              undefined,
+              prod?.category?.name,
+            );
+            const { isHeld, delayMinutes } = calculatePacingHoldMinutes(
+              assignedCourse,
+              orderPriority,
+            );
+            const shouldHold = !isOrderAlreadyStarted && isHeld;
+            const now = new Date();
+
             const koi = queryRunner.manager.create(KitchenOrderItem, {
               kitchen_order_id: savedKitchenOrder.id,
               order_item_id: oi.id,
@@ -552,11 +676,20 @@ export class KitchenOrderService {
               variant_id: oi.variant_id,
               quantity: oi.quantity,
               prepared_quantity: 0,
-              preparation_status: KitchenOrderItemPreparationStatus.PENDING,
+              course: assignedCourse,
+              preparation_status: isOrderAlreadyStarted
+                ? KitchenOrderItemPreparationStatus.IN_PREPARATION
+                : shouldHold
+                  ? KitchenOrderItemPreparationStatus.HELD
+                  : KitchenOrderItemPreparationStatus.PENDING,
+              hold_until: shouldHold
+                ? new Date(now.getTime() + delayMinutes * 60 * 1000)
+                : null,
+              fired_at: shouldHold ? null : now,
               status: KitchenOrderItemStatus.ACTIVE,
-              started_at: null,
+              started_at: isOrderAlreadyStarted ? now : null,
               completed_at: null,
-              notes: null,
+              notes: oi.notes || null,
             });
             await queryRunner.manager.save(KitchenOrderItem, koi);
           }
@@ -965,7 +1098,8 @@ export class KitchenOrderService {
 
       if (
         updateKitchenOrderDto.businessStatus ===
-        KitchenOrderBusinessStatus.STARTED
+          KitchenOrderBusinessStatus.STARTED &&
+        previousBusinessStatus !== KitchenOrderBusinessStatus.COMPLETED
       ) {
         const startNow = new Date();
         existingKitchenOrder.started_at = startNow;
@@ -1128,33 +1262,49 @@ export class KitchenOrderService {
         }
       }
 
-      // Recall de la orden: Si estaba COMPLETADA y regresa a STARTED (Historia X7P-4209)
+      // Recall de la orden: Si estaba COMPLETADA y regresa a activa (PENDING con pacing HELD/FIRE para main_course y dessert)
       if (
         previousBusinessStatus === KitchenOrderBusinessStatus.COMPLETED &&
         updateKitchenOrderDto.businessStatus ===
           KitchenOrderBusinessStatus.STARTED
       ) {
         isRecall = true;
+        existingKitchenOrder.business_status =
+          KitchenOrderBusinessStatus.PENDING;
         existingKitchenOrder.completed_at = null;
+        existingKitchenOrder.started_at = null;
 
-        // Preservar timestamp de inicio original para SOS
-        if (!existingKitchenOrder.started_at) {
-          existingKitchenOrder.started_at =
-            existingKitchenOrder.created_at || new Date();
-        }
-
-        // Todos sus ítems regresan a PREPARING con 0 preparados
         const itemRepo = this.dataSource.getRepository(KitchenOrderItem);
         const orderItems = await itemRepo.find({
           where: {
             kitchen_order_id: existingKitchenOrder.id,
             status: KitchenOrderItemStatus.ACTIVE,
           },
+          relations: ['product', 'product.category'],
         });
 
         for (const item of orderItems) {
-          item.preparation_status =
-            KitchenOrderItemPreparationStatus.IN_PREPARATION;
+          const inferred = inferKitchenCourse(
+            item.product?.name,
+            undefined,
+            item.product?.category?.name,
+          );
+          if (
+            (!item.course || item.course === KitchenCourse.MAIN_COURSE) &&
+            inferred !== KitchenCourse.MAIN_COURSE
+          ) {
+            item.course = inferred;
+          }
+          const effectiveCourse = item.course || inferred;
+          const isStaged =
+            effectiveCourse === KitchenCourse.MAIN_COURSE ||
+            effectiveCourse === KitchenCourse.DESSERT;
+          item.preparation_status = isStaged
+            ? KitchenOrderItemPreparationStatus.HELD
+            : KitchenOrderItemPreparationStatus.PENDING;
+          item.hold_until = isStaged ? new Date(Date.now() + 10 * 60000) : null;
+          item.fired_at = isStaged ? null : new Date();
+          item.started_at = null;
           item.prepared_quantity = 0;
           item.completed_at = null;
           await itemRepo.save(item);
@@ -1171,6 +1321,11 @@ export class KitchenOrderService {
           }
 
           const eventLogRepo = this.dataSource.getRepository(KitchenEventLog);
+          await eventLogRepo.delete({
+            kitchen_order_id: existingKitchenOrder.id,
+            kitchen_order_item_id: IsNull(),
+            event_type: KitchenEventLogEventType.INICIO,
+          });
           await eventLogRepo.delete({
             kitchen_order_id: existingKitchenOrder.id,
             kitchen_order_item_id: IsNull(),
@@ -1201,6 +1356,9 @@ export class KitchenOrderService {
         updateKitchenOrderDto.businessStatus ===
         KitchenOrderBusinessStatus.PENDING
       ) {
+        if (previousBusinessStatus === KitchenOrderBusinessStatus.COMPLETED) {
+          isRecall = true;
+        }
         existingKitchenOrder.started_at = null;
         existingKitchenOrder.completed_at = null;
 
@@ -1211,19 +1369,32 @@ export class KitchenOrderService {
             kitchen_order_id: existingKitchenOrder.id,
             status: KitchenOrderItemStatus.ACTIVE,
           },
+          relations: ['product', 'product.category'],
         });
 
         for (const item of orderItems) {
+          const inferred = inferKitchenCourse(
+            item.product?.name,
+            undefined,
+            item.product?.category?.name,
+          );
+          if (
+            (!item.course || item.course === KitchenCourse.MAIN_COURSE) &&
+            inferred !== KitchenCourse.MAIN_COURSE
+          ) {
+            item.course = inferred;
+          }
+          const effectiveCourse = item.course || inferred;
           const isStaged =
-            item.course === KitchenCourse.MAIN_COURSE ||
-            item.course === KitchenCourse.DESSERT;
+            effectiveCourse === KitchenCourse.MAIN_COURSE ||
+            effectiveCourse === KitchenCourse.DESSERT;
           item.preparation_status = isStaged
             ? KitchenOrderItemPreparationStatus.HELD
             : KitchenOrderItemPreparationStatus.PENDING;
           item.prepared_quantity = 0;
           item.started_at = null;
           item.completed_at = null;
-          item.fired_at = null;
+          item.fired_at = isStaged ? null : new Date();
           if (isStaged) {
             item.hold_until = new Date(Date.now() + 10 * 60000);
           } else {
@@ -1374,28 +1545,43 @@ export class KitchenOrderService {
       throw new NotFoundException('Kitchen order not found');
     }
 
-    // 1. Revert business_status: COMPLETED -> STARTED
-    existingKitchenOrder.business_status = KitchenOrderBusinessStatus.STARTED;
+    // 1. Revert business_status: COMPLETED -> PENDING (main_course & dessert return to HELD / FIRE)
+    existingKitchenOrder.business_status = KitchenOrderBusinessStatus.PENDING;
     existingKitchenOrder.completed_at = null;
+    existingKitchenOrder.started_at = null;
 
-    // 2. Timestamp Continuity: preserve original started_at so SOS remains accurate
-    if (!existingKitchenOrder.started_at) {
-      existingKitchenOrder.started_at =
-        existingKitchenOrder.created_at || new Date();
-    }
-
-    // 3. Reset order items: completed_at = null, preparation_status = IN_PREPARATION
+    // 2. Reset order items: main_course & dessert -> HELD (FIRE), beverage & appetizer -> PENDING
     const itemRepo = this.dataSource.getRepository(KitchenOrderItem);
     const orderItems = await itemRepo.find({
       where: {
         kitchen_order_id: existingKitchenOrder.id,
         status: KitchenOrderItemStatus.ACTIVE,
       },
+      relations: ['product', 'product.category'],
     });
 
     for (const item of orderItems) {
-      item.preparation_status =
-        KitchenOrderItemPreparationStatus.IN_PREPARATION;
+      const inferred = inferKitchenCourse(
+        item.product?.name,
+        undefined,
+        item.product?.category?.name,
+      );
+      if (
+        (!item.course || item.course === KitchenCourse.MAIN_COURSE) &&
+        inferred !== KitchenCourse.MAIN_COURSE
+      ) {
+        item.course = inferred;
+      }
+      const effectiveCourse = item.course || inferred;
+      const isStaged =
+        effectiveCourse === KitchenCourse.MAIN_COURSE ||
+        effectiveCourse === KitchenCourse.DESSERT;
+      item.preparation_status = isStaged
+        ? KitchenOrderItemPreparationStatus.HELD
+        : KitchenOrderItemPreparationStatus.PENDING;
+      item.hold_until = isStaged ? new Date(Date.now() + 10 * 60000) : null;
+      item.fired_at = isStaged ? null : new Date();
+      item.started_at = null;
       item.prepared_quantity = 0;
       item.completed_at = null;
       await itemRepo.save(item);
@@ -1403,7 +1589,7 @@ export class KitchenOrderService {
 
     await this.kitchenOrderRepository.save(existingKitchenOrder);
 
-    // 4. Audit Event Logging: INICIO with message "Order #KO-X recalled to station Y"
+    // 3. Audit Event Logging: clean INICIO/SERVIDO/LISTO and record RECALL
     const stationName =
       existingKitchenOrder.station?.name ||
       (existingKitchenOrder.station_id
@@ -1412,6 +1598,11 @@ export class KitchenOrderService {
 
     try {
       const eventLogRepo = this.dataSource.getRepository(KitchenEventLog);
+      await eventLogRepo.delete({
+        kitchen_order_id: existingKitchenOrder.id,
+        kitchen_order_item_id: IsNull(),
+        event_type: KitchenEventLogEventType.INICIO,
+      });
       await eventLogRepo.delete({
         kitchen_order_id: existingKitchenOrder.id,
         kitchen_order_item_id: IsNull(),
@@ -1437,7 +1628,7 @@ export class KitchenOrderService {
       this.logger.error('Failed to log RECALL event', errorStack(err));
     }
 
-    // 5. Synchronize POS order & Online Order back to in_preparation
+    // 4. Synchronize POS order & Online Order back to accepted / pending
     await this.syncPosAndOnlineOrder(existingKitchenOrder, true);
 
     const response = await this.findOne(id, authenticatedUserMerchantId);
@@ -1727,6 +1918,18 @@ export class KitchenOrderService {
     if (!kitchenOrderItem.product) {
       throw new Error('Product relation is not loaded for kitchen order item');
     }
+    const inferredCourse = inferKitchenCourse(
+      kitchenOrderItem.product.name,
+      undefined,
+      kitchenOrderItem.product.category?.name,
+    );
+    const resolvedCourse =
+      (!kitchenOrderItem.course ||
+        kitchenOrderItem.course === KitchenCourse.MAIN_COURSE) &&
+      inferredCourse !== KitchenCourse.MAIN_COURSE
+        ? inferredCourse
+        : kitchenOrderItem.course || KitchenCourse.MAIN_COURSE;
+
     return {
       id: kitchenOrderItem.id,
       kitchenOrderId: kitchenOrderItem.kitchen_order_id,
@@ -1736,7 +1939,7 @@ export class KitchenOrderService {
       quantity: kitchenOrderItem.quantity,
       preparedQuantity: kitchenOrderItem.prepared_quantity,
       preparationStatus: kitchenOrderItem.preparation_status,
-      course: kitchenOrderItem.course || KitchenCourse.MAIN_COURSE,
+      course: resolvedCourse,
       holdUntil: kitchenOrderItem.hold_until || null,
       firedAt: kitchenOrderItem.fired_at || null,
       status: kitchenOrderItem.status,
@@ -1781,55 +1984,44 @@ export class KitchenOrderService {
         }
       }
 
+      if (isRecall && targetOrderId) {
+        await this.dataSource.query(
+          `UPDATE orders
+           SET status = CASE WHEN status = 'completed' THEN 'in_progress' ELSE status END,
+               closed_at = NULL,
+               kitchen_status = 'pending',
+               preparing_at = NULL,
+               ready_at = NULL
+           WHERE id = $1;`,
+          [targetOrderId],
+        );
+        await this.dataSource.query(
+          `UPDATE order_item
+           SET kitchen_status = 'pending'
+           WHERE order_id = $1 AND kitchen_status != 'cancelled';`,
+          [targetOrderId],
+        );
+      }
+
       if (targetOrderId) {
         await this.kitchenOrderSyncService.syncPosOrderFromKitchenOrders(
           targetOrderId,
         );
-      }
-
-      if (isRecall) {
-        const onlineOrderId =
-          kitchenOrder.online_order_id ||
-          (targetOrderId
-            ? (
-                await this.onlineOrderRepository.findOne({
-                  where: { order_id: targetOrderId },
-                })
-              )?.id
-            : null);
-
-        if (onlineOrderId) {
-          await this.dataSource.query(
-            `UPDATE online_order
-             SET fulfillment_status = 'in_preparation',
-                 ready_at = NULL,
-                 completed_at = NULL
-             WHERE id = $1;`,
-            [onlineOrderId],
-          );
-          await this.dataSource.query(
-            `UPDATE online_order_item
-             SET kitchen_line_status = 'in_preparation'
-             WHERE online_order_id = $1;`,
-            [onlineOrderId],
-          );
-        }
-
-        if (targetOrderId) {
-          await this.dataSource.query(
-            `UPDATE orders
-             SET kitchen_status = 'preparing',
-                 ready_at = NULL
-             WHERE id = $1;`,
-            [targetOrderId],
-          );
-          await this.dataSource.query(
-            `UPDATE order_item
-             SET kitchen_status = 'in_preparation'
-             WHERE order_id = $1;`,
-            [targetOrderId],
-          );
-        }
+      } else if (isRecall && kitchenOrder.online_order_id) {
+        await this.dataSource.query(
+          `UPDATE online_order
+           SET fulfillment_status = 'accepted',
+               ready_at = NULL,
+               completed_at = NULL
+           WHERE id = $1;`,
+          [kitchenOrder.online_order_id],
+        );
+        await this.dataSource.query(
+          `UPDATE online_order_item
+           SET kitchen_line_status = 'pending'
+           WHERE online_order_id = $1;`,
+          [kitchenOrder.online_order_id],
+        );
       }
     } catch (err) {
       console.error(

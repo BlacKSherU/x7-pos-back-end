@@ -6,11 +6,6 @@ import { User } from 'src/platform-saas/users/entities/user.entity';
 import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
 import { UserRole } from 'src/platform-saas/users/constants/role.enum';
 import { SubscriptionAccessService } from 'src/auth/subscription-access.service';
-import { getAllSubscriptionFeatureIds } from 'src/common/subscription/subscription-feature-ids';
-import {
-  MSG_COMPANY_SUBSCRIPTION_OUTDATED,
-  MSG_NO_COMPANY_PLAN,
-} from 'src/auth/subscription-access.service';
 
 export type RealtimeAuthenticatedUser = AuthenticatedUser & {
   companyId: number;
@@ -50,39 +45,8 @@ export class RealtimeAuthService {
       throw new UnauthorizedException('Invalid token');
     }
 
-    const isPortalStaff =
-      user.role === UserRole.PORTAL_ADMIN || user.role === UserRole.PORTAL_USER;
-
-    let planId: number | undefined;
-    let authorizedFeatureIds: number[];
-    if (isPortalStaff) {
-      planId = undefined;
-      authorizedFeatureIds = getAllSubscriptionFeatureIds();
-    } else {
-      const companyId = user.merchant.companyId;
-      if (!companyId) {
-        throw new UnauthorizedException('Invalid token');
-      }
-      try {
-        const access =
-          await this.subscriptionAccessService.getSubscriptionAccessForCompany(
-            companyId,
-          );
-        planId = access.planId;
-        authorizedFeatureIds = access.authorizedFeatureIds;
-      } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : '';
-        if (
-          message === MSG_NO_COMPANY_PLAN ||
-          message === MSG_COMPANY_SUBSCRIPTION_OUTDATED
-        ) {
-          planId = undefined;
-          authorizedFeatureIds = [];
-        } else {
-          throw error;
-        }
-      }
-    }
+    const effectiveAccess =
+      await this.subscriptionAccessService.calculateEffectiveFeatures(user);
 
     return {
       id: user.id,
@@ -90,9 +54,11 @@ export class RealtimeAuthService {
       role: user.role,
       scope: user.scope,
       merchant: { id: user.merchant.id },
-      companyId: user.merchant.companyId,
-      planId,
-      authorizedFeatureIds,
+      companyId: user.merchant.companyId ?? 0,
+      planId: effectiveAccess.planId,
+      authorizedFeatureIds: effectiveAccess.authorizedFeatureIds,
+      shiftRole: effectiveAccess.shiftRole,
+      collaboratorId: effectiveAccess.collaboratorId,
     };
   }
 }

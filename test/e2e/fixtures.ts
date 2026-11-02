@@ -11,10 +11,16 @@ export async function seedSubscriptionCatalog(
   for (const id of featureIds) {
     await dataSource.query(
       `INSERT INTO feature (id, name, description, "Unit", status)
-       VALUES ($1, $2, 'e2e', 'unit', 'active')`,
+       VALUES ($1, $2, 'e2e', 'unit', 'active')
+       ON CONFLICT (id) DO UPDATE SET
+         name = EXCLUDED.name,
+         description = EXCLUDED.description`,
       [id, `Feature ${id}`],
     );
   }
+  await dataSource.query(
+    `SELECT setval(pg_get_serial_sequence('feature', 'id'), (SELECT COALESCE(MAX(id), 1) FROM feature))`,
+  );
 
   const [plan] = await dataSource.query<{ id: string }[]>(
     `INSERT INTO subscription_plan (name, slug, description, price, "billingCycle", status)

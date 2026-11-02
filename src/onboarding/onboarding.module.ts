@@ -11,10 +11,7 @@ import { Merchant } from '../platform-saas/merchants/entities/merchant.entity';
 import { SubscriptionPlan } from '../platform-saas/subscriptions/subscription-plan/entity/subscription-plan.entity';
 import { SubscriptionPlanDisplayFeature } from '../platform-saas/subscriptions/subscription-plan/entity/subscription-plan-display-feature.entity';
 import { UsersModule } from '../platform-saas/users/users.module';
-import { SubscriptionAccessService } from '../auth/subscription-access.service';
-import { MerchantSubscription } from '../platform-saas/subscriptions/merchant-subscriptions/entities/merchant-subscription.entity';
-import { CompanySubscription } from '../platform-saas/subscriptions/company-subscriptions/entities/company-subscription.entity';
-import { PlanFeature } from '../platform-saas/subscriptions/plan-features/entity/plan-features.entity';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
@@ -26,11 +23,9 @@ import { PlanFeature } from '../platform-saas/subscriptions/plan-features/entity
       Merchant,
       SubscriptionPlan,
       SubscriptionPlanDisplayFeature,
-      MerchantSubscription,
-      CompanySubscription,
-      PlanFeature,
     ]),
     UsersModule,
+    AuthModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -41,6 +36,6 @@ import { PlanFeature } from '../platform-saas/subscriptions/plan-features/entity
     }),
   ],
   controllers: [OnboardingController],
-  providers: [OnboardingService, SubscriptionAccessService],
+  providers: [OnboardingService],
 })
 export class OnboardingModule {}

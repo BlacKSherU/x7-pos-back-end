@@ -10,7 +10,7 @@ import { Merchant } from '../../merchants/entities/merchant.entity';
 import { UserRole } from '../constants/role.enum';
 import { Scope } from '../constants/scope.enum';
 import { ApiProperty } from '@nestjs/swagger';
-import { Collaborator } from 'src/finance-hr/hr/collaborators/entities/collaborator.entity';
+import { Collaborator } from '../../../finance-hr/hr/collaborators/entities/collaborator.entity';
 
 @Entity('users')
 export class User {
@@ -93,6 +93,16 @@ export class User {
   })
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
+
+  @ApiProperty({
+    example: '$2b$10$abcdefghijklmnopqrstuvwxyz1234567890',
+    description:
+      'Bcrypt hash of 4-6 digit employee PIN for rapid device sessions',
+    required: false,
+    nullable: true,
+  })
+  @Column({ name: 'pin_hash', type: 'varchar', length: 128, nullable: true })
+  pinHash: string | null;
 
   @ApiProperty({
     example: 1234567890,

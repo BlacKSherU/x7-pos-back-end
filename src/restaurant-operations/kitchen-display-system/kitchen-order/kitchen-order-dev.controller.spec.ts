@@ -33,7 +33,7 @@ describe('KitchenOrderDevController', () => {
       ROLES_KEY,
       KitchenOrderDevController.prototype.resetTestData,
     ) as UserRole[];
-    expect(roles).toEqual([UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN]);
+    expect(roles).toEqual([UserRole.MERCHANT_ADMIN]);
   });
 
   describe('registration', () => {

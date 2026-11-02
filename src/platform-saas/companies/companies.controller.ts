@@ -84,7 +84,7 @@ export class CompaniesController {
   }
 
   @Get()
-  @Roles(UserRole.PORTAL_ADMIN)
+  @Roles(UserRole.PORTAL_ADMIN, UserRole.PORTAL_USER)
   @Scopes(Scope.ADMIN_PORTAL)
   @ApiOperation({ summary: 'Get all companies' })
   @ApiResponse({
@@ -109,7 +109,7 @@ export class CompaniesController {
   }
 
   @Get('company/profile')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.PORTAL_ADMIN, UserRole.PORTAL_USER, UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -153,7 +153,7 @@ export class CompaniesController {
   }
 
   @Get('company/configurations')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.PORTAL_ADMIN, UserRole.PORTAL_USER, UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -176,7 +176,7 @@ export class CompaniesController {
   }
 
   @Get(':id')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.PORTAL_ADMIN, UserRole.PORTAL_USER, UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,

@@ -8,6 +8,7 @@ import { ErrorHandler } from './error-handler.util';
  */
 export function merchantScopeOf(user: AuthenticatedUser): number | undefined {
   if (
+    user.role === UserRole.SUPER_ADMIN ||
     user.role === UserRole.PORTAL_ADMIN ||
     user.role === UserRole.PORTAL_USER
   ) {

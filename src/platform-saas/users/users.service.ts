@@ -1,5 +1,10 @@
 // src/platform-saas/users/users.service.ts
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
@@ -14,6 +19,17 @@ import {
   AllUsersResponseDto,
 } from './dtos/user-response.dto';
 import { UserHrSummaryResponseDto } from './dtos/user-hr-summary.dto';
+import {
+  UserFeatureOverridesResponseDto,
+  UpdateFeatureOverridesDto,
+  UserFeatureItemDto,
+} from './dtos/user-feature-overrides.dto';
+import { UserFeatureOverride } from '../subscriptions/entities/user-feature-override.entity';
+import { FeatureShiftRole } from '../subscriptions/entities/feature-shift-role.entity';
+import { Collaborator } from '../../finance-hr/hr/collaborators/entities/collaborator.entity';
+import { CompanySubscription } from '../subscriptions/company-subscriptions/entities/company-subscription.entity';
+import { PlanFeature } from '../subscriptions/plan-features/entity/plan-features.entity';
+import { NavItem } from '../subscriptions/entities/nav-item.entity';
 import { UserRole } from './constants/role.enum';
 import { Scope } from './constants/scope.enum';
 // import * as bcrypt from 'bcrypt';
@@ -54,7 +70,11 @@ const MERCHANT_ASSIGNABLE_SCOPES: readonly Scope[] = [
 ];
 
 function isPortalRole(role: UserRole | undefined): boolean {
-  return role === UserRole.PORTAL_ADMIN || role === UserRole.PORTAL_USER;
+  return (
+    role === UserRole.SUPER_ADMIN ||
+    role === UserRole.PORTAL_ADMIN ||
+    role === UserRole.PORTAL_USER
+  );
 }
 
 @Injectable()
@@ -68,6 +88,24 @@ export class UsersService {
 
     @InjectRepository(Merchant)
     private readonly merchantRepo: Repository<Merchant>,
+
+    @InjectRepository(UserFeatureOverride)
+    private readonly userFeatureOverrideRepo: Repository<UserFeatureOverride>,
+
+    @InjectRepository(FeatureShiftRole)
+    private readonly featureShiftRoleRepo: Repository<FeatureShiftRole>,
+
+    @InjectRepository(Collaborator)
+    private readonly collaboratorRepo: Repository<Collaborator>,
+
+    @InjectRepository(CompanySubscription)
+    private readonly companySubscriptionRepo: Repository<CompanySubscription>,
+
+    @InjectRepository(PlanFeature)
+    private readonly planFeatureRepo: Repository<PlanFeature>,
+
+    @InjectRepository(NavItem)
+    private readonly navItemRepo: Repository<NavItem>,
 
     private readonly mailService: MailService,
   ) {}
@@ -475,7 +513,10 @@ export class UsersService {
     user: User,
     authenticatedUser: AuthenticatedUser,
   ): boolean {
-    if (authenticatedUser.role === UserRole.PORTAL_ADMIN) {
+    if (
+      authenticatedUser.role === UserRole.PORTAL_ADMIN ||
+      authenticatedUser.role === UserRole.SUPER_ADMIN
+    ) {
       return true;
     }
 
@@ -505,7 +546,10 @@ export class UsersService {
     authenticatedUser: AuthenticatedUser,
     target?: User,
   ): void {
-    if (authenticatedUser.role === UserRole.PORTAL_ADMIN) {
+    if (
+      authenticatedUser.role === UserRole.PORTAL_ADMIN ||
+      authenticatedUser.role === UserRole.SUPER_ADMIN
+    ) {
       return;
     }
 
@@ -543,5 +587,242 @@ export class UsersService {
         'You can only manage your own profile or users from your merchant',
       );
     }
+  }
+
+  async getFeatureOverrides(
+    targetUserId: number,
+    caller: AuthenticatedUser,
+  ): Promise<UserFeatureOverridesResponseDto> {
+    const targetUser = await this.userRepo.findOne({
+      where: { id: targetUserId },
+      relations: ['merchant'],
+    });
+
+    if (!targetUser) {
+      throw new NotFoundException(`User #${targetUserId} not found`);
+    }
+
+    const callerIsSuperAdmin = caller.role === UserRole.SUPER_ADMIN;
+    const targetCompanyId = targetUser.merchant?.companyId;
+    const callerCompanyId = caller.merchant?.companyId;
+
+    if (!callerIsSuperAdmin) {
+      if (!callerCompanyId || targetCompanyId !== callerCompanyId) {
+        throw new ForbiddenException(
+          'You cannot manage feature overrides for users of another company',
+        );
+      }
+    }
+
+    if (!targetCompanyId) {
+      throw new BadRequestException(
+        'Target user is not associated with a company',
+      );
+    }
+
+    // 1. Fetch active company subscription and allowed feature IDs
+    const currentSub = await this.companySubscriptionRepo
+      .createQueryBuilder('cs')
+      .innerJoinAndSelect('cs.plan', 'plan')
+      .where('cs.company_id = :companyId', { companyId: targetCompanyId })
+      .andWhere('cs.status = :status', { status: 'active' })
+      .andWhere('(cs.endDate IS NULL OR cs.endDate >= CURRENT_DATE)')
+      .orderBy('cs.startDate', 'DESC')
+      .addOrderBy('cs.id', 'DESC')
+      .getOne();
+
+    const planId = currentSub?.plan ? currentSub.plan.id : null;
+    let planFeatureIds: number[] = [];
+
+    if (planId) {
+      const planFeatures = await this.planFeatureRepo
+        .createQueryBuilder('pf')
+        .innerJoinAndSelect('pf.feature', 'feat')
+        .where('pf.subscription_plan_id = :planId', { planId })
+        .andWhere('pf.status = :status', { status: 'active' })
+        .getMany();
+      planFeatureIds = planFeatures.map((pf) => Number(pf.feature.id));
+    }
+
+    // 2. Fetch collaborator ShiftRole for target user
+    const collaborator = await this.collaboratorRepo.findOne({
+      where: { user_id: targetUserId },
+    });
+    const shiftRole = collaborator?.role ?? null;
+
+    // 3. Base features by ShiftRole
+    const baseFeatureSet = new Set<number>();
+    if (shiftRole) {
+      const shiftRoleRows = await this.featureShiftRoleRepo.find({
+        where: { shift_role: shiftRole },
+      });
+      shiftRoleRows.forEach((r) => baseFeatureSet.add(Number(r.feature_id)));
+    }
+
+    // 4. Existing overrides for this user
+    const existingOverrides = await this.userFeatureOverrideRepo.find({
+      where: { user_id: targetUserId },
+    });
+    const overridesMap = new Map<number, UserFeatureOverride>();
+    existingOverrides.forEach((o) => overridesMap.set(Number(o.feature_id), o));
+
+    // 5. Query screen navigation items matching the company plan features on merchant_web
+    const featureItems: UserFeatureItemDto[] = [];
+    if (planFeatureIds.length > 0) {
+      const navItems = await this.navItemRepo
+        .createQueryBuilder('item')
+        .innerJoinAndSelect('item.application', 'app')
+        .leftJoinAndSelect('app.navCategory', 'cat')
+        .where('item.feature_id IN (:...planFeatureIds)', { planFeatureIds })
+        .andWhere('item.surface = :surface', { surface: 'merchant_web' })
+        .andWhere('item.kind = :kind', { kind: 'screen' })
+        .orderBy('cat.sortOrder', 'ASC')
+        .addOrderBy('app.sortOrder', 'ASC')
+        .addOrderBy('item.sortOrder', 'ASC')
+        .getMany();
+
+      const seenFeatureIds = new Set<number>();
+
+      for (const item of navItems) {
+        const fId = Number(item.featureId);
+        if (seenFeatureIds.has(fId)) continue;
+        seenFeatureIds.add(fId);
+
+        const isBase = baseFeatureSet.has(fId);
+        const overrideRecord = overridesMap.get(fId);
+        const overrideEffect = overrideRecord
+          ? overrideRecord.effect
+          : 'inherit';
+
+        let effective = isBase;
+        if (overrideEffect === 'allow') effective = true;
+        if (overrideEffect === 'deny') effective = false;
+
+        featureItems.push({
+          featureId: fId,
+          code: item.code,
+          name: item.label,
+          applicationId: Number(item.applicationId),
+          applicationName: item.application?.name ?? '',
+          categoryId: Number(item.application?.categoryId ?? 0),
+          categoryName: item.application?.navCategory?.name ?? '',
+          basePermission: isBase,
+          override: overrideEffect,
+          effective,
+          grantedBy: overrideRecord?.granted_by ?? null,
+          updatedAt: overrideRecord?.updatedAt
+            ? overrideRecord.updatedAt.toISOString()
+            : null,
+        });
+      }
+    }
+
+    return {
+      userId: targetUser.id,
+      username: targetUser.username,
+      email: targetUser.email,
+      shiftRole,
+      companyId: targetCompanyId,
+      planId,
+      features: featureItems,
+    };
+  }
+
+  async updateFeatureOverrides(
+    targetUserId: number,
+    dto: UpdateFeatureOverridesDto,
+    caller: AuthenticatedUser,
+  ): Promise<UserFeatureOverridesResponseDto> {
+    const targetUser = await this.userRepo.findOne({
+      where: { id: targetUserId },
+      relations: ['merchant'],
+    });
+
+    if (!targetUser) {
+      throw new NotFoundException(`User #${targetUserId} not found`);
+    }
+
+    const callerIsSuperAdmin = caller.role === UserRole.SUPER_ADMIN;
+    const targetCompanyId = targetUser.merchant?.companyId;
+    const callerCompanyId = caller.merchant?.companyId;
+
+    if (!callerIsSuperAdmin) {
+      if (!callerCompanyId || targetCompanyId !== callerCompanyId) {
+        throw new ForbiddenException(
+          'You cannot manage feature overrides for users of another company',
+        );
+      }
+    }
+
+    if (!targetCompanyId) {
+      throw new BadRequestException(
+        'Target user is not associated with a company',
+      );
+    }
+
+    // Resolve company plan features to enforce Ceiling Rule
+    const currentSub = await this.companySubscriptionRepo
+      .createQueryBuilder('cs')
+      .innerJoinAndSelect('cs.plan', 'plan')
+      .where('cs.company_id = :companyId', { companyId: targetCompanyId })
+      .andWhere('cs.status = :status', { status: 'active' })
+      .andWhere('(cs.endDate IS NULL OR cs.endDate >= CURRENT_DATE)')
+      .orderBy('cs.startDate', 'DESC')
+      .addOrderBy('cs.id', 'DESC')
+      .getOne();
+
+    const planId = currentSub?.plan ? currentSub.plan.id : null;
+    let allowedPlanFeatureIds = new Set<number>();
+
+    if (planId) {
+      const planFeatures = await this.planFeatureRepo
+        .createQueryBuilder('pf')
+        .innerJoinAndSelect('pf.feature', 'feat')
+        .where('pf.subscription_plan_id = :planId', { planId })
+        .andWhere('pf.status = :status', { status: 'active' })
+        .getMany();
+      allowedPlanFeatureIds = new Set(
+        planFeatures.map((pf) => Number(pf.feature.id)),
+      );
+    }
+
+    // Strict Ceiling Rule: OverridesAllow can NEVER exceed the company subscription plan
+    for (const ov of dto.overrides) {
+      if (ov.effect === 'allow' && !allowedPlanFeatureIds.has(ov.featureId)) {
+        throw new BadRequestException(
+          `Cannot grant feature #${ov.featureId}: it is not included in the active company subscription plan (Ceiling Rule Violation).`,
+        );
+      }
+    }
+
+    // Persist or delete overrides
+    for (const ov of dto.overrides) {
+      if (ov.effect === 'inherit') {
+        await this.userFeatureOverrideRepo.delete({
+          user_id: targetUserId,
+          feature_id: ov.featureId,
+        });
+      } else {
+        const existing = await this.userFeatureOverrideRepo.findOne({
+          where: { user_id: targetUserId, feature_id: ov.featureId },
+        });
+
+        if (existing) {
+          existing.effect = ov.effect;
+          existing.granted_by = caller.id;
+          await this.userFeatureOverrideRepo.save(existing);
+        } else {
+          const newEntity = this.userFeatureOverrideRepo.create({
+            user_id: targetUserId,
+            feature_id: ov.featureId,
+            effect: ov.effect,
+            granted_by: caller.id,
+          });
+          await this.userFeatureOverrideRepo.save(newEntity);
+        }
+      }
+    }
+
+    return this.getFeatureOverrides(targetUserId, caller);
   }
 }

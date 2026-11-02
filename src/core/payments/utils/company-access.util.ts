@@ -7,7 +7,8 @@ export function assertCompanyAccess(
   user: AuthenticatedUser,
   companyId: number,
 ): void {
-  if (user.role === UserRole.PORTAL_ADMIN) return;
+  if (user.role === UserRole.PORTAL_ADMIN || user.role === UserRole.SUPER_ADMIN)
+    return;
   if (user.merchant?.companyId !== companyId) {
     ErrorHandler.forbidden('You do not have access to this company');
   }

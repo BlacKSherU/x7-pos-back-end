@@ -23,13 +23,18 @@ import {
   ApiOkResponse,
   ApiParam,
   ApiNotFoundResponse,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Scopes } from 'src/auth/decorators/scopes.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
 import { UserRole } from 'src/platform-saas/users/constants/role.enum';
 import { Scope } from 'src/platform-saas/users/constants/scope.enum';
+import { ShiftRole } from 'src/restaurant-operations/shift/shifts/constants/shift-role.enum';
 import { DeliveryTrackingService } from './delivery-tracking.service';
 import { CreateDeliveryTrackingDto } from './dto/create-delivery-tracking.dto';
 import {
@@ -44,13 +49,16 @@ import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
 
 @ApiTags('Commerce - Delivery System - Delivery Tracking')
+@ApiBearerAuth()
 @Controller('delivery-tracking')
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.DELIVERY_TRACKING)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class DeliveryTrackingController {
   constructor(
     private readonly deliveryTrackingService: DeliveryTrackingService,
   ) {}
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.MERCHANT_ANDROID,
@@ -129,14 +137,14 @@ export class DeliveryTrackingController {
   }
 
   @Get()
-  @Roles(UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
   @Scopes(
     Scope.MERCHANT_WEB,
     Scope.MERCHANT_ANDROID,
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Get a list of Delivery Trackings',
     description: 'Endpoint to retrieve a paginated list of Delivery Trackings.',
@@ -179,7 +187,16 @@ export class DeliveryTrackingController {
     @Query() query: QueryDeliveryTrackingDto,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<PaginatedDeliveryTrackingResponseDto> {
-    return this.deliveryTrackingService.findAll(query, user.merchant?.id);
+    const isDeliveryRole = user?.shiftRole === ShiftRole.DELIVERY;
+    const effectiveQuery = { ...query };
+    if (isDeliveryRole && user?.collaboratorId) {
+      effectiveQuery.delivery_driver_id = user.collaboratorId;
+    }
+
+    return this.deliveryTrackingService.findAll(
+      effectiveQuery,
+      user.merchant?.id,
+    );
   }
 
   // Declaradas ANTES de `:id`: al revés, `live`, `summary` y `route` entran por el comodín
@@ -192,7 +209,7 @@ export class DeliveryTrackingController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Live fleet map',
     description:
@@ -214,7 +231,7 @@ export class DeliveryTrackingController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Telemetry KPI summary',
     description:
@@ -233,7 +250,7 @@ export class DeliveryTrackingController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Breadcrumb route of a delivery',
     description:
@@ -257,7 +274,7 @@ export class DeliveryTrackingController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Get a Delivery Tracking by ID',
     description: 'Endpoint to retrieve a single Delivery Tracking by its ID.',
@@ -346,7 +363,7 @@ export class DeliveryTrackingController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Update a Delivery Tracking by ID',
     description: 'Endpoint to update an existing Delivery Tracking.',
@@ -443,7 +460,7 @@ export class DeliveryTrackingController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
   @ApiOperation({
     summary: 'Delete a Delivery Tracking by ID',
     description: 'Endpoint to delete an existing Delivery Tracking.',

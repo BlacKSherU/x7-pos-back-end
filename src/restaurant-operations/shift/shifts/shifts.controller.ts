@@ -47,6 +47,7 @@ import { Scopes } from 'src/auth/decorators/scopes.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { ErrorResponse } from '../../../common/dtos/error-response.dto';
+import { ShiftRole } from './constants/shift-role.enum';
 
 @ApiTags('Restaurant operations - Shifts - Shifts')
 @ApiExtraModels(ErrorResponse)
@@ -58,7 +59,7 @@ export class ShiftsController {
   constructor(private readonly shiftsService: ShiftsService) {}
 
   @Post()
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -205,7 +206,7 @@ export class ShiftsController {
   }
 
   @Get()
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -399,11 +400,25 @@ export class ShiftsController {
       );
     }
 
-    return this.shiftsService.findAll(query, authenticatedUserMerchantId);
+    const user = req.user;
+    const isManagerOrAdmin =
+      user?.role === UserRole.SUPER_ADMIN ||
+      user?.role === UserRole.MERCHANT_ADMIN ||
+      user?.shiftRole === ShiftRole.MANAGER;
+
+    const effectiveQuery = { ...query };
+    if (!isManagerOrAdmin && user?.shiftRole) {
+      effectiveQuery.role = user.shiftRole;
+    }
+
+    return this.shiftsService.findAll(
+      effectiveQuery,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Get(':id')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -550,7 +565,7 @@ export class ShiftsController {
   }
 
   @Put(':id')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -740,7 +755,7 @@ export class ShiftsController {
   }
 
   @Delete(':id')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.MERCHANT_WEB,
     Scope.MERCHANT_ANDROID,

@@ -8,6 +8,12 @@ import { hashToken } from './auth-tokens.util';
 import { User } from './entities/user.entity';
 import { Company } from '../companies/entities/company.entity';
 import { Merchant } from '../merchants/entities/merchant.entity';
+import { UserFeatureOverride } from '../subscriptions/entities/user-feature-override.entity';
+import { FeatureShiftRole } from '../subscriptions/entities/feature-shift-role.entity';
+import { Collaborator } from '../../finance-hr/hr/collaborators/entities/collaborator.entity';
+import { CompanySubscription } from '../subscriptions/company-subscriptions/entities/company-subscription.entity';
+import { PlanFeature } from '../subscriptions/plan-features/entity/plan-features.entity';
+import { NavItem } from '../subscriptions/entities/nav-item.entity';
 import { UserRole } from './constants/role.enum';
 import { Scope } from './constants/scope.enum';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
@@ -71,6 +77,61 @@ describe('UsersService', () => {
         {
           provide: getRepositoryToken(Merchant),
           useValue: mockMerchantRepository,
+        },
+        {
+          provide: getRepositoryToken(UserFeatureOverride),
+          useValue: {
+            find: jest.fn().mockResolvedValue([]),
+            findOne: jest.fn().mockResolvedValue(null),
+            create: jest.fn().mockImplementation((d) => d),
+            save: jest.fn().mockImplementation((d) => Promise.resolve(d)),
+            delete: jest.fn().mockResolvedValue({ affected: 1 }),
+          },
+        },
+        {
+          provide: getRepositoryToken(FeatureShiftRole),
+          useValue: {
+            find: jest.fn().mockResolvedValue([]),
+          },
+        },
+        {
+          provide: getRepositoryToken(Collaborator),
+          useValue: {
+            findOne: jest.fn().mockResolvedValue(null),
+          },
+        },
+        {
+          provide: getRepositoryToken(CompanySubscription),
+          useValue: {
+            createQueryBuilder: jest.fn().mockReturnValue({
+              innerJoinAndSelect: jest.fn().mockReturnThis(),
+              where: jest.fn().mockReturnThis(),
+              andWhere: jest.fn().mockReturnThis(),
+              orderBy: jest.fn().mockReturnThis(),
+              addOrderBy: jest.fn().mockReturnThis(),
+              getOne: jest.fn().mockResolvedValue(null),
+            }),
+          },
+        },
+        {
+          provide: getRepositoryToken(PlanFeature),
+          useValue: {
+            find: jest.fn().mockResolvedValue([]),
+          },
+        },
+        {
+          provide: getRepositoryToken(NavItem),
+          useValue: {
+            createQueryBuilder: jest.fn().mockReturnValue({
+              innerJoinAndSelect: jest.fn().mockReturnThis(),
+              leftJoinAndSelect: jest.fn().mockReturnThis(),
+              where: jest.fn().mockReturnThis(),
+              andWhere: jest.fn().mockReturnThis(),
+              orderBy: jest.fn().mockReturnThis(),
+              addOrderBy: jest.fn().mockReturnThis(),
+              getMany: jest.fn().mockResolvedValue([]),
+            }),
+          },
         },
 
         {

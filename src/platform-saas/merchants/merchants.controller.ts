@@ -89,7 +89,7 @@ export class MerchantsController {
   }
 
   @Get()
-  @Roles(UserRole.PORTAL_ADMIN)
+  @Roles(UserRole.PORTAL_ADMIN, UserRole.PORTAL_USER)
   @Scopes(Scope.ADMIN_PORTAL)
   @ApiOperation({ summary: 'Get all merchants' })
   @ApiOkResponse({
@@ -117,7 +117,7 @@ export class MerchantsController {
   }
 
   @Get('company/branches')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.PORTAL_ADMIN, UserRole.PORTAL_USER, UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -168,7 +168,7 @@ export class MerchantsController {
   }
 
   @Get(':id/admin-summary')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.PORTAL_ADMIN, UserRole.PORTAL_USER, UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -194,7 +194,7 @@ export class MerchantsController {
   }
 
   @Get(':id')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.PORTAL_ADMIN, UserRole.PORTAL_USER, UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,

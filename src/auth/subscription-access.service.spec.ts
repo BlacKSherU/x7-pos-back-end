@@ -1,5 +1,8 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { CompanySubscription } from 'src/platform-saas/subscriptions/company-subscriptions/entities/company-subscription.entity';
+import { FeatureShiftRole } from 'src/platform-saas/subscriptions/entities/feature-shift-role.entity';
+import { UserFeatureOverride } from 'src/platform-saas/subscriptions/entities/user-feature-override.entity';
+import { Collaborator } from 'src/finance-hr/hr/collaborators/entities/collaborator.entity';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { MerchantSubscription } from 'src/platform-saas/subscriptions/merchant-subscriptions/entities/merchant-subscription.entity';
@@ -72,6 +75,30 @@ describe('SubscriptionAccessService', () => {
             update: jest.fn(),
             delete: jest.fn(),
             count: jest.fn(),
+            createQueryBuilder: jest.fn(),
+          },
+        },
+        {
+          provide: getRepositoryToken(FeatureShiftRole),
+          useValue: {
+            find: jest.fn(),
+            findOne: jest.fn(),
+            createQueryBuilder: jest.fn(),
+          },
+        },
+        {
+          provide: getRepositoryToken(UserFeatureOverride),
+          useValue: {
+            find: jest.fn(),
+            findOne: jest.fn(),
+            createQueryBuilder: jest.fn(),
+          },
+        },
+        {
+          provide: getRepositoryToken(Collaborator),
+          useValue: {
+            find: jest.fn(),
+            findOne: jest.fn(),
             createQueryBuilder: jest.fn(),
           },
         },

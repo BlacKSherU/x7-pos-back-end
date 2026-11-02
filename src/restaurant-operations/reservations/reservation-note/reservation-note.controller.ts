@@ -22,6 +22,9 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { UserRole } from 'src/platform-saas/users/constants/role.enum';
 import { Scopes } from 'src/auth/decorators/scopes.decorator';
@@ -35,7 +38,8 @@ import { GetReservationNotesQueryDto } from './dto/get-reservation-notes-query.d
 @ApiTags('Restaurant operations - Reservations - Notes')
 @ApiBearerAuth()
 @Controller('reservation-note')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.RESERVATION_NOTES)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class ReservationNoteController {
   constructor(
     private readonly reservationNoteService: ReservationNoteService,

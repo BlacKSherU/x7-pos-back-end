@@ -6,6 +6,7 @@ import { CashdrawerModule } from './cashdrawer/cashdrawer.module';
 import { KitchenDisplaySystemModule } from './kitchen-display-system/kitchen-display-system.module';
 import { DiningSystemModule } from './dining-system/dining-system.module';
 import { ReservationsModule } from './reservations/reservations.module';
+import { DevicesModule } from './devices/devices.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { ReservationsModule } from './reservations/reservations.module';
     KitchenDisplaySystemModule,
     DiningSystemModule,
     ReservationsModule,
+    DevicesModule,
   ],
   controllers: [],
   providers: [],
@@ -27,6 +29,7 @@ import { ReservationsModule } from './reservations/reservations.module';
     KitchenDisplaySystemModule,
     DiningSystemModule,
     ReservationsModule,
+    DevicesModule,
   ],
 })
 export class RestaurantOperationsModule {}

@@ -27,6 +27,9 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Scopes } from 'src/auth/decorators/scopes.decorator';
 import { UserRole } from 'src/platform-saas/users/constants/role.enum';
@@ -233,7 +236,8 @@ const MOCK_LEDGER_ACCOUNTS: LedgerAccountDto[] = [
 )
 @ApiBearerAuth()
 @Controller('ledger-accounts')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.LEDGER_ACCOUNTS)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class LedgerAccountsController {
   @Get()
   @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)

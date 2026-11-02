@@ -24,8 +24,8 @@ type AuthenticatedRequest = ExpressRequest & { user: AuthenticatedUser };
 
 @ApiTags('Kitchen Orders (Dev Simulator)')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('kitchen-orders')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class KitchenOrderSimulatorController {
   constructor(
     private readonly kitchenOrderService: KitchenOrderService,
@@ -33,7 +33,7 @@ export class KitchenOrderSimulatorController {
   ) {}
 
   @Post('reset-test-data')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,

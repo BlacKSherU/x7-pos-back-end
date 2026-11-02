@@ -38,7 +38,7 @@ export class KitchenOrderDevController {
   constructor(private readonly kitchenOrderService: KitchenOrderService) {}
 
   @Post('reset-test-data')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(Scope.ADMIN_PORTAL, Scope.MERCHANT_WEB)
   @ApiOperation({
     summary: 'Reset and re-seed KDS test data (development only)',

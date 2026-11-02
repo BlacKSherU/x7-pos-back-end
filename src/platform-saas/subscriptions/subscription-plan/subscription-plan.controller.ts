@@ -125,7 +125,7 @@ export class SubscriptionPlanController {
   }
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.PORTAL_ADMIN)
+  @Roles(UserRole.PORTAL_ADMIN, UserRole.PORTAL_USER)
   @Scopes(Scope.ADMIN_PORTAL)
   @ApiOperation({
     summary: 'Get all Subscription Plans',
@@ -172,7 +172,7 @@ export class SubscriptionPlanController {
     return this.subscriptionPlanService.findAll(query);
   }
   @Get(':id')
-  @Roles(UserRole.PORTAL_ADMIN)
+  @Roles(UserRole.PORTAL_ADMIN, UserRole.PORTAL_USER)
   @Scopes(Scope.ADMIN_PORTAL)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiOperation({ summary: 'Get a Subscription Plan by ID' })

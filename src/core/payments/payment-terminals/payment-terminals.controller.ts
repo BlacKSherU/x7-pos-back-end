@@ -60,7 +60,7 @@ const READ_SCOPES = [
 })
 @Controller('v1/merchants/:companyId/payment-terminals')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+@Roles(UserRole.MERCHANT_ADMIN)
 @Scopes(Scope.ADMIN_PORTAL, Scope.MERCHANT_WEB)
 export class PaymentTerminalsController {
   constructor(private readonly terminalsService: PaymentTerminalsService) {}
@@ -94,7 +94,7 @@ export class PaymentTerminalsController {
   }
 
   @Get()
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
   @Scopes(...READ_SCOPES)
   @ApiOperation({
     summary: "List the company's payment terminals",
@@ -111,7 +111,7 @@ export class PaymentTerminalsController {
   }
 
   @Get(':id')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
   @Scopes(...READ_SCOPES)
   @ApiOperation({ summary: 'Get a payment terminal' })
   @ApiParam({ name: 'id', type: Number, example: 1 })

@@ -19,11 +19,8 @@ import { CompanySubscription } from '../platform-saas/subscriptions/company-subs
 import { SubscriptionPlan } from '../platform-saas/subscriptions/subscription-plan/entity/subscription-plan.entity';
 import { UserRole } from '../platform-saas/users/constants/role.enum';
 import { Scope } from '../platform-saas/users/constants/scope.enum';
-import {
-  MSG_COMPANY_SUBSCRIPTION_OUTDATED,
-  MSG_NO_COMPANY_PLAN,
-  SubscriptionAccessService,
-} from '../auth/subscription-access.service';
+import { ShiftRole } from '../restaurant-operations/shift/shifts/constants/shift-role.enum';
+import { SubscriptionAccessService } from '../auth/subscription-access.service';
 import { OnboardingSession } from './entities/onboarding-session.entity';
 import { mapPlanToSubscriptionTier } from './onboarding-plan.mapper';
 import type { SubscriptionTierDefinition } from './onboarding.types';
@@ -355,28 +352,24 @@ export class OnboardingService {
 
     let planId = fallbackPlanId;
     let authorizedFeatureIds: number[] = [];
+    let shiftRole: ShiftRole | null = null;
+    let collaboratorId: number | undefined;
 
     const merchant = await this.merchantRepository.findOne({
       where: { id: user.merchantId },
     });
 
     if (merchant?.companyId) {
-      try {
-        const access =
-          await this.subscriptionAccessService.getSubscriptionAccessForCompany(
-            merchant.companyId,
-          );
-        planId = access.planId;
-        authorizedFeatureIds = access.authorizedFeatureIds;
-      } catch (err) {
-        const message = (err as { message?: string }).message ?? '';
-        if (
-          message !== MSG_NO_COMPANY_PLAN &&
-          message !== MSG_COMPANY_SUBSCRIPTION_OUTDATED
-        ) {
-          throw err;
-        }
-      }
+      const effectiveAccess =
+        await this.subscriptionAccessService.calculateEffectiveFeatures({
+          id: user.id,
+          role: user.role,
+          merchant: { id: merchant.id, companyId: merchant.companyId },
+        });
+      planId = effectiveAccess.planId ?? fallbackPlanId;
+      authorizedFeatureIds = effectiveAccess.authorizedFeatureIds;
+      shiftRole = effectiveAccess.shiftRole;
+      collaboratorId = effectiveAccess.collaboratorId;
     }
 
     return {
@@ -390,6 +383,8 @@ export class OnboardingService {
         merchant: { id: user.merchantId },
         planId,
         authorizedFeatureIds,
+        shiftRole,
+        collaboratorId,
       },
     };
   }

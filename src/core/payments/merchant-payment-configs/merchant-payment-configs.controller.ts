@@ -52,7 +52,7 @@ import {
 @Controller('v1/merchants/:companyId/payment-configs')
 @UseGuards(JwtAuthGuard, RolesGuard)
 // Credenciales de pago: solo administradores, desde el portal o el backoffice web
-@Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
+@Roles(UserRole.MERCHANT_ADMIN)
 @Scopes(Scope.ADMIN_PORTAL, Scope.MERCHANT_WEB)
 export class MerchantPaymentConfigsController {
   constructor(private readonly configsService: MerchantPaymentConfigsService) {}

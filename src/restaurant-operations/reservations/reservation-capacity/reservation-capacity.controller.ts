@@ -10,6 +10,9 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { FeatureAccessGuard } from 'src/auth/guards/feature-access.guard';
+import { RequireFeature } from 'src/auth/decorators/require-feature.decorator';
+import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-feature-ids';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Scopes } from 'src/auth/decorators/scopes.decorator';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
@@ -40,7 +43,8 @@ const SETTINGS_EXAMPLE = {
 @ApiTags('Restaurant operations - Reservations - Capacity')
 @ApiBearerAuth()
 @Controller('reservation-capacity')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@RequireFeature(SUBSCRIPTION_FEATURE_IDS.RESERVATIONS)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class ReservationCapacityController {
   constructor(private readonly capacityService: ReservationCapacityService) {}
 

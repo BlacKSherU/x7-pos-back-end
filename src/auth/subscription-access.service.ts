@@ -4,6 +4,12 @@ import { Repository } from 'typeorm';
 import { MerchantSubscription } from 'src/platform-saas/subscriptions/merchant-subscriptions/entities/merchant-subscription.entity';
 import { PlanFeature } from 'src/platform-saas/subscriptions/plan-features/entity/plan-features.entity';
 import { CompanySubscription } from 'src/platform-saas/subscriptions/company-subscriptions/entities/company-subscription.entity';
+import { FeatureShiftRole } from 'src/platform-saas/subscriptions/entities/feature-shift-role.entity';
+import { UserFeatureOverride } from 'src/platform-saas/subscriptions/entities/user-feature-override.entity';
+import { Collaborator } from 'src/finance-hr/hr/collaborators/entities/collaborator.entity';
+import { UserRole } from 'src/platform-saas/users/constants/role.enum';
+import { ShiftRole } from 'src/restaurant-operations/shift/shifts/constants/shift-role.enum';
+import { getAllSubscriptionFeatureIds } from 'src/common/subscription/subscription-feature-ids';
 
 /** Thrown when the merchant has no subscription rows at all. */
 export const MSG_NO_MERCHANT_PLAN =
@@ -35,6 +41,13 @@ export interface CompanySubscriptionAccess {
   authorizedFeatureIds: number[];
 }
 
+export interface EffectiveFeatureAccess {
+  planId?: number;
+  authorizedFeatureIds: number[];
+  shiftRole: ShiftRole | null;
+  collaboratorId?: number;
+}
+
 @Injectable()
 export class SubscriptionAccessService {
   constructor(
@@ -44,6 +57,12 @@ export class SubscriptionAccessService {
     private readonly companySubscriptionRepo: Repository<CompanySubscription>,
     @InjectRepository(PlanFeature)
     private readonly planFeatureRepo: Repository<PlanFeature>,
+    @InjectRepository(FeatureShiftRole)
+    private readonly featureShiftRoleRepo: Repository<FeatureShiftRole>,
+    @InjectRepository(UserFeatureOverride)
+    private readonly userFeatureOverrideRepo: Repository<UserFeatureOverride>,
+    @InjectRepository(Collaborator)
+    private readonly collaboratorRepo: Repository<Collaborator>,
   ) {}
 
   /**
@@ -146,5 +165,116 @@ export class SubscriptionAccessService {
     });
 
     return { planId, authorizedFeatureIds };
+  }
+
+  /**
+   * Calculates the effective authorized features for a user based on:
+   * 1. System Role: super_admin, portal_admin, portal_user get full catalog bypass.
+   * 2. Merchant Admin: gets all features authorized under the company subscription plan.
+   * 3. Merchant User:
+   *    EffectiveFeatures = ((FeaturesDelPlan ∩ FeaturesDelShiftRole) ∪ OverridesAllow) \ OverridesDeny
+   *    Strict Ceiling Rule: OverridesAllow can NEVER exceed the company subscription plan.
+   */
+  async calculateEffectiveFeatures(user: {
+    id: number;
+    role: UserRole;
+    merchant?: { id: number; companyId?: number };
+  }): Promise<EffectiveFeatureAccess> {
+    const isPortalStaff =
+      user.role === UserRole.PORTAL_ADMIN ||
+      user.role === UserRole.PORTAL_USER ||
+      user.role === UserRole.SUPER_ADMIN;
+
+    if (isPortalStaff) {
+      return {
+        planId: undefined,
+        authorizedFeatureIds: getAllSubscriptionFeatureIds(),
+        shiftRole: null,
+      };
+    }
+
+    const companyId = user.merchant?.companyId;
+    if (!companyId) {
+      return {
+        planId: undefined,
+        authorizedFeatureIds: [],
+        shiftRole: null,
+      };
+    }
+
+    let planAccess: CompanySubscriptionAccess;
+    try {
+      planAccess = await this.getSubscriptionAccessForCompany(companyId);
+    } catch {
+      return {
+        planId: undefined,
+        authorizedFeatureIds: [],
+        shiftRole: null,
+      };
+    }
+
+    // merchant_admin receives all features authorized in the company plan
+    if (user.role === UserRole.MERCHANT_ADMIN) {
+      return {
+        planId: planAccess.planId,
+        authorizedFeatureIds: planAccess.authorizedFeatureIds,
+        shiftRole: null,
+      };
+    }
+
+    // merchant_user: calculate (Plan ∩ ShiftRole) ∪ OverridesAllow \ OverridesDeny
+    // 1. Resolve active collaborator for this user
+    const collaborator = await this.collaboratorRepo.findOne({
+      where: { user_id: user.id },
+    });
+
+    const shiftRole = collaborator?.role ?? null;
+    let baseFeatureIds: number[] = [];
+
+    if (shiftRole) {
+      const shiftRoleRows = await this.featureShiftRoleRepo.find({
+        where: { shift_role: shiftRole },
+      });
+      const shiftRoleFeatureSet = new Set(
+        shiftRoleRows.map((r) => Number(r.feature_id)),
+      );
+      // FeaturesDelPlan ∩ FeaturesDelShiftRole
+      baseFeatureIds = planAccess.authorizedFeatureIds.filter((id) =>
+        shiftRoleFeatureSet.has(id),
+      );
+    }
+
+    // 2. Resolve individual user overrides
+    const overrides = await this.userFeatureOverrideRepo.find({
+      where: { user_id: user.id },
+    });
+
+    const companyPlanSet = new Set(planAccess.authorizedFeatureIds);
+
+    // Ceiling Rule: OverridesAllow can NEVER exceed the company subscription plan
+    const allowFeatureIds = overrides
+      .filter(
+        (o) => o.effect === 'allow' && companyPlanSet.has(Number(o.feature_id)),
+      )
+      .map((o) => Number(o.feature_id));
+
+    const denyFeatureSet = new Set(
+      overrides
+        .filter((o) => o.effect === 'deny')
+        .map((o) => Number(o.feature_id)),
+    );
+
+    // ((Base ∪ Allow) \ Deny)
+    const combinedSet = new Set([...baseFeatureIds, ...allowFeatureIds]);
+    const effectiveFeatureIds = Array.from(combinedSet)
+      .filter((id) => !denyFeatureSet.has(id))
+      .sort((a, b) => a - b);
+
+    return {
+      planId: planAccess.planId,
+      authorizedFeatureIds: effectiveFeatureIds,
+      shiftRole,
+      collaboratorId: collaborator?.id,
+    };
   }
 }

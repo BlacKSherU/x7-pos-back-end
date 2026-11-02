@@ -10,11 +10,6 @@ import { AuthenticatedUser } from './interfaces/authenticated-user.interface';
 import { UserRole } from '../platform-saas/users/constants/role.enum';
 import { Scope } from '../platform-saas/users/constants/scope.enum';
 import { SubscriptionAccessService } from './subscription-access.service';
-import { getAllSubscriptionFeatureIds } from 'src/common/subscription/subscription-feature-ids';
-import {
-  MSG_COMPANY_SUBSCRIPTION_OUTDATED,
-  MSG_NO_COMPANY_PLAN,
-} from './subscription-access.service';
 
 interface JwtPayload {
   sub: string | number;
@@ -56,39 +51,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Invalid token');
     }
 
-    const isPortalStaff =
-      user.role === UserRole.PORTAL_ADMIN || user.role === UserRole.PORTAL_USER;
-
-    let planId: number | undefined;
-    let authorizedFeatureIds: number[];
-    if (isPortalStaff) {
-      planId = undefined;
-      authorizedFeatureIds = getAllSubscriptionFeatureIds();
-    } else {
-      const companyId = user.merchant.companyId;
-      if (!companyId) {
-        throw new UnauthorizedException('Invalid token');
-      }
-      try {
-        const access =
-          await this.subscriptionAccessService.getSubscriptionAccessForCompany(
-            companyId,
-          );
-        planId = access.planId;
-        authorizedFeatureIds = access.authorizedFeatureIds;
-      } catch (err) {
-        const message = (err as { message?: string }).message ?? '';
-        if (
-          message === MSG_NO_COMPANY_PLAN ||
-          message === MSG_COMPANY_SUBSCRIPTION_OUTDATED
-        ) {
-          planId = undefined;
-          authorizedFeatureIds = [];
-        } else {
-          throw err;
-        }
-      }
-    }
+    const effectiveAccess =
+      await this.subscriptionAccessService.calculateEffectiveFeatures(user);
 
     return {
       id: user.id,
@@ -96,8 +60,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       role: user.role,
       scope: user.scope,
       merchant: { id: user.merchant.id, companyId: user.merchant.companyId },
-      planId,
-      authorizedFeatureIds,
+      planId: effectiveAccess.planId,
+      authorizedFeatureIds: effectiveAccess.authorizedFeatureIds,
+      shiftRole: effectiveAccess.shiftRole,
+      collaboratorId: effectiveAccess.collaboratorId,
     };
   }
 }

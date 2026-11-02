@@ -15,6 +15,7 @@ describe('JwtStrategy', () => {
   let userRepository: jest.Mocked<Pick<Repository<User>, 'findOne'>>;
   let subscriptionAccessService: {
     getSubscriptionAccessForCompany: jest.Mock;
+    calculateEffectiveFeatures: jest.Mock;
   };
 
   const mockUser = {
@@ -32,6 +33,7 @@ describe('JwtStrategy', () => {
     };
     subscriptionAccessService = {
       getSubscriptionAccessForCompany: jest.fn(),
+      calculateEffectiveFeatures: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -55,12 +57,11 @@ describe('JwtStrategy', () => {
 
   it('validate returns AuthenticatedUser with planId and authorizedFeatureIds', async () => {
     userRepository.findOne.mockResolvedValue(mockUser as User);
-    subscriptionAccessService.getSubscriptionAccessForCompany.mockResolvedValue(
-      {
-        planId: 2,
-        authorizedFeatureIds: [7, 14],
-      },
-    );
+    subscriptionAccessService.calculateEffectiveFeatures.mockResolvedValue({
+      planId: 2,
+      authorizedFeatureIds: [7, 14],
+      shiftRole: null,
+    });
 
     const result = await strategy.validate({
       sub: '1',
@@ -77,10 +78,12 @@ describe('JwtStrategy', () => {
       merchant: { id: 99, companyId: 5 },
       planId: 2,
       authorizedFeatureIds: [7, 14],
+      shiftRole: null,
+      collaboratorId: undefined,
     });
     expect(
-      subscriptionAccessService.getSubscriptionAccessForCompany,
-    ).toHaveBeenCalledWith(5);
+      subscriptionAccessService.calculateEffectiveFeatures,
+    ).toHaveBeenCalledWith(mockUser);
   });
 
   it('validate rejects a deactivated account on its next request', async () => {
@@ -114,7 +117,7 @@ describe('JwtStrategy', () => {
 
   it('validate propagates subscription UnauthorizedException', async () => {
     userRepository.findOne.mockResolvedValue(mockUser as User);
-    subscriptionAccessService.getSubscriptionAccessForCompany.mockRejectedValue(
+    subscriptionAccessService.calculateEffectiveFeatures.mockRejectedValue(
       new UnauthorizedException('Merchant subscription is not active'),
     );
 
@@ -139,6 +142,11 @@ describe('JwtStrategy', () => {
     };
     const catalog = getAllSubscriptionFeatureIds();
     userRepository.findOne.mockResolvedValue(portalUser as User);
+    subscriptionAccessService.calculateEffectiveFeatures.mockResolvedValue({
+      planId: undefined,
+      authorizedFeatureIds: catalog,
+      shiftRole: null,
+    });
 
     const result = await strategy.validate({
       sub: '1',
@@ -148,8 +156,8 @@ describe('JwtStrategy', () => {
     });
 
     expect(
-      subscriptionAccessService.getSubscriptionAccessForCompany,
-    ).not.toHaveBeenCalled();
+      subscriptionAccessService.calculateEffectiveFeatures,
+    ).toHaveBeenCalledWith(portalUser);
     expect(result.planId).toBeUndefined();
     expect(result.authorizedFeatureIds).toEqual(catalog);
   });

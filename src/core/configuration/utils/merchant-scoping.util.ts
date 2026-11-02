@@ -26,7 +26,10 @@ export async function assertOwnsCompany(
   user: AuthenticatedUser,
   companyId: number,
 ): Promise<void> {
-  if (user.role === UserRole.PORTAL_ADMIN) {
+  if (
+    user.role === UserRole.PORTAL_ADMIN ||
+    user.role === UserRole.SUPER_ADMIN
+  ) {
     return;
   }
   const { companyId: ownCompanyId } = await resolveMerchantContext(
