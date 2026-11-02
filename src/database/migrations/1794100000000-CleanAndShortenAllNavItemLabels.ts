@@ -49,7 +49,7 @@ export class CleanAndShortenAllNavItemLabels1794100000000 implements MigrationIn
       // Loyalty
       'loyalty-customers': 'CUSTOMERS',
       'loyalty-coupons': 'COUPONS',
-      'loyalty-point-transactions': 'POINT TRANSACTIONS',
+      'loyalty-point-transactions': 'POINTS',
       'loyalty-programs': 'PROGRAMS',
       'loyalty-rewards': 'REWARDS',
       'loyalty-rewards-redemptions': 'REDEMPTIONS',
@@ -57,14 +57,14 @@ export class CleanAndShortenAllNavItemLabels1794100000000 implements MigrationIn
 
       // Marketing
       'marketing-automation': 'AUTOMATION',
-      'marketing-automation-action': 'AUTOMATION ACTIONS',
+      'marketing-automation-action': 'ACTIONS',
       'marketing-campaign': 'CAMPAIGNS',
-      'marketing-campaign-audience': 'AUDIENCES',
+      'marketing-campaign-audience': 'AUDIENCE',
       'marketing-coupon': 'COUPONS',
       'marketing-coupon-redemption': 'REDEMPTIONS',
-      'marketing-message-log': 'MESSAGE LOG',
+      'marketing-message-log': 'LOGS',
       'marketing-segment': 'SEGMENTS',
-      'marketing-segment-rule': 'SEGMENT RULES',
+      'marketing-segment-rule': 'RULES',
     };
 
     for (const [code, label] of Object.entries(labelMap)) {

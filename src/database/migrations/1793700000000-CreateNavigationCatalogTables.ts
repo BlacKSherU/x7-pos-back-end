@@ -326,21 +326,21 @@ export class CreateNavigationCatalogTables1793700000000 implements MigrationInte
         ('merchant_web', 27, NULL, 'loyalty-system-hub', 'LOYALTY SYSTEM HUB', 'card_membership', 'Management and navigation hub for Loyalty System.', '/app/loyalty-system', 1, 'hub', 'live'),
         ('merchant_web', 27, 101, 'loyalty-customers', 'CUSTOMERS', 'loyalty', 'Loyalty costumers view.', '/app/loyalty-system/loyalty-customers', 2, 'screen', 'live'),
         ('merchant_web', 27, 102, 'loyalty-coupons', 'COUPONS', 'confirmation_number', 'Loyalty coupons view.', '/app/loyalty-system/loyalty-coupons', 3, 'screen', 'live'),
-        ('merchant_web', 27, 103, 'loyalty-point-transactions', 'POINT TRANSACTIONS', 'toll', 'Loyalty point transactions view.', '/app/loyalty-system/loyalty-point-transactions', 4, 'screen', 'live'),
+        ('merchant_web', 27, 103, 'loyalty-point-transactions', 'POINTS', 'toll', 'Loyalty point transactions view.', '/app/loyalty-system/loyalty-point-transactions', 4, 'screen', 'live'),
         ('merchant_web', 27, 104, 'loyalty-programs', 'PROGRAMS', 'card_membership', 'Loyalty Programs view.', '/app/loyalty-system/loyalty-programs', 5, 'screen', 'live'),
         ('merchant_web', 27, 105, 'loyalty-rewards', 'REWARDS', 'redeem', 'Loyalty rewards view.', '/app/loyalty-system/loyalty-rewards', 6, 'screen', 'live'),
         ('merchant_web', 27, 106, 'loyalty-rewards-redemptions', 'REDEMPTIONS', 'savings', 'Loyalty rewards redemptions view.', '/app/loyalty-system/loyalty-rewards-redemptions', 7, 'screen', 'live'),
         ('merchant_web', 27, 107, 'loyalty-tiers', 'TIERS', 'workspace_premium', 'Loyalty tiers view.', '/app/loyalty-system/loyalty-tiers', 8, 'screen', 'live'),
         ('merchant_web', 28, NULL, 'marketing-system-hub', 'MARKETING SYSTEM HUB', 'campaign', 'Management and navigation hub for Marketing System.', '/app/marketing-system', 1, 'hub', 'live'),
         ('merchant_web', 28, 108, 'marketing-automation', 'AUTOMATION', 'smart_toy', 'Marketing Automation view.', '/app/marketing-system/marketing-automation', 2, 'screen', 'live'),
-        ('merchant_web', 28, 109, 'marketing-automation-action', 'AUTOMATION ACTIONS', 'play_arrow', 'Marketing Automation Action view.', '/app/marketing-system/marketing-automation-action', 3, 'screen', 'live'),
+        ('merchant_web', 28, 109, 'marketing-automation-action', 'ACTIONS', 'play_arrow', 'Marketing Automation Action view.', '/app/marketing-system/marketing-automation-action', 3, 'screen', 'live'),
         ('merchant_web', 28, 110, 'marketing-campaign', 'CAMPAIGNS', 'campaign', 'Marketing Campaign view.', '/app/marketing-system/marketing-campaign', 4, 'screen', 'live'),
-        ('merchant_web', 28, 111, 'marketing-campaign-audience', 'AUDIENCES', 'groups', 'Marketing Campaign Audience view.', '/app/marketing-system/marketing-campaign-audience', 5, 'screen', 'live'),
+        ('merchant_web', 28, 111, 'marketing-campaign-audience', 'AUDIENCE', 'groups', 'Marketing Campaign Audience view.', '/app/marketing-system/marketing-campaign-audience', 5, 'screen', 'live'),
         ('merchant_web', 28, 112, 'marketing-coupon', 'COUPONS', 'confirmation_number', 'Marketing Coupon view.', '/app/marketing-system/marketing-coupon', 6, 'screen', 'live'),
         ('merchant_web', 28, 113, 'marketing-coupon-redemption', 'REDEMPTIONS', 'redeem', 'Marketing Coupon Redemption view.', '/app/marketing-system/marketing-coupon-redemption', 7, 'screen', 'live'),
-        ('merchant_web', 28, 114, 'marketing-message-log', 'MESSAGE LOG', 'forum', 'Marketing Message Log view.', '/app/marketing-system/marketing-message-log', 8, 'screen', 'live'),
+        ('merchant_web', 28, 114, 'marketing-message-log', 'LOGS', 'forum', 'Marketing Message Log view.', '/app/marketing-system/marketing-message-log', 8, 'screen', 'live'),
         ('merchant_web', 28, 115, 'marketing-segment', 'SEGMENTS', 'pie_chart', 'Marketing Segment view.', '/app/marketing-system/marketing-segment', 9, 'screen', 'live'),
-        ('merchant_web', 28, 116, 'marketing-segment-rule', 'SEGMENT RULES', 'rule', 'Marketing Segment Rule view.', '/app/marketing-system/marketing-segment-rule', 10, 'screen', 'live')
+        ('merchant_web', 28, 116, 'marketing-segment-rule', 'RULES', 'rule', 'Marketing Segment Rule view.', '/app/marketing-system/marketing-segment-rule', 10, 'screen', 'live')
       ) AS v(surface, application_id, feature_id, code, label, icon, description, route, sort_order, kind, status)
       ON CONFLICT ("surface", "code") DO UPDATE SET
         "application_id" = EXCLUDED."application_id",
