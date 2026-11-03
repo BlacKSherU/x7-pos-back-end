@@ -6,6 +6,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../platform-saas/users/entities/user.entity';
+import { Merchant } from '../platform-saas/merchants/entities/merchant.entity';
 import { AuthenticatedUser } from './interfaces/authenticated-user.interface';
 import { UserRole } from '../platform-saas/users/constants/role.enum';
 import { Scope } from '../platform-saas/users/constants/scope.enum';
@@ -24,18 +25,27 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     private configService: ConfigService,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Merchant)
+    private readonly merchantRepository: Repository<Merchant>,
     private readonly subscriptionAccessService: SubscriptionAccessService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken() as (
         req: unknown,
       ) => string,
+      passReqToCallback: true,
       ignoreExpiration: false,
       secretOrKey: configService.get<string>('JWT_SECRET') ?? '',
     });
   }
 
-  async validate(payload: JwtPayload): Promise<AuthenticatedUser> {
+  async validate(
+    reqOrPayload: any,
+    maybePayload?: JwtPayload,
+  ): Promise<AuthenticatedUser> {
+    const req = maybePayload ? reqOrPayload : undefined;
+    const payload: JwtPayload = maybePayload ? maybePayload : reqOrPayload;
+
     const userId =
       typeof payload.sub === 'string' ? parseInt(payload.sub, 10) : payload.sub;
     const user = await this.userRepository.findOne({
@@ -51,6 +61,23 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Invalid token');
     }
 
+    let targetMerchant = user.merchant;
+    if (user.role === UserRole.SUPER_ADMIN && req) {
+      const rawMerchantId =
+        req.headers?.['x-merchant-id'] || req.query?.merchantId;
+      if (rawMerchantId) {
+        const parsedMerchantId = parseInt(String(rawMerchantId), 10);
+        if (!isNaN(parsedMerchantId) && parsedMerchantId > 0) {
+          const found = await this.merchantRepository.findOne({
+            where: { id: parsedMerchantId },
+          });
+          if (found) {
+            targetMerchant = found;
+          }
+        }
+      }
+    }
+
     const effectiveAccess =
       await this.subscriptionAccessService.calculateEffectiveFeatures(user);
 
@@ -59,7 +86,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       email: user.email,
       role: user.role,
       scope: user.scope,
-      merchant: { id: user.merchant.id, companyId: user.merchant.companyId },
+      merchant: { id: targetMerchant.id, companyId: targetMerchant.companyId },
       planId: effectiveAccess.planId,
       authorizedFeatureIds: effectiveAccess.authorizedFeatureIds,
       shiftRole: effectiveAccess.shiftRole,

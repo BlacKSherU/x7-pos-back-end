@@ -5,6 +5,7 @@ import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './jwt.strategy';
 import { User } from '../platform-saas/users/entities/user.entity';
+import { Merchant } from '../platform-saas/merchants/entities/merchant.entity';
 import { SubscriptionAccessService } from './subscription-access.service';
 import { UserRole } from '../platform-saas/users/constants/role.enum';
 import { Scope } from '../platform-saas/users/constants/scope.enum';
@@ -44,6 +45,7 @@ describe('JwtStrategy', () => {
           useValue: { get: jest.fn(() => 'test-secret') },
         },
         { provide: getRepositoryToken(User), useValue: mockUserRepo },
+        { provide: getRepositoryToken(Merchant), useValue: { findOne: jest.fn() } },
         {
           provide: SubscriptionAccessService,
           useValue: subscriptionAccessService,
