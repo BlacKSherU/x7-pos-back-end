@@ -233,6 +233,35 @@ export class UsersService {
     };
   }
 
+  /** Platform-level accounts (super admin and portal staff). Super admin only. */
+  async findPlatformStaff(
+    user: AuthenticatedUser,
+  ): Promise<AllUsersResponseDto> {
+    if (user.role !== UserRole.SUPER_ADMIN) {
+      throw new ForbiddenException(
+        'Only a super admin can list platform staff',
+      );
+    }
+
+    const users = await this.userRepo.find({
+      where: {
+        role: In([
+          UserRole.SUPER_ADMIN,
+          UserRole.PORTAL_ADMIN,
+          UserRole.PORTAL_USER,
+        ]),
+      },
+      relations: ['merchant', 'collaborators'],
+      order: { id: 'ASC' },
+    });
+
+    return {
+      statusCode: 200,
+      message: 'Platform staff retrieved successfully',
+      data: users.map(toSafeUser),
+    };
+  }
+
   async findByMerchant(
     merchantId: number,
     user: AuthenticatedUser,
