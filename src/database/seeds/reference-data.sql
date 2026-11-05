@@ -556,10 +556,13 @@ INSERT INTO subscription_plan_display_feature (subscription_plan_id, label, sort
 SELECT setval(pg_get_serial_sequence('subscription_plan_display_feature', 'id'), (SELECT COALESCE(MAX(id), 1) FROM subscription_plan_display_feature));
 
 INSERT INTO nav_item (surface, application_id, feature_id, code, label, icon, description, route, sort_order, kind, status) VALUES
-  ('saas_web', 1, 1, 'saas-dashboard', 'DESARROLLADO PERO FALTA PULIR', 'space_dashboard', 'Desarrollado pero falta pulir view.', '/saas-admin', 1, 'screen', 'live'),
-  ('merchant_web', 2, 2, 'reports', 'DESARROLLADO PERO FALTA PULIR', 'bar_chart', 'Desarrollado pero falta pulir view.', '/app/client-backoffice/reports', 1, 'screen', 'live'),
+  ('saas_web', 1, 1, 'saas-dashboard', 'Platform SaaS Overview', 'space_dashboard', 'Global SaaS management dashboard, subscriptions health, and merchant KPIs.', '/saas-admin', 1, 'screen', 'live'),
+  ('merchant_web', 2, NULL, 'client-backoffice-hub', 'Merchant Dashboard Command Hub', 'space_dashboard', 'Live store performance, sales, tables, kitchen status and business intelligence reports.', '/dashboard', 1, 'hub', 'live'),
+  ('merchant_web', 2, 2, 'dashboard', 'Merchant Dashboard Overview', 'space_dashboard', 'Live daily sales, active tables, kitchen performance, top selling items and current shifts.', '/dashboard', 2, 'screen', 'live'),
+  ('merchant_web', 2, 2, 'reports', 'Business Intelligence & Reports', 'bar_chart', 'Business Intelligence & Reports view.', '/app/client-backoffice/reports', 3, 'screen', 'in_development'),
   ('merchant_web', 3, NULL, 'companies-hub', 'COMPANIES HUB', 'business', 'Management and navigation hub for Companies.', '/app/companies', 1, 'hub', 'live'),
   ('saas_web', 3, NULL, 'companies-hub', 'COMPANIES HUB', 'business', 'Management and navigation hub for Companies.', '/app/companies', 1, 'hub', 'live'),
+  ('saas_web', 3, 3, 'companies-registry', 'Global Companies Directory', 'domain', 'Global directory of all registered companies and tenants on the platform.', '/saas-admin/companies', 2, 'screen', 'live'),
   ('merchant_web', 3, 3, 'company-profile', 'COMPANY PROFILE', 'domain', 'Company profile view.', '/dashboard/company-profile', 2, 'screen', 'live'),
   ('merchant_web', 3, 3, 'company-configurations', 'COMPANY CONFIGURATION', 'tune', 'Company configuration view.', '/dashboard/company-configurations', 3, 'screen', 'live'),
   ('merchant_web', 4, NULL, 'merchants-hub', 'MERCHANTS HUB', 'store', 'Management and navigation hub for Merchants.', '/app/merchants', 1, 'hub', 'live'),

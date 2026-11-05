@@ -79,22 +79,7 @@ export class NavigationService {
     let authorizedFeatureSet: Set<number>;
 
     if (user.role === UserRole.SUPER_ADMIN) {
-      if (
-        surface === NavigationSurface.MERCHANT_WEB &&
-        user.merchant?.companyId
-      ) {
-        try {
-          const compSub =
-            await this.subscriptionAccessService.getSubscriptionAccessForCompany(
-              user.merchant.companyId,
-            );
-          planId = compSub.planId;
-        } catch {
-          planId = user.planId ?? 3;
-        }
-      } else {
-        planId = user.planId ?? 3;
-      }
+      planId = user.planId ?? 3;
       shiftRole = null;
       authorizedFeatureSet = new Set(getAllSubscriptionFeatureIds());
     } else if (
@@ -112,9 +97,9 @@ export class NavigationService {
       authorizedFeatureSet = new Set(effective.authorizedFeatureIds);
     }
 
-    // 2b. If a plan is active, resolve authorized application IDs strictly from plan_applications
+    // 2b. If a plan is active (for non-super-admin users), resolve authorized application IDs strictly from plan_applications
     let authorizedAppIds: Set<number> | null = null;
-    if (planId) {
+    if (planId && user.role !== UserRole.SUPER_ADMIN) {
       const planApps = await this.planAppRepo.find({
         where: {
           subscriptionPlan: { id: planId },
@@ -162,10 +147,11 @@ export class NavigationService {
       user.role === UserRole.PORTAL_USER;
 
     for (const cat of rawCategories) {
-      // Platform SaaS category is strictly reserved for SaaS platform administrators on the SaaS surface
+      // On saas_web, only platform staff can view the Platform SaaS category
       if (
         cat.code === 'platform-saas' &&
-        (!isPlatformStaff || surface === NavigationSurface.MERCHANT_WEB)
+        surface === NavigationSurface.SAAS_WEB &&
+        !isPlatformStaff
       ) {
         continue;
       }
@@ -211,15 +197,27 @@ export class NavigationService {
         );
 
         if (combinedItems.length > 0) {
+          const isSharedSaasApp =
+            surface === NavigationSurface.SAAS_WEB &&
+            (app.code === 'companies' ||
+              app.code === 'merchants' ||
+              app.code === 'users');
+          const resolvedAppCode = isSharedSaasApp
+            ? `saas-${app.code}`
+            : (app.code ?? null);
+
           visibleApplications.push({
             id: Number(app.id),
-            code: app.code ?? null,
+            code: resolvedAppCode,
             name: app.name,
             icon: app.icon ?? null,
             sortOrder: app.sortOrder ?? 0,
             items: combinedItems.map((item) => ({
               id: Number(item.id),
-              code: item.code,
+              code:
+                isSharedSaasApp && item.kind === 'hub'
+                  ? `saas-${item.code}`
+                  : item.code,
               featureId: item.featureId ? Number(item.featureId) : null,
               label: item.label,
               icon: item.icon,
@@ -234,11 +232,15 @@ export class NavigationService {
       }
 
       if (visibleApplications.length > 0) {
+        const isMerchantPortalCategory =
+          cat.code === 'platform-saas' &&
+          surface === NavigationSurface.MERCHANT_WEB;
+
         visibleCategories.push({
           id: Number(cat.id),
-          code: cat.code,
-          name: cat.name,
-          icon: cat.icon,
+          code: isMerchantPortalCategory ? 'merchant-portal' : cat.code,
+          name: isMerchantPortalCategory ? 'Merchant Portal' : cat.name,
+          icon: isMerchantPortalCategory ? 'storefront' : cat.icon,
           sortOrder: cat.sortOrder,
           applications: visibleApplications,
         });
