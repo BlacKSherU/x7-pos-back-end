@@ -167,7 +167,12 @@ export class UsersController {
   }
 
   @Get('merchant/:merchantId')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.PORTAL_USER, UserRole.MERCHANT_ADMIN)
+  @Roles(
+    UserRole.SUPER_ADMIN,
+    UserRole.PORTAL_ADMIN,
+    UserRole.PORTAL_USER,
+    UserRole.MERCHANT_ADMIN,
+  )
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
