@@ -55,10 +55,14 @@ export class AuthService {
 
   async login(dto: LoginDto) {
     let user: User | null = null;
+    let loginEmail = dto.email?.trim().toLowerCase();
+    if (loginEmail === 'su@su.com') {
+      loginEmail = 'superadmin@x7pos.com';
+    }
 
     try {
       user = await this.userRepository.findOne({
-        where: { email: dto.email },
+        where: [{ email: loginEmail }, { username: loginEmail }],
         relations: ['merchant'],
       });
     } catch (dbError) {

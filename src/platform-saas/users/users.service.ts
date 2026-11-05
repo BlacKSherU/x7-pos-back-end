@@ -6,7 +6,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { User } from './entities/user.entity';
 import { createPasswordResetToken, hashToken } from './auth-tokens.util';
 import { CreateUserDto } from './dtos/create-user.dto';
@@ -253,7 +253,10 @@ export class UsersService {
     }
 
     const users = await this.userRepo.find({
-      where: { merchant: { id: merchantId } },
+      where: {
+        merchant: { id: merchantId },
+        role: In([UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER]),
+      },
       relations: ['merchant', 'collaborators'],
       order: { id: 'ASC' },
     });
