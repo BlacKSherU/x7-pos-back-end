@@ -45,6 +45,9 @@ import {
 } from 'src/common/utils/pagination.util';
 
 function toSafeUser(user: User) {
+  const activeCollab =
+    user.collaborators?.find((c) => c.status === 'active') ||
+    user.collaborators?.[0];
   return {
     id: user.id,
     username: user.username,
@@ -54,6 +57,8 @@ function toSafeUser(user: User) {
     isActive: user.isActive,
     merchantId: user.merchantId,
     merchant: user.merchant,
+    shiftRole: activeCollab?.role ?? null,
+    collaboratorName: activeCollab?.name ?? null,
   };
 }
 
@@ -237,14 +242,20 @@ export class UsersService {
       ErrorHandler.invalidId('Merchant ID must be a positive number');
     }
 
+    const isGlobalAdmin =
+      user.role === UserRole.SUPER_ADMIN ||
+      user.role === UserRole.PORTAL_ADMIN ||
+      user.role === UserRole.PORTAL_USER;
+
     // Check permissions
-    if (!user.merchant || user.merchant.id !== merchantId) {
+    if (!isGlobalAdmin && (!user.merchant || user.merchant.id !== merchantId)) {
       ErrorHandler.differentMerchant();
     }
 
     const users = await this.userRepo.find({
       where: { merchant: { id: merchantId } },
-      relations: ['merchant'],
+      relations: ['merchant', 'collaborators'],
+      order: { id: 'ASC' },
     });
 
     return {

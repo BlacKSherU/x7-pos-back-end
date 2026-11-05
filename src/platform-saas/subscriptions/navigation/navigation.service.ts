@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { NavCategory } from '../entities/nav-category.entity';
 import { NavItem } from '../entities/nav-item.entity';
+import { PlanApplication } from '../plan-applications/entity/plan-applications.entity';
 import { SubscriptionAccessService } from '../../../auth/subscription-access.service';
 import { AuthenticatedUser } from '../../../auth/interfaces/authenticated-user.interface';
 import { UserRole } from '../../users/constants/role.enum';
@@ -21,6 +22,8 @@ export class NavigationService {
     private readonly navCategoryRepo: Repository<NavCategory>,
     @InjectRepository(NavItem)
     private readonly navItemRepo: Repository<NavItem>,
+    @InjectRepository(PlanApplication)
+    private readonly planAppRepo: Repository<PlanApplication>,
     private readonly subscriptionAccessService: SubscriptionAccessService,
   ) {}
 
@@ -76,7 +79,22 @@ export class NavigationService {
     let authorizedFeatureSet: Set<number>;
 
     if (user.role === UserRole.SUPER_ADMIN) {
-      planId = user.planId ?? 3;
+      if (
+        surface === NavigationSurface.MERCHANT_WEB &&
+        user.merchant?.companyId
+      ) {
+        try {
+          const compSub =
+            await this.subscriptionAccessService.getSubscriptionAccessForCompany(
+              user.merchant.companyId,
+            );
+          planId = compSub.planId;
+        } catch {
+          planId = user.planId ?? 3;
+        }
+      } else {
+        planId = user.planId ?? 3;
+      }
       shiftRole = null;
       authorizedFeatureSet = new Set(getAllSubscriptionFeatureIds());
     } else if (
@@ -92,6 +110,24 @@ export class NavigationService {
       planId = effective.planId ?? null;
       shiftRole = effective.shiftRole;
       authorizedFeatureSet = new Set(effective.authorizedFeatureIds);
+    }
+
+    // 2b. If a plan is active, resolve authorized application IDs strictly from plan_applications
+    let authorizedAppIds: Set<number> | null = null;
+    if (planId) {
+      const planApps = await this.planAppRepo.find({
+        where: {
+          subscriptionPlan: { id: planId },
+          status: 'active',
+        },
+        relations: ['application'],
+      });
+      authorizedAppIds = new Set(
+        planApps
+          .map((pa) => pa.application?.id)
+          .filter((id): id is number => id !== null && id !== undefined)
+          .map(Number),
+      );
     }
 
     // 3. Query all categories, active applications and items for this surface in a single query
@@ -137,11 +173,23 @@ export class NavigationService {
       const visibleApplications: NavigationApplicationResponseDto[] = [];
 
       for (const app of cat.applications || []) {
+        // Enforce Plan Application ceiling: application must be authorized in the active plan
+        if (authorizedAppIds && !authorizedAppIds.has(Number(app.id))) {
+          continue;
+        }
+
         const appItems = app.navItems || [];
 
         // 4a. Identify visible screen items
         const visibleScreens = appItems.filter((item) => {
           if (item.kind !== 'screen') return false;
+          // For users with a designated shiftRole, screen MUST explicitly match an authorized feature
+          if (
+            shiftRole &&
+            (item.featureId === null || item.featureId === undefined)
+          ) {
+            return false;
+          }
           if (item.featureId === null || item.featureId === undefined) {
             return true;
           }
