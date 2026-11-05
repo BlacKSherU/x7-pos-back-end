@@ -120,7 +120,20 @@ export class NavigationService {
     // 4. Cascade filter and prune empty applications & categories
     const visibleCategories: NavigationCategoryResponseDto[] = [];
 
+    const isPlatformStaff =
+      user.role === UserRole.SUPER_ADMIN ||
+      user.role === UserRole.PORTAL_ADMIN ||
+      user.role === UserRole.PORTAL_USER;
+
     for (const cat of rawCategories) {
+      // Platform SaaS category is strictly reserved for SaaS platform administrators on the SaaS surface
+      if (
+        cat.code === 'platform-saas' &&
+        (!isPlatformStaff || surface === NavigationSurface.MERCHANT_WEB)
+      ) {
+        continue;
+      }
+
       const visibleApplications: NavigationApplicationResponseDto[] = [];
 
       for (const app of cat.applications || []) {

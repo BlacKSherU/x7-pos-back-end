@@ -556,7 +556,6 @@ INSERT INTO subscription_plan_display_feature (subscription_plan_id, label, sort
 SELECT setval(pg_get_serial_sequence('subscription_plan_display_feature', 'id'), (SELECT COALESCE(MAX(id), 1) FROM subscription_plan_display_feature));
 
 INSERT INTO nav_item (surface, application_id, feature_id, code, label, icon, description, route, sort_order, kind, status) VALUES
-  ('merchant_web', 1, 1, 'saas-dashboard', 'DESARROLLADO PERO FALTA PULIR', 'space_dashboard', 'Desarrollado pero falta pulir view.', '/saas-admin', 1, 'screen', 'live'),
   ('saas_web', 1, 1, 'saas-dashboard', 'DESARROLLADO PERO FALTA PULIR', 'space_dashboard', 'Desarrollado pero falta pulir view.', '/saas-admin', 1, 'screen', 'live'),
   ('merchant_web', 2, 2, 'reports', 'DESARROLLADO PERO FALTA PULIR', 'bar_chart', 'Desarrollado pero falta pulir view.', '/app/client-backoffice/reports', 1, 'screen', 'live'),
   ('merchant_web', 3, NULL, 'companies-hub', 'COMPANIES HUB', 'business', 'Management and navigation hub for Companies.', '/app/companies', 1, 'hub', 'live'),
@@ -568,10 +567,7 @@ INSERT INTO nav_item (surface, application_id, feature_id, code, label, icon, de
   ('saas_web', 4, 4, 'merchants-provisioning', 'MERCHANTS & TENANTS PROVISIONING', 'add_business', 'Merchants & Tenants Provisioning view.', '/saas-admin/merchants', 2, 'screen', 'live'),
   ('saas_web', 4, 4, 'global-merchants-directory', 'GLOBAL MERCHANTS DIRECTORY', 'store', 'Global Merchants Directory view.', '/saas-admin/merchants/directory', 3, 'screen', 'live'),
   ('merchant_web', 4, 4, 'merchant-directory', 'COMPANY MERCHANTS DIRECTORY', 'storefront', 'Company Merchants Directory view.', '/dashboard/merchants', 2, 'screen', 'live'),
-  ('merchant_web', 5, NULL, 'subscription-system-hub', 'SUBSCRIPTION SYSTEM COMMAND HUB', 'grid_view', 'Plans, the applications and features they unlock, and merchant subscriptions and payments.', '/app/subscription-system', 1, 'hub', 'live'),
   ('saas_web', 5, NULL, 'subscription-system-hub', 'SUBSCRIPTION SYSTEM COMMAND HUB', 'grid_view', 'Plans, the applications and features they unlock, and merchant subscriptions and payments.', '/app/subscription-system', 1, 'hub', 'live'),
-  ('merchant_web', 5, 7, 'merchant-subs-link', 'MERCHANT SUBSCRIPTIONS', 'storefront', 'Which plan each company is subscribed to and when it expires.', '/saas-admin/subscriptions/merchant-subscriptions', 2, 'screen', 'in_development'),
-  ('merchant_web', 5, 12, 'sub-payments-billing', 'SUBSCRIPTION PAYMENTS', 'payments', 'Subscription invoices and payment history.', '/saas-admin/subscriptions/payments', 3, 'screen', 'in_development'),
   ('saas_web', 5, 5, 'apps-config', 'APPLICATIONS', 'apps', 'Platform application catalog and configuration.', '/saas-admin/subscriptions/apps', 2, 'screen', 'live'),
   ('saas_web', 5, 6, 'features-control', 'FEATURES', 'toggle_on', 'Feature catalog and feature flags.', '/saas-admin/subscriptions/features', 3, 'screen', 'live'),
   ('saas_web', 5, 7, 'merchant-subs-link', 'MERCHANT SUBSCRIPTIONS', 'storefront', 'Which plan each company is subscribed to and when it expires.', '/saas-admin/subscriptions/merchant-subscriptions', 4, 'screen', 'in_development'),
