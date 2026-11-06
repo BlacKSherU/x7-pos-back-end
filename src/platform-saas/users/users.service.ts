@@ -676,6 +676,7 @@ export class UsersService {
 
     const planId = currentSub?.plan ? currentSub.plan.id : null;
     let planFeatureIds: number[] = [];
+    let planAppIds: number[] = [];
 
     if (planId) {
       const planFeatures = await this.planFeatureRepo
@@ -685,6 +686,13 @@ export class UsersService {
         .andWhere('pf.status = :status', { status: 'active' })
         .getMany();
       planFeatureIds = planFeatures.map((pf) => Number(pf.feature.id));
+
+      const planApps: Array<{ application_id: number }> =
+        await this.planFeatureRepo.manager.query(
+          'SELECT application_id FROM plan_applications WHERE subscriptionplan_id = $1 AND status = $2',
+          [planId, 'active'],
+        );
+      planAppIds = planApps.map((pa) => Number(pa.application_id));
     }
 
     // 2. Fetch collaborator ShiftRole for target user
@@ -709,14 +717,15 @@ export class UsersService {
     const overridesMap = new Map<number, UserFeatureOverride>();
     existingOverrides.forEach((o) => overridesMap.set(Number(o.feature_id), o));
 
-    // 5. Query screen navigation items matching the company plan features on merchant_web
+    // 5. Query screen navigation items matching the company plan features & applications on merchant_web
     const featureItems: UserFeatureItemDto[] = [];
-    if (planFeatureIds.length > 0) {
+    if (planFeatureIds.length > 0 && planAppIds.length > 0) {
       const navItems = await this.navItemRepo
         .createQueryBuilder('item')
         .innerJoinAndSelect('item.application', 'app')
         .leftJoinAndSelect('app.navCategory', 'cat')
         .where('item.feature_id IN (:...planFeatureIds)', { planFeatureIds })
+        .andWhere('item.application_id IN (:...planAppIds)', { planAppIds })
         .andWhere('item.surface = :surface', { surface: 'merchant_web' })
         .andWhere('item.kind = :kind', { kind: 'screen' })
         .orderBy('cat.sortOrder', 'ASC')
