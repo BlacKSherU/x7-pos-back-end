@@ -39,6 +39,7 @@ describe('UsersService', () => {
     password: 'hashedPassword',
     role: UserRole.MERCHANT_ADMIN,
     scope: Scope.MERCHANT_WEB,
+    isActive: true,
     merchantId: 1,
     merchant: mockMerchant as Merchant,
   };
@@ -206,8 +207,11 @@ describe('UsersService', () => {
             email: mockUser.email,
             role: mockUser.role,
             scope: mockUser.scope,
+            isActive: true,
             merchantId: mockUser.merchantId,
             merchant: mockUser.merchant,
+            shiftRole: null,
+            collaboratorName: null,
           },
         ],
       });

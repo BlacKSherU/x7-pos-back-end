@@ -39,7 +39,11 @@ describe('NavigationService', () => {
         },
         {
           provide: getRepositoryToken(PlanApplication),
-          useValue: { find: jest.fn().mockResolvedValue([]) },
+          useValue: {
+            find: jest
+              .fn()
+              .mockResolvedValue([{ application: { id: 10 } }]),
+          },
         },
         {
           provide: getRepositoryToken(User),
