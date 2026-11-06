@@ -14,7 +14,7 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNumber, IsObject, IsOptional, IsString } from 'class-validator';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { Request } from 'express';
 import { Repository } from 'typeorm';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
