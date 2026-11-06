@@ -81,4 +81,46 @@ describe('Users by company (e2e)', () => {
       .set(as(tenantA))
       .expect(statusWithBody(400));
   });
+
+  it('lists assignable features for the company subscription and updates user permissions', async () => {
+    const assignableRes = await request(server)
+      .get('/api/users/assignable-features')
+      .set(as(tenantA))
+      .expect(statusWithBody(200));
+
+    const assignable = (
+      assignableRes.body as {
+        data: { id: number; name: string; category: string }[];
+      }
+    ).data;
+    expect(Array.isArray(assignable)).toBe(true);
+    expect(assignable.length).toBeGreaterThan(0);
+
+    const firstFeatureId = assignable[0].id;
+    const permRes = await request(server)
+      .put(`/api/users/${secondBranchUserId}/permissions`)
+      .set(as(tenantA))
+      .send({ featureIds: [firstFeatureId] })
+      .expect(statusWithBody(200));
+
+    expect(
+      (permRes.body as { data: { permissions: number[] } }).data.permissions,
+    ).toEqual([firstFeatureId]);
+  });
+
+  it('returns the 2-level dynamic navigation tree from GET /api/me/navigation', async () => {
+    const navRes = await request(server)
+      .get('/api/me/navigation?surface=merchant')
+      .set(as(tenantA))
+      .expect(statusWithBody(200));
+
+    const nav = navRes.body as {
+      surface: string;
+      categories: { key: string; label: string; items: unknown[] }[];
+      authorizedFeatureCodes: string[];
+    };
+    expect(nav.surface).toBe('merchant');
+    expect(Array.isArray(nav.categories)).toBe(true);
+    expect(Array.isArray(nav.authorizedFeatureCodes)).toBe(true);
+  });
 });
