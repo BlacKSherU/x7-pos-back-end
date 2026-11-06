@@ -249,6 +249,7 @@ INSERT INTO plan_applications (subscriptionplan_id, application_id, limits, stat
   (2, 24, 'unlimited', 'active'),
   (2, 25, 'unlimited', 'active'),
   (2, 26, 'unlimited', 'active'),
+  (2, 29, 'unlimited', 'active'),
   (3, 1, 'unlimited', 'active'),
   (3, 2, 'unlimited', 'active'),
   (3, 3, 'unlimited', 'active'),
@@ -276,7 +277,8 @@ INSERT INTO plan_applications (subscriptionplan_id, application_id, limits, stat
   (3, 25, 'unlimited', 'active'),
   (3, 26, 'unlimited', 'active'),
   (3, 27, 'unlimited', 'active'),
-  (3, 28, 'unlimited', 'active');
+  (3, 28, 'unlimited', 'active'),
+  (3, 29, 'unlimited', 'active');
 
 INSERT INTO plan_features (subscription_plan_id, feature_id, limit_value, status) VALUES
   (1, 1, 0, 'active'),
