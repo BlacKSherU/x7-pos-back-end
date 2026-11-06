@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { NavCategory } from '../entities/nav-category.entity';
 import { NavItem } from '../entities/nav-item.entity';
+import { PlanApplication } from '../plan-applications/entity/plan-applications.entity';
+import { User } from '../../users/entities/user.entity';
 import { SubscriptionAccessService } from '../../../auth/subscription-access.service';
 import { AuthenticatedUser } from '../../../auth/interfaces/authenticated-user.interface';
 import { UserRole } from '../../users/constants/role.enum';
@@ -21,6 +23,10 @@ export class NavigationService {
     private readonly navCategoryRepo: Repository<NavCategory>,
     @InjectRepository(NavItem)
     private readonly navItemRepo: Repository<NavItem>,
+    @InjectRepository(PlanApplication)
+    private readonly planAppRepo: Repository<PlanApplication>,
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
     private readonly subscriptionAccessService: SubscriptionAccessService,
   ) {}
 
@@ -64,9 +70,37 @@ export class NavigationService {
    * Builds the complete, dynamically filtered navigation tree for the authenticated user and surface.
    */
   async getNavigationTree(
-    user: AuthenticatedUser,
+    authenticatedUser: AuthenticatedUser,
     surface: NavigationSurface,
+    previewUserId?: number,
   ): Promise<NavigationTreeResponseDto> {
+    let user: AuthenticatedUser = authenticatedUser;
+    if (
+      authenticatedUser.role === UserRole.SUPER_ADMIN &&
+      previewUserId &&
+      previewUserId !== authenticatedUser.id
+    ) {
+      const targetUser = await this.userRepo.findOne({
+        where: { id: previewUserId },
+        relations: ['merchant'],
+      });
+      if (targetUser) {
+        user = {
+          ...authenticatedUser,
+          id: targetUser.id,
+          email: targetUser.email,
+          role: targetUser.role,
+          scope: targetUser.scope,
+          merchant: targetUser.merchant
+            ? {
+                id: targetUser.merchant.id,
+                companyId: targetUser.merchant.companyId,
+              }
+            : authenticatedUser.merchant,
+        };
+      }
+    }
+
     // 1. Verify access to the requested surface
     this.assertSurfaceAccess(surface, user.role);
 
@@ -92,6 +126,24 @@ export class NavigationService {
       planId = effective.planId ?? null;
       shiftRole = effective.shiftRole;
       authorizedFeatureSet = new Set(effective.authorizedFeatureIds);
+    }
+
+    // 2b. If a plan is active (for non-super-admin users), resolve authorized application IDs strictly from plan_applications
+    let authorizedAppIds: Set<number> | null = null;
+    if (planId && user.role !== UserRole.SUPER_ADMIN) {
+      const planApps = await this.planAppRepo.find({
+        where: {
+          subscriptionPlan: { id: planId },
+          status: 'active',
+        },
+        relations: ['application'],
+      });
+      authorizedAppIds = new Set(
+        planApps
+          .map((pa) => pa.application?.id)
+          .filter((id): id is number => id !== null && id !== undefined)
+          .map(Number),
+      );
     }
 
     // 3. Query all categories, active applications and items for this surface in a single query
@@ -120,15 +172,41 @@ export class NavigationService {
     // 4. Cascade filter and prune empty applications & categories
     const visibleCategories: NavigationCategoryResponseDto[] = [];
 
+    const isPlatformStaff =
+      user.role === UserRole.SUPER_ADMIN ||
+      user.role === UserRole.PORTAL_ADMIN ||
+      user.role === UserRole.PORTAL_USER;
+
     for (const cat of rawCategories) {
+      // On saas_web, only platform staff can view the Platform SaaS category
+      if (
+        cat.code === 'platform-saas' &&
+        surface === NavigationSurface.SAAS_WEB &&
+        !isPlatformStaff
+      ) {
+        continue;
+      }
+
       const visibleApplications: NavigationApplicationResponseDto[] = [];
 
       for (const app of cat.applications || []) {
+        // Enforce Plan Application ceiling: application must be authorized in the active plan
+        if (authorizedAppIds && !authorizedAppIds.has(Number(app.id))) {
+          continue;
+        }
+
         const appItems = app.navItems || [];
 
         // 4a. Identify visible screen items
         const visibleScreens = appItems.filter((item) => {
           if (item.kind !== 'screen') return false;
+          // For users with a designated shiftRole, screen MUST explicitly match an authorized feature
+          if (
+            shiftRole &&
+            (item.featureId === null || item.featureId === undefined)
+          ) {
+            return false;
+          }
           if (item.featureId === null || item.featureId === undefined) {
             return true;
           }
@@ -150,15 +228,27 @@ export class NavigationService {
         );
 
         if (combinedItems.length > 0) {
+          const isSharedSaasApp =
+            surface === NavigationSurface.SAAS_WEB &&
+            (app.code === 'companies' ||
+              app.code === 'merchants' ||
+              app.code === 'users');
+          const resolvedAppCode = isSharedSaasApp
+            ? `saas-${app.code}`
+            : (app.code ?? null);
+
           visibleApplications.push({
             id: Number(app.id),
-            code: app.code ?? null,
+            code: resolvedAppCode,
             name: app.name,
             icon: app.icon ?? null,
             sortOrder: app.sortOrder ?? 0,
             items: combinedItems.map((item) => ({
               id: Number(item.id),
-              code: item.code,
+              code:
+                isSharedSaasApp && item.kind === 'hub'
+                  ? `saas-${item.code}`
+                  : item.code,
               featureId: item.featureId ? Number(item.featureId) : null,
               label: item.label,
               icon: item.icon,
@@ -173,11 +263,15 @@ export class NavigationService {
       }
 
       if (visibleApplications.length > 0) {
+        const isMerchantPortalCategory =
+          cat.code === 'platform-saas' &&
+          surface === NavigationSurface.MERCHANT_WEB;
+
         visibleCategories.push({
           id: Number(cat.id),
-          code: cat.code,
-          name: cat.name,
-          icon: cat.icon,
+          code: isMerchantPortalCategory ? 'merchant-portal' : cat.code,
+          name: isMerchantPortalCategory ? 'Merchant Portal' : cat.name,
+          icon: isMerchantPortalCategory ? 'storefront' : cat.icon,
           sortOrder: cat.sortOrder,
           applications: visibleApplications,
         });

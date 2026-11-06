@@ -93,6 +93,7 @@ describe('NavigationController', () => {
     expect(service.getNavigationTree).toHaveBeenCalledWith(
       mockUser,
       NavigationSurface.MERCHANT_WEB,
+      undefined,
     );
   });
 });

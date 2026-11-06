@@ -207,7 +207,7 @@ describe('AuthService', () => {
       const result = await service.login(loginDto);
 
       expect(userRepository.findOne).toHaveBeenCalledWith({
-        where: { email: loginDto.email },
+        where: [{ email: loginDto.email }, { username: loginDto.email }],
         relations: ['merchant'],
       });
       expect(bcrypt.compare).toHaveBeenCalledWith(

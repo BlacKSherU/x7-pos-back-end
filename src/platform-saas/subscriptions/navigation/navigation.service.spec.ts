@@ -4,6 +4,8 @@ import { ForbiddenException } from '@nestjs/common';
 import { NavigationService } from './navigation.service';
 import { NavCategory } from '../entities/nav-category.entity';
 import { NavItem } from '../entities/nav-item.entity';
+import { PlanApplication } from '../plan-applications/entity/plan-applications.entity';
+import { User } from '../../users/entities/user.entity';
 import { SubscriptionAccessService } from '../../../auth/subscription-access.service';
 import { AuthenticatedUser } from '../../../auth/interfaces/authenticated-user.interface';
 import { UserRole } from '../../users/constants/role.enum';
@@ -34,6 +36,18 @@ describe('NavigationService', () => {
         {
           provide: getRepositoryToken(NavItem),
           useValue: {},
+        },
+        {
+          provide: getRepositoryToken(PlanApplication),
+          useValue: {
+            find: jest
+              .fn()
+              .mockResolvedValue([{ application: { id: 10 } }]),
+          },
+        },
+        {
+          provide: getRepositoryToken(User),
+          useValue: { findOne: jest.fn().mockResolvedValue(null) },
         },
         {
           provide: SubscriptionAccessService,

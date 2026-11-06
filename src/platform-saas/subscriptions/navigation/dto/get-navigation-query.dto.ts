@@ -1,5 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsIn } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import { IsNotEmpty, IsString, IsIn, IsOptional, IsInt } from 'class-validator';
 import {
   NavigationSurface,
   ALL_NAVIGATION_SURFACES,
@@ -19,4 +20,14 @@ export class GetNavigationQueryDto {
     message: `surface must be one of: ${ALL_NAVIGATION_SURFACES.join(', ')}`,
   })
   surface: NavigationSurface;
+
+  @ApiPropertyOptional({
+    example: 18,
+    description:
+      'Optional user ID to preview navigation tree as (only honored for super_admin)',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  userId?: number;
 }

@@ -6,6 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { TimeEntry } from './entities/time-entry.entity';
 import { CollaboratorTimeEntriesService } from './collaborator-time-entries.service';
 import { CollaboratorTimeEntriesController } from './collaborator-time-entries.controller';
+import { AttendanceController } from './attendance.controller';
 import { Company } from 'src/platform-saas/companies/entities/company.entity';
 import { Merchant } from 'src/platform-saas/merchants/entities/merchant.entity';
 import { Collaborator } from '../collaborators/entities/collaborator.entity';
@@ -24,7 +25,7 @@ import { Shift } from 'src/restaurant-operations/shift/shifts/entities/shift.ent
       Shift,
     ]),
   ],
-  controllers: [CollaboratorTimeEntriesController],
+  controllers: [CollaboratorTimeEntriesController, AttendanceController],
   providers: [CollaboratorTimeEntriesService],
   exports: [CollaboratorTimeEntriesService],
 })

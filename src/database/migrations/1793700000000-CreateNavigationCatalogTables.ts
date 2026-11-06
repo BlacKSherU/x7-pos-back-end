@@ -125,7 +125,7 @@ export class CreateNavigationCatalogTables1793700000000 implements MigrationInte
     await queryRunner.query(`
       INSERT INTO "application" ("id", "code", "name", "description", "category", "category_id", "icon", "sort_order", "status") VALUES
         (1, 'central-backoffice', 'Platform SaaS Dashboard', 'Central Backoffice Manage', 'Category', 1, 'grid_view', 1, 'active'),
-        (2, 'client-backoffice', 'Restaurant Dashboard', 'Client Backoffice Manage', 'Category', 1, 'grid_view', 2, 'active'),
+        (2, 'client-backoffice', 'Merchant Dashboard', 'Client Backoffice Manage', 'Category', 1, 'space_dashboard', 2, 'active'),
         (3, 'companies', 'Companies', 'Companies Manage', 'Category', 1, 'business', 3, 'active'),
         (4, 'merchants', 'Merchants', 'Merchants Manage', 'Category', 1, 'store', 4, 'active'),
         (5, 'subscription-system', 'Subscription System', 'Subscription System Manage', 'Category', 1, 'loyalty', 5, 'active'),
@@ -182,11 +182,13 @@ export class CreateNavigationCatalogTables1793700000000 implements MigrationInte
         v.kind,
         v.status
       FROM (VALUES
-        ('merchant_web', 1, 1, 'saas-dashboard', 'DESARROLLADO PERO FALTA PULIR', 'space_dashboard', 'Desarrollado pero falta pulir view.', '/saas-admin', 1, 'screen', 'live'),
-        ('saas_web', 1, 1, 'saas-dashboard', 'DESARROLLADO PERO FALTA PULIR', 'space_dashboard', 'Desarrollado pero falta pulir view.', '/saas-admin', 1, 'screen', 'live'),
-        ('merchant_web', 2, 2, 'reports', 'DESARROLLADO PERO FALTA PULIR', 'bar_chart', 'Desarrollado pero falta pulir view.', '/app/client-backoffice/reports', 1, 'screen', 'live'),
+        ('saas_web', 1, 1, 'saas-dashboard', 'Platform SaaS Overview', 'space_dashboard', 'Global SaaS management dashboard, subscriptions health, and merchant KPIs.', '/saas-admin', 1, 'screen', 'live'),
+        ('merchant_web', 2, NULL, 'client-backoffice-hub', 'Merchant Dashboard Command Hub', 'space_dashboard', 'Live store performance, sales, tables, kitchen status and business intelligence reports.', '/dashboard', 1, 'hub', 'live'),
+        ('merchant_web', 2, 2, 'dashboard', 'Merchant Dashboard Overview', 'space_dashboard', 'Live daily sales, active tables, kitchen performance, top selling items and current shifts.', '/dashboard', 2, 'screen', 'live'),
+        ('merchant_web', 2, 2, 'reports', 'Business Intelligence & Reports', 'bar_chart', 'Business Intelligence & Reports view.', '/app/client-backoffice/reports', 3, 'screen', 'in_development'),
         ('merchant_web', 3, NULL, 'companies-hub', 'COMPANIES HUB', 'business', 'Management and navigation hub for Companies.', '/app/companies', 1, 'hub', 'live'),
         ('saas_web', 3, NULL, 'companies-hub', 'COMPANIES HUB', 'business', 'Management and navigation hub for Companies.', '/app/companies', 1, 'hub', 'live'),
+        ('saas_web', 3, 3, 'companies-registry', 'Global Companies Directory', 'domain', 'Global directory of all registered companies and tenants on the platform.', '/saas-admin/companies', 2, 'screen', 'live'),
         ('merchant_web', 3, 3, 'company-profile', 'COMPANY PROFILE', 'domain', 'Company profile view.', '/dashboard/company-profile', 2, 'screen', 'live'),
         ('merchant_web', 3, 3, 'company-configurations', 'COMPANY CONFIGURATION', 'tune', 'Company configuration view.', '/dashboard/company-configurations', 3, 'screen', 'live'),
         ('merchant_web', 4, NULL, 'merchants-hub', 'MERCHANTS HUB', 'store', 'Management and navigation hub for Merchants.', '/app/merchants', 1, 'hub', 'live'),
@@ -194,10 +196,7 @@ export class CreateNavigationCatalogTables1793700000000 implements MigrationInte
         ('saas_web', 4, 4, 'merchants-provisioning', 'MERCHANTS & TENANTS PROVISIONING', 'add_business', 'Merchants & Tenants Provisioning view.', '/saas-admin/merchants', 2, 'screen', 'live'),
         ('saas_web', 4, 4, 'global-merchants-directory', 'GLOBAL MERCHANTS DIRECTORY', 'store', 'Global Merchants Directory view.', '/saas-admin/merchants/directory', 3, 'screen', 'live'),
         ('merchant_web', 4, 4, 'merchant-directory', 'COMPANY MERCHANTS DIRECTORY', 'storefront', 'Company Merchants Directory view.', '/dashboard/merchants', 2, 'screen', 'live'),
-        ('merchant_web', 5, NULL, 'subscription-system-hub', 'SUBSCRIPTION SYSTEM COMMAND HUB', 'grid_view', 'Plans, the applications and features they unlock, and merchant subscriptions and payments.', '/app/subscription-system', 1, 'hub', 'live'),
         ('saas_web', 5, NULL, 'subscription-system-hub', 'SUBSCRIPTION SYSTEM COMMAND HUB', 'grid_view', 'Plans, the applications and features they unlock, and merchant subscriptions and payments.', '/app/subscription-system', 1, 'hub', 'live'),
-        ('merchant_web', 5, 7, 'merchant-subs-link', 'MERCHANT SUBSCRIPTIONS', 'storefront', 'Which plan each company is subscribed to and when it expires.', '/saas-admin/subscriptions/merchant-subscriptions', 2, 'screen', 'in_development'),
-        ('merchant_web', 5, 12, 'sub-payments-billing', 'SUBSCRIPTION PAYMENTS', 'payments', 'Subscription invoices and payment history.', '/saas-admin/subscriptions/payments', 3, 'screen', 'in_development'),
         ('saas_web', 5, 5, 'apps-config', 'APPLICATIONS', 'apps', 'Platform application catalog and configuration.', '/saas-admin/subscriptions/apps', 2, 'screen', 'live'),
         ('saas_web', 5, 6, 'features-control', 'FEATURES', 'toggle_on', 'Feature catalog and feature flags.', '/saas-admin/subscriptions/features', 3, 'screen', 'live'),
         ('saas_web', 5, 7, 'merchant-subs-link', 'MERCHANT SUBSCRIPTIONS', 'storefront', 'Which plan each company is subscribed to and when it expires.', '/saas-admin/subscriptions/merchant-subscriptions', 4, 'screen', 'in_development'),
