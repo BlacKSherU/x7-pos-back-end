@@ -117,6 +117,15 @@ describe('UsersService', () => {
           provide: getRepositoryToken(PlanFeature),
           useValue: {
             find: jest.fn().mockResolvedValue([]),
+            createQueryBuilder: jest.fn().mockReturnValue({
+              innerJoinAndSelect: jest.fn().mockReturnThis(),
+              where: jest.fn().mockReturnThis(),
+              andWhere: jest.fn().mockReturnThis(),
+              getMany: jest.fn().mockResolvedValue([]),
+            }),
+            manager: {
+              query: jest.fn().mockResolvedValue([]),
+            },
           },
         },
         {
