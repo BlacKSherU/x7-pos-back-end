@@ -90,13 +90,13 @@ describe('Users by company (e2e)', () => {
 
     const overridesBody = overridesRes.body as {
       userId: number;
-      items: { featureId: number; code: string; name: string; override: string; effective: boolean }[];
+      features: { featureId: number; code: string; name: string; override: string; effective: boolean }[];
     };
     expect(overridesBody.userId).toBe(secondBranchUserId);
-    expect(Array.isArray(overridesBody.items)).toBe(true);
+    expect(Array.isArray(overridesBody.features)).toBe(true);
 
-    if (overridesBody.items.length > 0) {
-      const firstItem = overridesBody.items[0];
+    if (overridesBody.features.length > 0) {
+      const firstItem = overridesBody.features[0];
       const newOverride = firstItem.override === 'deny' ? 'allow' : 'deny';
 
       const putRes = await request(server)
@@ -114,10 +114,10 @@ describe('Users by company (e2e)', () => {
 
       const updatedBody = putRes.body as {
         userId: number;
-        items: { featureId: number; override: string }[];
+        features: { featureId: number; override: string }[];
       };
       expect(updatedBody.userId).toBe(secondBranchUserId);
-      const updatedItem = updatedBody.items.find(
+      const updatedItem = updatedBody.features.find(
         (i) => i.featureId === firstItem.featureId,
       );
       expect(updatedItem?.override).toBe(newOverride);
