@@ -48,6 +48,10 @@ export class NavigationController {
     @CurrentUser() user: AuthenticatedUser,
     @Query() query: GetNavigationQueryDto,
   ): Promise<NavigationTreeResponseDto> {
-    return this.navigationService.getNavigationTree(user, query.surface);
+    return this.navigationService.getNavigationTree(
+      user,
+      query.surface,
+      query.userId,
+    );
   }
 }
