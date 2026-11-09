@@ -60,11 +60,16 @@ export class CustomersService {
   }
 
   /** Sin page ni limit, todos los clientes del comercio, como antes. */
-  async findAll(merchantId: number, query: PaginationQueryDto & { companyId?: number } = {}) {
+  async findAll(
+    merchantId: number,
+    query: PaginationQueryDto & { companyId?: number } = {},
+  ) {
     const pagination = requestedPage(query);
     const where = query.companyId
       ? { companyId: query.companyId }
-      : (merchantId ? { merchantId } : {});
+      : merchantId
+        ? { merchantId }
+        : {};
     const [customers, total] = await this.customerRepo.findAndCount({
       where,
       relations: ['merchant', 'company', 'orders', 'loyaltyCustomers'],

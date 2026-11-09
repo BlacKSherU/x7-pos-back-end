@@ -91,7 +91,9 @@ export class SuppliersController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() createSupplierDto: CreateSupplierDto,
   ) {
-    const companyId = await this.suppliersService.getCompanyIdByMerchantId(this.merchantIdOf(user));
+    const companyId = await this.suppliersService.getCompanyIdByMerchantId(
+      this.merchantIdOf(user),
+    );
     return this.suppliersService.create(companyId, createSupplierDto);
   }
 
@@ -277,7 +279,9 @@ export class SuppliersController {
     @CurrentUser() user: AuthenticatedUser,
     @Param('id', ParseIntPipe) id: number,
   ) {
-    const companyId = await this.suppliersService.getCompanyIdByMerchantId(this.merchantIdOf(user));
+    const companyId = await this.suppliersService.getCompanyIdByMerchantId(
+      this.merchantIdOf(user),
+    );
     return this.suppliersService.findOne(id, companyId);
   }
 
@@ -329,7 +333,9 @@ export class SuppliersController {
     @Param('id', ParseIntPipe) id: number,
     @Body() updateSupplierDto: UpdateSupplierDto,
   ) {
-    const companyId = await this.suppliersService.getCompanyIdByMerchantId(this.merchantIdOf(user));
+    const companyId = await this.suppliersService.getCompanyIdByMerchantId(
+      this.merchantIdOf(user),
+    );
     return this.suppliersService.update(id, companyId, updateSupplierDto);
   }
 
@@ -376,7 +382,9 @@ export class SuppliersController {
     @CurrentUser() user: AuthenticatedUser,
     @Param('id', ParseIntPipe) id: number,
   ) {
-    const companyId = await this.suppliersService.getCompanyIdByMerchantId(this.merchantIdOf(user));
+    const companyId = await this.suppliersService.getCompanyIdByMerchantId(
+      this.merchantIdOf(user),
+    );
     return this.suppliersService.remove(id, companyId);
   }
 }
