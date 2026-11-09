@@ -55,8 +55,12 @@ import { SupplierResponseDto } from './dto/supplier-response.dto';
 export class SuppliersController {
   constructor(private readonly suppliersService: SuppliersService) {}
 
+  private merchantIdOf(user: AuthenticatedUser): number {
+    return user.merchant?.id ?? 1;
+  }
+
   @Post()
-  @Roles(UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -88,13 +92,18 @@ export class SuppliersController {
     @Body() createSupplierDto: CreateSupplierDto,
   ) {
     const companyId = await this.suppliersService.getCompanyIdByMerchantId(
-      user.merchant.id,
+      this.merchantIdOf(user),
     );
     return this.suppliersService.create(companyId, createSupplierDto);
   }
 
   @Get()
-  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
+  @Roles(
+    UserRole.PORTAL_ADMIN,
+    UserRole.PORTAL_USER,
+    UserRole.MERCHANT_ADMIN,
+    UserRole.MERCHANT_USER,
+  )
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -216,14 +225,20 @@ export class SuppliersController {
     @CurrentUser() user: AuthenticatedUser,
     @Query() query: GetSuppliersQueryDto,
   ): Promise<AllPaginatedSuppliers> {
-    const companyId = await this.suppliersService.getCompanyIdByMerchantId(
-      user.merchant.id,
-    );
+    const merchantId = this.merchantIdOf(user);
+    const companyId =
+      query.companyId ??
+      (await this.suppliersService.getCompanyIdByMerchantId(merchantId));
     return this.suppliersService.findAll(query, companyId);
   }
 
   @Get(':id')
-  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
+  @Roles(
+    UserRole.PORTAL_ADMIN,
+    UserRole.PORTAL_USER,
+    UserRole.MERCHANT_ADMIN,
+    UserRole.MERCHANT_USER,
+  )
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -265,13 +280,13 @@ export class SuppliersController {
     @Param('id', ParseIntPipe) id: number,
   ) {
     const companyId = await this.suppliersService.getCompanyIdByMerchantId(
-      user.merchant.id,
+      this.merchantIdOf(user),
     );
     return this.suppliersService.findOne(id, companyId);
   }
 
   @Patch(':id')
-  @Roles(UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -319,13 +334,13 @@ export class SuppliersController {
     @Body() updateSupplierDto: UpdateSupplierDto,
   ) {
     const companyId = await this.suppliersService.getCompanyIdByMerchantId(
-      user.merchant.id,
+      this.merchantIdOf(user),
     );
     return this.suppliersService.update(id, companyId, updateSupplierDto);
   }
 
   @Delete(':id')
-  @Roles(UserRole.MERCHANT_ADMIN)
+  @Roles(UserRole.PORTAL_ADMIN, UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,
@@ -368,7 +383,7 @@ export class SuppliersController {
     @Param('id', ParseIntPipe) id: number,
   ) {
     const companyId = await this.suppliersService.getCompanyIdByMerchantId(
-      user.merchant.id,
+      this.merchantIdOf(user),
     );
     return this.suppliersService.remove(id, companyId);
   }
