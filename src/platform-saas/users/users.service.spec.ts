@@ -39,6 +39,7 @@ describe('UsersService', () => {
     password: 'hashedPassword',
     role: UserRole.MERCHANT_ADMIN,
     scope: Scope.MERCHANT_WEB,
+    isActive: true,
     merchantId: 1,
     merchant: mockMerchant as Merchant,
   };
@@ -117,6 +118,15 @@ describe('UsersService', () => {
           provide: getRepositoryToken(PlanFeature),
           useValue: {
             find: jest.fn().mockResolvedValue([]),
+            createQueryBuilder: jest.fn().mockReturnValue({
+              innerJoinAndSelect: jest.fn().mockReturnThis(),
+              where: jest.fn().mockReturnThis(),
+              andWhere: jest.fn().mockReturnThis(),
+              getMany: jest.fn().mockResolvedValue([]),
+            }),
+            manager: {
+              query: jest.fn().mockResolvedValue([]),
+            },
           },
         },
         {
@@ -197,8 +207,11 @@ describe('UsersService', () => {
             email: mockUser.email,
             role: mockUser.role,
             scope: mockUser.scope,
+            isActive: true,
             merchantId: mockUser.merchantId,
             merchant: mockUser.merchant,
+            shiftRole: null,
+            collaboratorName: null,
           },
         ],
       });

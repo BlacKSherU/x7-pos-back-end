@@ -6,7 +6,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { User } from './entities/user.entity';
 import { createPasswordResetToken, hashToken } from './auth-tokens.util';
 import { CreateUserDto } from './dtos/create-user.dto';
@@ -45,6 +45,9 @@ import {
 } from 'src/common/utils/pagination.util';
 
 function toSafeUser(user: User) {
+  const activeCollab =
+    user.collaborators?.find((c) => c.status === 'active') ||
+    user.collaborators?.[0];
   return {
     id: user.id,
     username: user.username,
@@ -54,6 +57,8 @@ function toSafeUser(user: User) {
     isActive: user.isActive,
     merchantId: user.merchantId,
     merchant: user.merchant,
+    shiftRole: activeCollab?.role ?? null,
+    collaboratorName: activeCollab?.name ?? null,
   };
 }
 
@@ -228,6 +233,35 @@ export class UsersService {
     };
   }
 
+  /** Platform-level accounts (super admin and portal staff). Super admin only. */
+  async findPlatformStaff(
+    user: AuthenticatedUser,
+  ): Promise<AllUsersResponseDto> {
+    if (user.role !== UserRole.SUPER_ADMIN) {
+      throw new ForbiddenException(
+        'Only a super admin can list platform staff',
+      );
+    }
+
+    const users = await this.userRepo.find({
+      where: {
+        role: In([
+          UserRole.SUPER_ADMIN,
+          UserRole.PORTAL_ADMIN,
+          UserRole.PORTAL_USER,
+        ]),
+      },
+      relations: ['merchant', 'collaborators'],
+      order: { id: 'ASC' },
+    });
+
+    return {
+      statusCode: 200,
+      message: 'Platform staff retrieved successfully',
+      data: users.map(toSafeUser),
+    };
+  }
+
   async findByMerchant(
     merchantId: number,
     user: AuthenticatedUser,
@@ -237,14 +271,23 @@ export class UsersService {
       ErrorHandler.invalidId('Merchant ID must be a positive number');
     }
 
+    const isGlobalAdmin =
+      user.role === UserRole.SUPER_ADMIN ||
+      user.role === UserRole.PORTAL_ADMIN ||
+      user.role === UserRole.PORTAL_USER;
+
     // Check permissions
-    if (!user.merchant || user.merchant.id !== merchantId) {
+    if (!isGlobalAdmin && (!user.merchant || user.merchant.id !== merchantId)) {
       ErrorHandler.differentMerchant();
     }
 
     const users = await this.userRepo.find({
-      where: { merchant: { id: merchantId } },
-      relations: ['merchant'],
+      where: {
+        merchant: { id: merchantId },
+        role: In([UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER]),
+      },
+      relations: ['merchant', 'collaborators'],
+      order: { id: 'ASC' },
     });
 
     return {
@@ -633,6 +676,7 @@ export class UsersService {
 
     const planId = currentSub?.plan ? currentSub.plan.id : null;
     let planFeatureIds: number[] = [];
+    let planAppIds: number[] = [];
 
     if (planId) {
       const planFeatures = await this.planFeatureRepo
@@ -642,6 +686,13 @@ export class UsersService {
         .andWhere('pf.status = :status', { status: 'active' })
         .getMany();
       planFeatureIds = planFeatures.map((pf) => Number(pf.feature.id));
+
+      const planApps: Array<{ application_id: number }> =
+        await this.planFeatureRepo.manager.query(
+          'SELECT application_id FROM plan_applications WHERE subscriptionplan_id = $1 AND status = $2',
+          [planId, 'active'],
+        );
+      planAppIds = planApps.map((pa) => Number(pa.application_id));
     }
 
     // 2. Fetch collaborator ShiftRole for target user
@@ -666,14 +717,15 @@ export class UsersService {
     const overridesMap = new Map<number, UserFeatureOverride>();
     existingOverrides.forEach((o) => overridesMap.set(Number(o.feature_id), o));
 
-    // 5. Query screen navigation items matching the company plan features on merchant_web
+    // 5. Query screen navigation items matching the company plan features & applications on merchant_web
     const featureItems: UserFeatureItemDto[] = [];
-    if (planFeatureIds.length > 0) {
+    if (planFeatureIds.length > 0 && planAppIds.length > 0) {
       const navItems = await this.navItemRepo
         .createQueryBuilder('item')
         .innerJoinAndSelect('item.application', 'app')
         .leftJoinAndSelect('app.navCategory', 'cat')
         .where('item.feature_id IN (:...planFeatureIds)', { planFeatureIds })
+        .andWhere('item.application_id IN (:...planAppIds)', { planAppIds })
         .andWhere('item.surface = :surface', { surface: 'merchant_web' })
         .andWhere('item.kind = :kind', { kind: 'screen' })
         .orderBy('cat.sortOrder', 'ASC')

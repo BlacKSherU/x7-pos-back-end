@@ -119,6 +119,30 @@ export class UsersController {
     return this.usersService.findByCompany(req.user);
   }
 
+  // Declared before ':id' so that 'platform' is not parsed as a user id.
+  @Get('platform')
+  @Roles(UserRole.SUPER_ADMIN)
+  @Scopes(
+    Scope.ADMIN_PORTAL,
+    Scope.MERCHANT_WEB,
+    Scope.MERCHANT_ANDROID,
+    Scope.MERCHANT_IOS,
+    Scope.MERCHANT_CLOVER,
+  )
+  @ApiOperation({
+    summary: 'Get the platform staff (super admin and portal users)',
+  })
+  @ApiOkResponse({
+    description: 'Platform-level users',
+    type: AllUsersResponseDto,
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  findPlatformStaff(
+    @Req() req: Request & { user: AuthenticatedUser },
+  ): Promise<AllUsersResponseDto> {
+    return this.usersService.findPlatformStaff(req.user);
+  }
+
   @Get(':id')
   @Roles(UserRole.PORTAL_ADMIN, UserRole.PORTAL_USER, UserRole.MERCHANT_ADMIN)
   @Scopes(
@@ -143,7 +167,12 @@ export class UsersController {
   }
 
   @Get('merchant/:merchantId')
-  @Roles(UserRole.PORTAL_ADMIN, UserRole.PORTAL_USER, UserRole.MERCHANT_ADMIN)
+  @Roles(
+    UserRole.SUPER_ADMIN,
+    UserRole.PORTAL_ADMIN,
+    UserRole.PORTAL_USER,
+    UserRole.MERCHANT_ADMIN,
+  )
   @Scopes(
     Scope.ADMIN_PORTAL,
     Scope.MERCHANT_WEB,

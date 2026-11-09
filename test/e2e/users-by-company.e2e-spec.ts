@@ -81,4 +81,60 @@ describe('Users by company (e2e)', () => {
       .set(as(tenantA))
       .expect(statusWithBody(400));
   });
+
+  it('manages collaborator feature overrides via GET and PUT /users/:id/feature-overrides', async () => {
+    const overridesRes = await request(server)
+      .get(`/api/users/${secondBranchUserId}/feature-overrides`)
+      .set(as(tenantA))
+      .expect(statusWithBody(200));
+
+    const overridesBody = overridesRes.body as {
+      userId: number;
+      features: { featureId: number; code: string; name: string; override: string; effective: boolean }[];
+    };
+    expect(overridesBody.userId).toBe(secondBranchUserId);
+    expect(Array.isArray(overridesBody.features)).toBe(true);
+
+    if (overridesBody.features.length > 0) {
+      const firstItem = overridesBody.features[0];
+      const newOverride = firstItem.override === 'deny' ? 'allow' : 'deny';
+
+      const putRes = await request(server)
+        .put(`/api/users/${secondBranchUserId}/feature-overrides`)
+        .set(as(tenantA))
+        .send({
+          overrides: [
+            {
+              featureId: firstItem.featureId,
+              effect: newOverride,
+            },
+          ],
+        })
+        .expect(statusWithBody(200));
+
+      const updatedBody = putRes.body as {
+        userId: number;
+        features: { featureId: number; override: string }[];
+      };
+      expect(updatedBody.userId).toBe(secondBranchUserId);
+      const updatedItem = updatedBody.features.find(
+        (i) => i.featureId === firstItem.featureId,
+      );
+      expect(updatedItem?.override).toBe(newOverride);
+    }
+  });
+
+  it('returns the 2-level dynamic navigation tree from GET /api/me/navigation', async () => {
+    const navRes = await request(server)
+      .get('/api/me/navigation?surface=merchant_web')
+      .set(as(tenantA))
+      .expect(statusWithBody(200));
+
+    const nav = navRes.body as {
+      surface: string;
+      categories: { id: number; key: string; label: string; applications: unknown[] }[];
+    };
+    expect(nav.surface).toBe('merchant_web');
+    expect(Array.isArray(nav.categories)).toBe(true);
+  });
 });

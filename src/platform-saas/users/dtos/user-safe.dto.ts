@@ -55,4 +55,20 @@ export class UserSafeDto {
     nullable: true,
   })
   merchant?: Merchant;
+
+  @ApiProperty({
+    example: 'waiter',
+    description: 'Collaborator shift role if assigned',
+    nullable: true,
+    required: false,
+  })
+  shiftRole?: string | null;
+
+  @ApiProperty({
+    example: 'Manuel Mozo',
+    description: 'Collaborator full name if assigned',
+    nullable: true,
+    required: false,
+  })
+  collaboratorName?: string | null;
 }
