@@ -84,3 +84,6 @@ test-items-service-ts*
 # Uploaded files (personal data: never versioned)
 /uploads/
 /storage/
+
+# Historias de usuario (respaldo local, no versionar)
+/.historias/

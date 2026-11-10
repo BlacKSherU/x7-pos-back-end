@@ -102,6 +102,10 @@ export function validateEnv(
   }
 
   if (nodeEnv === 'production') {
+    // Solo para e2e: mandaría los cobros a un gateway falso
+    if (!isBlank(config.PAYMENT_GATEWAY_SANDBOX_URL)) {
+      errors.push('PAYMENT_GATEWAY_SANDBOX_URL must not be set in production');
+    }
     const jwtSecret = config.JWT_SECRET;
     const refreshSecret = config.JWT_REFRESH_SECRET;
     if (!isBlank(jwtSecret)) {

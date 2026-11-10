@@ -68,6 +68,16 @@ export class PaymentProcessingService {
     return gateway.void(request);
   }
 
+  /** Consulta el estado de un cobro en el proveedor de la configuración que lo hizo. */
+  async inquire(
+    companyId: number,
+    paymentConfigId: number,
+    transactionId: string,
+  ): Promise<PaymentResultDto> {
+    const gateway = await this.gatewayFor(companyId, paymentConfigId);
+    return gateway.inquire(transactionId);
+  }
+
   private async gatewayFor(
     companyId: number,
     paymentConfigId?: number,

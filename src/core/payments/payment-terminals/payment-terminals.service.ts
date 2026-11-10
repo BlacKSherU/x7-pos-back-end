@@ -200,7 +200,8 @@ export class PaymentTerminalsService {
       patch.cash_drawer_id = cashDrawerId;
 
     if (dto.name !== undefined) patch.name = dto.name.trim();
-    if (dto.model !== undefined) patch.model = dto.model.trim() || null;
+    // null (o vacío) borra el modelo
+    if (dto.model !== undefined) patch.model = dto.model?.trim() || null;
     if (dto.isActive !== undefined) patch.is_active = dto.isActive;
 
     if (Object.keys(patch).length > 0) {

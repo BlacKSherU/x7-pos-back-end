@@ -22,6 +22,7 @@ import { Company } from 'src/platform-saas/companies/entities/company.entity';
 import { Merchant } from 'src/platform-saas/merchants/entities/merchant.entity';
 import { MerchantPaymentConfig } from './entities/merchant-payment-config.entity';
 import { PaymentTerminal } from '../payment-terminals/entities/payment-terminal.entity';
+import { PaymentTransaction } from '../payment-transactions/entities/payment-transaction.entity';
 import { CreateMerchantPaymentConfigDto } from './dto/create-merchant-payment-config.dto';
 import { UpdateMerchantPaymentConfigDto } from './dto/update-merchant-payment-config.dto';
 import {
@@ -259,6 +260,17 @@ export class MerchantPaymentConfigsService {
         `${terminals} terminal(s) are bound to this payment config; delete or rebind them first`,
       );
     }
+    // payment_transactions guarda la configuración de cada cobro: sin ella no se puede
+    // devolver ni anular
+    const transactions = await this.dataSource.manager.count(
+      PaymentTransaction,
+      { where: { payment_config_id: id } },
+    );
+    if (transactions > 0) {
+      ErrorHandler.exists(
+        `${transactions} payment transaction(s) went through this payment config; deactivate it instead of deleting it`,
+      );
+    }
 
     await this.configRepository.delete({ id, company_id: companyId });
     return {
@@ -302,6 +314,45 @@ export class MerchantPaymentConfigsService {
         credentialsAad(companyId, row.provider),
       ),
     };
+  }
+
+  /**
+   * Configuración activa para cobrar en una sucursal: la del proveedor pedido o, sin
+   * proveedor, la de por defecto de la empresa. Con proveedor, la de la propia sucursal
+   * gana a la de toda la empresa (y, entre iguales, la de por defecto).
+   */
+  async resolveChargeConfig(
+    companyId: number,
+    merchantId: number,
+    provider?: PaymentProvider,
+  ): Promise<GatewayConfig> {
+    if (!provider) return this.resolveGatewayConfig(companyId);
+
+    const row = await this.configRepository
+      .createQueryBuilder('config')
+      .where('config.company_id = :companyId', { companyId })
+      .andWhere('config.is_active = true')
+      .andWhere('config.provider = :provider', { provider })
+      .andWhere(
+        '(config.merchant_id IS NULL OR config.merchant_id = :merchantId)',
+        {
+          merchantId,
+        },
+      )
+      .addSelect(
+        'CASE WHEN config.merchant_id IS NULL THEN 1 ELSE 0 END',
+        'branch_rank',
+      )
+      .orderBy('branch_rank', 'ASC')
+      .addOrderBy('config.is_default', 'DESC')
+      .addOrderBy('config.id', 'ASC')
+      .getOne();
+    if (!row) {
+      ErrorHandler.badRequest(
+        `The company has no active ${provider} payment config for this branch`,
+      );
+    }
+    return this.resolveGatewayConfig(companyId, row.id);
   }
 
   private validCredentials(

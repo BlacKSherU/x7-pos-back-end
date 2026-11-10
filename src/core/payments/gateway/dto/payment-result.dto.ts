@@ -6,6 +6,7 @@ export enum PaymentOperation {
   TERMINAL_PAYMENT = 'terminal_payment',
   REFUND = 'refund',
   VOID = 'void',
+  INQUIRE = 'inquire',
 }
 
 /**

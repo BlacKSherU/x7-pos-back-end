@@ -101,7 +101,8 @@ import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interf
  * - fully paid (with something actually paid) → PAID;
  * - a refund that leaves a balance due on a PAID order → PARTIALLY_REFUNDED;
  * - something paid but a balance due (a split bill under way, or items added to a paid
- *   order) → PARTIALLY_PAID; nothing paid any more → back to PENDING;
+ *   order) → PARTIALLY_PAID; nothing paid any more (a payment removed or voided) →
+ *   back to PENDING;
  * - cancelled and refunded orders keep their status.
  */
 function nextBusinessStatusAfterPayments(
@@ -125,7 +126,9 @@ function nextBusinessStatusAfterPayments(
   if (payment.paidTotal > 0) {
     return OrderBusinessStatus.PARTIALLY_PAID;
   }
-  return status === OrderBusinessStatus.PARTIALLY_PAID
+  // Nothing paid any more (e.g. its only card payment was voided): back to PENDING
+  return status === OrderBusinessStatus.PARTIALLY_PAID ||
+    status === OrderBusinessStatus.PAID
     ? OrderBusinessStatus.PENDING
     : status;
 }

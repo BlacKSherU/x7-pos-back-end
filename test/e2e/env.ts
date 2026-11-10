@@ -6,7 +6,7 @@ import { assertLocalDatabase } from './local-database.guard';
 Object.assign(process.env, {
   NODE_ENV: 'test',
   DB_HOST: '127.0.0.1',
-  DB_PORT: '54329',
+  DB_PORT: process.env.E2E_DB_PORT || '54329',
   DB_USERNAME: 'x7_e2e',
   DB_PASSWORD: 'x7_e2e',
   DB_NAME: 'x7_e2e',

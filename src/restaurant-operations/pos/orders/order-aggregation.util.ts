@@ -1,6 +1,7 @@
 import { OrderItem } from '../order-item/entities/order-item.entity';
 import { OrderItemStatus } from '../order-item/constants/order-item-status.enum';
 import { OrderPayment } from '../order-payments/entities/order-payment.entity';
+import { OrderPaymentStatus } from '../order-payments/constants/order-payment-status.enum';
 import { OrderTax } from '../order-taxes/entities/order-tax.entity';
 import { KitchenStatus } from './constants/kitchen-status.enum';
 
@@ -25,24 +26,34 @@ export function computeTaxTotalFromOrderTaxes(
   return roundMoney(taxes.reduce((sum, t) => sum + Number(t.amount), 0));
 }
 
+/** A voided payment was reversed at the gateway: it no longer counts as paid. */
+function countsAsPaid(payment: Partial<Pick<OrderPayment, 'status'>>): boolean {
+  return payment.status !== OrderPaymentStatus.VOIDED;
+}
+
 /** Sum of tip_amount per payment row (refunds subtract tips like amounts). */
 export function computeTipTotalFromPayments(
-  payments: Pick<OrderPayment, 'tip_amount' | 'is_refund'>[],
+  payments: (Pick<OrderPayment, 'tip_amount' | 'is_refund'> &
+    Partial<Pick<OrderPayment, 'status'>>)[],
 ): number {
   return roundMoney(
-    payments.reduce((sum, p) => {
+    payments.filter(countsAsPaid).reduce((sum, p) => {
       const tip = roundMoney(Number(p.tip_amount ?? 0));
       return sum + (p.is_refund ? -tip : tip);
     }, 0),
   );
 }
 
-/** Net amount collected from payment rows (refunds subtract). Includes tip_amount per row. */
+/**
+ * Net amount collected from payment rows (refunds subtract, voided rows are skipped).
+ * Includes tip_amount per row.
+ */
 export function computePaidTotalFromPayments(
-  payments: Pick<OrderPayment, 'amount' | 'tip_amount' | 'is_refund'>[],
+  payments: (Pick<OrderPayment, 'amount' | 'tip_amount' | 'is_refund'> &
+    Partial<Pick<OrderPayment, 'status'>>)[],
 ): number {
   return roundMoney(
-    payments.reduce((sum, p) => {
+    payments.filter(countsAsPaid).reduce((sum, p) => {
       const amt = roundMoney(Number(p.amount) + Number(p.tip_amount ?? 0));
       return sum + (p.is_refund ? -amt : amt);
     }, 0),

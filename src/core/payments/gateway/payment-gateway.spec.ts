@@ -17,6 +17,7 @@ import {
 import { MerchantPaymentConfigsService } from '../merchant-payment-configs/merchant-payment-configs.service';
 import { PaymentTerminalsService } from '../payment-terminals/payment-terminals.service';
 import { IPaymentGateway } from './payment-gateway.interface';
+import { gatewayEndpoints } from './gateway-endpoints';
 
 interface Reply {
   status: number;
@@ -268,6 +269,122 @@ describe('StripeAdapter', () => {
       message: 'Voided',
     });
   });
+
+  it('voids a captured PaymentIntent by refunding it in full', async () => {
+    const { http, request } = httpReplying(
+      {
+        status: 400,
+        data: {
+          error: {
+            code: 'payment_intent_unexpected_state',
+            message:
+              'You cannot cancel this PaymentIntent because it has a status of succeeded.',
+            payment_intent: {
+              id: 'pi_7',
+              status: 'succeeded',
+              amount: 1000,
+              currency: 'usd',
+            },
+          },
+        },
+      },
+      {
+        status: 200,
+        data: {
+          id: 're_7',
+          status: 'succeeded',
+          amount: 1000,
+          currency: 'usd',
+        },
+      },
+    );
+    const voided = await new StripeAdapter(http, STRIPE_CREDENTIALS).void({
+      transactionId: 'pi_7',
+      idempotencyKey: 'void-1',
+    });
+
+    const refundCall = (request.mock.calls[1] as unknown[])[0] as {
+      url: string;
+      data: string;
+      headers: Record<string, string>;
+    };
+    expect(refundCall.url).toBe('https://api.stripe.com/v1/refunds');
+    expect(new URLSearchParams(refundCall.data).get('payment_intent')).toBe(
+      'pi_7',
+    );
+    expect(new URLSearchParams(refundCall.data).get('amount')).toBeNull();
+    expect(refundCall.headers['Idempotency-Key']).toBe('void-1:refund');
+    expect(voided).toMatchObject({
+      operation: PaymentOperation.VOID,
+      status: PaymentResultStatus.APPROVED,
+      transactionId: 're_7',
+      amount: 10,
+    });
+  });
+
+  it('sends every call to the sandbox URL when one is configured', async () => {
+    const { http, request } = httpReplying({
+      status: 200,
+      data: { id: 'pi_8', status: 'succeeded', amount: 100, currency: 'usd' },
+    });
+    await new StripeAdapter(
+      http,
+      STRIPE_CREDENTIALS,
+      gatewayEndpoints('http://127.0.0.1:4599/'),
+    ).inquire('pi_8');
+    expect(
+      ((request.mock.calls[0] as unknown[])[0] as { url: string }).url,
+    ).toBe('http://127.0.0.1:4599/stripe/v1/payment_intents/pi_8');
+    expect(gatewayEndpoints('http://x').cardpointeGateway('fts-uat')).toBe(
+      'http://x/cardpointe/fts-uat/cardconnect/rest',
+    );
+    expect(gatewayEndpoints(undefined).bolt('bolt-uat')).toBe(
+      'https://bolt-uat.cardpointe.net/api',
+    );
+  });
+
+  it('inquires a reader PaymentIntent: still pending until the card is presented', async () => {
+    const waiting = {
+      id: 'pi_r',
+      status: 'requires_payment_method',
+      amount: 1050,
+      currency: 'usd',
+    };
+    const { http, request } = httpReplying(
+      { status: 200, data: waiting },
+      {
+        status: 200,
+        data: {
+          ...waiting,
+          last_payment_error: {
+            message: 'Card declined',
+            decline_code: 'generic_decline',
+          },
+        },
+      },
+      { status: 200, data: { ...waiting, status: 'succeeded' } },
+    );
+    const adapter = new StripeAdapter(http, STRIPE_CREDENTIALS);
+
+    const pending = await adapter.inquire('pi_r');
+    const call = (request.mock.calls[0] as unknown[])[0] as {
+      method: string;
+      url: string;
+    };
+    expect(call).toMatchObject({
+      method: 'GET',
+      url: 'https://api.stripe.com/v1/payment_intents/pi_r',
+    });
+    expect(pending.status).toBe(PaymentResultStatus.PENDING);
+    expect((await adapter.inquire('pi_r')).status).toBe(
+      PaymentResultStatus.DECLINED,
+    );
+    expect(await adapter.inquire('pi_r')).toMatchObject({
+      operation: PaymentOperation.INQUIRE,
+      status: PaymentResultStatus.APPROVED,
+      transactionId: 'pi_r',
+    });
+  });
 });
 
 describe('CardPointeAdapter', () => {
@@ -441,6 +558,36 @@ describe('CardPointeAdapter', () => {
     expect(result.status).toBe(PaymentResultStatus.ERROR);
     expect(request).not.toHaveBeenCalled();
   });
+
+  it('inquires a transaction by retref', async () => {
+    const { http, request } = httpReplying({
+      status: 200,
+      data: {
+        respstat: 'A',
+        retref: '343005123105',
+        amount: '10.50',
+        resptext: 'Approval',
+      },
+    });
+    const result = await new CardPointeAdapter(
+      http,
+      CARDPOINTE_CREDENTIALS,
+    ).inquire('343005123105');
+    const call = (request.mock.calls[0] as unknown[])[0] as {
+      method: string;
+      url: string;
+    };
+    expect(call).toMatchObject({
+      method: 'GET',
+      url: 'https://fts-uat.cardconnect.com/cardconnect/rest/inquire/343005123105/496160873888',
+    });
+    expect(result).toMatchObject({
+      operation: PaymentOperation.INQUIRE,
+      status: PaymentResultStatus.APPROVED,
+      transactionId: '343005123105',
+      amount: 10.5,
+    });
+  });
 });
 
 describe('PaymentAdapterFactory', () => {
@@ -475,6 +622,7 @@ describe('PaymentProcessingService', () => {
     processTerminalPayment: jest.fn().mockResolvedValue({ status: 'pending' }),
     refund: jest.fn().mockResolvedValue({ status: 'approved' }),
     void: jest.fn().mockResolvedValue({ status: 'approved' }),
+    inquire: jest.fn().mockResolvedValue({ status: 'approved' }),
   };
   const gatewayConfig = {
     id: 7,

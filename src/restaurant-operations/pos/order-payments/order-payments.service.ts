@@ -512,6 +512,8 @@ export class OrderPaymentsService {
       reference: row.reference,
       tipAmount: Number(row.tip_amount),
       isRefund: row.is_refund,
+      status: row.status,
+      paymentTransactionId: row.payment_transaction_id ?? null,
       createdAt: row.created_at,
       source: row.source,
       shift_id: row.shift_id,

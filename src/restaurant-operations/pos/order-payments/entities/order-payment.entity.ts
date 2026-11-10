@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Order } from '../../orders/entities/order.entity';
+import { OrderPaymentStatus } from '../constants/order-payment-status.enum';
 
 @Entity('order_payments')
 export class OrderPayment {
@@ -51,6 +52,26 @@ export class OrderPayment {
   @ApiProperty({ example: false })
   @Column({ default: false })
   is_refund: boolean;
+
+  @ApiProperty({
+    enum: OrderPaymentStatus,
+    example: OrderPaymentStatus.COMPLETED,
+    description: 'voided payments no longer count towards paid_total',
+  })
+  @Column({
+    type: 'varchar',
+    length: 20,
+    default: OrderPaymentStatus.COMPLETED,
+  })
+  status: OrderPaymentStatus;
+
+  @ApiPropertyOptional({
+    example: 12,
+    description:
+      'Gateway transaction (payment_transactions.id) behind this payment',
+  })
+  @Column({ type: 'int', name: 'payment_transaction_id', nullable: true })
+  payment_transaction_id: number | null;
 
   @ApiProperty()
   @CreateDateColumn({ type: 'timestamp', name: 'created_at' })

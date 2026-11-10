@@ -55,6 +55,11 @@ export interface IPaymentGateway {
   ): Promise<PaymentResultDto>;
   refund(request: RefundRequest): Promise<PaymentResultDto>;
   void(request: VoidRequest): Promise<PaymentResultDto>;
+  /**
+   * Estado actual de un cobro en el proveedor (para seguir un cobro en terminal que quedó
+   * `pending`). Mientras el cliente no pase la tarjeta, sigue `pending`.
+   */
+  inquire(transactionId: string): Promise<PaymentResultDto>;
 }
 
 /** Configuración descifrada con la que la fábrica arma un adaptador. */
