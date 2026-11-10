@@ -579,7 +579,22 @@ export class SaasAdminService {
       if (nameTaken) ErrorHandler.exists(ErrorMessage.MERCHANT_NAME_EXISTS);
     }
 
-    const changes: Partial<Merchant> = {
+    // Solo columnas escalares: Partial<Merchant> incluye relaciones (company) que no encajan con
+    // el tipo de merchantRepo.update() (_QueryDeepPartialEntity) y rompía la compilación en CI.
+    const changes: Partial<
+      Pick<
+        Merchant,
+        | 'name'
+        | 'email'
+        | 'phone'
+        | 'address'
+        | 'city'
+        | 'state'
+        | 'country'
+        | 'timezone'
+        | 'status'
+      >
+    > = {
       ...(dto.name !== undefined && { name: dto.name }),
       ...(dto.email !== undefined && { email: dto.email as string }),
       ...(dto.phone !== undefined && { phone: dto.phone as string }),
