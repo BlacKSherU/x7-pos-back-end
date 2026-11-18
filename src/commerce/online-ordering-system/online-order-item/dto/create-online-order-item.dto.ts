@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsNumber,
+  IsInt,
   IsNotEmpty,
   IsOptional,
   Min,
@@ -31,7 +32,7 @@ export class CreateOnlineOrderItemDto {
   variantId?: number | null;
 
   @ApiProperty({ example: 2, description: 'Quantity of the item' })
-  @IsNumber({}, { message: 'Quantity must be a number' })
+  @IsInt({ message: 'Quantity must be an integer' })
   @IsNotEmpty({ message: 'Quantity is required' })
   @Min(1, { message: 'Quantity must be greater than 0' })
   quantity: number;

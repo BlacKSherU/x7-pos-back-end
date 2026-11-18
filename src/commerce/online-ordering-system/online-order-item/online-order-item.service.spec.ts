@@ -60,6 +60,7 @@ describe('OnlineOrderItemService', () => {
     manager: {
       save: jest.fn(),
       findOne: jest.fn(),
+      update: jest.fn().mockResolvedValue({ affected: 1 }),
     },
   };
 

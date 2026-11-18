@@ -5,6 +5,7 @@ import {
   Body,
   Param,
   Put,
+  Patch,
   Delete,
   ParseIntPipe,
   HttpCode,
@@ -273,6 +274,7 @@ export class OnlineOrderItemController {
   }
 
   @Put(':id')
+  @Patch(':id')
   @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
   @Scopes(
     Scope.ADMIN_PORTAL,
