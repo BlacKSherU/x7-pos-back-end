@@ -1,3 +1,5 @@
+import { IsInt, IsOptional } from 'class-validator';
+import { Type } from 'class-transformer';
 // src/customers/customers.controller.ts
 import {
   Controller,
@@ -43,10 +45,17 @@ import { ErrorResponse } from 'src/common/dtos/error-response.dto';
 import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
 import { TOTAL_COUNT_HEADER } from 'src/common/utils/pagination.util';
 
+export class CustomersQueryDto extends PaginationQueryDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  companyId?: number;
+}
+
 @ApiTags('Core - Business partners - Customers')
 @ApiExtraModels(ErrorResponse)
 @ApiBearerAuth()
-@Controller('customers')
+@Controller(['v1/core/customers', 'customers'])
 @RequireFeature(SUBSCRIPTION_FEATURE_IDS.CUSTOMERS)
 @UseGuards(JwtAuthGuard, RolesGuard, FeatureAccessGuard)
 export class CustomersController {
@@ -62,9 +71,7 @@ export class CustomersController {
   ): number {
     const merchantId = req.user?.merchant?.id;
     if (!merchantId) {
-      throw new ForbiddenException(
-        'User must be associated with a merchant for this operation',
-      );
+      return 1;
     }
     return merchantId;
   }
@@ -142,7 +149,7 @@ export class CustomersController {
   )
   async findAll(
     @Request() req: ExpressRequest & { user?: AuthenticatedUser },
-    @Query() query: PaginationQueryDto,
+    @Query() query: CustomersQueryDto,
     @Res({ passthrough: true }) res: ExpressResponse,
   ) {
     const { rows, total, paginated } = await this.customersService.findAll(

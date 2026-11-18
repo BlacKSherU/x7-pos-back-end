@@ -297,6 +297,11 @@ export class ErrorHandler {
     throw new ConflictException(message);
   }
 
+  /** 409: the resource's current state does not allow the operation. */
+  static conflict(message: string): never {
+    throw new ConflictException(message);
+  }
+
   static duplicateResource(
     resource: string,
     field: string,

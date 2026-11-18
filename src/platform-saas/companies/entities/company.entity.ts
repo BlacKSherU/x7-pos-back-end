@@ -20,6 +20,34 @@ export class Company {
   name: string;
 
   @ApiProperty({
+    example: 'Acme Corporation LLC',
+    description:
+      'Registered legal name of the company (the commercial name is `name`)',
+    required: false,
+    nullable: true,
+  })
+  @Column({
+    name: 'legal_name',
+    type: 'varchar',
+    length: 150,
+    nullable: true,
+  })
+  legal_name?: string | null;
+
+  @ApiProperty({
+    example: 'USD',
+    description: 'ISO 4217 code of the base currency of the company',
+    default: 'USD',
+  })
+  @Column({
+    name: 'base_currency',
+    type: 'varchar',
+    length: 3,
+    default: 'USD',
+  })
+  base_currency?: string;
+
+  @ApiProperty({
     example: CompanyStatus.ACTIVE,
     enum: CompanyStatus,
     description:

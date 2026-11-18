@@ -2,7 +2,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CompaniesService } from './companies.service';
+import {
+  CompaniesService,
+  normalizeConfigurationType,
+} from './companies.service';
 import { Company } from './entities/company.entity';
 import { CreateCompanyDto } from './dtos/create-company.dto';
 import { UpdateCompanyDto } from './dtos/update-company.dto';
@@ -107,6 +110,7 @@ describe('CompaniesService', () => {
 
     const mockConfigurationRepository = {
       find: jest.fn(),
+      query: jest.fn().mockResolvedValue([]),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -466,6 +470,68 @@ describe('CompaniesService', () => {
         merchantName: 'Downtown Bistro',
         status: 'active',
       });
+    });
+  });
+
+  describe('getConfigurationsForCompany', () => {
+    it('labels rows by the raw type column, plain or written by the API as {"name":...}', async () => {
+      jest.spyOn(configurationRepository, 'find').mockResolvedValue([
+        {
+          id: 1,
+          status: 'active',
+          merchant_id: 2,
+          merchant: { id: 2, name: 'Centro' },
+          updatedAt: new Date('2026-06-18'),
+        },
+        {
+          id: 2,
+          status: 'inactive',
+          merchant_id: 2,
+          merchant: { id: 2, name: 'Centro' },
+          updatedAt: new Date('2026-06-17'),
+        },
+        {
+          id: 3,
+          status: 'active',
+          merchant_id: 2,
+          merchant: { id: 2, name: 'Centro' },
+          updatedAt: new Date('2026-06-16'),
+        },
+      ] as unknown as Configuration[]);
+      configurationRepository.query.mockResolvedValue([
+        { id: 1, type: 'merchant_tax_rule' },
+        { id: 2, type: '{"name":"merchant_payroll_rule"}' },
+        { id: 3, type: '{not json' },
+      ]);
+
+      const result = await service.getConfigurationsForCompany(2);
+
+      expect(configurationRepository.query).toHaveBeenCalledWith(
+        expect.stringContaining('FROM configuration WHERE company_id = $1'),
+        [2],
+      );
+      expect(result.data.items.map((item) => item.configurationLabel)).toEqual([
+        'Tax Rules',
+        'Payroll Rules',
+        'Configuration',
+      ]);
+      expect(result.data.summary).toEqual({
+        totalConfigurations: 3,
+        activeConfigurations: 2,
+        configurationTypes: 3,
+      });
+    });
+
+    it('normalizes discriminator values', () => {
+      expect(normalizeConfigurationType('merchant_tip_rule')).toBe(
+        'merchant_tip_rule',
+      );
+      expect(normalizeConfigurationType('{"name":"merchant_tip_rule"}')).toBe(
+        'merchant_tip_rule',
+      );
+      expect(normalizeConfigurationType('{"other":1}')).toBeUndefined();
+      expect(normalizeConfigurationType(null)).toBeUndefined();
+      expect(normalizeConfigurationType('  ')).toBeUndefined();
     });
   });
 

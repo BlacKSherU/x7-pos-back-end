@@ -59,11 +59,20 @@ export class CustomersService {
     return this.customerRepo.save(customer);
   }
 
-  async findAll(merchantId: number, query: PaginationQueryDto = {}) {
+  /** Sin page ni limit, todos los clientes del comercio, como antes. */
+  async findAll(
+    merchantId: number,
+    query: PaginationQueryDto & { companyId?: number } = {},
+  ) {
     const pagination = requestedPage(query);
+    const where = query.companyId
+      ? { companyId: query.companyId }
+      : merchantId
+        ? { merchantId }
+        : {};
     const [customers, total] = await this.customerRepo.findAndCount({
-      where: { merchantId },
-      relations: ['merchant', 'company'],
+      where,
+      relations: ['merchant', 'company', 'orders', 'loyaltyCustomers'],
       order: { id: 'ASC' },
       ...(pagination ? { skip: pagination.skip, take: pagination.limit } : {}),
     });
@@ -73,9 +82,13 @@ export class CustomersService {
       email: customer.email,
       phone: customer.phone,
       document_id: customer.document_id,
+      rut: customer.document_id,
       address: customer.address,
       city: customer.city,
       state: customer.state,
+      country: customer.country,
+      orders: customer.orders ?? [],
+      loyaltyCustomers: customer.loyaltyCustomers ?? [],
       merchantId: customer.merchantId,
       merchant: customer.merchant
         ? { id: customer.merchant.id, name: customer.merchant.name }

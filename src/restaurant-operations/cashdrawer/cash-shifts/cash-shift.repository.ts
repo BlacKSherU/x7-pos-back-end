@@ -101,6 +101,8 @@ export class CashShiftRepository extends Repository<CashShift> {
         'amount',
       )
       .where('cs.id = :shiftId', { shiftId })
+      // A voided card payment was reversed at the gateway: it is not a sale
+      .andWhere("op.status <> 'voided'")
       .groupBy('op.method')
       .getRawMany<{ method: string; amount: string }>();
 

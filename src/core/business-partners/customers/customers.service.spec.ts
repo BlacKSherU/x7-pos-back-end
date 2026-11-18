@@ -325,7 +325,7 @@ describe('CustomersService', () => {
       // Sin page ni limit: todos, como antes.
       expect(customerRepository.findAndCount).toHaveBeenCalledWith({
         where: { merchantId: mockCustomer.merchantId },
-        relations: ['merchant', 'company'],
+        relations: ['merchant', 'company', 'orders', 'loyaltyCustomers'],
         order: { id: 'ASC' },
       });
       expect(paginated).toBe(false);
@@ -336,9 +336,13 @@ describe('CustomersService', () => {
         email: mockCustomers[0].email,
         phone: mockCustomers[0].phone,
         document_id: mockCustomers[0].document_id,
+        rut: mockCustomers[0].document_id,
         address: mockCustomers[0].address,
         city: mockCustomers[0].city,
         state: mockCustomers[0].state,
+        country: mockCustomers[0].country,
+        orders: [],
+        loyaltyCustomers: [],
         merchantId: mockCustomers[0].merchantId,
         merchant: {
           id: mockCustomers[0].merchant.id,
