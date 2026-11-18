@@ -5,6 +5,7 @@ import {
   Body,
   Param,
   Put,
+  Patch,
   Delete,
   ParseIntPipe,
   HttpCode,
@@ -21,6 +22,7 @@ import { Request as ExpressRequest } from 'express';
 import { OnlinePaymentService } from './online-payment.service';
 import { CreateOnlinePaymentDto } from './dto/create-online-payment.dto';
 import { UpdateOnlinePaymentDto } from './dto/update-online-payment.dto';
+import { RefundOnlinePaymentDto } from './dto/refund-online-payment.dto';
 import {
   ApiTags,
   ApiOperation,
@@ -276,6 +278,7 @@ export class OnlinePaymentController {
   }
 
   @Put(':id')
+  @Patch(':id')
   @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.ADMIN_PORTAL,
@@ -400,5 +403,67 @@ export class OnlinePaymentController {
   ) {
     const authenticatedUserMerchantId = req.user?.merchant?.id;
     return this.onlinePaymentService.remove(id, authenticatedUserMerchantId);
+  }
+
+  @Post(':id/sync-gateway')
+  @Roles(UserRole.MERCHANT_ADMIN)
+  @Scopes(
+    Scope.ADMIN_PORTAL,
+    Scope.MERCHANT_WEB,
+    Scope.MERCHANT_ANDROID,
+    Scope.MERCHANT_IOS,
+    Scope.MERCHANT_CLOVER,
+  )
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Trigger Gateway Status Sync Re-Check',
+    description:
+      'Verifies and synchronizes the settlement status of an online payment with its gateway provider and parent online order.',
+  })
+  @ApiOkResponse({
+    description: 'Gateway status verified successfully',
+    type: OneOnlinePaymentResponseDto,
+  })
+  async syncGateway(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedRequest,
+  ): Promise<OneOnlinePaymentResponseDto> {
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
+    return this.onlinePaymentService.syncGatewayStatus(
+      id,
+      authenticatedUserMerchantId,
+    );
+  }
+
+  @Post(':id/refund')
+  @Roles(UserRole.MERCHANT_ADMIN)
+  @Scopes(
+    Scope.ADMIN_PORTAL,
+    Scope.MERCHANT_WEB,
+    Scope.MERCHANT_ANDROID,
+    Scope.MERCHANT_IOS,
+    Scope.MERCHANT_CLOVER,
+  )
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Dispatch Full or Partial Refund',
+    description:
+      'Executes a full or partial refund for a settled online payment and synchronizes the parent OnlineOrder payment status to REFUNDED.',
+  })
+  @ApiOkResponse({
+    description: 'Refund processed successfully',
+    type: OneOnlinePaymentResponseDto,
+  })
+  async processRefund(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() refundDto: RefundOnlinePaymentDto,
+    @Request() req: AuthenticatedRequest,
+  ): Promise<OneOnlinePaymentResponseDto> {
+    const authenticatedUserMerchantId = req.user?.merchant?.id;
+    return this.onlinePaymentService.processRefund(
+      id,
+      refundDto,
+      authenticatedUserMerchantId,
+    );
   }
 }

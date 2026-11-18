@@ -9,6 +9,7 @@ import { KitchenOrderStatus } from './constants/kitchen-order-status.enum';
 import { KitchenOrderItemStatus } from '../kitchen-order-item/constants/kitchen-order-item-status.enum';
 import { KitchenOrderItemPreparationStatus } from '../kitchen-order-item/constants/kitchen-order-item-preparation-status.enum';
 import { OrderItemKitchenStatus } from '../../pos/order-item/constants/order-item-kitchen-status.enum';
+import { OnlineOrderItem } from '../../../commerce/online-ordering-system/online-order-item/entities/online-order-item.entity';
 
 describe('KitchenOrderSyncService', () => {
   let service: KitchenOrderSyncService;
@@ -29,6 +30,9 @@ describe('KitchenOrderSyncService', () => {
   const mockOrderItemRepo = {
     update: jest.fn(),
   };
+  const mockOnlineOrderItemRepo = {
+    update: jest.fn().mockResolvedValue({ affected: 1 }),
+  };
   const mockOrdersService = {
     syncOrderAggregatesWithManager: jest
       .fn()
@@ -41,11 +45,13 @@ describe('KitchenOrderSyncService', () => {
     mockKitchenOrderRepo.manager.getRepository.mockImplementation((entity) => {
       if (entity === OrderItem) return mockOrderItemRepo;
       if (entity === KitchenOrder) return mockKitchenOrderRepo;
+      if (entity === OnlineOrderItem) return mockOnlineOrderItemRepo;
       return {};
     });
     mockKitchenOrderItemRepo.manager.getRepository.mockImplementation(
       (entity) => {
         if (entity === OrderItem) return mockOrderItemRepo;
+        if (entity === OnlineOrderItem) return mockOnlineOrderItemRepo;
         return {};
       },
     );

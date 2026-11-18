@@ -15,6 +15,7 @@ import { KitchenOrderItemPreparationStatus } from '../kitchen-order-item/constan
 import { OrderItem } from '../../pos/order-item/entities/order-item.entity';
 import { OrdersService } from '../../pos/orders/orders.service';
 import { OrderItemKitchenStatus } from '../../pos/order-item/constants/order-item-kitchen-status.enum';
+import { OnlineOrderItem } from '../../../commerce/online-ordering-system/online-order-item/entities/online-order-item.entity';
 
 function preparationToOrderLineStatus(
   p: KitchenOrderItemPreparationStatus,
@@ -120,6 +121,12 @@ export class KitchenOrderSyncService {
       await manager.getRepository(OrderItem).update(koi.order_item_id, {
         kitchen_status: lineStatus,
       });
+      await manager
+        .getRepository(OnlineOrderItem)
+        .update(
+          { order_item_id: koi.order_item_id },
+          { kitchen_line_status: lineStatus },
+        );
     }
 
     const now = new Date();
@@ -181,6 +188,12 @@ export class KitchenOrderSyncService {
       await manager.getRepository(OrderItem).update(orderItemId, {
         kitchen_status: OrderItemKitchenStatus.PENDING,
       });
+      await manager
+        .getRepository(OnlineOrderItem)
+        .update(
+          { order_item_id: orderItemId },
+          { kitchen_line_status: OrderItemKitchenStatus.PENDING },
+        );
     }
   }
 }

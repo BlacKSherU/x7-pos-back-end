@@ -6,6 +6,7 @@ import {
   IsString,
   IsEnum,
   Min,
+  Max,
   MaxLength,
 } from 'class-validator';
 import { OnlineOrderPaymentStatus } from '../../online-order/constants/online-order-payment-status.enum';
@@ -35,9 +36,15 @@ export class CreateOnlinePaymentDto {
   transactionId: string;
 
   @ApiProperty({ example: 125.99, description: 'Payment amount' })
-  @IsNumber({}, { message: 'Amount must be a number' })
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    { message: 'Amount must be a number with up to 2 decimal places' },
+  )
   @IsNotEmpty({ message: 'Amount is required' })
   @Min(0, { message: 'Amount must be greater than or equal to 0' })
+  @Max(9999999999.99, {
+    message: 'Amount exceeds maximum decimal precision (12, 2)',
+  })
   amount: number;
 
   @ApiProperty({

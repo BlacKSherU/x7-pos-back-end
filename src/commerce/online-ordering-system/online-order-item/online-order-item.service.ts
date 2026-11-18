@@ -26,6 +26,11 @@ import { OnlineStoreStatus } from '../online-stores/constants/online-store-statu
 import { OnlineOrderStatus } from '../online-order/constants/online-order-status.enum';
 import { OnlineOrderItemStatus } from './constants/online-order-item-status.enum';
 import { resolveUnitPriceForOnlineOrderItem } from '../online-order/online-order-pricing.util';
+import { OrderItemKitchenStatus } from '../../../restaurant-operations/pos/order-item/constants/order-item-kitchen-status.enum';
+import { OrderItem } from '../../../restaurant-operations/pos/order-item/entities/order-item.entity';
+import { OrderItemStatus } from '../../../restaurant-operations/pos/order-item/constants/order-item-status.enum';
+import { KitchenOrderItem } from '../../../restaurant-operations/kitchen-display-system/kitchen-order-item/entities/kitchen-order-item.entity';
+import { KitchenOrderItemStatus } from '../../../restaurant-operations/kitchen-display-system/kitchen-order-item/constants/kitchen-order-item-status.enum';
 
 @Injectable()
 export class OnlineOrderItemService {
@@ -216,10 +221,43 @@ export class OnlineOrderItemService {
       .andWhere('store.status = :status', { status: OnlineStoreStatus.ACTIVE })
       .andWhere('onlineOrder.status != :deletedStatus', {
         deletedStatus: OnlineOrderStatus.DELETED,
-      })
-      .andWhere('onlineOrderItem.status != :itemDeletedStatus', {
+      });
+
+    if (query.status && query.status.toLowerCase() === 'deleted') {
+      queryBuilder.andWhere('onlineOrderItem.status = :itemDeletedStatus', {
         itemDeletedStatus: OnlineOrderItemStatus.DELETED,
       });
+    } else if (query.status && query.status.toLowerCase() === 'all') {
+      // Show all lines without filtering out deleted
+    } else {
+      queryBuilder.andWhere('onlineOrderItem.status != :itemDeletedStatus', {
+        itemDeletedStatus: OnlineOrderItemStatus.DELETED,
+      });
+    }
+
+    if (
+      query.kitchenLineStatus &&
+      query.kitchenLineStatus.toLowerCase() !== 'all'
+    ) {
+      queryBuilder.andWhere(
+        'LOWER(onlineOrderItem.kitchen_line_status) = :kitchenLineStatus',
+        { kitchenLineStatus: query.kitchenLineStatus.toLowerCase() },
+      );
+    }
+
+    if (query.orderItemId !== undefined) {
+      queryBuilder.andWhere('onlineOrderItem.order_item_id = :orderItemId', {
+        orderItemId: query.orderItemId,
+      });
+    }
+
+    if (query.search && query.search.trim()) {
+      const term = `%${query.search.toLowerCase().trim()}%`;
+      queryBuilder.andWhere(
+        "(LOWER(product.name) LIKE :term OR LOWER(COALESCE(variant.name, '')) LIKE :term OR LOWER(COALESCE(onlineOrderItem.notes, '')) LIKE :term OR CAST(onlineOrderItem.id AS TEXT) LIKE :term OR CAST(onlineOrderItem.online_order_id AS TEXT) LIKE :term OR CAST(COALESCE(onlineOrderItem.order_item_id, 0) AS TEXT) LIKE :term)",
+        { term },
+      );
+    }
 
     if (query.onlineOrderId) {
       queryBuilder.andWhere(
@@ -388,9 +426,25 @@ export class OnlineOrderItemService {
     }
 
     if (existingOnlineOrderItem.order_item_id) {
-      throw new BadRequestException(
-        'Cannot update line items linked to a POS order; change the order in the POS',
-      );
+      if (
+        updateOnlineOrderItemDto.productId !== undefined ||
+        updateOnlineOrderItemDto.variantId !== undefined ||
+        updateOnlineOrderItemDto.quantity !== undefined ||
+        updateOnlineOrderItemDto.onlineOrderId !== undefined
+      ) {
+        throw new BadRequestException(
+          'Cannot modify product, variant, quantity, or order on line items linked to a POS order; change the order in the POS core',
+        );
+      }
+    }
+
+    if (updateOnlineOrderItemDto.kitchenLineStatus !== undefined) {
+      existingOnlineOrderItem.kitchen_line_status =
+        updateOnlineOrderItemDto.kitchenLineStatus;
+    }
+
+    if (updateOnlineOrderItemDto.status !== undefined) {
+      existingOnlineOrderItem.status = updateOnlineOrderItemDto.status;
     }
 
     if (updateOnlineOrderItemDto.onlineOrderId !== undefined) {
@@ -507,6 +561,50 @@ export class OnlineOrderItemService {
 
     let completeOnlineOrderItem: OnlineOrderItem | null = null;
     try {
+      if (
+        existingOnlineOrderItem.order_item_id &&
+        updateOnlineOrderItemDto.kitchenLineStatus !== undefined
+      ) {
+        await queryRunner.manager.update(
+          OrderItem,
+          existingOnlineOrderItem.order_item_id,
+          {
+            kitchen_status:
+              updateOnlineOrderItemDto.kitchenLineStatus as OrderItemKitchenStatus,
+          },
+        );
+      }
+
+      if (
+        existingOnlineOrderItem.order_item_id &&
+        updateOnlineOrderItemDto.status === OnlineOrderItemStatus.DELETED
+      ) {
+        await queryRunner.manager.update(
+          OrderItem,
+          existingOnlineOrderItem.order_item_id,
+          { status: OrderItemStatus.DELETED },
+        );
+        await queryRunner.manager.update(
+          KitchenOrderItem,
+          { order_item_id: existingOnlineOrderItem.order_item_id },
+          { status: KitchenOrderItemStatus.DELETED },
+        );
+      } else if (
+        existingOnlineOrderItem.order_item_id &&
+        updateOnlineOrderItemDto.status === OnlineOrderItemStatus.ACTIVE
+      ) {
+        await queryRunner.manager.update(
+          OrderItem,
+          existingOnlineOrderItem.order_item_id,
+          { status: OrderItemStatus.ACTIVE },
+        );
+        await queryRunner.manager.update(
+          KitchenOrderItem,
+          { order_item_id: existingOnlineOrderItem.order_item_id },
+          { status: KitchenOrderItemStatus.ACTIVE },
+        );
+      }
+
       const updatedOnlineOrderItem = await queryRunner.manager.save(
         OnlineOrderItem,
         existingOnlineOrderItem,
@@ -589,6 +687,18 @@ export class OnlineOrderItemService {
 
     let updatedOnlineOrderItem: OnlineOrderItem;
     try {
+      if (existingOnlineOrderItem.order_item_id) {
+        await queryRunner.manager.update(
+          OrderItem,
+          existingOnlineOrderItem.order_item_id,
+          { status: OrderItemStatus.DELETED },
+        );
+        await queryRunner.manager.update(
+          KitchenOrderItem,
+          { order_item_id: existingOnlineOrderItem.order_item_id },
+          { status: KitchenOrderItemStatus.DELETED },
+        );
+      }
       updatedOnlineOrderItem = await queryRunner.manager.save(
         OnlineOrderItem,
         existingOnlineOrderItem,

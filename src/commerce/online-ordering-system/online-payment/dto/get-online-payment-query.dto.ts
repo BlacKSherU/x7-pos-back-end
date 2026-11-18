@@ -59,6 +59,22 @@ export class GetOnlinePaymentQueryDto {
   status?: OnlineOrderPaymentStatus;
 
   @ApiPropertyOptional({
+    example: 'active',
+    description: 'Filter by logical lifecycle status (all, active, deleted)',
+  })
+  @IsOptional()
+  @IsString()
+  logicalStatus?: string;
+
+  @ApiPropertyOptional({
+    example: 'txn_1234',
+    description: 'Search by payment ID, order ID, provider or transaction ID',
+  })
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @ApiPropertyOptional({
     example: '2024-01-15',
     description: 'Filter by creation date (YYYY-MM-DD format)',
   })

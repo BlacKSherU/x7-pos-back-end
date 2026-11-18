@@ -223,7 +223,7 @@ describe('OnlinePaymentService', () => {
       );
     });
 
-    it('should throw BadRequestException if transaction ID already exists', async () => {
+    it('should throw ConflictException if transaction ID already exists for the same provider', async () => {
       jest
         .spyOn(onlineOrderRepository, 'createQueryBuilder')
         .mockReturnValue(
@@ -237,10 +237,10 @@ describe('OnlinePaymentService', () => {
         .mockResolvedValue(mockOnlinePayment as unknown as OnlinePayment);
 
       await expect(service.create(createOnlinePaymentDto, 1)).rejects.toThrow(
-        BadRequestException,
+        ConflictException,
       );
       await expect(service.create(createOnlinePaymentDto, 1)).rejects.toThrow(
-        'A payment with this transaction ID already exists',
+        'A payment with this transaction ID already exists for this provider',
       );
     });
   });
@@ -485,6 +485,82 @@ describe('OnlinePaymentService', () => {
       await expect(service.remove(1, 1)).rejects.toThrow(ConflictException);
       await expect(service.remove(1, 1)).rejects.toThrow(
         'Online payment is already deleted',
+      );
+    });
+  });
+
+  describe('syncGatewayStatus', () => {
+    it('should verify gateway status and sync parent order', async () => {
+      jest
+        .spyOn(onlinePaymentRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlinePayment>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue({
+        ...mockOnlinePayment,
+        processed_at: null,
+        onlineOrder: { ...mockOnlineOrder },
+      } as unknown as OnlinePayment);
+      jest
+        .spyOn(onlineOrderRepository, 'save')
+        .mockResolvedValue(mockOnlineOrder as unknown as OnlineOrder);
+      jest
+        .spyOn(onlinePaymentRepository, 'save')
+        .mockResolvedValue(mockOnlinePayment as unknown as OnlinePayment);
+
+      const result = await service.syncGatewayStatus(1, 1);
+
+      expect(result.statusCode).toBe(200);
+      expect(result.message).toContain('STRIPE');
+      expect(onlineOrderRepository.save).toHaveBeenCalled();
+    });
+  });
+
+  describe('processRefund', () => {
+    it('should process a full refund and update parent order status to REFUNDED', async () => {
+      jest
+        .spyOn(onlinePaymentRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlinePayment>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue({
+        ...mockOnlinePayment,
+        status: OnlineOrderPaymentStatus.PAID,
+        onlineOrder: { ...mockOnlineOrder },
+      } as unknown as OnlinePayment);
+      jest.spyOn(onlinePaymentRepository, 'save').mockResolvedValue({
+        ...mockOnlinePayment,
+        status: OnlineOrderPaymentStatus.REFUNDED,
+      } as unknown as OnlinePayment);
+      jest
+        .spyOn(onlineOrderRepository, 'save')
+        .mockResolvedValue(mockOnlineOrder as unknown as OnlineOrder);
+
+      const result = await service.processRefund(
+        1,
+        { reason: 'Customer cancelled' },
+        1,
+      );
+
+      expect(result.statusCode).toBe(200);
+      expect(result.data.status).toBe(OnlineOrderPaymentStatus.REFUNDED);
+      expect(result.message).toContain('Full refund');
+      expect(onlineOrderRepository.save).toHaveBeenCalled();
+    });
+
+    it('should throw ConflictException when refunding a non-PAID payment', async () => {
+      jest
+        .spyOn(onlinePaymentRepository, 'createQueryBuilder')
+        .mockReturnValue(
+          mockQueryBuilder as unknown as SelectQueryBuilder<OnlinePayment>,
+        );
+      mockQueryBuilder.getOne.mockResolvedValue({
+        ...mockOnlinePayment,
+        status: OnlineOrderPaymentStatus.PENDING,
+      } as unknown as OnlinePayment);
+
+      await expect(service.processRefund(1, {}, 1)).rejects.toThrow(
+        ConflictException,
       );
     });
   });
