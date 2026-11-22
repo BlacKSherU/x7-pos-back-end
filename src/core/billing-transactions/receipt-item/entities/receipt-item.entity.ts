@@ -26,7 +26,7 @@ export class ReceiptItem {
 
   @ApiProperty({ example: 'SKU-001' })
   @Column({ type: 'varchar', length: 100, nullable: true })
-  sku?: string;
+  sku?: string | null;
 
   @ApiProperty({ example: 2 })
   @Column({ type: 'decimal', precision: 10, scale: 2 })
@@ -50,7 +50,7 @@ export class ReceiptItem {
 
   @ApiProperty({ example: '{"notes":"No onions"}' })
   @Column({ type: 'text', nullable: true })
-  metadata?: string;
+  metadata?: string | null;
 
   @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
   created_at: Date;

@@ -21,6 +21,7 @@ import { ReceiptItem } from './entities/receipt-item.entity';
 import { Receipt } from '../receipts/entities/receipt.entity';
 import { Order } from 'src/restaurant-operations/pos/orders/entities/order.entity';
 import { ReceiptsService } from '../receipts/receipts.service';
+import { computeReceiptItemAmounts } from './receipt-item-calculation';
 
 @Injectable()
 export class ReceiptItemService {
@@ -34,8 +35,9 @@ export class ReceiptItemService {
     private readonly receiptsService: ReceiptsService,
   ) {}
 
-  // ─── Helper: verify ownership via receipt → order → merchant ───────────────
+  // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+  /** Verifies ownership via receipt → order → merchant and returns the receipt. */
   private async verifyMerchantOwnership(
     receiptId: number,
     merchantId: number,
@@ -69,6 +71,59 @@ export class ReceiptItemService {
     return receipt;
   }
 
+  private assertMetadata(metadata?: string | null): void {
+    if (!metadata) return;
+    try {
+      const parsed: unknown = JSON.parse(metadata);
+      if (
+        typeof parsed !== 'object' ||
+        parsed === null ||
+        Array.isArray(parsed)
+      ) {
+        throw new BadRequestException('metadata must be a valid JSON object');
+      }
+    } catch (e) {
+      if (e instanceof BadRequestException) throw e;
+      throw new BadRequestException('metadata must be valid JSON');
+    }
+  }
+
+  private normalizeName(name: string): string {
+    const trimmed = (name ?? '').trim();
+    if (!trimmed) {
+      throw new BadRequestException('Item name cannot be empty');
+    }
+    return trimmed;
+  }
+
+  private normalizeSku(sku?: string | null): string | null {
+    const trimmed = sku?.trim();
+    return trimmed ? trimmed : null;
+  }
+
+  private toResponse(
+    item: ReceiptItem,
+    receipt?: Pick<Receipt, 'invoice_number' | 'currency'> | null,
+  ): ReceiptItemResponseDto {
+    return {
+      id: item.id,
+      receipt_id: item.receipt_id,
+      receipt_invoice_number: receipt?.invoice_number ?? null,
+      currency: receipt?.currency ?? 'USD',
+      name: item.name,
+      sku: item.sku ?? null,
+      quantity: Number(item.quantity),
+      unit_price: Number(item.unit_price),
+      subtotal: Number(item.subtotal),
+      discount_amount: Number(item.discount_amount),
+      total: Number(item.total),
+      metadata: item.metadata ?? null,
+      is_active: item.is_active !== false,
+      created_at: item.created_at,
+      updated_at: item.updated_at,
+    };
+  }
+
   // ─── CRUD ─────────────────────────────────────────────────────────────────────
 
   async create(
@@ -83,60 +138,38 @@ export class ReceiptItemService {
       throw new BadRequestException('Invalid receipt ID');
     }
 
-    if (!dto.quantity || dto.quantity <= 0) {
-      throw new BadRequestException('Quantity must be greater than 0');
-    }
-
-    if (dto.unitPrice < 0) {
-      throw new BadRequestException('Unit price cannot be negative');
-    }
+    // Server-side calculation (cents arithmetic + precision/limit validation)
+    const amounts = computeReceiptItemAmounts({
+      quantity: dto.quantity,
+      unitPrice: dto.unitPrice,
+      discountAmount: dto.discountAmount,
+    });
+    const name = this.normalizeName(dto.name);
+    this.assertMetadata(dto.metadata);
 
     // Verify the receipt exists and belongs to the merchant
-    await this.verifyMerchantOwnership(dto.receiptId, merchantId);
-
-    // Validate metadata is valid JSON if provided
-    if (dto.metadata) {
-      try {
-        const parsed = JSON.parse(dto.metadata);
-        if (
-          typeof parsed !== 'object' ||
-          parsed === null ||
-          Array.isArray(parsed)
-        ) {
-          throw new BadRequestException('metadata must be a valid JSON object');
-        }
-      } catch (e) {
-        if (e instanceof BadRequestException) throw e;
-        throw new BadRequestException('metadata must be valid JSON');
-      }
-    }
-
-    const discount = dto.discountAmount ?? 0;
-    const subtotal = Number((dto.quantity * dto.unitPrice).toFixed(2));
-    const total = Number((subtotal - discount).toFixed(2));
-
-    if (total < 0) {
-      throw new BadRequestException(
-        'Discount amount cannot be greater than the subtotal',
-      );
-    }
+    const receipt = await this.verifyMerchantOwnership(
+      dto.receiptId,
+      merchantId,
+    );
 
     const entity = Object.assign(new ReceiptItem(), {
       receipt_id: dto.receiptId,
-      name: dto.name.trim(),
-      sku: dto.sku?.trim() ?? null,
-      quantity: dto.quantity,
-      unit_price: dto.unitPrice,
-      subtotal,
-      discount_amount: discount,
-      total,
+      name,
+      sku: this.normalizeSku(dto.sku),
+      ...amounts,
       metadata: dto.metadata ?? null,
+      is_active: true,
     });
 
     const saved = await this.receiptItemRepo.save(entity);
     await this.receiptsService.recalculateTotals(dto.receiptId);
 
-    return this.findOne(saved.id, merchantId, 'Created');
+    return {
+      statusCode: 201,
+      message: 'Receipt item created successfully',
+      data: this.toResponse(saved, receipt),
+    };
   }
 
   async findAll(
@@ -162,7 +195,7 @@ export class ReceiptItemService {
     // Build query: filter items only for this merchant's receipts
     const qb = this.receiptItemRepo
       .createQueryBuilder('ri')
-      .innerJoin('ri.receipt', 'receipt')
+      .innerJoinAndSelect('ri.receipt', 'receipt')
       .innerJoin(Order, 'order', 'order.id = receipt.order_id')
       .where('order.merchant_id = :merchantId', { merchantId })
       .andWhere('ri.is_active = :isActive', { isActive: true });
@@ -201,25 +234,10 @@ export class ReceiptItemService {
 
     const totalPages = Math.ceil(total / limit);
 
-    const data: ReceiptItemResponseDto[] = rows.map((r) => ({
-      id: r.id,
-      receipt_id: r.receipt_id,
-      name: r.name,
-      sku: r.sku ?? null,
-      quantity: Number(r.quantity),
-      unit_price: Number(r.unit_price),
-      subtotal: Number(r.subtotal),
-      discount_amount: Number(r.discount_amount),
-      total: Number(r.total),
-      metadata: r.metadata ?? null,
-      created_at: r.created_at,
-      updated_at: r.updated_at,
-    }));
-
     return {
       statusCode: 200,
       message: 'Receipt items retrieved successfully',
-      data,
+      data: rows.map((r) => this.toResponse(r, r.receipt)),
       page,
       limit,
       total,
@@ -232,7 +250,6 @@ export class ReceiptItemService {
   async findOne(
     id: number,
     merchantId: number,
-    createdUpdatedDeleted?: string,
   ): Promise<OneReceiptItemResponseDto> {
     if (!id || id <= 0) {
       throw new BadRequestException('Invalid receipt item ID');
@@ -250,59 +267,24 @@ export class ReceiptItemService {
     }
 
     // Check merchant ownership via receipt → order
-    await this.verifyMerchantOwnership(item.receipt_id, merchantId);
+    const receipt = await this.verifyMerchantOwnership(
+      item.receipt_id,
+      merchantId,
+    );
 
-    const dataForResponse: ReceiptItemResponseDto = {
-      id: item.id,
-      receipt_id: item.receipt_id,
-      name: item.name,
-      sku: item.sku ?? null,
-      quantity: Number(item.quantity),
-      unit_price: Number(item.unit_price),
-      subtotal: Number(item.subtotal),
-      discount_amount: Number(item.discount_amount),
-      total: Number(item.total),
-      metadata: item.metadata ?? null,
-      created_at: item.created_at,
-      updated_at: item.updated_at,
+    return {
+      statusCode: 200,
+      message: 'Receipt item retrieved successfully',
+      data: this.toResponse(item, receipt),
     };
-
-    let response: OneReceiptItemResponseDto;
-
-    switch (createdUpdatedDeleted) {
-      case 'Created':
-        response = {
-          statusCode: 201,
-          message: 'Receipt item created successfully',
-          data: dataForResponse,
-        };
-        break;
-      case 'Updated':
-        response = {
-          statusCode: 200,
-          message: 'Receipt item updated successfully',
-          data: dataForResponse,
-        };
-        break;
-      case 'Deleted':
-        response = {
-          statusCode: 200,
-          message: 'Receipt item deleted successfully',
-          data: dataForResponse,
-        };
-        break;
-      default:
-        response = {
-          statusCode: 200,
-          message: 'Receipt item retrieved successfully',
-          data: dataForResponse,
-        };
-        break;
-    }
-
-    return response;
   }
 
+  /**
+   * Edits a line and recalculates subtotal/total on the server from the merged values
+   * (what comes in the DTO + what was already stored). `isActive` toggles the logical
+   * status: false = logical deletion, true = restore a deleted line. Any change
+   * re-synchronises the parent receipt totals.
+   */
   async update(
     id: number,
     dto: UpdateReceiptItemDto,
@@ -315,44 +297,53 @@ export class ReceiptItemService {
       throw new ForbiddenException('You must be associated with a merchant');
     }
 
-    const item = await this.receiptItemRepo.findOne({
-      where: { id, is_active: true },
-    });
+    const item = await this.receiptItemRepo.findOne({ where: { id } });
 
-    if (!item) {
+    // A deleted line can only be touched to restore it.
+    if (!item || (item.is_active === false && dto.isActive !== true)) {
       throw new NotFoundException(`Receipt item with ID ${id} not found`);
     }
 
     // Check merchant ownership
-    await this.verifyMerchantOwnership(item.receipt_id, merchantId);
+    const receipt = await this.verifyMerchantOwnership(
+      item.receipt_id,
+      merchantId,
+    );
 
-    // Validate metadata JSON if provided
-    if (dto.metadata) {
-      try {
-        const parsed = JSON.parse(dto.metadata);
-        if (
-          typeof parsed !== 'object' ||
-          parsed === null ||
-          Array.isArray(parsed)
-        ) {
-          throw new BadRequestException('metadata must be a valid JSON object');
-        }
-      } catch (e) {
-        if (e instanceof BadRequestException) throw e;
-        throw new BadRequestException('metadata must be valid JSON');
-      }
-    }
+    this.assertMetadata(dto.metadata);
 
-    if (dto.metadata !== undefined) {
-      item.metadata = dto.metadata;
-    }
+    const amounts = computeReceiptItemAmounts({
+      quantity: dto.quantity ?? Number(item.quantity),
+      unitPrice: dto.unitPrice ?? Number(item.unit_price),
+      discountAmount: dto.discountAmount ?? Number(item.discount_amount),
+    });
 
-    await this.receiptItemRepo.save(item);
+    const wasActive = item.is_active !== false;
+
+    if (dto.name !== undefined) item.name = this.normalizeName(dto.name);
+    if (dto.sku !== undefined) item.sku = this.normalizeSku(dto.sku);
+    if (dto.metadata !== undefined) item.metadata = dto.metadata;
+    Object.assign(item, amounts);
+    if (dto.isActive !== undefined) item.is_active = dto.isActive;
+
+    const saved = await this.receiptItemRepo.save(item);
     await this.receiptsService.recalculateTotals(item.receipt_id);
 
-    return this.findOne(id, merchantId, 'Updated');
+    let message = 'Receipt item updated successfully';
+    if (wasActive && saved.is_active === false) {
+      message = 'Receipt item deleted successfully';
+    } else if (!wasActive && saved.is_active !== false) {
+      message = 'Receipt item restored successfully';
+    }
+
+    return {
+      statusCode: 200,
+      message,
+      data: this.toResponse(saved, receipt),
+    };
   }
 
+  /** Logical deletion (is_active = false) + recalculation of the receipt totals. */
   async remove(
     id: number,
     merchantId: number,
@@ -373,22 +364,10 @@ export class ReceiptItemService {
     }
 
     // Check merchant ownership
-    await this.verifyMerchantOwnership(item.receipt_id, merchantId);
-
-    const dataForResponse: ReceiptItemResponseDto = {
-      id: item.id,
-      receipt_id: item.receipt_id,
-      name: item.name,
-      sku: item.sku ?? null,
-      quantity: Number(item.quantity),
-      unit_price: Number(item.unit_price),
-      subtotal: Number(item.subtotal),
-      discount_amount: Number(item.discount_amount),
-      total: Number(item.total),
-      metadata: item.metadata ?? null,
-      created_at: item.created_at,
-      updated_at: item.updated_at,
-    };
+    const receipt = await this.verifyMerchantOwnership(
+      item.receipt_id,
+      merchantId,
+    );
 
     await this.receiptItemRepo.update(id, { is_active: false });
     await this.receiptsService.recalculateTotals(item.receipt_id);
@@ -396,7 +375,7 @@ export class ReceiptItemService {
     return {
       statusCode: 200,
       message: 'Receipt item deleted successfully',
-      data: dataForResponse,
+      data: this.toResponse({ ...item, is_active: false }, receipt),
     };
   }
 }

@@ -36,6 +36,8 @@ const mockOneResponse: OneReceiptItemResponseDto = {
   data: {
     id: 1,
     receipt_id: 10,
+    receipt_invoice_number: 'INV-000001',
+    currency: 'USD',
     name: 'Burger Combo',
     sku: 'SKU-001',
     quantity: 2,
@@ -44,6 +46,7 @@ const mockOneResponse: OneReceiptItemResponseDto = {
     discount_amount: 2.5,
     total: 22.5,
     metadata: null,
+    is_active: true,
     created_at: new Date('2024-01-01'),
     updated_at: new Date('2024-01-01'),
   },
@@ -146,6 +149,27 @@ describe('ReceiptItemController', () => {
 
       expect(mockService.update).toHaveBeenCalledWith(1, dto, MERCHANT_ID);
       expect(result.data.metadata).toBe(dto.metadata);
+    });
+  });
+
+  describe('update (amounts and logical status)', () => {
+    it('forwards quantity / price / discount / isActive edits untouched to the service', async () => {
+      const dto: UpdateReceiptItemDto = {
+        quantity: 3,
+        unitPrice: 10,
+        discountAmount: 1,
+        isActive: false,
+      };
+      mockService.update.mockResolvedValue({
+        ...mockOneResponse,
+        message: 'Receipt item deleted successfully',
+        data: { ...mockOneResponse.data, is_active: false },
+      });
+
+      const result = await controller.update(1, dto, mockReq);
+
+      expect(mockService.update).toHaveBeenCalledWith(1, dto, MERCHANT_ID);
+      expect(result.data.is_active).toBe(false);
     });
   });
 

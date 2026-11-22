@@ -19,6 +19,9 @@ const MERCHANT_ID = 1;
 const mockReceipt: Receipt = {
   id: 10,
   order_id: 200,
+  invoice_number: 'INV-000010',
+  currency: 'USD',
+  is_active: true,
 } as Receipt;
 
 const mockOrder: Order = {
@@ -26,31 +29,33 @@ const mockOrder: Order = {
   merchant_id: MERCHANT_ID,
 } as Order;
 
-const mockItem = {
-  id: 1,
-  receipt_id: 10,
-  name: 'Burger Combo',
-  sku: 'SKU-001',
-  quantity: 2,
-  unit_price: 12.5,
-  subtotal: 25.0,
-  discount_amount: 2.5,
-  total: 22.5,
-  metadata: null,
-  created_at: new Date('2024-01-01'),
-  updated_at: new Date('2024-01-01'),
-  receipt: null,
-} as unknown as ReceiptItem;
+const buildItem = (overrides: Partial<ReceiptItem> = {}): ReceiptItem =>
+  ({
+    id: 1,
+    receipt_id: 10,
+    name: 'Burger Combo',
+    sku: 'SKU-001',
+    // TypeORM returns decimal columns as strings
+    quantity: '2.00',
+    unit_price: '12.50',
+    subtotal: '25.00',
+    discount_amount: '2.50',
+    total: '22.50',
+    metadata: null,
+    is_active: true,
+    created_at: new Date('2024-01-01'),
+    updated_at: new Date('2024-01-01'),
+    receipt: mockReceipt,
+    ...overrides,
+  }) as unknown as ReceiptItem;
 
 describe('ReceiptItemService', () => {
   let service: ReceiptItemService;
 
   const mockReceiptItemRepo = {
-    create: jest.fn(),
     save: jest.fn(),
     findOne: jest.fn(),
     update: jest.fn(),
-    delete: jest.fn(),
     createQueryBuilder: jest.fn(),
   };
 
@@ -82,7 +87,18 @@ describe('ReceiptItemService', () => {
     // Default happy-path mocks
     mockReceiptRepo.findOne.mockResolvedValue(mockReceipt);
     mockOrderRepo.findOne.mockResolvedValue(mockOrder);
-    mockReceiptItemRepo.findOne.mockResolvedValue(mockItem);
+    mockReceiptItemRepo.findOne.mockResolvedValue(buildItem());
+    // save echoes the entity it receives, with an id
+    mockReceiptItemRepo.save.mockImplementation((entity: ReceiptItem) =>
+      Promise.resolve(
+        Object.assign(
+          { id: 1, created_at: new Date('2024-01-01') },
+          entity,
+          { updated_at: new Date('2024-01-02') },
+        ),
+      ),
+    );
+    mockReceiptsService.recalculateTotals.mockResolvedValue(undefined);
   });
 
   afterEach(() => jest.clearAllMocks());
@@ -99,16 +115,58 @@ describe('ReceiptItemService', () => {
       discountAmount: 2.5,
     };
 
-    it('should create a receipt item and calculate subtotal/total', async () => {
-      mockReceiptItemRepo.create.mockReturnValue({ ...mockItem });
-      mockReceiptItemRepo.save.mockResolvedValue({ ...mockItem });
-
+    it('calculates subtotal/total on the server and persists them', async () => {
       const result = await service.create(dto, MERCHANT_ID);
 
+      expect(mockReceiptItemRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          receipt_id: 10,
+          quantity: 2,
+          unit_price: 12.5,
+          subtotal: 25,
+          discount_amount: 2.5,
+          total: 22.5,
+          is_active: true,
+        }),
+      );
       expect(result.statusCode).toBe(201);
       expect(result.data.subtotal).toBe(25);
       expect(result.data.total).toBe(22.5);
-      expect(mockReceiptItemRepo.save).toHaveBeenCalled();
+      expect(result.data.currency).toBe('USD');
+      expect(result.data.receipt_invoice_number).toBe('INV-000010');
+    });
+
+    it('rounds subtotal to 2 decimals using cents arithmetic', async () => {
+      const result = await service.create(
+        { ...dto, quantity: 1.25, unitPrice: 3.33, discountAmount: 0.16 },
+        MERCHANT_ID,
+      );
+      expect(result.data.subtotal).toBe(4.16);
+      expect(result.data.total).toBe(4);
+    });
+
+    it('re-synchronises the receipt totals after creating', async () => {
+      await service.create(dto, MERCHANT_ID);
+      expect(mockReceiptsService.recalculateTotals).toHaveBeenCalledWith(10);
+    });
+
+    it('trims name and turns an empty sku into null', async () => {
+      await service.create(
+        { ...dto, name: '  Fries  ', sku: '   ' },
+        MERCHANT_ID,
+      );
+      expect(mockReceiptItemRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'Fries', sku: null }),
+      );
+    });
+
+    it('should use discountAmount = 0 when not provided', async () => {
+      const result = await service.create(
+        { receiptId: 10, name: 'Item', quantity: 2, unitPrice: 10 },
+        MERCHANT_ID,
+      );
+      expect(result.data.discount_amount).toBe(0);
+      expect(result.data.total).toBe(20);
     });
 
     it('should throw ForbiddenException when merchantId is missing', async () => {
@@ -142,6 +200,19 @@ describe('ReceiptItemService', () => {
           MERCHANT_ID,
         ),
       ).rejects.toThrow(BadRequestException);
+      expect(mockReceiptItemRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException when quantity has more than 2 decimals', async () => {
+      await expect(
+        service.create({ ...dto, quantity: 1.005 }, MERCHANT_ID),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException when name is blank', async () => {
+      await expect(
+        service.create({ ...dto, name: '   ' }, MERCHANT_ID),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw NotFoundException when receipt does not exist', async () => {
@@ -159,33 +230,13 @@ describe('ReceiptItemService', () => {
       await expect(service.create(dto, MERCHANT_ID)).rejects.toThrow(
         ForbiddenException,
       );
+      expect(mockReceiptItemRepo.save).not.toHaveBeenCalled();
     });
 
     it('should throw BadRequestException when metadata is invalid JSON', async () => {
       await expect(
         service.create({ ...dto, metadata: 'not-json' }, MERCHANT_ID),
       ).rejects.toThrow(BadRequestException);
-    });
-
-    it('should use discountAmount = 0 when not provided', async () => {
-      const dtoWithoutDiscount: CreateReceiptItemDto = {
-        receiptId: 10,
-        name: 'Item',
-        quantity: 2,
-        unitPrice: 10,
-      };
-      const savedItem = {
-        ...mockItem,
-        discount_amount: 0,
-        subtotal: 20,
-        total: 20,
-      };
-      mockReceiptItemRepo.create.mockReturnValue(savedItem);
-      mockReceiptItemRepo.save.mockResolvedValue(savedItem);
-      mockReceiptItemRepo.findOne.mockResolvedValue(savedItem);
-
-      const result = await service.create(dtoWithoutDiscount, MERCHANT_ID);
-      expect(result.data.total).toBe(20);
     });
   });
 
@@ -194,6 +245,7 @@ describe('ReceiptItemService', () => {
   describe('findAll', () => {
     const buildMockQb = (items: ReceiptItem[], total: number) => ({
       innerJoin: jest.fn().mockReturnThis(),
+      innerJoinAndSelect: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
       andWhere: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
@@ -203,15 +255,29 @@ describe('ReceiptItemService', () => {
       getMany: jest.fn().mockResolvedValue(items),
     });
 
-    it('should return paginated items for the merchant', async () => {
-      const mockQb = buildMockQb([mockItem], 1);
+    it('should return paginated items for the merchant with numeric amounts', async () => {
+      const mockQb = buildMockQb([buildItem()], 1);
       mockReceiptItemRepo.createQueryBuilder.mockReturnValue(mockQb);
 
       const query: GetReceiptItemsQueryDto = { page: 1, limit: 10 };
       const result = await service.findAll(query, MERCHANT_ID);
 
+      expect(mockQb.where).toHaveBeenCalledWith(
+        'order.merchant_id = :merchantId',
+        { merchantId: MERCHANT_ID },
+      );
       expect(result.statusCode).toBe(200);
-      expect(result.data.length).toBe(1);
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0]).toMatchObject({
+        quantity: 2,
+        unit_price: 12.5,
+        subtotal: 25,
+        discount_amount: 2.5,
+        total: 22.5,
+        currency: 'USD',
+        receipt_invoice_number: 'INV-000010',
+        is_active: true,
+      });
       expect(result.total).toBe(1);
     });
 
@@ -234,7 +300,7 @@ describe('ReceiptItemService', () => {
     });
 
     it('should filter by receiptId and validate ownership', async () => {
-      const mockQb = buildMockQb([mockItem], 1);
+      const mockQb = buildMockQb([buildItem()], 1);
       mockReceiptItemRepo.createQueryBuilder.mockReturnValue(mockQb);
 
       const query: GetReceiptItemsQueryDto = {
@@ -276,6 +342,7 @@ describe('ReceiptItemService', () => {
       const result = await service.findOne(1, MERCHANT_ID);
       expect(result.statusCode).toBe(200);
       expect(result.data.id).toBe(1);
+      expect(result.data.unit_price).toBe(12.5);
     });
 
     it('should throw BadRequestException for invalid id', async () => {
@@ -311,33 +378,103 @@ describe('ReceiptItemService', () => {
   // ─── update ──────────────────────────────────────────────────────────────────
 
   describe('update', () => {
-    const dto: UpdateReceiptItemDto = { metadata: '{"notes":"Without onion"}' };
-
-    it('should update metadata successfully', async () => {
-      const saved = { ...mockItem, metadata: dto.metadata };
-      mockReceiptItemRepo.save.mockResolvedValue(saved);
-
+    it('should update metadata and keep the stored amounts', async () => {
+      const dto: UpdateReceiptItemDto = {
+        metadata: '{"notes":"Without onion"}',
+      };
       const result = await service.update(1, dto, MERCHANT_ID);
 
       expect(result.statusCode).toBe(200);
       expect(result.data.metadata).toBe(dto.metadata);
+      expect(result.data.subtotal).toBe(25);
+      expect(result.data.total).toBe(22.5);
+    });
+
+    it('recalculates subtotal and total when quantity changes', async () => {
+      const result = await service.update(1, { quantity: 3 }, MERCHANT_ID);
+
+      // 3 × 12.50 = 37.50; 37.50 − 2.50 = 35.00
+      expect(mockReceiptItemRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ quantity: 3, subtotal: 37.5, total: 35 }),
+      );
+      expect(result.data.subtotal).toBe(37.5);
+      expect(result.data.total).toBe(35);
+    });
+
+    it('recalculates subtotal and total when unit price changes', async () => {
+      const result = await service.update(1, { unitPrice: 9.99 }, MERCHANT_ID);
+      // 2 × 9.99 = 19.98; 19.98 − 2.50 = 17.48
+      expect(result.data.subtotal).toBe(19.98);
+      expect(result.data.total).toBe(17.48);
+    });
+
+    it('re-synchronises the receipt totals after an edit', async () => {
+      await service.update(1, { discountAmount: 0 }, MERCHANT_ID);
+      expect(mockReceiptsService.recalculateTotals).toHaveBeenCalledWith(10);
+    });
+
+    it('rejects a discount greater than the recalculated subtotal', async () => {
+      await expect(
+        service.update(1, { quantity: 0.1 }, MERCHANT_ID), // 0.1 × 12.50 = 1.25 < 2.50
+      ).rejects.toThrow(BadRequestException);
+      expect(mockReceiptItemRepo.save).not.toHaveBeenCalled();
+      expect(mockReceiptsService.recalculateTotals).not.toHaveBeenCalled();
+    });
+
+    it('updates name and clears the sku', async () => {
+      const result = await service.update(
+        1,
+        { name: ' Veggie Burger ', sku: null },
+        MERCHANT_ID,
+      );
+      expect(result.data.name).toBe('Veggie Burger');
+      expect(result.data.sku).toBeNull();
+    });
+
+    it('isActive=false performs the logical deletion and recalculates totals', async () => {
+      const result = await service.update(1, { isActive: false }, MERCHANT_ID);
+      expect(mockReceiptItemRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ is_active: false }),
+      );
+      expect(mockReceiptsService.recalculateTotals).toHaveBeenCalledWith(10);
+      expect(result.data.is_active).toBe(false);
+      expect(result.message).toContain('deleted');
+    });
+
+    it('isActive=true restores a deleted line and recalculates totals', async () => {
+      mockReceiptItemRepo.findOne.mockResolvedValue(
+        buildItem({ is_active: false }),
+      );
+      const result = await service.update(1, { isActive: true }, MERCHANT_ID);
+      expect(result.data.is_active).toBe(true);
+      expect(result.message).toContain('restored');
+      expect(mockReceiptsService.recalculateTotals).toHaveBeenCalledWith(10);
+    });
+
+    it('a deleted line cannot be edited without restoring it', async () => {
+      mockReceiptItemRepo.findOne.mockResolvedValue(
+        buildItem({ is_active: false }),
+      );
+      await expect(
+        service.update(1, { quantity: 5 }, MERCHANT_ID),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw BadRequestException for invalid id', async () => {
-      await expect(service.update(0, dto, MERCHANT_ID)).rejects.toThrow(
+      await expect(service.update(0, {}, MERCHANT_ID)).rejects.toThrow(
         BadRequestException,
       );
     });
 
     it('should throw ForbiddenException when merchantId is missing', async () => {
-      await expect(service.update(1, dto, null as any)).rejects.toThrow(
+      await expect(service.update(1, {}, null as any)).rejects.toThrow(
         ForbiddenException,
       );
     });
 
     it('should throw NotFoundException when item does not exist', async () => {
       mockReceiptItemRepo.findOne.mockResolvedValue(null);
-      await expect(service.update(99, dto, MERCHANT_ID)).rejects.toThrow(
+      await expect(service.update(99, {}, MERCHANT_ID)).rejects.toThrow(
         NotFoundException,
       );
     });
@@ -347,7 +484,7 @@ describe('ReceiptItemService', () => {
         ...mockOrder,
         merchant_id: 999,
       });
-      await expect(service.update(1, dto, MERCHANT_ID)).rejects.toThrow(
+      await expect(service.update(1, {}, MERCHANT_ID)).rejects.toThrow(
         ForbiddenException,
       );
     });
@@ -362,17 +499,18 @@ describe('ReceiptItemService', () => {
   // ─── remove ──────────────────────────────────────────────────────────────────
 
   describe('remove', () => {
-    it('should delete item successfully (logical delete)', async () => {
+    it('performs a logical delete (is_active=false) and recalculates receipt totals', async () => {
       mockReceiptItemRepo.update.mockResolvedValue({ affected: 1 });
 
       const result = await service.remove(1, MERCHANT_ID);
 
       expect(result.statusCode).toBe(200);
       expect(result.message).toContain('deleted');
-      expect(mockReceiptItemRepo.update).toHaveBeenCalledWith(
-        1,
-        expect.any(Object),
-      );
+      expect(result.data.is_active).toBe(false);
+      expect(mockReceiptItemRepo.update).toHaveBeenCalledWith(1, {
+        is_active: false,
+      });
+      expect(mockReceiptsService.recalculateTotals).toHaveBeenCalledWith(10);
     });
 
     it('should throw BadRequestException for invalid id', async () => {
@@ -402,6 +540,7 @@ describe('ReceiptItemService', () => {
       await expect(service.remove(1, MERCHANT_ID)).rejects.toThrow(
         ForbiddenException,
       );
+      expect(mockReceiptItemRepo.update).not.toHaveBeenCalled();
     });
   });
 });

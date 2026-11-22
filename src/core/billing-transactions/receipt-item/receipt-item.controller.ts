@@ -84,7 +84,11 @@ export class ReceiptItemController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ summary: 'Create a new receipt item' })
+  @ApiOperation({
+    summary: 'Create a new receipt item',
+    description:
+      'The server calculates subtotal = round2(quantity × unitPrice) and total = subtotal − discountAmount (discount must be >= 0 and <= subtotal), then re-synchronises the parent receipt totals.',
+  })
   @ApiBody({ type: CreateReceiptItemDto })
   @ApiCreatedResponse({
     description: 'Receipt item created',
@@ -173,7 +177,11 @@ export class ReceiptItemController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ summary: 'Update a receipt item (only metadata)' })
+  @ApiOperation({
+    summary: 'Update a receipt item',
+    description:
+      'Edits name, sku, quantity, unitPrice, discountAmount, metadata and/or the logical status (isActive). subtotal and total are always recalculated by the server and the parent receipt totals are re-synchronised. A deleted line can only be updated to restore it (isActive: true).',
+  })
   @ApiParam({ name: 'id', type: Number })
   @ApiBody({ type: UpdateReceiptItemDto })
   @ApiOkResponse({
@@ -201,7 +209,11 @@ export class ReceiptItemController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ summary: 'Delete a receipt item' })
+  @ApiOperation({
+    summary: 'Delete a receipt item (logical deletion)',
+    description:
+      'Sets is_active = false (the row is kept for audit) and recalculates the parent receipt totals.',
+  })
   @ApiParam({ name: 'id', type: Number })
   @ApiOkResponse({
     description: 'Receipt item deleted',
