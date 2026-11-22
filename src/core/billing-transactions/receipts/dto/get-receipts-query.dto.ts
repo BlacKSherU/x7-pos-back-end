@@ -12,6 +12,7 @@ import {
 
 import { ReceiptType } from '../constants/receipt-type.enum';
 import { ReceiptStatusFilter } from '../constants/receipt-status-filter.enum';
+import { ReceiptDateRangeQueryDto } from './receipt-date-range-query.dto';
 
 export enum ReceiptSortBy {
   CREATED_AT = 'createdAt',
@@ -20,7 +21,7 @@ export enum ReceiptSortBy {
   GRAND_TOTAL = 'grandTotal',
 }
 
-export class GetReceiptsQueryDto {
+export class GetReceiptsQueryDto extends ReceiptDateRangeQueryDto {
   @ApiPropertyOptional({ example: 200 })
   @IsOptional()
   @IsNumber()

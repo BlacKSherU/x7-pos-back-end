@@ -8,7 +8,15 @@ import {
   Inject,
 } from '@nestjs/common';
 import { InjectRepository, getRepositoryToken } from '@nestjs/typeorm';
-import { FindOptionsWhere, ILike, Repository } from 'typeorm';
+import {
+  FindOperator,
+  FindOptionsWhere,
+  ILike,
+  ObjectLiteral,
+  Raw,
+  Repository,
+  SelectQueryBuilder,
+} from 'typeorm';
 import { CreateReceiptDto } from './dto/create-receipt.dto';
 import { UpdateReceiptDto } from './dto/update-receipt.dto';
 import { UpdateReceiptStatusDto } from './dto/update-receipt-status.dto';
@@ -30,6 +38,16 @@ import {
   ReceiptSummaryResponseDto,
 } from './dto/receipt-summary-response.dto';
 import { ReceiptType } from './constants/receipt-type.enum';
+import {
+  ReceiptDetailItemDto,
+  ReceiptDetailTaxDto,
+  ReceiptDetailsResponseDto,
+} from './dto/receipt-details-response.dto';
+import {
+  ReceiptTaxBreakdownCurrencyDto,
+  ReceiptTaxBreakdownEntryDto,
+  ReceiptTaxBreakdownResponseDto,
+} from './dto/receipt-tax-breakdown-response.dto';
 
 import { ReceiptItem } from '../receipt-item/entities/receipt-item.entity';
 import { ReceiptTax } from '../receipt-tax/entities/receipt-tax.entity';
@@ -167,6 +185,7 @@ export class ReceiptsService {
     if (page < 1) throw new BadRequestException('Page must be >= 1');
     if (limit < 1 || limit > 100)
       throw new BadRequestException('Limit must be between 1 and 100');
+    const range = resolveDateRange(query);
 
     if (query.orderId) {
       const order = await this.orderRepo.findOne({
@@ -190,6 +209,8 @@ export class ReceiptsService {
     }
     if (query.orderId) where.order_id = query.orderId;
     if (query.type) where.type = query.type;
+    const createdAt = createdAtRange(range);
+    if (createdAt) where.created_at = createdAt;
 
     const sortColumns: Record<ReceiptSortBy, keyof Receipt> = {
       [ReceiptSortBy.CREATED_AT]: 'created_at',
@@ -457,6 +478,7 @@ export class ReceiptsService {
       throw new ForbiddenException('You must be associated with a merchant');
     }
     const status = query.status ?? ReceiptStatusFilter.ACTIVE;
+    const range = resolveDateRange(query);
 
     const qb = this.receiptRepo
       .createQueryBuilder('r')
@@ -476,6 +498,7 @@ export class ReceiptsService {
       .addGroupBy('r.currency')
       .addGroupBy('r.is_active')
       .addGroupBy('COALESCE(r.is_locked, false)');
+    applyCreatedAtRange(qb, 'r', range);
 
     const rows = (await qb.getRawMany<RawSummaryRow>()).map((row) => ({
       type: row.type,
@@ -537,6 +560,8 @@ export class ReceiptsService {
       message: 'Receipts summary retrieved successfully',
       data: {
         status,
+        date_from: range.from ?? null,
+        date_to: range.to ?? null,
         total_receipts: count(matching),
         active_receipts: count(rows.filter((row) => row.isActive)),
         inactive_receipts: count(rows.filter((row) => !row.isActive)),
@@ -561,6 +586,167 @@ export class ReceiptsService {
             ),
           };
         }),
+        by_currency: byCurrency,
+      },
+    };
+  }
+
+  /**
+   * Detalle maestro-detalle de un recibo del merchant (activo o dado de baja): sus líneas
+   * (name, quantity, unit_price, total…) e impuestos (name, rate, amount) activos. Lo carga
+   * la tabla de Receipts al expandir una fila. Solo lee de receipt_items / receipt_taxes.
+   */
+  async getDetails(
+    id: number,
+    authenticatedUserMerchantId: number,
+  ): Promise<ReceiptDetailsResponseDto> {
+    const receipt = await this.findOwnedReceipt(
+      id,
+      authenticatedUserMerchantId,
+    );
+
+    const [itemRows, taxRows] = await Promise.all([
+      this.receiptItemRepo.find({
+        where: { receipt_id: id, is_active: true },
+        order: { id: 'ASC' },
+      }),
+      this.receiptTaxRepo.find({
+        where: { receipt_id: id, is_active: true },
+        order: { id: 'ASC' },
+      }),
+    ]);
+
+    const items: ReceiptDetailItemDto[] = itemRows.map((item) => ({
+      id: item.id,
+      name: item.name,
+      sku: item.sku ?? null,
+      quantity: Number(item.quantity ?? 0),
+      unit_price: Number(item.unit_price ?? 0),
+      subtotal: Number(item.subtotal ?? 0),
+      discount_amount: Number(item.discount_amount ?? 0),
+      total: Number(item.total ?? 0),
+    }));
+    const taxes: ReceiptDetailTaxDto[] = taxRows.map((tax) => ({
+      id: tax.id,
+      receipt_item_id: tax.receipt_item_id ?? null,
+      name: tax.name,
+      rate: Number(tax.rate ?? 0),
+      amount: Number(tax.amount ?? 0),
+      scope: tax.scope,
+    }));
+
+    return {
+      statusCode: 200,
+      message: 'Receipt details retrieved successfully',
+      data: {
+        receipt: this.toResponseDto(receipt),
+        items,
+        taxes,
+        items_total: fromCents(
+          itemRows.reduce((sum, item) => sum + toCents(item.total), 0),
+        ),
+        taxes_total: fromCents(
+          taxRows.reduce((sum, tax) => sum + toCents(tax.amount), 0),
+        ),
+      },
+    };
+  }
+
+  /**
+   * Desglose de impuestos cobrados (tarjetas del Tax Breakdown): suma de las líneas de
+   * impuesto activas por nombre + tasa y moneda, de los recibos del merchant filtrados por
+   * is_active (`status`, activos por defecto) y por el rango de fechas de creación.
+   */
+  async getTaxBreakdown(
+    query: GetReceiptsSummaryQueryDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<ReceiptTaxBreakdownResponseDto> {
+    if (!authenticatedUserMerchantId) {
+      throw new ForbiddenException('You must be associated with a merchant');
+    }
+    const status = query.status ?? ReceiptStatusFilter.ACTIVE;
+    const range = resolveDateRange(query);
+    const currencyExpr = "UPPER(COALESCE(r.currency, 'USD'))";
+
+    const qb = this.receiptTaxRepo
+      .createQueryBuilder('t')
+      .innerJoin('t.receipt', 'r')
+      .select('t.name', 'name')
+      .addSelect('t.rate', 'rate')
+      .addSelect(currencyExpr, 'currency')
+      .addSelect('COALESCE(SUM(t.amount), 0)', 'total_amount')
+      .addSelect('COUNT(t.id)', 'tax_lines')
+      .addSelect('COUNT(DISTINCT t.receipt_id)', 'receipts')
+      .where('r.merchant_id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
+      .andWhere('t.is_active = :taxActive', { taxActive: true })
+      .groupBy('t.name')
+      .addGroupBy('t.rate')
+      .addGroupBy(currencyExpr);
+    if (status !== ReceiptStatusFilter.ALL) {
+      qb.andWhere('r.is_active = :receiptActive', {
+        receiptActive: status === ReceiptStatusFilter.ACTIVE,
+      });
+    }
+    applyCreatedAtRange(qb, 'r', range);
+
+    const rows = (await qb.getRawMany<RawTaxBreakdownRow>()).map((row) => ({
+      name: row.name,
+      rate: Number(row.rate) || 0,
+      currency: row.currency || 'USD',
+      cents: toCents(row.total_amount),
+      taxLines: Number(row.tax_lines) || 0,
+      receipts: Number(row.receipts) || 0,
+    }));
+
+    const byTax: ReceiptTaxBreakdownEntryDto[] = [...rows]
+      .sort(
+        (a, b) =>
+          b.cents - a.cents ||
+          a.name.localeCompare(b.name) ||
+          b.rate - a.rate ||
+          a.currency.localeCompare(b.currency),
+      )
+      .map((row) => ({
+        name: row.name,
+        rate: row.rate,
+        currency: row.currency,
+        total_amount: fromCents(row.cents),
+        tax_lines: row.taxLines,
+        receipts: row.receipts,
+      }));
+
+    const currencies = new Map<string, { cents: number; taxLines: number }>();
+    for (const row of rows) {
+      const acc = currencies.get(row.currency) ?? { cents: 0, taxLines: 0 };
+      acc.cents += row.cents;
+      acc.taxLines += row.taxLines;
+      currencies.set(row.currency, acc);
+    }
+    const byCurrency: ReceiptTaxBreakdownCurrencyDto[] = [
+      ...currencies.entries(),
+    ]
+      .sort(
+        ([codeA, a], [codeB, b]) =>
+          b.taxLines - a.taxLines || codeA.localeCompare(codeB),
+      )
+      .map(([currency, acc]) => ({
+        currency,
+        total_amount: fromCents(acc.cents),
+        tax_lines: acc.taxLines,
+      }));
+
+    return {
+      statusCode: 200,
+      message: 'Receipt tax breakdown retrieved successfully',
+      data: {
+        status,
+        date_from: range.from ?? null,
+        date_to: range.to ?? null,
+        currency: byCurrency[0]?.currency ?? 'USD',
+        total_tax: byCurrency[0]?.total_amount ?? 0,
+        by_tax: byTax,
         by_currency: byCurrency,
       },
     };
@@ -676,6 +862,70 @@ export class ReceiptsService {
       }
     }
     throw this.invoiceNumberConflict(invoiceNumber);
+  }
+}
+
+interface RawTaxBreakdownRow {
+  name: string;
+  rate: string | number | null;
+  currency: string | null;
+  total_amount: string | number | null;
+  tax_lines: string | number;
+  receipts: string | number;
+}
+
+interface DateRange {
+  from?: string;
+  to?: string;
+}
+
+/** Rango YYYY-MM-DD (extremos inclusive); 400 si dateFrom es posterior a dateTo. */
+function resolveDateRange(query: {
+  dateFrom?: string;
+  dateTo?: string;
+}): DateRange {
+  const from = query.dateFrom || undefined;
+  const to = query.dateTo || undefined;
+  if (from && to && from > to) {
+    throw new BadRequestException('dateFrom must be on or before dateTo');
+  }
+  return { from, to };
+}
+
+/**
+ * Condición SQL sobre created_at: `>= dateFrom` y `< dateTo + 1 día`, para que el último
+ * día cuente completo. Las fechas viajan como parámetros y las convierte Postgres.
+ */
+function createdAtConditions(column: string, range: DateRange): string[] {
+  const conditions: string[] = [];
+  if (range.from) conditions.push(`${column} >= CAST(:dateFrom AS date)`);
+  if (range.to) conditions.push(`${column} < CAST(:dateTo AS date) + 1`);
+  return conditions;
+}
+
+function dateRangeParameters(range: DateRange): ObjectLiteral {
+  const parameters: ObjectLiteral = {};
+  if (range.from) parameters.dateFrom = range.from;
+  if (range.to) parameters.dateTo = range.to;
+  return parameters;
+}
+
+function createdAtRange(range: DateRange): FindOperator<Date> | undefined {
+  if (!range.from && !range.to) return undefined;
+  return Raw<Date>(
+    (column) => createdAtConditions(column, range).join(' AND '),
+    dateRangeParameters(range),
+  );
+}
+
+function applyCreatedAtRange<T extends ObjectLiteral>(
+  qb: SelectQueryBuilder<T>,
+  alias: string,
+  range: DateRange,
+): void {
+  const conditions = createdAtConditions(`${alias}.created_at`, range);
+  if (conditions.length > 0) {
+    qb.andWhere(conditions.join(' AND '), dateRangeParameters(range));
   }
 }
 

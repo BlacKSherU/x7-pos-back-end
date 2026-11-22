@@ -48,6 +48,8 @@ import { OneReceiptResponseDto } from './dto/receipt-response.dto';
 import { AllPaginatedReceipts } from './dto/all-paginated-receipts.dto';
 import { GetReceiptsSummaryQueryDto } from './dto/get-receipts-summary-query.dto';
 import { ReceiptSummaryResponseDto } from './dto/receipt-summary-response.dto';
+import { ReceiptDetailsResponseDto } from './dto/receipt-details-response.dto';
+import { ReceiptTaxBreakdownResponseDto } from './dto/receipt-tax-breakdown-response.dto';
 import { ErrorResponse } from 'src/common/dtos/error-response.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
@@ -124,7 +126,7 @@ export class ReceiptsController {
   @ApiOperation({
     summary: 'Get all receipts',
     description:
-      'Paginated receipts of the merchant. `search` matches invoice_number or fiscal_data (case-insensitive, partial). `status` filters by is_active (active by default).',
+      'Paginated receipts of the merchant. `search` matches invoice_number or fiscal_data (case-insensitive, partial). `status` filters by is_active (active by default). `dateFrom` / `dateTo` (YYYY-MM-DD, inclusive) filter by creation date.',
   })
   @ApiQuery({ name: 'orderId', required: false, type: Number })
   @ApiQuery({ name: 'type', required: false, type: String })
@@ -134,6 +136,8 @@ export class ReceiptsController {
     required: false,
     enum: Object.values(ReceiptStatusFilter),
   })
+  @ApiQuery({ name: 'dateFrom', required: false, type: String })
+  @ApiQuery({ name: 'dateTo', required: false, type: String })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({
@@ -157,7 +161,7 @@ export class ReceiptsController {
     return this.receiptsService.findAll(query, authenticatedUserMerchantId);
   }
 
-  // Rutas estáticas antes de ':id' (si no, ParseIntPipe recibiría 'summary').
+  // Rutas estáticas antes de ':id' (si no, ParseIntPipe recibiría 'summary' o 'tax-breakdown').
   @Get('summary')
   @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
   @Scopes(
@@ -169,13 +173,15 @@ export class ReceiptsController {
   @ApiOperation({
     summary: 'Receipts KPIs (Command Hub Header)',
     description:
-      'Active / inactive / locked receipt counts and sums of grand_total, subtotal, taxes and discounts of the merchant, filtered by is_active (`status`, active by default), with breakdowns by type and currency.',
+      'Active / inactive / locked receipt counts and sums of grand_total, subtotal, taxes and discounts of the merchant, filtered by is_active (`status`, active by default) and creation date (`dateFrom` / `dateTo`, inclusive), with breakdowns by type and currency.',
   })
   @ApiQuery({
     name: 'status',
     required: false,
     enum: Object.values(ReceiptStatusFilter),
   })
+  @ApiQuery({ name: 'dateFrom', required: false, type: String })
+  @ApiQuery({ name: 'dateTo', required: false, type: String })
   @ApiOkResponse({
     description: 'Receipts summary retrieved',
     type: ReceiptSummaryResponseDto,
@@ -189,6 +195,44 @@ export class ReceiptsController {
   ): Promise<ReceiptSummaryResponseDto> {
     const authenticatedUserMerchantId = this.merchantIdOf(req);
     return this.receiptsService.getSummary(query, authenticatedUserMerchantId);
+  }
+
+  @Get('tax-breakdown')
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
+  @Scopes(
+    Scope.MERCHANT_WEB,
+    Scope.MERCHANT_ANDROID,
+    Scope.MERCHANT_IOS,
+    Scope.MERCHANT_CLOVER,
+  )
+  @ApiOperation({
+    summary: 'Tax collected per tax type (Tax Breakdown cards)',
+    description:
+      'Sum of the active tax lines of the merchant receipts grouped by tax name, rate and currency, filtered by is_active (`status`, active by default) and creation date (`dateFrom` / `dateTo`, inclusive).',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: Object.values(ReceiptStatusFilter),
+  })
+  @ApiQuery({ name: 'dateFrom', required: false, type: String })
+  @ApiQuery({ name: 'dateTo', required: false, type: String })
+  @ApiOkResponse({
+    description: 'Tax breakdown retrieved',
+    type: ReceiptTaxBreakdownResponseDto,
+  })
+  @ApiBadRequestResponse({ description: 'Invalid query', type: ErrorResponse })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
+  @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorResponse })
+  async getTaxBreakdown(
+    @Query() query: GetReceiptsSummaryQueryDto,
+    @Request() req: ExpressRequest & { user?: AuthenticatedUser },
+  ): Promise<ReceiptTaxBreakdownResponseDto> {
+    const authenticatedUserMerchantId = this.merchantIdOf(req);
+    return this.receiptsService.getTaxBreakdown(
+      query,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Get(':id')
@@ -215,6 +259,36 @@ export class ReceiptsController {
   ): Promise<OneReceiptResponseDto> {
     const authenticatedUserMerchantId = this.merchantIdOf(req);
     return this.receiptsService.findOne(id, authenticatedUserMerchantId);
+  }
+
+  @Get(':id/details')
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
+  @Scopes(
+    Scope.MERCHANT_WEB,
+    Scope.MERCHANT_ANDROID,
+    Scope.MERCHANT_IOS,
+    Scope.MERCHANT_CLOVER,
+  )
+  @ApiOperation({
+    summary: 'Receipt line items and tax lines (master-detail row)',
+    description:
+      'Active items (name, quantity, unit_price, total) and tax lines (name, rate, amount) of a receipt of the merchant, active or logically deleted.',
+  })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiOkResponse({
+    description: 'Receipt details retrieved',
+    type: ReceiptDetailsResponseDto,
+  })
+  @ApiBadRequestResponse({ description: 'Invalid id', type: ErrorResponse })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
+  @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorResponse })
+  @ApiNotFoundResponse({ description: 'Not found', type: ErrorResponse })
+  async getDetails(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: ExpressRequest & { user?: AuthenticatedUser },
+  ): Promise<ReceiptDetailsResponseDto> {
+    const authenticatedUserMerchantId = this.merchantIdOf(req);
+    return this.receiptsService.getDetails(id, authenticatedUserMerchantId);
   }
 
   @Put(':id')

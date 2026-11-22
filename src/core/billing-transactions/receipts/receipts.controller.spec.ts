@@ -32,6 +32,8 @@ describe('ReceiptsController', () => {
     updateStatus: jest.fn(),
     remove: jest.fn(),
     getSummary: jest.fn(),
+    getDetails: jest.fn(),
+    getTaxBreakdown: jest.fn(),
   };
 
   const mockUser = {
@@ -589,6 +591,65 @@ describe('ReceiptsController', () => {
     it('is registered before GET :id so "summary" is not parsed as an id', () => {
       const routes = Object.getOwnPropertyNames(ReceiptsController.prototype);
       expect(routes.indexOf('getSummary')).toBeLessThan(
+        routes.indexOf('findOne'),
+      );
+    });
+  });
+
+  describe('GET /receipts/:id/details (Historia 13)', () => {
+    it('returns the items and tax lines of the receipt for the authenticated merchant', async () => {
+      const details = {
+        statusCode: 200,
+        message: 'Receipt details retrieved successfully',
+        data: { receipt: { id: 5 }, items: [], taxes: [] },
+      };
+      mockReceiptsService.getDetails.mockResolvedValue(details);
+
+      const result = await controller.getDetails(5, mockRequest);
+
+      expect(service.getDetails).toHaveBeenCalledWith(5, 1);
+      expect(result).toBe(details);
+    });
+
+    it('rejects users without merchant', async () => {
+      const req = { user: { ...mockUser, merchant: undefined } } as any;
+      await expect(controller.getDetails(5, req)).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(service.getDetails).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('GET /receipts/tax-breakdown (Historia 13)', () => {
+    it('passes status and date range to the service', async () => {
+      const breakdown = {
+        statusCode: 200,
+        message: 'Receipt tax breakdown retrieved successfully',
+        data: { by_tax: [], by_currency: [] },
+      };
+      mockReceiptsService.getTaxBreakdown.mockResolvedValue(breakdown);
+      const query = {
+        status: ReceiptStatusFilter.ACTIVE,
+        dateFrom: '2026-11-01',
+        dateTo: '2026-11-30',
+      };
+
+      const result = await controller.getTaxBreakdown(query, mockRequest);
+
+      expect(service.getTaxBreakdown).toHaveBeenCalledWith(query, 1);
+      expect(result).toBe(breakdown);
+    });
+
+    it('rejects users without merchant', async () => {
+      const req = { user: { ...mockUser, merchant: undefined } } as any;
+      await expect(controller.getTaxBreakdown({}, req)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('is registered before GET :id so "tax-breakdown" is not parsed as an id', () => {
+      const routes = Object.getOwnPropertyNames(ReceiptsController.prototype);
+      expect(routes.indexOf('getTaxBreakdown')).toBeLessThan(
         routes.indexOf('findOne'),
       );
     });

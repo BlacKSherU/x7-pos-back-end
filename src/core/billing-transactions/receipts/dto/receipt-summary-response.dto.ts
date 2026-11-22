@@ -42,6 +42,12 @@ export class ReceiptSummaryDto {
   })
   status: ReceiptStatusFilter;
 
+  @ApiProperty({ example: '2026-11-01', nullable: true, type: String })
+  date_from: string | null;
+
+  @ApiProperty({ example: '2026-11-30', nullable: true, type: String })
+  date_to: string | null;
+
   @ApiProperty({
     example: 20,
     description: 'Receipts matching the status filter',

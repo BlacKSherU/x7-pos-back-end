@@ -25,6 +25,7 @@ import {
 
 import { ReceiptType } from './constants/receipt-type.enum';
 import { ReceiptStatusFilter } from './constants/receipt-status-filter.enum';
+import { ReceiptTaxScope } from '../receipt-tax/constants/receipt-tax-scope.enum';
 
 describe('ReceiptsService', () => {
   let service: ReceiptsService;
@@ -69,7 +70,10 @@ describe('ReceiptsService', () => {
     find: jest.fn(),
   };
   const mockReceiptItemRepository = { find: jest.fn() };
-  const mockReceiptTaxRepository = { find: jest.fn() };
+  const mockReceiptTaxRepository = {
+    find: jest.fn(),
+    createQueryBuilder: jest.fn(),
+  };
 
   const mockOrder = {
     id: 1,
@@ -1530,6 +1534,433 @@ describe('ReceiptsService', () => {
 
     it('requires a merchant', async () => {
       await expect(service.getSummary({}, undefined as any)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+  });
+  describe('date range filter (Historia 13)', () => {
+    beforeEach(() => {
+      mockReceiptRepository.findAndCount.mockResolvedValue([[mockReceipt], 1]);
+    });
+
+    it('filters the list by created_at with both ends inclusive', async () => {
+      await service.findAll(
+        { dateFrom: '2026-11-01', dateTo: '2026-11-30' },
+        1,
+      );
+
+      const { where } = mockReceiptRepository.findAndCount.mock.calls[0][0];
+      expect(where).toMatchObject({ merchant_id: 1, is_active: true });
+      expect(where.created_at.type).toBe('raw');
+      expect(where.created_at.getSql('"r"."created_at"')).toBe(
+        '"r"."created_at" >= CAST(:dateFrom AS date) AND "r"."created_at" < CAST(:dateTo AS date) + 1',
+      );
+      expect(where.created_at.objectLiteralParameters).toEqual({
+        dateFrom: '2026-11-01',
+        dateTo: '2026-11-30',
+      });
+    });
+
+    it('supports an open-ended range and keeps it on every OR branch of the search', async () => {
+      await service.findAll({ dateFrom: '2026-11-01', search: 'inv' }, 1);
+
+      const { where } = mockReceiptRepository.findAndCount.mock.calls[0][0];
+      for (const branch of where) {
+        expect(branch.created_at.getSql('c')).toBe(
+          'c >= CAST(:dateFrom AS date)',
+        );
+        expect(branch.created_at.objectLiteralParameters).toEqual({
+          dateFrom: '2026-11-01',
+        });
+      }
+    });
+
+    it('does not add a created_at condition without dates', async () => {
+      await service.findAll({}, 1);
+
+      const { where } = mockReceiptRepository.findAndCount.mock.calls[0][0];
+      expect(where.created_at).toBeUndefined();
+    });
+
+    it('rejects a range whose start is after its end', async () => {
+      await expect(
+        service.findAll({ dateFrom: '2026-12-01', dateTo: '2026-11-01' }, 1),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockReceiptRepository.findAndCount).not.toHaveBeenCalled();
+    });
+
+    it('applies the same range to the KPI summary and echoes it', async () => {
+      const qb = makeQueryBuilder({ many: [] });
+      mockReceiptRepository.createQueryBuilder.mockReturnValueOnce(qb);
+
+      const result = await service.getSummary(
+        { dateFrom: '2026-11-01', dateTo: '2026-11-30' },
+        1,
+      );
+
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        'r.created_at >= CAST(:dateFrom AS date) AND r.created_at < CAST(:dateTo AS date) + 1',
+        { dateFrom: '2026-11-01', dateTo: '2026-11-30' },
+      );
+      expect(result.data.date_from).toBe('2026-11-01');
+      expect(result.data.date_to).toBe('2026-11-30');
+    });
+
+    it('leaves the summary unfiltered by date when no range is given', async () => {
+      const qb = makeQueryBuilder({ many: [] });
+      mockReceiptRepository.createQueryBuilder.mockReturnValueOnce(qb);
+
+      const result = await service.getSummary({}, 1);
+
+      expect(qb.andWhere).not.toHaveBeenCalled();
+      expect(result.data.date_from).toBeNull();
+      expect(result.data.date_to).toBeNull();
+    });
+  });
+
+  describe('getDetails — master-detail row (Historia 13)', () => {
+    const itemRows = [
+      {
+        id: 7,
+        receipt_id: 1,
+        name: 'Burger Combo',
+        sku: 'SKU-001',
+        quantity: '2.00',
+        unit_price: '12.50',
+        subtotal: '25.00',
+        discount_amount: '2.50',
+        total: '22.50',
+        is_active: true,
+      },
+      {
+        id: 8,
+        receipt_id: 1,
+        name: 'Soda',
+        sku: null,
+        quantity: '1.00',
+        unit_price: '0.10',
+        subtotal: '0.10',
+        discount_amount: '0.00',
+        total: '0.10',
+        is_active: true,
+      },
+    ];
+    const taxRows = [
+      {
+        id: 3,
+        receipt_id: 1,
+        receipt_item_id: null,
+        name: 'VAT',
+        rate: '19.00',
+        amount: '4.28',
+        scope: ReceiptTaxScope.RECEIPT,
+        is_active: true,
+      },
+      {
+        id: 4,
+        receipt_id: 1,
+        receipt_item_id: 8,
+        name: 'Consumption Tax',
+        rate: '8.00',
+        amount: '0.01',
+        scope: ReceiptTaxScope.ITEM,
+        is_active: true,
+      },
+    ];
+
+    it('returns the active items (name, quantity, unit_price, total) and tax lines (name, rate, amount) as numbers', async () => {
+      mockReceiptItemRepository.find.mockResolvedValueOnce(itemRows);
+      mockReceiptTaxRepository.find.mockResolvedValueOnce(taxRows);
+
+      const result = await service.getDetails(1, 1);
+
+      expect(itemRepository.find).toHaveBeenCalledWith({
+        where: { receipt_id: 1, is_active: true },
+        order: { id: 'ASC' },
+      });
+      expect(taxRepository.find).toHaveBeenCalledWith({
+        where: { receipt_id: 1, is_active: true },
+        order: { id: 'ASC' },
+      });
+      expect(result.statusCode).toBe(200);
+      expect(result.message).toBe('Receipt details retrieved successfully');
+      expect(result.data.receipt).toMatchObject({
+        id: 1,
+        invoice_number: 'INV-000001',
+        grand_total: 119,
+      });
+      expect(result.data.items).toEqual([
+        {
+          id: 7,
+          name: 'Burger Combo',
+          sku: 'SKU-001',
+          quantity: 2,
+          unit_price: 12.5,
+          subtotal: 25,
+          discount_amount: 2.5,
+          total: 22.5,
+        },
+        {
+          id: 8,
+          name: 'Soda',
+          sku: null,
+          quantity: 1,
+          unit_price: 0.1,
+          subtotal: 0.1,
+          discount_amount: 0,
+          total: 0.1,
+        },
+      ]);
+      expect(result.data.taxes).toEqual([
+        {
+          id: 3,
+          receipt_item_id: null,
+          name: 'VAT',
+          rate: 19,
+          amount: 4.28,
+          scope: ReceiptTaxScope.RECEIPT,
+        },
+        {
+          id: 4,
+          receipt_item_id: 8,
+          name: 'Consumption Tax',
+          rate: 8,
+          amount: 0.01,
+          scope: ReceiptTaxScope.ITEM,
+        },
+      ]);
+      // Sumas en centavos: 22.50 + 0.10 y 4.28 + 0.01, sin errores de coma flotante.
+      expect(result.data.items_total).toBe(22.6);
+      expect(result.data.taxes_total).toBe(4.29);
+    });
+
+    it('returns empty lists when the receipt has no items or taxes', async () => {
+      const result = await service.getDetails(1, 1);
+
+      expect(result.data.items).toEqual([]);
+      expect(result.data.taxes).toEqual([]);
+      expect(result.data.items_total).toBe(0);
+      expect(result.data.taxes_total).toBe(0);
+    });
+
+    it('also opens logically deleted receipts of the merchant', async () => {
+      mockReceiptRepository.findOne.mockResolvedValueOnce({
+        ...mockReceipt,
+        is_active: false,
+      });
+
+      const result = await service.getDetails(1, 1);
+
+      expect(receiptRepository.findOne).toHaveBeenCalledWith({
+        where: { id: 1 },
+      });
+      expect(result.data.receipt.is_active).toBe(false);
+    });
+
+    it('throws NotFoundException when the receipt does not exist', async () => {
+      mockReceiptRepository.findOne.mockResolvedValueOnce(null);
+
+      await expect(service.getDetails(99, 1)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(itemRepository.find).not.toHaveBeenCalled();
+    });
+
+    it('throws ForbiddenException for a receipt of another merchant', async () => {
+      mockReceiptRepository.findOne.mockResolvedValueOnce({
+        ...mockReceipt,
+        merchant_id: 2,
+      });
+
+      await expect(service.getDetails(1, 1)).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(itemRepository.find).not.toHaveBeenCalled();
+      expect(taxRepository.find).not.toHaveBeenCalled();
+    });
+
+    it('rejects an invalid id', async () => {
+      await expect(service.getDetails(0, 1)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
+
+  describe('getTaxBreakdown — tax breakdown cards (Historia 13)', () => {
+    const rawRows = [
+      {
+        name: 'Consumption Tax',
+        rate: '8.00',
+        currency: 'USD',
+        total_amount: '0.10',
+        tax_lines: '1',
+        receipts: '1',
+      },
+      {
+        name: 'VAT',
+        rate: '19.00',
+        currency: 'USD',
+        total_amount: '38.20',
+        tax_lines: '3',
+        receipts: '2',
+      },
+      {
+        name: 'VAT',
+        rate: '5.00',
+        currency: 'USD',
+        total_amount: '0.20',
+        tax_lines: '1',
+        receipts: '1',
+      },
+      {
+        name: 'VAT',
+        rate: '19.00',
+        currency: 'EUR',
+        total_amount: '9.50',
+        tax_lines: '1',
+        receipts: '1',
+      },
+    ];
+
+    it('sums the tax lines of the active receipts of the merchant per tax name and rate', async () => {
+      const qb = makeQueryBuilder({ many: rawRows });
+      mockReceiptTaxRepository.createQueryBuilder.mockReturnValueOnce(qb);
+
+      const result = await service.getTaxBreakdown({}, 1);
+
+      expect(mockReceiptTaxRepository.createQueryBuilder).toHaveBeenCalledWith(
+        't',
+      );
+      expect(qb.innerJoin).toHaveBeenCalledWith('t.receipt', 'r');
+      expect(qb.where).toHaveBeenCalledWith('r.merchant_id = :merchantId', {
+        merchantId: 1,
+      });
+      expect(qb.andWhere).toHaveBeenCalledWith('t.is_active = :taxActive', {
+        taxActive: true,
+      });
+      expect(qb.andWhere).toHaveBeenCalledWith('r.is_active = :receiptActive', {
+        receiptActive: true,
+      });
+      expect(qb.groupBy).toHaveBeenCalledWith('t.name');
+      expect(qb.addGroupBy).toHaveBeenCalledWith('t.rate');
+
+      expect(result.statusCode).toBe(200);
+      expect(result.data.status).toBe(ReceiptStatusFilter.ACTIVE);
+      // Mayor total primero; amounts numéricos.
+      expect(result.data.by_tax).toEqual([
+        {
+          name: 'VAT',
+          rate: 19,
+          currency: 'USD',
+          total_amount: 38.2,
+          tax_lines: 3,
+          receipts: 2,
+        },
+        {
+          name: 'VAT',
+          rate: 19,
+          currency: 'EUR',
+          total_amount: 9.5,
+          tax_lines: 1,
+          receipts: 1,
+        },
+        {
+          name: 'VAT',
+          rate: 5,
+          currency: 'USD',
+          total_amount: 0.2,
+          tax_lines: 1,
+          receipts: 1,
+        },
+        {
+          name: 'Consumption Tax',
+          rate: 8,
+          currency: 'USD',
+          total_amount: 0.1,
+          tax_lines: 1,
+          receipts: 1,
+        },
+      ]);
+    });
+
+    it('totals per currency in cents and reports the main currency', async () => {
+      const qb = makeQueryBuilder({ many: rawRows });
+      mockReceiptTaxRepository.createQueryBuilder.mockReturnValueOnce(qb);
+
+      const result = await service.getTaxBreakdown({}, 1);
+
+      expect(result.data.by_currency).toEqual([
+        { currency: 'USD', total_amount: 38.5, tax_lines: 5 },
+        { currency: 'EUR', total_amount: 9.5, tax_lines: 1 },
+      ]);
+      expect(result.data.currency).toBe('USD');
+      expect(result.data.total_tax).toBe(38.5);
+    });
+
+    it('follows the active date filter', async () => {
+      const qb = makeQueryBuilder({ many: [] });
+      mockReceiptTaxRepository.createQueryBuilder.mockReturnValueOnce(qb);
+
+      const result = await service.getTaxBreakdown(
+        { dateFrom: '2026-11-01', dateTo: '2026-11-15' },
+        1,
+      );
+
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        'r.created_at >= CAST(:dateFrom AS date) AND r.created_at < CAST(:dateTo AS date) + 1',
+        { dateFrom: '2026-11-01', dateTo: '2026-11-15' },
+      );
+      expect(result.data.date_from).toBe('2026-11-01');
+      expect(result.data.date_to).toBe('2026-11-15');
+    });
+
+    it('filters logically deleted receipts with status=inactive and skips the filter with status=all', async () => {
+      const inactiveQb = makeQueryBuilder({ many: [] });
+      const allQb = makeQueryBuilder({ many: [] });
+      mockReceiptTaxRepository.createQueryBuilder
+        .mockReturnValueOnce(inactiveQb)
+        .mockReturnValueOnce(allQb);
+
+      await service.getTaxBreakdown(
+        { status: ReceiptStatusFilter.INACTIVE },
+        1,
+      );
+      await service.getTaxBreakdown({ status: ReceiptStatusFilter.ALL }, 1);
+
+      expect(inactiveQb.andWhere).toHaveBeenCalledWith(
+        'r.is_active = :receiptActive',
+        { receiptActive: false },
+      );
+      expect(allQb.andWhere).not.toHaveBeenCalledWith(
+        'r.is_active = :receiptActive',
+        expect.anything(),
+      );
+    });
+
+    it('returns empty breakdowns when there are no tax lines', async () => {
+      mockReceiptTaxRepository.createQueryBuilder.mockReturnValueOnce(
+        makeQueryBuilder({ many: [] }),
+      );
+
+      const result = await service.getTaxBreakdown({}, 1);
+
+      expect(result.data.by_tax).toEqual([]);
+      expect(result.data.by_currency).toEqual([]);
+      expect(result.data.currency).toBe('USD');
+      expect(result.data.total_tax).toBe(0);
+    });
+
+    it('rejects an inverted date range', async () => {
+      await expect(
+        service.getTaxBreakdown(
+          { dateFrom: '2026-11-15', dateTo: '2026-11-01' },
+          1,
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws ForbiddenException without a merchant', async () => {
+      await expect(service.getTaxBreakdown({}, 0)).rejects.toThrow(
         ForbiddenException,
       );
     });
