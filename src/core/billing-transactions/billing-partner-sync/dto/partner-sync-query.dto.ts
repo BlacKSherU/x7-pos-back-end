@@ -1,6 +1,7 @@
 import { ApiPropertyOptional, ApiProperty } from '@nestjs/swagger';
 import {
   IsEnum,
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
@@ -11,6 +12,8 @@ import {
 
 import { ReceiptType } from '../../receipts/constants/receipt-type.enum';
 import {
+  PartnerAssociation,
+  PartnerGroupSortBy,
   PartnerLinkState,
   PartnerSyncScope,
   PartnerType,
@@ -63,29 +66,40 @@ export class PartnerOptionsQueryDto {
   limit?: number;
 }
 
-export class PartnerSyncReceiptsQueryDto extends PartnerSyncScopeQueryDto {
-  @ApiPropertyOptional({ example: 1 })
-  @IsOptional()
-  @IsInt()
-  @Min(1)
-  page?: number;
-
-  @ApiPropertyOptional({ example: 10, minimum: 1, maximum: 100 })
-  @IsOptional()
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  limit?: number;
-
+/** Filtros por socio y por asociación con la compañía (grid y lista de recibos). */
+export class PartnerSyncPartnerFilterQueryDto extends PartnerSyncScopeQueryDto {
   @ApiPropertyOptional({
-    example: 'INV-0001',
-    description:
-      'Receipt ID, invoice number, partner name, partner tax ID or fiscal_data text',
+    enum: PartnerType,
+    description: 'Only receipts whose partner is a customer / a supplier',
   })
   @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  search?: string;
+  @IsEnum(PartnerType)
+  partnerType?: PartnerType;
+
+  @ApiPropertyOptional({
+    example: 12,
+    description:
+      'Customer ID: receipts linked to the customer, or whose order belongs to it when not explicitly linked',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  customerId?: number;
+
+  @ApiPropertyOptional({ example: 3, description: 'Supplier ID' })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  supplierId?: number;
+
+  @ApiPropertyOptional({
+    enum: PartnerAssociation,
+    description:
+      'company = suppliers and customers associated to the company (customer.companyId); merchant = branch-only customers',
+  })
+  @IsOptional()
+  @IsEnum(PartnerAssociation)
+  association?: PartnerAssociation;
 
   @ApiPropertyOptional({
     enum: PartnerLinkState,
@@ -101,4 +115,53 @@ export class PartnerSyncReceiptsQueryDto extends PartnerSyncScopeQueryDto {
   @IsOptional()
   @IsEnum(ReceiptType)
   type?: ReceiptType;
+
+  @ApiPropertyOptional({ example: 1 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @ApiPropertyOptional({ example: 10, minimum: 1, maximum: 100 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limit?: number;
+}
+
+export class PartnerSyncReceiptsQueryDto extends PartnerSyncPartnerFilterQueryDto {
+  @ApiPropertyOptional({
+    example: 'INV-0001',
+    description:
+      'Receipt ID, invoice number, partner name, partner tax ID or fiscal_data text',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  search?: string;
+}
+
+export class PartnerSyncPartnersQueryDto extends PartnerSyncPartnerFilterQueryDto {
+  @ApiPropertyOptional({
+    example: 'Pacifico',
+    description: 'Partner ID, name or tax ID',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  search?: string;
+
+  @ApiPropertyOptional({
+    enum: PartnerGroupSortBy,
+    example: PartnerGroupSortBy.VOLUME,
+  })
+  @IsOptional()
+  @IsEnum(PartnerGroupSortBy)
+  sortBy?: PartnerGroupSortBy;
+
+  @ApiPropertyOptional({ enum: ['ASC', 'DESC'], example: 'DESC' })
+  @IsOptional()
+  @IsIn(['ASC', 'DESC'])
+  sortOrder?: 'ASC' | 'DESC';
 }

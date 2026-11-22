@@ -30,3 +30,21 @@ export enum PartnerLinkState {
   LINKED = 'linked',
   UNLINKED = 'unlinked',
 }
+
+/**
+ * Asociación del socio con la compañía:
+ * - company: proveedor (siempre de la compañía) o cliente corporativo (customer.companyId).
+ * - merchant: cliente registrado solo en una sucursal (sin companyId).
+ */
+export enum PartnerAssociation {
+  COMPANY = 'company',
+  MERCHANT = 'merchant',
+}
+
+/** Orden del grid de socios. */
+export enum PartnerGroupSortBy {
+  VOLUME = 'volume',
+  INVOICES = 'invoices',
+  NAME = 'name',
+  LAST_INVOICE = 'lastInvoice',
+}

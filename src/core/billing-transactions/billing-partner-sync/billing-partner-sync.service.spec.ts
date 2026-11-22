@@ -20,6 +20,8 @@ import { Customer } from 'src/core/business-partners/customers/entities/customer
 import { Supplier } from 'src/core/business-partners/suppliers/entities/supplier.entity';
 import { Merchant } from 'src/platform-saas/merchants/entities/merchant.entity';
 import {
+  PartnerAssociation,
+  PartnerGroupSortBy,
   PartnerLinkSource,
   PartnerLinkState,
   PartnerSyncScope,
@@ -27,8 +29,12 @@ import {
 } from './constants/partner-sync.enums';
 import {
   B2B_INVOICE_SQL,
+  EFFECTIVE_CUSTOMER_SQL,
   EXPLICIT_LINK_SQL,
   NO_EXPLICIT_LINK_SQL,
+  PARTNER_COMPANY_ID_SQL,
+  PARTNER_ID_SQL,
+  PARTNER_TYPE_SQL,
   extractFiscalTaxId,
 } from './billing-partner-sync.util';
 
@@ -71,6 +77,9 @@ function createQb(
   qb.getParameters = jest
     .fn()
     .mockReturnValue({ isActive: true, merchantId: 1, invoiceType: 'INVOICE' });
+  qb.getQueryAndParameters = jest
+    .fn()
+    .mockReturnValue(['SELECT grouped FROM "receipts" "r"', [true, 1]]);
   return qb;
 }
 
@@ -110,11 +119,12 @@ describe('BillingPartnerSyncService', () => {
     createQueryBuilder: jest.fn(),
     findOne: jest.fn(),
     update: jest.fn(),
+    query: jest.fn(),
   };
   const orderRepo = { createQueryBuilder: jest.fn() };
   const customerRepo = { createQueryBuilder: jest.fn(), findOne: jest.fn() };
   const supplierRepo = { createQueryBuilder: jest.fn(), findOne: jest.fn() };
-  const merchantRepo = { findOne: jest.fn() };
+  const merchantRepo = { findOne: jest.fn(), find: jest.fn() };
 
   beforeEach(async () => {
     jest.resetAllMocks();
@@ -701,6 +711,371 @@ describe('BillingPartnerSyncService', () => {
       receiptRepo.createQueryBuilder.mockReturnValue(linkedQb);
       await service.findReceipts(1, { linkState: PartnerLinkState.LINKED });
       expect(conditionsOf(linkedQb)).toContain(EXPLICIT_LINK_SQL);
+    });
+  });
+
+  describe('applyPartnerFilters (Historia 22)', () => {
+    it('filters by effective customer ID, supplier ID and partner type', () => {
+      const qb = createQb();
+      service.applyPartnerFilters(qb, {
+        partnerType: PartnerType.CUSTOMER,
+        customerId: 12,
+      });
+      expect(qb.andWhere).toHaveBeenCalledWith('r.supplier_id IS NULL');
+      // El cliente efectivo incluye recibos sin enlace cuyo pedido es del cliente.
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        `(${EFFECTIVE_CUSTOMER_SQL}) = :customerId`,
+        { customerId: 12 },
+      );
+
+      const supplierQb = createQb();
+      service.applyPartnerFilters(supplierQb, {
+        partnerType: PartnerType.SUPPLIER,
+        supplierId: 3,
+      });
+      expect(supplierQb.andWhere).toHaveBeenCalledWith(
+        'r.supplier_id IS NOT NULL',
+      );
+      expect(supplierQb.andWhere).toHaveBeenCalledWith(
+        'r.supplier_id = :supplierId',
+        { supplierId: 3 },
+      );
+    });
+
+    it('filters by company association (corporate partners vs branch-only customers)', () => {
+      const companyQb = createQb();
+      service.applyPartnerFilters(companyQb, {
+        association: PartnerAssociation.COMPANY,
+      });
+      expect(conditionsOf(companyQb)).toContain(
+        `(${PARTNER_COMPANY_ID_SQL}) IS NOT NULL`,
+      );
+
+      const merchantQb = createQb();
+      service.applyPartnerFilters(merchantQb, {
+        association: PartnerAssociation.MERCHANT,
+      });
+      expect(conditionsOf(merchantQb)).toContain(
+        `(${PARTNER_COMPANY_ID_SQL}) IS NULL`,
+      );
+    });
+
+    it('adds no condition without filters', () => {
+      const qb = createQb();
+      service.applyPartnerFilters(qb, {});
+      expect(qb.andWhere).not.toHaveBeenCalled();
+    });
+
+    it('is shared by the receipts list (customer ID drill-down of a group)', async () => {
+      const qb = createQb();
+      receiptRepo.createQueryBuilder.mockReturnValue(qb);
+      await service.findReceipts(1, { customerId: 12, linkState: PartnerLinkState.LINKED });
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        `(${EFFECTIVE_CUSTOMER_SQL}) = :customerId`,
+        { customerId: 12 },
+      );
+      expect(conditionsOf(qb)).toContain(EXPLICIT_LINK_SQL);
+    });
+  });
+
+  describe('findPartnerGroups (Historia 22 grid)', () => {
+    const rawGroup = (overrides: Record<string, unknown> = {}) => ({
+      partner_type: PartnerType.CUSTOMER,
+      partner_id: '12',
+      partner_name: 'Inversiones Pacifico SpA',
+      partner_tax_id: '77.890.123-4',
+      partner_company_id: '9',
+      partner_merchant_id: '1',
+      latest_fiscal_data: '{"tax_id":"76.111.222-3"}',
+      invoice_count: '5',
+      linked_invoice_count: '3',
+      volume_cents: '125050',
+      outstanding_cents: '20010',
+      merchant_count: '2',
+      last_invoice_at: new Date('2026-11-20T15:00:00Z'),
+      currency: 'USD',
+      ...overrides,
+    });
+
+    it('groups receipts by partner and maps name, tax ID, volume and invoice count', async () => {
+      const qb = createQb({
+        rawMany: [
+          rawGroup(),
+          rawGroup({
+            partner_type: PartnerType.SUPPLIER,
+            partner_id: '3',
+            partner_name: 'Distribuidora Andes',
+            partner_tax_id: '96.555.444-1',
+            partner_company_id: '9',
+            partner_merchant_id: null,
+            latest_fiscal_data: null,
+            invoice_count: '2',
+            linked_invoice_count: '2',
+            volume_cents: '40000',
+            outstanding_cents: '0',
+            merchant_count: '1',
+          }),
+          rawGroup({
+            partner_id: '7',
+            partner_name: null,
+            partner_tax_id: null,
+            partner_company_id: null,
+            latest_fiscal_data: 'not json',
+            invoice_count: '1',
+            linked_invoice_count: '0',
+            volume_cents: '999',
+            outstanding_cents: '999',
+            merchant_count: '1',
+            currency: null,
+          }),
+        ],
+      });
+      receiptRepo.createQueryBuilder.mockReturnValue(qb);
+      receiptRepo.query.mockResolvedValue([
+        { partners: '23', invoices: '61', volume_cents: '1520099' },
+      ]);
+
+      const result = await service.findPartnerGroups(1, { page: 2, limit: 10 });
+
+      expect(qb.select).toHaveBeenCalledWith(PARTNER_TYPE_SQL, 'partner_type');
+      expect(qb.groupBy).toHaveBeenCalledWith(PARTNER_TYPE_SQL);
+      expect(qb.addGroupBy).toHaveBeenCalledWith(PARTNER_ID_SQL);
+      // Resumen y total sobre la consulta agrupada completa (sin paginar).
+      expect(receiptRepo.query).toHaveBeenCalledWith(
+        expect.stringContaining('FROM (SELECT grouped FROM "receipts" "r") g'),
+        [true, 1],
+      );
+      expect(qb.offset).toHaveBeenCalledWith(10);
+      expect(qb.limit).toHaveBeenCalledWith(10);
+      expect(result).toMatchObject({
+        statusCode: 200,
+        page: 2,
+        limit: 10,
+        total: 23,
+        totalPages: 3,
+        hasNext: true,
+        hasPrev: true,
+        summary: { partners: 23, invoices: 61, total_volume: 15200.99 },
+      });
+
+      const [customer, supplier, branchOnly] = result.data;
+      expect(customer).toEqual({
+        partner_type: PartnerType.CUSTOMER,
+        partner_id: 12,
+        name: 'Inversiones Pacifico SpA',
+        tax_id: '76.111.222-3',
+        fiscal_tax_id: '76.111.222-3',
+        partner_tax_id: '77.890.123-4',
+        association: PartnerAssociation.COMPANY,
+        partner_company_id: 9,
+        partner_merchant_id: 1,
+        invoice_count: 5,
+        linked_invoice_count: 3,
+        total_volume: 1250.5,
+        outstanding_balance: 200.1,
+        currency: 'USD',
+        merchant_count: 2,
+        last_invoice_at: new Date('2026-11-20T15:00:00Z'),
+      });
+      // Sin fiscal_data el tax ID es el del socio; los proveedores siempre son de la compañía.
+      expect(supplier).toMatchObject({
+        partner_type: PartnerType.SUPPLIER,
+        partner_id: 3,
+        tax_id: '96.555.444-1',
+        fiscal_tax_id: null,
+        association: PartnerAssociation.COMPANY,
+        partner_merchant_id: null,
+        total_volume: 400,
+      });
+      expect(branchOnly).toMatchObject({
+        partner_id: 7,
+        name: '#7',
+        tax_id: null,
+        association: PartnerAssociation.MERCHANT,
+        partner_company_id: null,
+        total_volume: 9.99,
+        currency: 'USD',
+      });
+    });
+
+    it('applies customer / association filters and a partner-only search before grouping', async () => {
+      const qb = createQb();
+      receiptRepo.createQueryBuilder.mockReturnValue(qb);
+      receiptRepo.query.mockResolvedValue([]);
+
+      const result = await service.findPartnerGroups(1, {
+        customerId: 12,
+        association: PartnerAssociation.COMPANY,
+        search: '77',
+      });
+
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        `(${EFFECTIVE_CUSTOMER_SQL}) = :customerId`,
+        { customerId: 12 },
+      );
+      expect(conditionsOf(qb)).toContain(
+        `(${PARTNER_COMPANY_ID_SQL}) IS NOT NULL`,
+      );
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        expect.stringContaining(':partnerSearchId'),
+        { partnerSearch: '%77%', partnerSearchId: 77 },
+      );
+      // La búsqueda no mira el número de factura: los totales del grupo quedan completos.
+      expect(
+        conditionsOf(qb).some((c) => c.includes('r.invoice_number')),
+      ).toBe(false);
+      expect(result).toMatchObject({
+        data: [],
+        total: 0,
+        totalPages: 0,
+        hasNext: false,
+        hasPrev: false,
+        summary: { partners: 0, invoices: 0, total_volume: 0 },
+      });
+    });
+
+    it('sorts by volume (default), invoices, name or last invoice', async () => {
+      const cases: Array<[PartnerGroupSortBy | undefined, string]> = [
+        [undefined, 'volume_cents'],
+        [PartnerGroupSortBy.INVOICES, 'invoice_count'],
+        [PartnerGroupSortBy.NAME, 'partner_name'],
+        [PartnerGroupSortBy.LAST_INVOICE, 'last_invoice_at'],
+      ];
+      for (const [sortBy, column] of cases) {
+        const qb = createQb();
+        receiptRepo.createQueryBuilder.mockReturnValue(qb);
+        receiptRepo.query.mockResolvedValue([{ partners: 0 }]);
+        await service.findPartnerGroups(1, {
+          sortBy,
+          sortOrder: sortBy === PartnerGroupSortBy.NAME ? 'ASC' : undefined,
+        });
+        expect(qb.orderBy).toHaveBeenCalledWith(
+          column,
+          sortBy === PartnerGroupSortBy.NAME ? 'ASC' : 'DESC',
+        );
+      }
+    });
+
+    it('supports company scope narrowed to a branch', async () => {
+      merchantRepo.findOne
+        .mockResolvedValueOnce({ id: 1, companyId: 9 })
+        .mockResolvedValueOnce({ id: 4, companyId: 9 });
+      const qb = createQb();
+      receiptRepo.createQueryBuilder.mockReturnValue(qb);
+      receiptRepo.query.mockResolvedValue([{ partners: 0 }]);
+
+      await service.findPartnerGroups(1, {
+        scope: PartnerSyncScope.COMPANY,
+        merchantId: 4,
+      });
+
+      expect(qb.innerJoin).toHaveBeenCalledWith(
+        Merchant,
+        'm',
+        'm.id = r.merchant_id',
+      );
+      expect(qb.andWhere).toHaveBeenCalledWith('m.companyId = :companyId', {
+        companyId: 9,
+      });
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        'r.merchant_id = :branchMerchantId',
+        { branchMerchantId: 4 },
+      );
+    });
+  });
+
+  describe('unlinkReceipt (quick reassign)', () => {
+    const receipt = {
+      id: 120,
+      merchant_id: 1,
+      is_active: true,
+      is_locked: false,
+      customer_id: 12,
+      supplier_id: null,
+    };
+
+    it('removes the explicit link so the receipt falls back to the order customer', async () => {
+      receiptRepo.findOne.mockResolvedValue(receipt);
+      receiptRepo.createQueryBuilder.mockReturnValue(
+        createQb({
+          rawOne: rawReceipt({
+            partner_id: '7',
+            partner_name: 'Walk-in Guest',
+            partner_tax_id: null,
+            link_source: PartnerLinkSource.ORDER,
+          }),
+        }),
+      );
+
+      const result = await service.unlinkReceipt(120, 1);
+
+      expect(receiptRepo.update).toHaveBeenCalledWith(
+        { id: 120 },
+        { customer_id: null, supplier_id: null },
+      );
+      expect(result.statusCode).toBe(200);
+      expect(result.data.link_source).toBe(PartnerLinkSource.ORDER);
+      expect(result.data.partner).toMatchObject({ id: 7 });
+    });
+
+    it('does not write when the receipt has no explicit link', async () => {
+      receiptRepo.findOne.mockResolvedValue({
+        ...receipt,
+        customer_id: null,
+      });
+      receiptRepo.createQueryBuilder.mockReturnValue(
+        createQb({ rawOne: rawReceipt({ link_source: PartnerLinkSource.ORDER }) }),
+      );
+
+      await service.unlinkReceipt(120, 1);
+
+      expect(receiptRepo.update).not.toHaveBeenCalled();
+    });
+
+    it('rejects locked receipts and receipts of another merchant', async () => {
+      receiptRepo.findOne.mockResolvedValueOnce({ ...receipt, is_locked: true });
+      await expect(service.unlinkReceipt(120, 1)).rejects.toThrow(
+        new ForbiddenException(
+          'Receipt is fiscally locked and cannot be modified.',
+        ),
+      );
+
+      receiptRepo.findOne.mockResolvedValueOnce({ ...receipt, merchant_id: 5 });
+      await expect(service.unlinkReceipt(120, 1)).rejects.toThrow(
+        ForbiddenException,
+      );
+
+      receiptRepo.findOne.mockResolvedValueOnce(null);
+      await expect(service.unlinkReceipt(120, 1)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(receiptRepo.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getCompanyMerchants', () => {
+    it('lists the branches of the session company by name', async () => {
+      merchantRepo.findOne.mockResolvedValue({ id: 1, companyId: 9 });
+      merchantRepo.find.mockResolvedValue([
+        { id: 4, name: 'Centro' },
+        { id: 1, name: 'Providencia' },
+      ]);
+
+      const result = await service.getCompanyMerchants(1);
+
+      expect(merchantRepo.find).toHaveBeenCalledWith({
+        where: { companyId: 9 },
+        select: { id: true, name: true },
+        order: { name: 'ASC' },
+      });
+      expect(result).toEqual({
+        statusCode: 200,
+        message: 'Company merchants retrieved successfully',
+        data: [
+          { id: 4, name: 'Centro', is_current: false },
+          { id: 1, name: 'Providencia', is_current: true },
+        ],
+      });
     });
   });
 

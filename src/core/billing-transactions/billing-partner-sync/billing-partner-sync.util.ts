@@ -88,3 +88,11 @@ export function extractFiscalTaxId(fiscalData: unknown): string | null {
     return null;
   }
 }
+
+/** Compañía a la que está asociado el socio (customer.companyId / supplier.company_id). */
+export const PARTNER_COMPANY_ID_SQL =
+  'CASE WHEN r.supplier_id IS NOT NULL THEN ls.company_id WHEN r.customer_id IS NOT NULL THEN lc.companyId ELSE oc.companyId END';
+
+/** Sucursal que registró al cliente (NULL en proveedores). */
+export const PARTNER_MERCHANT_ID_SQL =
+  'CASE WHEN r.supplier_id IS NOT NULL THEN NULL WHEN r.customer_id IS NOT NULL THEN lc.merchantId ELSE oc.merchantId END';

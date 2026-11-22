@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   ForbiddenException,
   Get,
   Param,
@@ -41,11 +42,14 @@ import { BillingPartnerSyncService } from './billing-partner-sync.service';
 import {
   PartnerOptionsQueryDto,
   PartnerSyncMetricsQueryDto,
+  PartnerSyncPartnersQueryDto,
   PartnerSyncReceiptsQueryDto,
 } from './dto/partner-sync-query.dto';
 import { LinkReceiptPartnerDto } from './dto/link-receipt-partner.dto';
 import {
+  CompanyMerchantsResponseDto,
   OnePartnerSyncReceiptResponseDto,
+  PaginatedPartnerGroupsDto,
   PaginatedPartnerSyncReceiptsDto,
   PartnerOptionsResponseDto,
   PartnerSyncMetricsResponseDto,
@@ -199,5 +203,93 @@ export class BillingPartnerSyncController {
     @Request() req: AuthenticatedRequest,
   ): Promise<OnePartnerSyncReceiptResponseDto> {
     return this.partnerSyncService.linkReceipt(id, dto, this.merchantIdOf(req));
+  }
+
+  @Get('partners')
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
+  @Scopes(
+    Scope.MERCHANT_WEB,
+    Scope.MERCHANT_ANDROID,
+    Scope.MERCHANT_IOS,
+    Scope.MERCHANT_CLOVER,
+  )
+  @ApiOperation({
+    summary: 'Receipts grouped by customer / supplier',
+    description:
+      'One row per business partner with name, tax ID (fiscal_data or partner), total volume, invoice count and outstanding balance. Filters: customerId, supplierId, partnerType, association (company / merchant), scope and merchantId (company branches).',
+  })
+  @ApiOkResponse({
+    description: 'Partner groups retrieved',
+    type: PaginatedPartnerGroupsDto,
+  })
+  @ApiBadRequestResponse({ description: 'Invalid query', type: ErrorResponse })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
+  @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorResponse })
+  async findPartnerGroups(
+    @Query() query: PartnerSyncPartnersQueryDto,
+    @Request() req: AuthenticatedRequest,
+  ): Promise<PaginatedPartnerGroupsDto> {
+    return this.partnerSyncService.findPartnerGroups(
+      this.merchantIdOf(req),
+      query,
+    );
+  }
+
+  @Get('company-merchants')
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
+  @Scopes(
+    Scope.MERCHANT_WEB,
+    Scope.MERCHANT_ANDROID,
+    Scope.MERCHANT_IOS,
+    Scope.MERCHANT_CLOVER,
+  )
+  @ApiOperation({
+    summary: 'Merchants (branches) of the session company',
+    description: 'Options for the company-association filter of the grid.',
+  })
+  @ApiOkResponse({
+    description: 'Company merchants retrieved',
+    type: CompanyMerchantsResponseDto,
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
+  @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorResponse })
+  async getCompanyMerchants(
+    @Request() req: AuthenticatedRequest,
+  ): Promise<CompanyMerchantsResponseDto> {
+    return this.partnerSyncService.getCompanyMerchants(this.merchantIdOf(req));
+  }
+
+  @Delete('receipts/:id/partner')
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
+  @Scopes(
+    Scope.MERCHANT_WEB,
+    Scope.MERCHANT_ANDROID,
+    Scope.MERCHANT_IOS,
+    Scope.MERCHANT_CLOVER,
+  )
+  @ApiOperation({
+    summary: 'Remove the explicit partner link of a receipt',
+    description:
+      'The receipt goes back to the order customer. Fiscally locked or inactive receipts are rejected with 403.',
+  })
+  @ApiParam({ name: 'id', type: Number, description: 'Receipt ID' })
+  @ApiOkResponse({
+    description: 'Receipt link removed',
+    type: OnePartnerSyncReceiptResponseDto,
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
+  @ApiForbiddenResponse({
+    description: 'Receipt of another merchant or fiscally locked',
+    type: ErrorResponse,
+  })
+  @ApiNotFoundResponse({
+    description: 'Receipt not found',
+    type: ErrorResponse,
+  })
+  async unlinkReceipt(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedRequest,
+  ): Promise<OnePartnerSyncReceiptResponseDto> {
+    return this.partnerSyncService.unlinkReceipt(id, this.merchantIdOf(req));
   }
 }

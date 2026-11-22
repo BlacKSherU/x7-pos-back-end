@@ -5,6 +5,7 @@ import { Request as ExpressRequest } from 'express';
 import { BillingPartnerSyncController } from './billing-partner-sync.controller';
 import { BillingPartnerSyncService } from './billing-partner-sync.service';
 import {
+  PartnerAssociation,
   PartnerSyncScope,
   PartnerType,
 } from './constants/partner-sync.enums';
@@ -22,6 +23,9 @@ describe('BillingPartnerSyncController', () => {
     getPartnerOptions: jest.fn(),
     findReceipts: jest.fn(),
     linkReceipt: jest.fn(),
+    findPartnerGroups: jest.fn(),
+    getCompanyMerchants: jest.fn(),
+    unlinkReceipt: jest.fn(),
   };
 
   /** Forma real de la petición: Passport cuelga el usuario de `req.user`. */
@@ -78,6 +82,29 @@ describe('BillingPartnerSyncController', () => {
     expect(service.linkReceipt).toHaveBeenCalledWith(120, dto, 5);
   });
 
+  it('GET partners passes the grid filters (customer ID, company association)', async () => {
+    service.findPartnerGroups.mockResolvedValue({ data: [] });
+    const query = {
+      scope: PartnerSyncScope.COMPANY,
+      customerId: 12,
+      association: PartnerAssociation.COMPANY,
+    };
+    await controller.findPartnerGroups(query, req);
+    expect(service.findPartnerGroups).toHaveBeenCalledWith(5, query);
+  });
+
+  it('GET company-merchants passes the session merchant', async () => {
+    service.getCompanyMerchants.mockResolvedValue({ data: [] });
+    await controller.getCompanyMerchants(req);
+    expect(service.getCompanyMerchants).toHaveBeenCalledWith(5);
+  });
+
+  it('DELETE receipts/:id/partner unlinks the receipt for the session merchant', async () => {
+    service.unlinkReceipt.mockResolvedValue({ statusCode: 200 });
+    await controller.unlinkReceipt(120, req);
+    expect(service.unlinkReceipt).toHaveBeenCalledWith(120, 5);
+  });
+
   it('rejects users without a merchant', async () => {
     await expect(controller.getMetrics({}, reqWithoutMerchant)).rejects.toThrow(
       ForbiddenException,
@@ -89,7 +116,15 @@ describe('BillingPartnerSyncController', () => {
         reqWithoutMerchant,
       ),
     ).rejects.toThrow(ForbiddenException);
+    await expect(
+      controller.findPartnerGroups({}, reqWithoutMerchant),
+    ).rejects.toThrow(ForbiddenException);
+    await expect(
+      controller.unlinkReceipt(1, reqWithoutMerchant),
+    ).rejects.toThrow(ForbiddenException);
     expect(service.getMetrics).not.toHaveBeenCalled();
     expect(service.linkReceipt).not.toHaveBeenCalled();
+    expect(service.findPartnerGroups).not.toHaveBeenCalled();
+    expect(service.unlinkReceipt).not.toHaveBeenCalled();
   });
 });

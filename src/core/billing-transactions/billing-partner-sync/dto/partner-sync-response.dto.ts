@@ -3,6 +3,7 @@ import { SuccessResponse } from 'src/common/dtos/success-response.dto';
 
 import { ReceiptType } from '../../receipts/constants/receipt-type.enum';
 import {
+  PartnerAssociation,
   PartnerLinkSource,
   PartnerSyncScope,
   PartnerType,
@@ -222,4 +223,136 @@ export class PaginatedPartnerSyncReceiptsDto extends SuccessResponse {
 
   @ApiProperty({ example: false })
   hasPrev: boolean;
+}
+
+// ---- Historia 22: grid de recibos agrupados por socio ----
+
+export class PartnerGroupDto {
+  @ApiProperty({ enum: PartnerType, example: PartnerType.CUSTOMER })
+  partner_type: PartnerType;
+
+  @ApiProperty({ example: 12 })
+  partner_id: number;
+
+  @ApiProperty({ example: 'Inversiones Pacifico SpA' })
+  name: string;
+
+  @ApiProperty({
+    example: '76.111.222-3',
+    nullable: true,
+    description:
+      'Latest fiscal_data tax_id, or the partner tax ID when receipts carry none',
+  })
+  tax_id: string | null;
+
+  @ApiProperty({ example: '76.111.222-3', nullable: true })
+  fiscal_tax_id: string | null;
+
+  @ApiProperty({ example: '77.890.123-4', nullable: true })
+  partner_tax_id: string | null;
+
+  @ApiProperty({
+    enum: PartnerAssociation,
+    example: PartnerAssociation.COMPANY,
+    description:
+      'company = supplier or customer associated to the company; merchant = branch-only customer',
+  })
+  association: PartnerAssociation;
+
+  @ApiProperty({ example: 9, nullable: true })
+  partner_company_id: number | null;
+
+  @ApiProperty({
+    example: 1,
+    nullable: true,
+    description: 'Merchant that registered the customer (null for suppliers)',
+  })
+  partner_merchant_id: number | null;
+
+  @ApiProperty({ example: 8, description: 'Active receipts of the partner' })
+  invoice_count: number;
+
+  @ApiProperty({
+    example: 3,
+    description: 'Receipts explicitly linked to the partner',
+  })
+  linked_invoice_count: number;
+
+  @ApiProperty({ example: 4520.4, description: 'Sum of grand_total' })
+  total_volume: number;
+
+  @ApiProperty({
+    example: 310.0,
+    description: 'Balance due on the distinct orders behind the receipts',
+  })
+  outstanding_balance: number;
+
+  @ApiProperty({ example: 'USD' })
+  currency: string;
+
+  @ApiProperty({
+    example: 2,
+    description: 'Merchants (branches) that billed the partner',
+  })
+  merchant_count: number;
+
+  @ApiProperty({ example: '2026-11-20T15:00:00.000Z', nullable: true })
+  last_invoice_at: Date | null;
+}
+
+export class PartnerGroupsSummaryDto {
+  @ApiProperty({ example: 25 })
+  partners: number;
+
+  @ApiProperty({ example: 140 })
+  invoices: number;
+
+  @ApiProperty({ example: 98230.15 })
+  total_volume: number;
+}
+
+export class PaginatedPartnerGroupsDto extends SuccessResponse {
+  @ApiProperty({ type: () => [PartnerGroupDto] })
+  data: PartnerGroupDto[];
+
+  @ApiProperty({ type: () => PartnerGroupsSummaryDto })
+  summary: PartnerGroupsSummaryDto;
+
+  @ApiProperty({ example: 1 })
+  page: number;
+
+  @ApiProperty({ example: 10 })
+  limit: number;
+
+  @ApiProperty({ example: 25 })
+  total: number;
+
+  @ApiProperty({ example: 3 })
+  totalPages: number;
+
+  @ApiProperty({ example: true })
+  hasNext: boolean;
+
+  @ApiProperty({ example: false })
+  hasPrev: boolean;
+}
+
+export class CompanyMerchantDto {
+  @ApiProperty({ example: 4 })
+  id: number;
+
+  @ApiProperty({ example: 'Downtown Branch' })
+  name: string;
+
+  @ApiProperty({
+    example: true,
+    description:
+      'Merchant of the session: only its receipts can be linked / unlinked',
+  })
+  is_current: boolean;
+}
+
+export class CompanyMerchantsResponseDto extends SuccessResponse {
+  @ApiProperty({ type: () => [CompanyMerchantDto] })
+  data: CompanyMerchantDto[];
 }

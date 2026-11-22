@@ -15,6 +15,8 @@ import { Supplier } from 'src/core/business-partners/suppliers/entities/supplier
 import { Merchant } from 'src/platform-saas/merchants/entities/merchant.entity';
 
 import {
+  PartnerAssociation,
+  PartnerGroupSortBy,
   PartnerLinkSource,
   PartnerLinkState,
   PartnerSyncScope,
@@ -23,13 +25,18 @@ import {
 import {
   PartnerOptionsQueryDto,
   PartnerSyncMetricsQueryDto,
+  PartnerSyncPartnerFilterQueryDto,
+  PartnerSyncPartnersQueryDto,
   PartnerSyncReceiptsQueryDto,
   PartnerSyncScopeQueryDto,
 } from './dto/partner-sync-query.dto';
 import { LinkReceiptPartnerDto } from './dto/link-receipt-partner.dto';
 import {
+  CompanyMerchantsResponseDto,
   OnePartnerSyncReceiptResponseDto,
+  PaginatedPartnerGroupsDto,
   PaginatedPartnerSyncReceiptsDto,
+  PartnerGroupDto,
   PartnerOptionDto,
   PartnerOptionsResponseDto,
   PartnerSyncMetricsResponseDto,
@@ -41,7 +48,9 @@ import {
   EXPLICIT_LINK_SQL,
   LINK_SOURCE_SQL,
   NO_EXPLICIT_LINK_SQL,
+  PARTNER_COMPANY_ID_SQL,
   PARTNER_ID_SQL,
+  PARTNER_MERCHANT_ID_SQL,
   PARTNER_NAME_SQL,
   PARTNER_TAX_ID_SQL,
   PARTNER_TYPE_SQL,
@@ -82,6 +91,23 @@ interface RawReceiptRow {
   partner_name: string | null;
   partner_tax_id: string | null;
   link_source: PartnerLinkSource;
+}
+
+interface RawPartnerGroupRow {
+  partner_type: PartnerType;
+  partner_id: number | string;
+  partner_name: string | null;
+  partner_tax_id: string | null;
+  partner_company_id: number | string | null;
+  partner_merchant_id: number | string | null;
+  latest_fiscal_data: string | null;
+  invoice_count: string | number;
+  linked_invoice_count: string | number;
+  volume_cents: string | number;
+  outstanding_cents: string | number;
+  merchant_count: string | number;
+  last_invoice_at: Date | null;
+  currency: string | null;
 }
 
 interface RawReceiptMetrics {
@@ -569,7 +595,50 @@ export class BillingPartnerSyncService {
     };
   }
 
-  /** Filtros de la lista de recibos (búsqueda, estado del enlace y tipo). */
+  /**
+   * Filtros por socio y por asociación con la compañía (Historia 22), comunes al grid
+   * agrupado y a la lista de recibos:
+   * - customerId: cliente efectivo (enlace explícito o, sin enlace, cliente de la orden).
+   * - supplierId / partnerType: proveedor enlazado / tipo de socio.
+   * - association: company = proveedores y clientes con companyId; merchant = clientes de sucursal.
+   * - linkState / type: enlace explícito o heredado de la orden / INVOICE o RECEIPT.
+   */
+  applyPartnerFilters(
+    qb: SelectQueryBuilder<Receipt>,
+    query: PartnerSyncPartnerFilterQueryDto,
+  ): SelectQueryBuilder<Receipt> {
+    if (query.partnerType === PartnerType.CUSTOMER) {
+      qb.andWhere('r.supplier_id IS NULL');
+    } else if (query.partnerType === PartnerType.SUPPLIER) {
+      qb.andWhere('r.supplier_id IS NOT NULL');
+    }
+    if (query.customerId) {
+      qb.andWhere(`(${EFFECTIVE_CUSTOMER_SQL}) = :customerId`, {
+        customerId: query.customerId,
+      });
+    }
+    if (query.supplierId) {
+      qb.andWhere('r.supplier_id = :supplierId', {
+        supplierId: query.supplierId,
+      });
+    }
+    if (query.association === PartnerAssociation.COMPANY) {
+      qb.andWhere(`(${PARTNER_COMPANY_ID_SQL}) IS NOT NULL`);
+    } else if (query.association === PartnerAssociation.MERCHANT) {
+      qb.andWhere(`(${PARTNER_COMPANY_ID_SQL}) IS NULL`);
+    }
+    if (query.linkState === PartnerLinkState.LINKED) {
+      qb.andWhere(EXPLICIT_LINK_SQL);
+    } else if (query.linkState === PartnerLinkState.UNLINKED) {
+      qb.andWhere(NO_EXPLICIT_LINK_SQL);
+    }
+    if (query.type) {
+      qb.andWhere('r.type = :receiptType', { receiptType: query.type });
+    }
+    return qb;
+  }
+
+  /** Filtros de la lista de recibos: búsqueda por documento/socio + filtros por socio. */
   applyReceiptFilters(
     qb: SelectQueryBuilder<Receipt>,
     query: PartnerSyncReceiptsQueryDto,
@@ -587,15 +656,7 @@ export class BillingPartnerSyncService {
         },
       );
     }
-    if (query.linkState === PartnerLinkState.LINKED) {
-      qb.andWhere(EXPLICIT_LINK_SQL);
-    } else if (query.linkState === PartnerLinkState.UNLINKED) {
-      qb.andWhere(NO_EXPLICIT_LINK_SQL);
-    }
-    if (query.type) {
-      qb.andWhere('r.type = :receiptType', { receiptType: query.type });
-    }
-    return qb;
+    return this.applyPartnerFilters(qb, query);
   }
 
   async findReceipts(
@@ -645,5 +706,187 @@ export class BillingPartnerSyncService {
     ).getRawOne<RawReceiptRow>();
     if (!row) throw new NotFoundException('Receipt not found');
     return this.toReceiptDto(row);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Historia 22: grid de recibos agrupados por cliente / proveedor
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Recibos activos agrupados por socio efectivo: nombre, tax ID (fiscal_data o el del socio),
+   * volumen total, conteo de facturas, saldo pendiente y sucursales que lo facturaron.
+   * Los filtros (cliente, proveedor, asociación con la compañía, alcance y sucursal) se aplican
+   * sobre los recibos antes de agrupar; la búsqueda solo mira datos del socio, así los totales
+   * de cada grupo nunca quedan parciales.
+   */
+  async findPartnerGroups(
+    merchantId: number,
+    query: PartnerSyncPartnersQueryDto = {},
+  ): Promise<PaginatedPartnerGroupsDto> {
+    const ctx = await this.resolveScope(merchantId, query);
+    const page = query.page ?? 1;
+    const limit = Math.min(query.limit ?? DEFAULT_PAGE_SIZE, 100);
+
+    const qb = this.applyPartnerFilters(this.receiptsQuery(ctx), query);
+    const term = query.search?.trim();
+    if (term) {
+      const exactId = /^\d+$/.test(term) ? Number(term) : null;
+      qb.andWhere(
+        `((${PARTNER_NAME_SQL}) ILIKE :partnerSearch OR (${PARTNER_TAX_ID_SQL}) ILIKE :partnerSearch${
+          exactId != null ? ` OR (${PARTNER_ID_SQL}) = :partnerSearchId` : ''
+        })`,
+        {
+          partnerSearch: `%${escapeLike(term)}%`,
+          ...(exactId != null ? { partnerSearchId: exactId } : {}),
+        },
+      );
+    }
+
+    qb.select(PARTNER_TYPE_SQL, 'partner_type')
+      .addSelect(PARTNER_ID_SQL, 'partner_id')
+      .addSelect(`MAX(${PARTNER_NAME_SQL})`, 'partner_name')
+      .addSelect(`MAX(${PARTNER_TAX_ID_SQL})`, 'partner_tax_id')
+      .addSelect(`MAX(${PARTNER_COMPANY_ID_SQL})`, 'partner_company_id')
+      .addSelect(`MAX(${PARTNER_MERCHANT_ID_SQL})`, 'partner_merchant_id')
+      .addSelect(
+        '(ARRAY_AGG(r.fiscal_data ORDER BY r.created_at DESC) FILTER (WHERE r.fiscal_data IS NOT NULL))[1]',
+        'latest_fiscal_data',
+      )
+      .addSelect('COUNT(r.id)', 'invoice_count')
+      .addSelect(
+        `COUNT(r.id) FILTER (WHERE ${EXPLICIT_LINK_SQL})`,
+        'linked_invoice_count',
+      )
+      .addSelect('COALESCE(SUM(ROUND(r.grand_total * 100)), 0)', 'volume_cents')
+      // Saldo de las órdenes distintas del grupo (una orden con recibo y factura cuenta una vez).
+      .addSelect(
+        '(SELECT COALESCE(SUM(ROUND(GREATEST(ob.balance_due, 0) * 100)), 0) FROM orders ob WHERE ob.id = ANY(ARRAY_AGG(DISTINCT r.order_id)))',
+        'outstanding_cents',
+      )
+      .addSelect('COUNT(DISTINCT r.merchant_id)', 'merchant_count')
+      .addSelect('MAX(r.created_at)', 'last_invoice_at')
+      .addSelect('MODE() WITHIN GROUP (ORDER BY r.currency)', 'currency')
+      .groupBy(PARTNER_TYPE_SQL)
+      .addGroupBy(PARTNER_ID_SQL);
+
+    // Total de grupos y resumen del filtro completo (antes de ordenar y paginar).
+    const [groupedSql, groupedParams] = qb.getQueryAndParameters();
+    const summaryRows = (await this.receiptRepo.query(
+      `SELECT COUNT(*) AS partners, COALESCE(SUM(g.invoice_count), 0) AS invoices, COALESCE(SUM(g.volume_cents), 0) AS volume_cents FROM (${groupedSql}) g`,
+      groupedParams,
+    )) as Array<{
+      partners: string | number;
+      invoices: string | number;
+      volume_cents: string | number;
+    }>;
+    const summary = summaryRows?.[0];
+    const total = toInt(summary?.partners);
+
+    const order = query.sortOrder === 'ASC' ? 'ASC' : 'DESC';
+    const sortColumn = {
+      [PartnerGroupSortBy.VOLUME]: 'volume_cents',
+      [PartnerGroupSortBy.INVOICES]: 'invoice_count',
+      [PartnerGroupSortBy.NAME]: 'partner_name',
+      [PartnerGroupSortBy.LAST_INVOICE]: 'last_invoice_at',
+    }[query.sortBy ?? PartnerGroupSortBy.VOLUME];
+    const rows = await qb
+      .orderBy(sortColumn, order)
+      .addOrderBy('partner_type', 'ASC')
+      .addOrderBy('partner_id', 'ASC')
+      .offset((page - 1) * limit)
+      .limit(limit)
+      .getRawMany<RawPartnerGroupRow>();
+
+    const totalPages = Math.ceil(total / limit);
+    return {
+      statusCode: 200,
+      message: 'Partner billing groups retrieved successfully',
+      data: rows.map((row) => this.toPartnerGroupDto(row)),
+      summary: {
+        partners: total,
+        invoices: toInt(summary?.invoices),
+        total_volume: fromCents(toInt(summary?.volume_cents)),
+      },
+      page,
+      limit,
+      total,
+      totalPages,
+      hasNext: page < totalPages,
+      hasPrev: page > 1,
+    };
+  }
+
+  toPartnerGroupDto(row: RawPartnerGroupRow): PartnerGroupDto {
+    const partnerId = toInt(row.partner_id);
+    const fiscalTaxId = extractFiscalTaxId(row.latest_fiscal_data);
+    const partnerTaxId = row.partner_tax_id ?? null;
+    const companyId =
+      row.partner_company_id == null ? null : toInt(row.partner_company_id);
+    return {
+      partner_type: row.partner_type,
+      partner_id: partnerId,
+      name: row.partner_name ?? `#${partnerId}`,
+      tax_id: fiscalTaxId ?? partnerTaxId,
+      fiscal_tax_id: fiscalTaxId,
+      partner_tax_id: partnerTaxId,
+      association:
+        row.partner_type === PartnerType.SUPPLIER || companyId != null
+          ? PartnerAssociation.COMPANY
+          : PartnerAssociation.MERCHANT,
+      partner_company_id: companyId,
+      partner_merchant_id:
+        row.partner_merchant_id == null ? null : toInt(row.partner_merchant_id),
+      invoice_count: toInt(row.invoice_count),
+      linked_invoice_count: toInt(row.linked_invoice_count),
+      total_volume: fromCents(toInt(row.volume_cents)),
+      outstanding_balance: fromCents(toInt(row.outstanding_cents)),
+      currency: row.currency || 'USD',
+      merchant_count: toInt(row.merchant_count),
+      last_invoice_at: row.last_invoice_at ?? null,
+    };
+  }
+
+  /**
+   * Reasignación rápida: quita el enlace explícito del recibo, que vuelve a pertenecer al
+   * cliente de su orden. Mismas validaciones que el enlace (merchant, bloqueo fiscal).
+   */
+  async unlinkReceipt(
+    receiptId: number,
+    merchantId: number,
+  ): Promise<OnePartnerSyncReceiptResponseDto> {
+    const receipt = await this.findLinkableReceipt(receiptId, merchantId);
+    if (receipt.customer_id != null || receipt.supplier_id != null) {
+      await this.receiptRepo.update(
+        { id: receipt.id },
+        { customer_id: null, supplier_id: null },
+      );
+    }
+    return {
+      statusCode: 200,
+      message: 'Receipt partner link removed successfully',
+      data: await this.findReceiptRow(receipt.id, merchantId),
+    };
+  }
+
+  /** Sucursales de la compañía del merchant (filtro de asociaciones de compañía). */
+  async getCompanyMerchants(
+    merchantId: number,
+  ): Promise<CompanyMerchantsResponseDto> {
+    this.assertMerchant(merchantId);
+    const companyId = await this.getCompanyId(merchantId);
+    const merchants = await this.merchantRepo.find({
+      where: { companyId },
+      select: { id: true, name: true },
+      order: { name: 'ASC' },
+    });
+    return {
+      statusCode: 200,
+      message: 'Company merchants retrieved successfully',
+      data: merchants.map((m) => ({
+        id: m.id,
+        name: m.name,
+        is_current: m.id === merchantId,
+      })),
+    };
   }
 }
