@@ -20,6 +20,7 @@ import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-f
 import { ReceiptTaxService } from './receipt-tax.service';
 import { CreateReceiptTaxDto } from './dto/create-receipt-tax.dto';
 import { UpdateReceiptTaxDto } from './dto/update-receipt-tax.dto';
+import { UpdateReceiptTaxStatusDto } from './dto/update-receipt-tax-status.dto';
 import {
   GetReceiptTaxesQueryDto,
   ReceiptTaxSortBy,
@@ -42,6 +43,8 @@ import {
 import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
 import { OneReceiptTaxResponseDto } from './dto/receipt-tax-response.dto';
 import { AllPaginatedReceiptTaxes } from './dto/all-paginated-receipt-taxes.dto';
+import { GetReceiptTaxesSummaryQueryDto } from './dto/get-receipt-taxes-summary-query.dto';
+import { ReceiptTaxesSummaryResponseDto } from './dto/receipt-taxes-summary-response.dto';
 import { ErrorResponse } from 'src/common/dtos/error-response.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
@@ -85,7 +88,11 @@ export class ReceiptTaxController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ summary: 'Create a new receipt tax' })
+  @ApiOperation({
+    summary: 'Create a new receipt tax',
+    description:
+      'The amount is calculated by the server: ITEM scope → taxable base of the receipt item (subtotal − discount); RECEIPT scope → receipt subtotal. Rounded to the cent. The receipt totals are recalculated immediately.',
+  })
   @ApiBody({ type: CreateReceiptTaxDto })
   @ApiCreatedResponse({
     description: 'Receipt tax created',
@@ -123,6 +130,24 @@ export class ReceiptTaxController {
     enum: Object.values(ReceiptTaxScope),
   })
   @ApiQuery({ name: 'name', required: false, type: String })
+  @ApiQuery({
+    name: 'taxName',
+    required: false,
+    type: String,
+    description: 'Tax type: exact tax name (case-insensitive)',
+  })
+  @ApiQuery({
+    name: 'rate',
+    required: false,
+    type: Number,
+    description: 'Applied rate (exact percentage)',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['active', 'inactive', 'all'],
+    description: 'Defaults to active',
+  })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({
@@ -144,6 +169,44 @@ export class ReceiptTaxController {
   ): Promise<AllPaginatedReceiptTaxes> {
     const merchantId = this.merchantIdOf(req);
     return this.receiptTaxService.findAll(query, merchantId);
+  }
+
+  @Get('summary')
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
+  @Scopes(
+    Scope.MERCHANT_WEB,
+    Scope.MERCHANT_ANDROID,
+    Scope.MERCHANT_IOS,
+    Scope.MERCHANT_CLOVER,
+  )
+  @ApiOperation({
+    summary: 'Consolidated receipt tax metrics',
+    description:
+      'Counts (active/inactive), active tax charged per currency split by scope (RECEIPT vs ITEM), totals per tax type (name) and rate, and the tax types/rates available for filtering. Accepts the same filters as the list except status.',
+  })
+  @ApiQuery({ name: 'receiptId', required: false, type: Number })
+  @ApiQuery({ name: 'receiptItemId', required: false, type: Number })
+  @ApiQuery({
+    name: 'scope',
+    required: false,
+    enum: Object.values(ReceiptTaxScope),
+  })
+  @ApiQuery({ name: 'name', required: false, type: String })
+  @ApiQuery({ name: 'taxName', required: false, type: String })
+  @ApiQuery({ name: 'rate', required: false, type: Number })
+  @ApiOkResponse({
+    description: 'Receipt taxes summary',
+    type: ReceiptTaxesSummaryResponseDto,
+  })
+  @ApiBadRequestResponse({ description: 'Invalid query', type: ErrorResponse })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
+  @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorResponse })
+  async getSummary(
+    @Query() query: GetReceiptTaxesSummaryQueryDto,
+    @Request() req: ExpressRequest & { user?: AuthenticatedUser },
+  ): Promise<ReceiptTaxesSummaryResponseDto> {
+    const merchantId = this.merchantIdOf(req);
+    return this.receiptTaxService.getSummary(query, merchantId);
   }
 
   @Get(':id')
@@ -180,7 +243,11 @@ export class ReceiptTaxController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ summary: 'Update a receipt tax (name, rate, amount)' })
+  @ApiOperation({
+    summary: 'Update a receipt tax (name, rate, scope, item)',
+    description:
+      'The amount is recalculated by the server when rate, scope or item change, and the receipt totals are refreshed immediately. Inactive taxes must be activated before editing.',
+  })
   @ApiParam({ name: 'id', type: Number })
   @ApiBody({ type: UpdateReceiptTaxDto })
   @ApiOkResponse({
@@ -200,6 +267,38 @@ export class ReceiptTaxController {
     return this.receiptTaxService.update(id, dto, merchantId);
   }
 
+  @Patch(':id/status')
+  @Roles(UserRole.MERCHANT_ADMIN)
+  @Scopes(
+    Scope.MERCHANT_WEB,
+    Scope.MERCHANT_ANDROID,
+    Scope.MERCHANT_IOS,
+    Scope.MERCHANT_CLOVER,
+  )
+  @ApiOperation({
+    summary: 'Activate or deactivate a receipt tax',
+    description:
+      'Does not delete the record nor change its stored amount. Only active taxes count in the receipt totals, which are recalculated immediately.',
+  })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiBody({ type: UpdateReceiptTaxStatusDto })
+  @ApiOkResponse({
+    description: 'Receipt tax status updated',
+    type: OneReceiptTaxResponseDto,
+  })
+  @ApiBadRequestResponse({ description: 'Invalid data', type: ErrorResponse })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
+  @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorResponse })
+  @ApiNotFoundResponse({ description: 'Not found', type: ErrorResponse })
+  async updateStatus(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateReceiptTaxStatusDto,
+    @Request() req: ExpressRequest & { user?: AuthenticatedUser },
+  ): Promise<OneReceiptTaxResponseDto> {
+    const merchantId = this.merchantIdOf(req);
+    return this.receiptTaxService.updateStatus(id, dto, merchantId);
+  }
+
   @Delete(':id')
   @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
@@ -208,7 +307,9 @@ export class ReceiptTaxController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ summary: 'Delete a receipt tax' })
+  @ApiOperation({
+    summary: 'Delete a receipt tax (logical: same as deactivating it)',
+  })
   @ApiParam({ name: 'id', type: Number })
   @ApiOkResponse({
     description: 'Receipt tax deleted',
