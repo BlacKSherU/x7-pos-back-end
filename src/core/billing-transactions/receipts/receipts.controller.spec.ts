@@ -14,6 +14,7 @@ import {
 import { AllPaginatedReceipts } from './dto/all-paginated-receipts.dto';
 import { ForbiddenException } from '@nestjs/common';
 import { ReceiptType } from './constants/receipt-type.enum';
+import { ReceiptStatusFilter } from './constants/receipt-status-filter.enum';
 
 import { UserRole } from 'src/platform-saas/users/constants/role.enum';
 import { Scope } from 'src/platform-saas/users/constants/scope.enum';
@@ -28,7 +29,11 @@ describe('ReceiptsController', () => {
     findAll: jest.fn(),
     findOne: jest.fn(),
     update: jest.fn(),
+    updateStatus: jest.fn(),
     remove: jest.fn(),
+    getSummary: jest.fn(),
+    getDetails: jest.fn(),
+    getTaxBreakdown: jest.fn(),
   };
 
   const mockUser = {
@@ -57,6 +62,8 @@ describe('ReceiptsController', () => {
   const mockReceiptResponseData: ReceiptResponseDto = {
     id: 1,
     order_id: 1,
+    merchant_id: 1,
+    invoice_number: 'INV-000001',
     type: ReceiptType.INVOICE,
     fiscal_data: '{"tax_id": "12345678", "fiscal_number": "ABC123"}',
     subtotal: 100.0,
@@ -64,6 +71,8 @@ describe('ReceiptsController', () => {
     total_discount: 0,
     grand_total: 119.0,
     currency: 'USD',
+    is_active: true,
+    is_locked: false,
     created_at: new Date('2024-01-15T08:00:00Z'),
     updated_at: new Date('2024-01-15T08:00:00Z'),
   };
@@ -479,6 +488,170 @@ describe('ReceiptsController', () => {
       await controller.remove(999, mockRequest as any);
 
       expect(removeSpy).toHaveBeenCalledWith(999, mockUser.merchant.id);
+    });
+  });
+
+  describe('PATCH /receipts/:id (Historia 18)', () => {
+    it('delegates partial updates (including invoiceNumber) to the service', async () => {
+      const dto: UpdateReceiptDto = { invoiceNumber: 'INV-000900' };
+      mockReceiptsService.update.mockResolvedValue({
+        ...mockOneReceiptResponse,
+        statusCode: 200,
+      });
+
+      await controller.patch(1, dto, mockRequest);
+
+      expect(service.update).toHaveBeenCalledWith(1, dto, 1);
+    });
+
+    it('rejects users without merchant', async () => {
+      const req = { user: { ...mockUser, merchant: undefined } } as any;
+      await expect(controller.patch(1, {}, req)).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(service.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('PATCH /receipts/:id/status (Historia 18)', () => {
+    it('logically deletes a receipt with isActive=false', async () => {
+      const response = {
+        statusCode: 200,
+        message: 'Receipt deactivated successfully',
+        data: { ...mockReceiptResponseData, is_active: false },
+      };
+      mockReceiptsService.updateStatus.mockResolvedValue(response);
+
+      const result = await controller.updateStatus(
+        1,
+        { isActive: false },
+        mockRequest,
+      );
+
+      expect(service.updateStatus).toHaveBeenCalledWith(
+        1,
+        { isActive: false },
+        1,
+      );
+      expect(result.data.is_active).toBe(false);
+    });
+
+    it('reactivates a receipt with isActive=true', async () => {
+      mockReceiptsService.updateStatus.mockResolvedValue({
+        statusCode: 200,
+        message: 'Receipt reactivated successfully',
+        data: mockReceiptResponseData,
+      });
+
+      await controller.updateStatus(2, { isActive: true }, mockRequest);
+
+      expect(service.updateStatus).toHaveBeenCalledWith(
+        2,
+        { isActive: true },
+        1,
+      );
+    });
+
+    it('rejects users without merchant', async () => {
+      const req = { user: { ...mockUser, merchant: undefined } } as any;
+      await expect(
+        controller.updateStatus(1, { isActive: false }, req),
+      ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('GET /receipts/summary (Historia 19)', () => {
+    it('returns the KPIs of the authenticated merchant', async () => {
+      const summary = {
+        statusCode: 200,
+        message: 'Receipts summary retrieved successfully',
+        data: { total_receipts: 3, grand_total: 120.5 },
+      };
+      mockReceiptsService.getSummary.mockResolvedValue(summary);
+
+      const result = await controller.getSummary(
+        { status: ReceiptStatusFilter.ACTIVE },
+        mockRequest,
+      );
+
+      expect(service.getSummary).toHaveBeenCalledWith(
+        { status: ReceiptStatusFilter.ACTIVE },
+        1,
+      );
+      expect(result).toBe(summary);
+    });
+
+    it('rejects users without merchant', async () => {
+      const req = { user: { ...mockUser, merchant: undefined } } as any;
+      await expect(controller.getSummary({}, req)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('is registered before GET :id so "summary" is not parsed as an id', () => {
+      const routes = Object.getOwnPropertyNames(ReceiptsController.prototype);
+      expect(routes.indexOf('getSummary')).toBeLessThan(
+        routes.indexOf('findOne'),
+      );
+    });
+  });
+
+  describe('GET /receipts/:id/details (Historia 13)', () => {
+    it('returns the items and tax lines of the receipt for the authenticated merchant', async () => {
+      const details = {
+        statusCode: 200,
+        message: 'Receipt details retrieved successfully',
+        data: { receipt: { id: 5 }, items: [], taxes: [] },
+      };
+      mockReceiptsService.getDetails.mockResolvedValue(details);
+
+      const result = await controller.getDetails(5, mockRequest);
+
+      expect(service.getDetails).toHaveBeenCalledWith(5, 1);
+      expect(result).toBe(details);
+    });
+
+    it('rejects users without merchant', async () => {
+      const req = { user: { ...mockUser, merchant: undefined } } as any;
+      await expect(controller.getDetails(5, req)).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(service.getDetails).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('GET /receipts/tax-breakdown (Historia 13)', () => {
+    it('passes status and date range to the service', async () => {
+      const breakdown = {
+        statusCode: 200,
+        message: 'Receipt tax breakdown retrieved successfully',
+        data: { by_tax: [], by_currency: [] },
+      };
+      mockReceiptsService.getTaxBreakdown.mockResolvedValue(breakdown);
+      const query = {
+        status: ReceiptStatusFilter.ACTIVE,
+        dateFrom: '2026-11-01',
+        dateTo: '2026-11-30',
+      };
+
+      const result = await controller.getTaxBreakdown(query, mockRequest);
+
+      expect(service.getTaxBreakdown).toHaveBeenCalledWith(query, 1);
+      expect(result).toBe(breakdown);
+    });
+
+    it('rejects users without merchant', async () => {
+      const req = { user: { ...mockUser, merchant: undefined } } as any;
+      await expect(controller.getTaxBreakdown({}, req)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('is registered before GET :id so "tax-breakdown" is not parsed as an id', () => {
+      const routes = Object.getOwnPropertyNames(ReceiptsController.prototype);
+      expect(routes.indexOf('getTaxBreakdown')).toBeLessThan(
+        routes.indexOf('findOne'),
+      );
     });
   });
 });

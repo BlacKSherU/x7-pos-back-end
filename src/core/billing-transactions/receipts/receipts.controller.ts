@@ -10,6 +10,7 @@ import {
   Request,
   ParseIntPipe,
   Put,
+  Patch,
   ForbiddenException,
 } from '@nestjs/common';
 import { Request as ExpressRequest } from 'express';
@@ -20,6 +21,8 @@ import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-f
 import { ReceiptsService } from './receipts.service';
 import { CreateReceiptDto } from './dto/create-receipt.dto';
 import { UpdateReceiptDto } from './dto/update-receipt.dto';
+import { UpdateReceiptStatusDto } from './dto/update-receipt-status.dto';
+import { ReceiptStatusFilter } from './constants/receipt-status-filter.enum';
 import {
   GetReceiptsQueryDto,
   ReceiptSortBy,
@@ -43,6 +46,10 @@ import {
 import { AuthenticatedUser } from '../../../auth/interfaces/authenticated-user.interface';
 import { OneReceiptResponseDto } from './dto/receipt-response.dto';
 import { AllPaginatedReceipts } from './dto/all-paginated-receipts.dto';
+import { GetReceiptsSummaryQueryDto } from './dto/get-receipts-summary-query.dto';
+import { ReceiptSummaryResponseDto } from './dto/receipt-summary-response.dto';
+import { ReceiptDetailsResponseDto } from './dto/receipt-details-response.dto';
+import { ReceiptTaxBreakdownResponseDto } from './dto/receipt-tax-breakdown-response.dto';
 import { ErrorResponse } from 'src/common/dtos/error-response.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
@@ -93,7 +100,8 @@ export class ReceiptsController {
   })
   @ApiBadRequestResponse({ description: 'Invalid data', type: ErrorResponse })
   @ApiConflictResponse({
-    description: 'Receipt already exists for this order and type',
+    description:
+      'Receipt already exists for this order and type, or the invoice number is already used by another receipt of the merchant',
     type: ErrorResponse,
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
@@ -115,9 +123,21 @@ export class ReceiptsController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ summary: 'Get all receipts' })
+  @ApiOperation({
+    summary: 'Get all receipts',
+    description:
+      'Paginated receipts of the merchant. `search` matches invoice_number or fiscal_data (case-insensitive, partial). `status` filters by is_active (active by default). `dateFrom` / `dateTo` (YYYY-MM-DD, inclusive) filter by creation date.',
+  })
   @ApiQuery({ name: 'orderId', required: false, type: Number })
   @ApiQuery({ name: 'type', required: false, type: String })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: Object.values(ReceiptStatusFilter),
+  })
+  @ApiQuery({ name: 'dateFrom', required: false, type: String })
+  @ApiQuery({ name: 'dateTo', required: false, type: String })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({
@@ -139,6 +159,80 @@ export class ReceiptsController {
   ): Promise<AllPaginatedReceipts> {
     const authenticatedUserMerchantId = this.merchantIdOf(req);
     return this.receiptsService.findAll(query, authenticatedUserMerchantId);
+  }
+
+  // Rutas estáticas antes de ':id' (si no, ParseIntPipe recibiría 'summary' o 'tax-breakdown').
+  @Get('summary')
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
+  @Scopes(
+    Scope.MERCHANT_WEB,
+    Scope.MERCHANT_ANDROID,
+    Scope.MERCHANT_IOS,
+    Scope.MERCHANT_CLOVER,
+  )
+  @ApiOperation({
+    summary: 'Receipts KPIs (Command Hub Header)',
+    description:
+      'Active / inactive / locked receipt counts and sums of grand_total, subtotal, taxes and discounts of the merchant, filtered by is_active (`status`, active by default) and creation date (`dateFrom` / `dateTo`, inclusive), with breakdowns by type and currency.',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: Object.values(ReceiptStatusFilter),
+  })
+  @ApiQuery({ name: 'dateFrom', required: false, type: String })
+  @ApiQuery({ name: 'dateTo', required: false, type: String })
+  @ApiOkResponse({
+    description: 'Receipts summary retrieved',
+    type: ReceiptSummaryResponseDto,
+  })
+  @ApiBadRequestResponse({ description: 'Invalid query', type: ErrorResponse })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
+  @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorResponse })
+  async getSummary(
+    @Query() query: GetReceiptsSummaryQueryDto,
+    @Request() req: ExpressRequest & { user?: AuthenticatedUser },
+  ): Promise<ReceiptSummaryResponseDto> {
+    const authenticatedUserMerchantId = this.merchantIdOf(req);
+    return this.receiptsService.getSummary(query, authenticatedUserMerchantId);
+  }
+
+  @Get('tax-breakdown')
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
+  @Scopes(
+    Scope.MERCHANT_WEB,
+    Scope.MERCHANT_ANDROID,
+    Scope.MERCHANT_IOS,
+    Scope.MERCHANT_CLOVER,
+  )
+  @ApiOperation({
+    summary: 'Tax collected per tax type (Tax Breakdown cards)',
+    description:
+      'Sum of the active tax lines of the merchant receipts grouped by tax name, rate and currency, filtered by is_active (`status`, active by default) and creation date (`dateFrom` / `dateTo`, inclusive).',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: Object.values(ReceiptStatusFilter),
+  })
+  @ApiQuery({ name: 'dateFrom', required: false, type: String })
+  @ApiQuery({ name: 'dateTo', required: false, type: String })
+  @ApiOkResponse({
+    description: 'Tax breakdown retrieved',
+    type: ReceiptTaxBreakdownResponseDto,
+  })
+  @ApiBadRequestResponse({ description: 'Invalid query', type: ErrorResponse })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
+  @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorResponse })
+  async getTaxBreakdown(
+    @Query() query: GetReceiptsSummaryQueryDto,
+    @Request() req: ExpressRequest & { user?: AuthenticatedUser },
+  ): Promise<ReceiptTaxBreakdownResponseDto> {
+    const authenticatedUserMerchantId = this.merchantIdOf(req);
+    return this.receiptsService.getTaxBreakdown(
+      query,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Get(':id')
@@ -167,6 +261,36 @@ export class ReceiptsController {
     return this.receiptsService.findOne(id, authenticatedUserMerchantId);
   }
 
+  @Get(':id/details')
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
+  @Scopes(
+    Scope.MERCHANT_WEB,
+    Scope.MERCHANT_ANDROID,
+    Scope.MERCHANT_IOS,
+    Scope.MERCHANT_CLOVER,
+  )
+  @ApiOperation({
+    summary: 'Receipt line items and tax lines (master-detail row)',
+    description:
+      'Active items (name, quantity, unit_price, total) and tax lines (name, rate, amount) of a receipt of the merchant, active or logically deleted.',
+  })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiOkResponse({
+    description: 'Receipt details retrieved',
+    type: ReceiptDetailsResponseDto,
+  })
+  @ApiBadRequestResponse({ description: 'Invalid id', type: ErrorResponse })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
+  @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorResponse })
+  @ApiNotFoundResponse({ description: 'Not found', type: ErrorResponse })
+  async getDetails(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: ExpressRequest & { user?: AuthenticatedUser },
+  ): Promise<ReceiptDetailsResponseDto> {
+    const authenticatedUserMerchantId = this.merchantIdOf(req);
+    return this.receiptsService.getDetails(id, authenticatedUserMerchantId);
+  }
+
   @Put(':id')
   @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
@@ -186,6 +310,11 @@ export class ReceiptsController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
   @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorResponse })
   @ApiNotFoundResponse({ description: 'Not found', type: ErrorResponse })
+  @ApiConflictResponse({
+    description:
+      'Invoice number already used by another receipt of the merchant',
+    type: ErrorResponse,
+  })
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateReceiptDto,
@@ -193,6 +322,78 @@ export class ReceiptsController {
   ): Promise<OneReceiptResponseDto> {
     const authenticatedUserMerchantId = this.merchantIdOf(req);
     return this.receiptsService.update(id, dto, authenticatedUserMerchantId);
+  }
+
+  @Patch(':id')
+  @Roles(UserRole.MERCHANT_ADMIN)
+  @Scopes(
+    Scope.MERCHANT_WEB,
+    Scope.MERCHANT_ANDROID,
+    Scope.MERCHANT_IOS,
+    Scope.MERCHANT_CLOVER,
+  )
+  @ApiOperation({
+    summary: 'Partially update a receipt',
+    description: 'Same contract as PUT: only the fields sent are changed.',
+  })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiBody({ type: UpdateReceiptDto })
+  @ApiOkResponse({
+    description: 'Receipt updated',
+    type: OneReceiptResponseDto,
+  })
+  @ApiBadRequestResponse({ description: 'Invalid data', type: ErrorResponse })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
+  @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorResponse })
+  @ApiNotFoundResponse({ description: 'Not found', type: ErrorResponse })
+  @ApiConflictResponse({
+    description:
+      'Invoice number already used by another receipt of the merchant',
+    type: ErrorResponse,
+  })
+  async patch(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateReceiptDto,
+    @Request() req: ExpressRequest & { user?: AuthenticatedUser },
+  ): Promise<OneReceiptResponseDto> {
+    const authenticatedUserMerchantId = this.merchantIdOf(req);
+    return this.receiptsService.update(id, dto, authenticatedUserMerchantId);
+  }
+
+  @Patch(':id/status')
+  @Roles(UserRole.MERCHANT_ADMIN)
+  @Scopes(
+    Scope.MERCHANT_WEB,
+    Scope.MERCHANT_ANDROID,
+    Scope.MERCHANT_IOS,
+    Scope.MERCHANT_CLOVER,
+  )
+  @ApiOperation({
+    summary: 'Change receipt status (logical delete / reactivate)',
+    description:
+      'isActive=false performs a logical deletion (the financial history is kept); isActive=true reactivates a logically deleted receipt.',
+  })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiBody({ type: UpdateReceiptStatusDto })
+  @ApiOkResponse({
+    description: 'Receipt status updated',
+    type: OneReceiptResponseDto,
+  })
+  @ApiBadRequestResponse({ description: 'Invalid data', type: ErrorResponse })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
+  @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorResponse })
+  @ApiNotFoundResponse({ description: 'Not found', type: ErrorResponse })
+  async updateStatus(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateReceiptStatusDto,
+    @Request() req: ExpressRequest & { user?: AuthenticatedUser },
+  ): Promise<OneReceiptResponseDto> {
+    const authenticatedUserMerchantId = this.merchantIdOf(req);
+    return this.receiptsService.updateStatus(
+      id,
+      dto,
+      authenticatedUserMerchantId,
+    );
   }
 
   @Delete(':id')

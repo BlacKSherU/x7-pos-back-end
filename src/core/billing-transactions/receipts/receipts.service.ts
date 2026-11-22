@@ -8,9 +8,19 @@ import {
   Inject,
 } from '@nestjs/common';
 import { InjectRepository, getRepositoryToken } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import {
+  FindOperator,
+  FindOptionsWhere,
+  ILike,
+  ObjectLiteral,
+  Raw,
+  Repository,
+  SelectQueryBuilder,
+} from 'typeorm';
 import { CreateReceiptDto } from './dto/create-receipt.dto';
 import { UpdateReceiptDto } from './dto/update-receipt.dto';
+import { UpdateReceiptStatusDto } from './dto/update-receipt-status.dto';
+import { ReceiptStatusFilter } from './constants/receipt-status-filter.enum';
 import {
   GetReceiptsQueryDto,
   ReceiptSortBy,
@@ -22,6 +32,22 @@ import {
   ReceiptResponseDto,
 } from './dto/receipt-response.dto';
 import { AllPaginatedReceipts } from './dto/all-paginated-receipts.dto';
+import { GetReceiptsSummaryQueryDto } from './dto/get-receipts-summary-query.dto';
+import {
+  ReceiptSummaryByCurrencyDto,
+  ReceiptSummaryResponseDto,
+} from './dto/receipt-summary-response.dto';
+import { ReceiptType } from './constants/receipt-type.enum';
+import {
+  ReceiptDetailItemDto,
+  ReceiptDetailTaxDto,
+  ReceiptDetailsResponseDto,
+} from './dto/receipt-details-response.dto';
+import {
+  ReceiptTaxBreakdownCurrencyDto,
+  ReceiptTaxBreakdownEntryDto,
+  ReceiptTaxBreakdownResponseDto,
+} from './dto/receipt-tax-breakdown-response.dto';
 
 import { ReceiptItem } from '../receipt-item/entities/receipt-item.entity';
 import { ReceiptTax } from '../receipt-tax/entities/receipt-tax.entity';
@@ -89,19 +115,30 @@ export class ReceiptsService {
       validateFiscalDataPayload(dto.fiscalData);
     }
 
-    const entity = this.receiptRepo.create({
-      order_id: dto.orderId,
-      merchant_id: order.merchant_id,
-      type: typeValue,
-      fiscal_data: dto.fiscalData ?? null,
-      subtotal: 0,
-      total_tax: 0,
-      total_discount: 0,
-      grand_total: 0,
-      currency: dto.currency,
-    });
+    // Número de factura único por merchant (índice merchant_id + invoice_number):
+    // uno manual se valida antes de guardar; si no llega, se asigna el siguiente INV-######.
+    const manualInvoiceNumber = this.normalizeInvoiceNumber(dto.invoiceNumber);
+    if (manualInvoiceNumber) {
+      await this.assertInvoiceNumberAvailable(
+        order.merchant_id,
+        manualInvoiceNumber,
+      );
+    }
 
-    const saved = await this.receiptRepo.save(entity);
+    const saved = await this.saveWithInvoiceNumber(
+      {
+        order_id: dto.orderId,
+        merchant_id: order.merchant_id,
+        type: typeValue,
+        fiscal_data: dto.fiscalData ?? null,
+        subtotal: 0,
+        total_tax: 0,
+        total_discount: 0,
+        grand_total: 0,
+        currency: dto.currency,
+      },
+      manualInvoiceNumber,
+    );
 
     return this.findOne(saved.id, authenticatedUserMerchantId, 'Created');
   }
@@ -119,6 +156,7 @@ export class ReceiptsService {
     if (page < 1) throw new BadRequestException('Page must be >= 1');
     if (limit < 1 || limit > 100)
       throw new BadRequestException('Limit must be between 1 and 100');
+    const range = resolveDateRange(query);
 
     if (query.orderId) {
       const order = await this.orderRepo.findOne({
@@ -131,47 +169,46 @@ export class ReceiptsService {
       }
     }
 
-    const where: any = { is_active: true };
+    // El recibo guarda su merchant_id: se filtra por él directamente en vez de
+    // cargar antes todas las órdenes del merchant.
+    const where: FindOptionsWhere<Receipt> = {
+      merchant_id: authenticatedUserMerchantId,
+    };
+    const status = query.status ?? ReceiptStatusFilter.ACTIVE;
+    if (status !== ReceiptStatusFilter.ALL) {
+      where.is_active = status === ReceiptStatusFilter.ACTIVE;
+    }
     if (query.orderId) where.order_id = query.orderId;
     if (query.type) where.type = query.type;
+    const createdAt = createdAtRange(range);
+    if (createdAt) where.created_at = createdAt;
 
-    const orderClause: any = {};
-    if (query.sortBy) {
-      const map: Record<ReceiptSortBy, string> = {
-        [ReceiptSortBy.CREATED_AT]: 'created_at',
-        [ReceiptSortBy.TYPE]: 'type',
-      };
-      orderClause[map[query.sortBy]] = query.sortOrder || 'DESC';
-    } else {
-      orderClause.created_at = 'DESC';
-    }
+    const sortColumns: Record<ReceiptSortBy, keyof Receipt> = {
+      [ReceiptSortBy.CREATED_AT]: 'created_at',
+      [ReceiptSortBy.TYPE]: 'type',
+      [ReceiptSortBy.INVOICE_NUMBER]: 'invoice_number',
+      [ReceiptSortBy.GRAND_TOTAL]: 'grand_total',
+    };
+    const sortOrder = query.sortBy ? query.sortOrder || 'DESC' : 'DESC';
+    const sortColumn = query.sortBy ? sortColumns[query.sortBy] : 'created_at';
+    // `id` desempata para que la paginación no repita ni salte filas.
+    const orderClause: Record<string, 'ASC' | 'DESC'> = {
+      [sortColumn]: sortOrder,
+      id: sortOrder,
+    };
 
-    if (!query.orderId) {
-      const merchantOrders = await this.orderRepo.find({
-        where: { merchant_id: authenticatedUserMerchantId },
-        select: ['id'],
-      });
-      const merchantOrderIds = merchantOrders.map((o) => o.id);
-
-      if (merchantOrderIds.length === 0) {
-        return {
-          statusCode: 200,
-          message: 'Receipts retrieved successfully',
-          data: [],
-          page,
-          limit,
-          total: 0,
-          totalPages: 0,
-          hasNext: false,
-          hasPrev: false,
-        } as AllPaginatedReceipts;
-      }
-
-      where.order_id = In(merchantOrderIds);
-    }
+    // Búsqueda alfanumérica (ILIKE, coincidencia parcial) en invoice_number o fiscal_data.
+    const term = query.search?.trim();
+    const whereClause: FindOptionsWhere<Receipt> | FindOptionsWhere<Receipt>[] =
+      term
+        ? [
+            { ...where, invoice_number: ILike(`%${escapeLike(term)}%`) },
+            { ...where, fiscal_data: ILike(`%${escapeLike(term)}%`) },
+          ]
+        : where;
 
     const [rows, total] = await this.receiptRepo.findAndCount({
-      where,
+      where: whereClause,
       order: orderClause,
       skip: (page - 1) * limit,
       take: limit,
@@ -179,19 +216,7 @@ export class ReceiptsService {
 
     const totalPages = Math.ceil(total / limit);
 
-    const data: ReceiptResponseDto[] = rows.map((r) => ({
-      id: r.id,
-      order_id: r.order_id,
-      type: r.type,
-      fiscal_data: r.fiscal_data ?? null,
-      subtotal: Number(r.subtotal),
-      total_tax: Number(r.total_tax),
-      total_discount: Number(r.total_discount),
-      grand_total: Number(r.grand_total),
-      currency: r.currency,
-      created_at: r.created_at,
-      updated_at: r.updated_at,
-    }));
+    const data: ReceiptResponseDto[] = rows.map((r) => this.toResponseDto(r));
 
     return {
       statusCode: 200,
@@ -230,19 +255,7 @@ export class ReceiptsService {
       );
     }
 
-    const dataForResponse: ReceiptResponseDto = {
-      id: row.id,
-      order_id: row.order_id,
-      type: row.type,
-      fiscal_data: row.fiscal_data ?? null,
-      subtotal: Number(row.subtotal),
-      total_tax: Number(row.total_tax),
-      total_discount: Number(row.total_discount),
-      grand_total: Number(row.grand_total),
-      currency: row.currency,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
-    };
+    const dataForResponse = this.toResponseDto(row);
 
     switch (createdUpdatedDeleted) {
       case 'Created':
@@ -319,8 +332,29 @@ export class ReceiptsService {
       updateData.fiscal_data = dto.fiscalData ?? null;
     }
     if (dto.currency !== undefined) updateData.currency = dto.currency;
+    if (dto.invoiceNumber !== undefined) {
+      const invoiceNumber = this.normalizeInvoiceNumber(dto.invoiceNumber);
+      if (!invoiceNumber) {
+        throw new BadRequestException('invoiceNumber must not be blank');
+      }
+      if (invoiceNumber !== existing.invoice_number) {
+        await this.assertInvoiceNumberAvailable(
+          existing.merchant_id,
+          invoiceNumber,
+          id,
+        );
+      }
+      updateData.invoice_number = invoiceNumber;
+    }
 
-    await this.receiptRepo.update(id, updateData);
+    try {
+      await this.receiptRepo.update(id, updateData);
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        throw this.invoiceNumberConflict(String(updateData.invoice_number));
+      }
+      throw error;
+    }
     await this.recalculateTotals(id);
 
     return this.findOne(id, authenticatedUserMerchantId, 'Updated');
@@ -353,19 +387,10 @@ export class ReceiptsService {
 
     await this.receiptRepo.update(id, { is_active: false });
 
-    const dataForResponse: ReceiptResponseDto = {
-      id: existing.id,
-      order_id: existing.order_id,
-      type: existing.type,
-      fiscal_data: existing.fiscal_data ?? null,
-      subtotal: Number(existing.subtotal),
-      total_tax: Number(existing.total_tax),
-      total_discount: Number(existing.total_discount),
-      grand_total: Number(existing.grand_total),
-      currency: existing.currency,
-      created_at: existing.created_at,
-      updated_at: existing.updated_at,
-    };
+    const dataForResponse = this.toResponseDto({
+      ...existing,
+      is_active: false,
+    });
 
     return {
       statusCode: 200,
@@ -374,22 +399,536 @@ export class ReceiptsService {
     };
   }
 
-  async generateInvoiceNumber(merchantId: number): Promise<string> {
-    const lastReceipt = await this.receiptRepo.findOne({
-      where: { merchant_id: merchantId },
-      order: { id: 'DESC' },
-    });
+  /**
+   * Baja lógica (isActive = false) o reactivación (isActive = true) de un recibo.
+   * Busca el recibo en cualquier estado para poder reactivar los dados de baja; el
+   * histórico financiero (montos, items e impuestos) no se toca.
+   */
+  async updateStatus(
+    id: number,
+    dto: UpdateReceiptStatusDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneReceiptResponseDto> {
+    const existing = await this.findOwnedReceipt(
+      id,
+      authenticatedUserMerchantId,
+    );
 
-    if (!lastReceipt || !lastReceipt.invoice_number) {
-      return 'INV-000001';
+    if (existing.is_active !== dto.isActive) {
+      await this.receiptRepo.update(id, { is_active: dto.isActive });
     }
 
-    const lastNumber = lastReceipt.invoice_number;
+    const updated =
+      (await this.receiptRepo.findOne({ where: { id } })) ??
+      ({ ...existing, is_active: dto.isActive } as Receipt);
 
-    const numericPart = Number(lastNumber.replace('INV-', ''));
-
-    const nextNumber = numericPart + 1;
-
-    return `INV-${nextNumber.toString().padStart(6, '0')}`;
+    return {
+      statusCode: 200,
+      message: dto.isActive
+        ? 'Receipt reactivated successfully'
+        : 'Receipt deactivated successfully',
+      data: this.toResponseDto(updated),
+    };
   }
+
+  /**
+   * KPIs del módulo Receipts (Command Hub Header): conteo de recibos activos / dados de baja
+   * / bloqueados y sumas de grand_total, subtotal, impuestos y descuentos del merchant,
+   * filtradas por is_active (`status`, activos por defecto). Los importes se suman en
+   * centavos enteros y se expresan en la moneda con más recibos; el resto va en by_currency.
+   */
+  async getSummary(
+    query: GetReceiptsSummaryQueryDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<ReceiptSummaryResponseDto> {
+    if (!authenticatedUserMerchantId) {
+      throw new ForbiddenException('You must be associated with a merchant');
+    }
+    const status = query.status ?? ReceiptStatusFilter.ACTIVE;
+    const range = resolveDateRange(query);
+
+    const qb = this.receiptRepo
+      .createQueryBuilder('r')
+      .select('r.type', 'type')
+      .addSelect('r.currency', 'currency')
+      .addSelect('r.is_active', 'is_active')
+      .addSelect('COALESCE(r.is_locked, false)', 'is_locked')
+      .addSelect('COUNT(r.id)', 'receipts')
+      .addSelect('COALESCE(SUM(r.subtotal), 0)', 'subtotal')
+      .addSelect('COALESCE(SUM(r.total_tax), 0)', 'total_tax')
+      .addSelect('COALESCE(SUM(r.total_discount), 0)', 'total_discount')
+      .addSelect('COALESCE(SUM(r.grand_total), 0)', 'grand_total')
+      .where('r.merchant_id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
+      .groupBy('r.type')
+      .addGroupBy('r.currency')
+      .addGroupBy('r.is_active')
+      .addGroupBy('COALESCE(r.is_locked, false)');
+    applyCreatedAtRange(qb, 'r', range);
+
+    const rows = (await qb.getRawMany<RawSummaryRow>()).map((row) => ({
+      type: row.type,
+      currency: (row.currency || 'USD').toUpperCase(),
+      isActive: toBoolean(row.is_active),
+      isLocked: toBoolean(row.is_locked),
+      receipts: Number(row.receipts) || 0,
+      subtotal: toCents(row.subtotal),
+      totalTax: toCents(row.total_tax),
+      totalDiscount: toCents(row.total_discount),
+      grandTotal: toCents(row.grand_total),
+    }));
+
+    const matching = rows.filter(
+      (row) =>
+        status === ReceiptStatusFilter.ALL ||
+        row.isActive === (status === ReceiptStatusFilter.ACTIVE),
+    );
+    const count = (list: typeof rows) =>
+      list.reduce((sum, row) => sum + row.receipts, 0);
+
+    // Totales por moneda (centavos) y moneda principal = la de más recibos.
+    const currencies = new Map<
+      string,
+      { receipts: number; grandTotal: number; totalTax: number }
+    >();
+    for (const row of matching) {
+      const acc = currencies.get(row.currency) ?? {
+        receipts: 0,
+        grandTotal: 0,
+        totalTax: 0,
+      };
+      acc.receipts += row.receipts;
+      acc.grandTotal += row.grandTotal;
+      acc.totalTax += row.totalTax;
+      currencies.set(row.currency, acc);
+    }
+    const byCurrency: ReceiptSummaryByCurrencyDto[] = [...currencies.entries()]
+      .sort(
+        ([codeA, a], [codeB, b]) =>
+          b.receipts - a.receipts || codeA.localeCompare(codeB),
+      )
+      .map(([currency, acc]) => ({
+        currency,
+        receipts: acc.receipts,
+        grand_total: fromCents(acc.grandTotal),
+        total_tax: fromCents(acc.totalTax),
+      }));
+    const currency = byCurrency[0]?.currency ?? 'USD';
+    const inCurrency = matching.filter((row) => row.currency === currency);
+    const sumCents = (
+      key: 'subtotal' | 'totalTax' | 'totalDiscount' | 'grandTotal',
+    ) => inCurrency.reduce((sum, row) => sum + row[key], 0);
+    const currencyReceipts = count(inCurrency);
+    const grandTotalCents = sumCents('grandTotal');
+
+    return {
+      statusCode: 200,
+      message: 'Receipts summary retrieved successfully',
+      data: {
+        status,
+        date_from: range.from ?? null,
+        date_to: range.to ?? null,
+        total_receipts: count(matching),
+        active_receipts: count(rows.filter((row) => row.isActive)),
+        inactive_receipts: count(rows.filter((row) => !row.isActive)),
+        locked_receipts: count(matching.filter((row) => row.isLocked)),
+        currency,
+        grand_total: fromCents(grandTotalCents),
+        subtotal: fromCents(sumCents('subtotal')),
+        total_tax: fromCents(sumCents('totalTax')),
+        total_discount: fromCents(sumCents('totalDiscount')),
+        average_ticket: currencyReceipts
+          ? fromCents(Math.round(grandTotalCents / currencyReceipts))
+          : 0,
+        by_type: Object.values(ReceiptType).map((type) => {
+          const ofType = matching.filter((row) => row.type === type);
+          return {
+            type,
+            receipts: count(ofType),
+            grand_total: fromCents(
+              ofType
+                .filter((row) => row.currency === currency)
+                .reduce((sum, row) => sum + row.grandTotal, 0),
+            ),
+          };
+        }),
+        by_currency: byCurrency,
+      },
+    };
+  }
+
+  /**
+   * Detalle maestro-detalle de un recibo del merchant (activo o dado de baja): sus líneas
+   * (name, quantity, unit_price, total…) e impuestos (name, rate, amount) activos. Lo carga
+   * la tabla de Receipts al expandir una fila. Solo lee de receipt_items / receipt_taxes.
+   */
+  async getDetails(
+    id: number,
+    authenticatedUserMerchantId: number,
+  ): Promise<ReceiptDetailsResponseDto> {
+    const receipt = await this.findOwnedReceipt(
+      id,
+      authenticatedUserMerchantId,
+    );
+
+    const [itemRows, taxRows] = await Promise.all([
+      this.receiptItemRepo.find({
+        where: { receipt_id: id, is_active: true },
+        order: { id: 'ASC' },
+      }),
+      this.receiptTaxRepo.find({
+        where: { receipt_id: id, is_active: true },
+        order: { id: 'ASC' },
+      }),
+    ]);
+
+    const items: ReceiptDetailItemDto[] = itemRows.map((item) => ({
+      id: item.id,
+      name: item.name,
+      sku: item.sku ?? null,
+      quantity: Number(item.quantity ?? 0),
+      unit_price: Number(item.unit_price ?? 0),
+      subtotal: Number(item.subtotal ?? 0),
+      discount_amount: Number(item.discount_amount ?? 0),
+      total: Number(item.total ?? 0),
+    }));
+    const taxes: ReceiptDetailTaxDto[] = taxRows.map((tax) => ({
+      id: tax.id,
+      receipt_item_id: tax.receipt_item_id ?? null,
+      name: tax.name,
+      rate: Number(tax.rate ?? 0),
+      amount: Number(tax.amount ?? 0),
+      scope: tax.scope,
+    }));
+
+    return {
+      statusCode: 200,
+      message: 'Receipt details retrieved successfully',
+      data: {
+        receipt: this.toResponseDto(receipt),
+        items,
+        taxes,
+        items_total: fromCents(
+          itemRows.reduce((sum, item) => sum + toCents(item.total), 0),
+        ),
+        taxes_total: fromCents(
+          taxRows.reduce((sum, tax) => sum + toCents(tax.amount), 0),
+        ),
+      },
+    };
+  }
+
+  /**
+   * Desglose de impuestos cobrados (tarjetas del Tax Breakdown): suma de las líneas de
+   * impuesto activas por nombre + tasa y moneda, de los recibos del merchant filtrados por
+   * is_active (`status`, activos por defecto) y por el rango de fechas de creación.
+   */
+  async getTaxBreakdown(
+    query: GetReceiptsSummaryQueryDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<ReceiptTaxBreakdownResponseDto> {
+    if (!authenticatedUserMerchantId) {
+      throw new ForbiddenException('You must be associated with a merchant');
+    }
+    const status = query.status ?? ReceiptStatusFilter.ACTIVE;
+    const range = resolveDateRange(query);
+    const currencyExpr = "UPPER(COALESCE(r.currency, 'USD'))";
+
+    const qb = this.receiptTaxRepo
+      .createQueryBuilder('t')
+      .innerJoin('t.receipt', 'r')
+      .select('t.name', 'name')
+      .addSelect('t.rate', 'rate')
+      .addSelect(currencyExpr, 'currency')
+      .addSelect('COALESCE(SUM(t.amount), 0)', 'total_amount')
+      .addSelect('COUNT(t.id)', 'tax_lines')
+      .addSelect('COUNT(DISTINCT t.receipt_id)', 'receipts')
+      .where('r.merchant_id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
+      .andWhere('t.is_active = :taxActive', { taxActive: true })
+      .groupBy('t.name')
+      .addGroupBy('t.rate')
+      .addGroupBy(currencyExpr);
+    if (status !== ReceiptStatusFilter.ALL) {
+      qb.andWhere('r.is_active = :receiptActive', {
+        receiptActive: status === ReceiptStatusFilter.ACTIVE,
+      });
+    }
+    applyCreatedAtRange(qb, 'r', range);
+
+    const rows = (await qb.getRawMany<RawTaxBreakdownRow>()).map((row) => ({
+      name: row.name,
+      rate: Number(row.rate) || 0,
+      currency: row.currency || 'USD',
+      cents: toCents(row.total_amount),
+      taxLines: Number(row.tax_lines) || 0,
+      receipts: Number(row.receipts) || 0,
+    }));
+
+    const byTax: ReceiptTaxBreakdownEntryDto[] = [...rows]
+      .sort(
+        (a, b) =>
+          b.cents - a.cents ||
+          a.name.localeCompare(b.name) ||
+          b.rate - a.rate ||
+          a.currency.localeCompare(b.currency),
+      )
+      .map((row) => ({
+        name: row.name,
+        rate: row.rate,
+        currency: row.currency,
+        total_amount: fromCents(row.cents),
+        tax_lines: row.taxLines,
+        receipts: row.receipts,
+      }));
+
+    const currencies = new Map<string, { cents: number; taxLines: number }>();
+    for (const row of rows) {
+      const acc = currencies.get(row.currency) ?? { cents: 0, taxLines: 0 };
+      acc.cents += row.cents;
+      acc.taxLines += row.taxLines;
+      currencies.set(row.currency, acc);
+    }
+    const byCurrency: ReceiptTaxBreakdownCurrencyDto[] = [
+      ...currencies.entries(),
+    ]
+      .sort(
+        ([codeA, a], [codeB, b]) =>
+          b.taxLines - a.taxLines || codeA.localeCompare(codeB),
+      )
+      .map(([currency, acc]) => ({
+        currency,
+        total_amount: fromCents(acc.cents),
+        tax_lines: acc.taxLines,
+      }));
+
+    return {
+      statusCode: 200,
+      message: 'Receipt tax breakdown retrieved successfully',
+      data: {
+        status,
+        date_from: range.from ?? null,
+        date_to: range.to ?? null,
+        currency: byCurrency[0]?.currency ?? 'USD',
+        total_tax: byCurrency[0]?.total_amount ?? 0,
+        by_tax: byTax,
+        by_currency: byCurrency,
+      },
+    };
+  }
+
+  /**
+   * Siguiente número de factura del merchant: INV- seguido del mayor consecutivo
+   * INV-###### existente + 1 (6 dígitos mínimo). Ignora los números manuales que no
+   * siguen ese formato, así nunca devuelve INV-NaN.
+   */
+  async generateInvoiceNumber(merchantId: number): Promise<string> {
+    const raw = await this.receiptRepo
+      .createQueryBuilder('r')
+      .select(
+        'MAX(CAST(SUBSTRING(r.invoice_number FROM 5) AS BIGINT))',
+        'last_sequence',
+      )
+      .where('r.merchant_id = :merchantId', { merchantId })
+      .andWhere("r.invoice_number ~ '^INV-[0-9]{1,15}$'")
+      .getRawOne<{ last_sequence: string | number | null }>();
+
+    const lastSequence = Number(raw?.last_sequence ?? 0) || 0;
+    return `INV-${(lastSequence + 1).toString().padStart(6, '0')}`;
+  }
+
+  /** Recibo del merchant en cualquier estado (activo o dado de baja). */
+  private async findOwnedReceipt(
+    id: number,
+    merchantId: number,
+  ): Promise<Receipt> {
+    if (!id || id <= 0) throw new BadRequestException('Invalid id');
+    if (!merchantId) {
+      throw new ForbiddenException('You must be associated with a merchant');
+    }
+    const receipt = await this.receiptRepo.findOne({ where: { id } });
+    if (!receipt) throw new NotFoundException('Receipt not found');
+    if (receipt.merchant_id !== merchantId) {
+      throw new ForbiddenException(
+        'You can only access receipts from your merchant',
+      );
+    }
+    return receipt;
+  }
+
+  private toResponseDto(row: Receipt): ReceiptResponseDto {
+    return {
+      id: row.id,
+      order_id: row.order_id,
+      merchant_id: row.merchant_id,
+      invoice_number: row.invoice_number ?? null,
+      type: row.type,
+      fiscal_data: row.fiscal_data ?? null,
+      subtotal: Number(row.subtotal ?? 0),
+      total_tax: Number(row.total_tax ?? 0),
+      total_discount: Number(row.total_discount ?? 0),
+      grand_total: Number(row.grand_total ?? 0),
+      currency: row.currency,
+      is_active: row.is_active ?? true,
+      is_locked: row.is_locked ?? false,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+    };
+  }
+
+  private normalizeInvoiceNumber(value?: string | null): string | null {
+    const trimmed = value?.trim();
+    return trimmed ? trimmed : null;
+  }
+
+  /** 409 si otro recibo del merchant ya usa ese número (activo o dado de baja). */
+  private async assertInvoiceNumberAvailable(
+    merchantId: number,
+    invoiceNumber: string,
+    excludeReceiptId?: number,
+  ): Promise<void> {
+    const clash = await this.receiptRepo.findOne({
+      where: { merchant_id: merchantId, invoice_number: invoiceNumber },
+    });
+    if (clash && clash.id !== excludeReceiptId) {
+      throw this.invoiceNumberConflict(invoiceNumber);
+    }
+  }
+
+  private invoiceNumberConflict(invoiceNumber: string): ConflictException {
+    return new ConflictException(
+      `Invoice number '${invoiceNumber}' is already used by another receipt of this merchant`,
+    );
+  }
+
+  /**
+   * Guarda el recibo con su número de factura. Con número manual, una colisión en el
+   * índice único (alta simultánea) es un 409. Con número automático se recalcula el
+   * siguiente consecutivo y se reintenta (hasta 3 veces) antes de responder 409.
+   */
+  private async saveWithInvoiceNumber(
+    data: Partial<Receipt>,
+    manualInvoiceNumber: string | null,
+  ): Promise<Receipt> {
+    const maxAttempts = manualInvoiceNumber ? 1 : 3;
+    let invoiceNumber = manualInvoiceNumber ?? '';
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      invoiceNumber =
+        manualInvoiceNumber ??
+        (await this.generateInvoiceNumber(data.merchant_id as number));
+      const entity = this.receiptRepo.create({
+        ...data,
+        invoice_number: invoiceNumber,
+      });
+      try {
+        return await this.receiptRepo.save(entity);
+      } catch (error) {
+        if (!isUniqueViolation(error)) throw error;
+      }
+    }
+    throw this.invoiceNumberConflict(invoiceNumber);
+  }
+}
+
+interface RawTaxBreakdownRow {
+  name: string;
+  rate: string | number | null;
+  currency: string | null;
+  total_amount: string | number | null;
+  tax_lines: string | number;
+  receipts: string | number;
+}
+
+interface DateRange {
+  from?: string;
+  to?: string;
+}
+
+/** Rango YYYY-MM-DD (extremos inclusive); 400 si dateFrom es posterior a dateTo. */
+function resolveDateRange(query: {
+  dateFrom?: string;
+  dateTo?: string;
+}): DateRange {
+  const from = query.dateFrom || undefined;
+  const to = query.dateTo || undefined;
+  if (from && to && from > to) {
+    throw new BadRequestException('dateFrom must be on or before dateTo');
+  }
+  return { from, to };
+}
+
+/**
+ * Condición SQL sobre created_at: `>= dateFrom` y `< dateTo + 1 día`, para que el último
+ * día cuente completo. Las fechas viajan como parámetros y las convierte Postgres.
+ */
+function createdAtConditions(column: string, range: DateRange): string[] {
+  const conditions: string[] = [];
+  if (range.from) conditions.push(`${column} >= CAST(:dateFrom AS date)`);
+  if (range.to) conditions.push(`${column} < CAST(:dateTo AS date) + 1`);
+  return conditions;
+}
+
+function dateRangeParameters(range: DateRange): ObjectLiteral {
+  const parameters: ObjectLiteral = {};
+  if (range.from) parameters.dateFrom = range.from;
+  if (range.to) parameters.dateTo = range.to;
+  return parameters;
+}
+
+function createdAtRange(range: DateRange): FindOperator<Date> | undefined {
+  if (!range.from && !range.to) return undefined;
+  return Raw<Date>(
+    (column) => createdAtConditions(column, range).join(' AND '),
+    dateRangeParameters(range),
+  );
+}
+
+function applyCreatedAtRange<T extends ObjectLiteral>(
+  qb: SelectQueryBuilder<T>,
+  alias: string,
+  range: DateRange,
+): void {
+  const conditions = createdAtConditions(`${alias}.created_at`, range);
+  if (conditions.length > 0) {
+    qb.andWhere(conditions.join(' AND '), dateRangeParameters(range));
+  }
+}
+
+interface RawSummaryRow {
+  type: ReceiptType;
+  currency: string | null;
+  is_active: boolean | string;
+  is_locked: boolean | string;
+  receipts: string | number;
+  subtotal: string | number | null;
+  total_tax: string | number | null;
+  total_discount: string | number | null;
+  grand_total: string | number | null;
+}
+
+/** Importe decimal (string de Postgres o number) → centavos enteros. */
+function toCents(value: string | number | null | undefined): number {
+  const n = Number(value ?? 0);
+  return Number.isFinite(n) ? Math.round(n * 100) : 0;
+}
+
+function fromCents(cents: number): number {
+  return cents / 100;
+}
+
+/** Los booleanos crudos llegan como boolean o como 't'/'true' según el driver. */
+function toBoolean(value: boolean | string | null | undefined): boolean {
+  return value === true || value === 't' || value === 'true';
+}
+
+/** Violación de índice único de Postgres (p. ej. merchant_id + invoice_number). */
+function isUniqueViolation(error: unknown): boolean {
+  return (error as { code?: string } | null)?.code === '23505';
+}
+
+/** Escapa los comodines de LIKE para buscar el texto tal cual. */
+function escapeLike(value: string): string {
+  return value.replace(/[\\%_]/g, (c) => `\\${c}`);
 }
