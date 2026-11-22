@@ -8,6 +8,10 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  *   (/api/billing/partner-sync).
  *
  * down(): borra la pantalla.
+ *
+ * La feature se busca con una subconsulta (NULL si aún no existe): en una base nueva las
+ * features las crea `seed:reference` después de las migraciones, y el seed vuelve a fijar
+ * feature_id (misma fila en reference-data.sql).
  */
 export class BillingPartnerSyncNavItem1794800000100 implements MigrationInterface {
   name = 'BillingPartnerSyncNavItem1794800000100';
@@ -15,7 +19,7 @@ export class BillingPartnerSyncNavItem1794800000100 implements MigrationInterfac
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
       INSERT INTO "nav_item" ("surface", "application_id", "feature_id", "code", "label", "icon", "description", "route", "sort_order", "kind", "status") VALUES
-        ('merchant_web', 7, 15, 'billing-partner-sync', 'Business Partners Billing Link', 'partner_exchange', 'Link receipts to customer and supplier profiles, B2B invoice metrics, corporate credit utilization and outstanding balances.', '/app/billing-transactions/billing-partner-sync', 7, 'screen', 'live')
+        ('merchant_web', 7, (SELECT "id" FROM "feature" WHERE "id" = 15), 'billing-partner-sync', 'Business Partners Billing Link', 'partner_exchange', 'Link receipts to customer and supplier profiles, B2B invoice metrics, corporate credit utilization and outstanding balances.', '/app/billing-transactions/billing-partner-sync', 7, 'screen', 'live')
       ON CONFLICT ("surface", "code") DO UPDATE SET
         "application_id" = EXCLUDED."application_id",
         "feature_id" = EXCLUDED."feature_id",

@@ -9,6 +9,10 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  *
  * down():
  * - Borra la pantalla.
+ *
+ * La feature se busca con una subconsulta (NULL si aún no existe): en una base nueva las
+ * features las crea `seed:reference` después de las migraciones, y el seed vuelve a fijar
+ * feature_id (misma fila en reference-data.sql).
  */
 export class BillingReportsNavItem1795100000000 implements MigrationInterface {
   name = 'BillingReportsNavItem1795100000000';
@@ -16,7 +20,7 @@ export class BillingReportsNavItem1795100000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
       INSERT INTO "nav_item" ("surface", "application_id", "feature_id", "code", "label", "icon", "description", "route", "sort_order", "kind", "status") VALUES
-        ('merchant_web', 7, 15, 'billing-reports', 'Billing Reports', 'summarize', 'Tax liability by rate and scope, and the discount & void audit trail, with CSV export and printable layouts.', '/app/billing-transactions/billing-reports', 8, 'screen', 'live')
+        ('merchant_web', 7, (SELECT "id" FROM "feature" WHERE "id" = 15), 'billing-reports', 'Billing Reports', 'summarize', 'Tax liability by rate and scope, and the discount & void audit trail, with CSV export and printable layouts.', '/app/billing-transactions/billing-reports', 8, 'screen', 'live')
       ON CONFLICT ("surface", "code") DO UPDATE SET
         "application_id" = EXCLUDED."application_id",
         "feature_id" = EXCLUDED."feature_id",

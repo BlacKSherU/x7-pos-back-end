@@ -10,6 +10,10 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  *
  * down():
  * - Borra la pantalla.
+ *
+ * La feature se busca con una subconsulta (NULL si aún no existe): en una base nueva las
+ * features las crea `seed:reference` después de las migraciones, y el seed vuelve a fijar
+ * feature_id (misma fila en reference-data.sql).
  */
 export class BillingInventorySyncNavItem1794700000000 implements MigrationInterface {
   name = 'BillingInventorySyncNavItem1794700000000';
@@ -17,7 +21,7 @@ export class BillingInventorySyncNavItem1794700000000 implements MigrationInterf
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
       INSERT INTO "nav_item" ("surface", "application_id", "feature_id", "code", "label", "icon", "description", "route", "sort_order", "kind", "status") VALUES
-        ('merchant_web', 7, 14, 'billing-inventory-sync', 'Inventory & Billing Stock Sync', 'inventory_2', 'Audit stock deductions per receipt line, validate stock before billing, and jump to stock levels without losing billing context.', '/app/billing-transactions/billing-inventory-sync', 6, 'screen', 'live')
+        ('merchant_web', 7, (SELECT "id" FROM "feature" WHERE "id" = 14), 'billing-inventory-sync', 'Inventory & Billing Stock Sync', 'inventory_2', 'Audit stock deductions per receipt line, validate stock before billing, and jump to stock levels without losing billing context.', '/app/billing-transactions/billing-inventory-sync', 6, 'screen', 'live')
       ON CONFLICT ("surface", "code") DO UPDATE SET
         "application_id" = EXCLUDED."application_id",
         "feature_id" = EXCLUDED."feature_id",
