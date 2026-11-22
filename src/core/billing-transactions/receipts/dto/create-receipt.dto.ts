@@ -30,8 +30,14 @@ export class CreateReceiptDto {
   type: ReceiptType;
 
   @ApiProperty({
-    example: '{"tax_id": "12345678", "fiscal_number": "ABC123"}',
-    description: 'Fiscal data in JSON format',
+    example: '{"tax_id": "J-12345678-9", "exemption_code": "EX-2026-001"}',
+    description:
+      'Fiscal data as a JSON object string. Supported keys: tax_id (string), ' +
+      'exemption_code (string, exemption certificate ID) and tax_exempt (boolean, optional). ' +
+      'The receipt is tax-exempt when tax_exempt is true, or when tax_exempt is absent and ' +
+      'exemption_code is a non-empty string; tax_exempt: true requires exemption_code. ' +
+      'Exempt receipts get total_tax = 0 and all their active receipt taxes set to 0.00. ' +
+      'Other keys are preserved as-is.',
     required: false,
   })
   @IsString()
