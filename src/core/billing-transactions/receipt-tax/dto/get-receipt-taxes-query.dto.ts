@@ -1,14 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsEnum,
-  IsIn,
-  IsNumber,
-  IsOptional,
-  IsPositive,
-  IsString,
-  Min,
-} from 'class-validator';
-import { ReceiptTaxScope } from '../constants/receipt-tax-scope.enum';
+import { IsEnum, IsIn, IsNumber, IsOptional, Min } from 'class-validator';
+import { ReceiptTaxFiltersDto } from './receipt-tax-filters.dto';
 
 export enum ReceiptTaxSortBy {
   CREATED_AT = 'createdAt',
@@ -25,35 +17,7 @@ export const RECEIPT_TAX_STATUS_FILTERS = [
 export type ReceiptTaxStatusFilter =
   (typeof RECEIPT_TAX_STATUS_FILTERS)[number];
 
-export class GetReceiptTaxesQueryDto {
-  @ApiPropertyOptional({ example: 10, description: 'Filter by receipt ID' })
-  @IsOptional()
-  @IsNumber()
-  @IsPositive()
-  receiptId?: number;
-
-  @ApiPropertyOptional({ example: 5, description: 'Filter by receipt item ID' })
-  @IsOptional()
-  @IsNumber()
-  @IsPositive()
-  receiptItemId?: number;
-
-  @ApiPropertyOptional({
-    enum: ReceiptTaxScope,
-    description: 'Filter by scope',
-  })
-  @IsOptional()
-  @IsEnum(ReceiptTaxScope)
-  scope?: ReceiptTaxScope;
-
-  @ApiPropertyOptional({
-    example: 'IVA',
-    description: 'Filter by tax name (partial match)',
-  })
-  @IsOptional()
-  @IsString()
-  name?: string;
-
+export class GetReceiptTaxesQueryDto extends ReceiptTaxFiltersDto {
   @ApiPropertyOptional({
     enum: RECEIPT_TAX_STATUS_FILTERS,
     default: 'active',

@@ -76,6 +76,7 @@ describe('ReceiptTaxController', () => {
     findOne: jest.fn(),
     update: jest.fn(),
     updateStatus: jest.fn(),
+    getSummary: jest.fn(),
     remove: jest.fn(),
   };
 
@@ -145,6 +146,32 @@ describe('ReceiptTaxController', () => {
       await expect(
         controller.findAll(query, mockRequest as any),
       ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  // ─── GET /receipt-taxes/summary ──────────────────────────────────────────────
+
+  describe('getSummary', () => {
+    it('should return the consolidated metrics for the merchant', async () => {
+      const summary = {
+        statusCode: 200,
+        message: 'Receipt taxes summary retrieved successfully',
+        data: {
+          total_count: 1,
+          active_count: 1,
+          inactive_count: 0,
+          receipts_count: 1,
+          totals_by_currency: [],
+          by_scope: [],
+          by_type: [],
+          filter_options: { names: ['IVA 19%'], rates: [19] },
+        },
+      };
+      jest.spyOn(service, 'getSummary').mockResolvedValue(summary);
+      const query = { taxName: 'IVA 19%', rate: 19 };
+      const result = await controller.getSummary(query, mockRequest as any);
+      expect(service.getSummary).toHaveBeenCalledWith(query, MERCHANT_ID);
+      expect(result.data.filter_options.rates).toEqual([19]);
     });
   });
 

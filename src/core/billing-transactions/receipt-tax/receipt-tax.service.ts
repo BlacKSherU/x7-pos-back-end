@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, SelectQueryBuilder } from 'typeorm';
 import { CreateReceiptTaxDto } from './dto/create-receipt-tax.dto';
 import { UpdateReceiptTaxDto } from './dto/update-receipt-tax.dto';
 import { UpdateReceiptTaxStatusDto } from './dto/update-receipt-tax-status.dto';
@@ -18,6 +18,14 @@ import {
   ReceiptTaxResponseDto,
 } from './dto/receipt-tax-response.dto';
 import { AllPaginatedReceiptTaxes } from './dto/all-paginated-receipt-taxes.dto';
+import { ReceiptTaxFiltersDto } from './dto/receipt-tax-filters.dto';
+import { GetReceiptTaxesSummaryQueryDto } from './dto/get-receipt-taxes-summary-query.dto';
+import {
+  ReceiptTaxCurrencyTotalDto,
+  ReceiptTaxesSummaryResponseDto,
+  ReceiptTaxScopeTotalDto,
+  ReceiptTaxTypeTotalDto,
+} from './dto/receipt-taxes-summary-response.dto';
 import { ReceiptTax } from './entities/receipt-tax.entity';
 import { Receipt } from '../receipts/entities/receipt.entity';
 import { Order } from 'src/restaurant-operations/pos/orders/entities/order.entity';
@@ -195,6 +203,53 @@ export class ReceiptTaxService {
     };
   }
 
+  // ─── Query helpers (list + summary) ─────────────────────────────────────────
+
+  /** Taxes of the merchant's active receipts (receipt → order → merchant). */
+  private merchantTaxesQuery(
+    merchantId: number,
+  ): SelectQueryBuilder<ReceiptTax> {
+    return this.receiptTaxRepo
+      .createQueryBuilder('rt')
+      .innerJoin('rt.receipt', 'receipt')
+      .innerJoin(Order, 'order', 'order.id = receipt.order_id')
+      .where('order.merchant_id = :merchantId', { merchantId })
+      .andWhere('receipt.is_active = :receiptActive', { receiptActive: true });
+  }
+
+  private applyFilters(
+    qb: SelectQueryBuilder<ReceiptTax>,
+    filters: ReceiptTaxFiltersDto,
+  ): SelectQueryBuilder<ReceiptTax> {
+    if (filters.receiptId) {
+      qb.andWhere('rt.receipt_id = :receiptId', {
+        receiptId: filters.receiptId,
+      });
+    }
+    if (filters.receiptItemId) {
+      qb.andWhere('rt.receipt_item_id = :receiptItemId', {
+        receiptItemId: filters.receiptItemId,
+      });
+    }
+    if (filters.scope) {
+      qb.andWhere('rt.scope = :scope', { scope: filters.scope });
+    }
+    if (filters.name) {
+      qb.andWhere('LOWER(rt.name) LIKE LOWER(:name)', {
+        name: `%${filters.name}%`,
+      });
+    }
+    if (filters.taxName?.trim()) {
+      qb.andWhere('LOWER(rt.name) = LOWER(:taxName)', {
+        taxName: filters.taxName.trim(),
+      });
+    }
+    if (filters.rate !== undefined && filters.rate !== null) {
+      qb.andWhere('rt.rate = :rate', { rate: filters.rate });
+    }
+    return qb;
+  }
+
   // ─── CRUD ────────────────────────────────────────────────────────────────────
 
   async create(
@@ -261,13 +316,9 @@ export class ReceiptTaxService {
     }
 
     // Only taxes of this merchant's (active) receipts
-    const qb = this.receiptTaxRepo
-      .createQueryBuilder('rt')
-      .innerJoinAndSelect('rt.receipt', 'receipt')
-      .leftJoinAndSelect('rt.receiptItem', 'item')
-      .innerJoin(Order, 'order', 'order.id = receipt.order_id')
-      .where('order.merchant_id = :merchantId', { merchantId })
-      .andWhere('receipt.is_active = :receiptActive', { receiptActive: true });
+    const qb = this.merchantTaxesQuery(merchantId)
+      .leftJoin('rt.receiptItem', 'item')
+      .addSelect(['receipt', 'item']);
 
     const status = query.status ?? 'active';
     if (status !== 'all') {
@@ -276,25 +327,7 @@ export class ReceiptTaxService {
       });
     }
 
-    if (query.receiptId) {
-      qb.andWhere('rt.receipt_id = :receiptId', { receiptId: query.receiptId });
-    }
-
-    if (query.receiptItemId) {
-      qb.andWhere('rt.receipt_item_id = :receiptItemId', {
-        receiptItemId: query.receiptItemId,
-      });
-    }
-
-    if (query.scope) {
-      qb.andWhere('rt.scope = :scope', { scope: query.scope });
-    }
-
-    if (query.name) {
-      qb.andWhere('LOWER(rt.name) LIKE LOWER(:name)', {
-        name: `%${query.name}%`,
-      });
-    }
+    this.applyFilters(qb, query);
 
     const total = await qb.getCount();
 
@@ -328,6 +361,145 @@ export class ReceiptTaxService {
       totalPages,
       hasNext: page < totalPages,
       hasPrev: page > 1,
+    };
+  }
+
+  /**
+   * Consolidated metrics for the Receipt Taxes header: counts (active/inactive), active
+   * tax charged per currency split by scope, and per tax type (name) and rate. Amounts
+   * only include active taxes, the ones counted in receipt totals. Sums run in cents.
+   */
+  async getSummary(
+    query: GetReceiptTaxesSummaryQueryDto,
+    merchantId: number,
+  ): Promise<ReceiptTaxesSummaryResponseDto> {
+    this.assertMerchant(merchantId);
+    if (query.receiptId) {
+      await this.verifyMerchantOwnership(query.receiptId, merchantId);
+    }
+
+    const filtered = () =>
+      this.applyFilters(this.merchantTaxesQuery(merchantId), query);
+    const activeOnly = () =>
+      filtered().andWhere('rt.is_active = :onlyActive', { onlyActive: true });
+
+    const [counts, scopeRows, typeRows, nameRows, rateRows] = await Promise.all(
+      [
+        filtered()
+          .select('COUNT(rt.id)', 'total')
+          .addSelect(
+            'COALESCE(SUM(CASE WHEN rt.is_active = true THEN 1 ELSE 0 END), 0)',
+            'active',
+          )
+          .addSelect(
+            'COUNT(DISTINCT CASE WHEN rt.is_active = true THEN rt.receipt_id END)',
+            'receipts',
+          )
+          .getRawOne<{ total: string; active: string; receipts: string }>(),
+        activeOnly()
+          .select('rt.scope', 'scope')
+          .addSelect('receipt.currency', 'currency')
+          .addSelect('COUNT(rt.id)', 'count')
+          .addSelect('COALESCE(SUM(rt.amount), 0)', 'total_amount')
+          .groupBy('rt.scope')
+          .addGroupBy('receipt.currency')
+          .getRawMany<{
+            scope: ReceiptTaxScope;
+            currency: string;
+            count: string;
+            total_amount: string;
+          }>(),
+        activeOnly()
+          .select('rt.name', 'name')
+          .addSelect('rt.rate', 'rate')
+          .addSelect('receipt.currency', 'currency')
+          .addSelect('COUNT(rt.id)', 'count')
+          .addSelect('COALESCE(SUM(rt.amount), 0)', 'total_amount')
+          .groupBy('rt.name')
+          .addGroupBy('rt.rate')
+          .addGroupBy('receipt.currency')
+          .orderBy('total_amount', 'DESC')
+          .getRawMany<{
+            name: string;
+            rate: string;
+            currency: string;
+            count: string;
+            total_amount: string;
+          }>(),
+        this.merchantTaxesQuery(merchantId)
+          .select('rt.name', 'name')
+          .distinct(true)
+          .orderBy('rt.name', 'ASC')
+          .getRawMany<{ name: string }>(),
+        this.merchantTaxesQuery(merchantId)
+          .select('rt.rate', 'rate')
+          .distinct(true)
+          .orderBy('rt.rate', 'ASC')
+          .getRawMany<{ rate: string }>(),
+      ],
+    );
+
+    const by_scope: ReceiptTaxScopeTotalDto[] = scopeRows.map((r) => ({
+      scope: r.scope,
+      currency: r.currency || 'USD',
+      count: Number(r.count),
+      total_amount: toCents(r.total_amount) / 100,
+    }));
+
+    const byCurrency = new Map<
+      string,
+      { total: number; receipt: number; item: number }
+    >();
+    for (const row of by_scope) {
+      const acc = byCurrency.get(row.currency) ?? {
+        total: 0,
+        receipt: 0,
+        item: 0,
+      };
+      const cents = toCents(row.total_amount);
+      acc.total += cents;
+      if (row.scope === ReceiptTaxScope.ITEM) acc.item += cents;
+      else acc.receipt += cents;
+      byCurrency.set(row.currency, acc);
+    }
+    const totals_by_currency: ReceiptTaxCurrencyTotalDto[] = [
+      ...byCurrency.entries(),
+    ]
+      .map(([currency, acc]) => ({
+        currency,
+        total_amount: acc.total / 100,
+        receipt_scope_amount: acc.receipt / 100,
+        item_scope_amount: acc.item / 100,
+      }))
+      .sort((a, b) => b.total_amount - a.total_amount);
+
+    const by_type: ReceiptTaxTypeTotalDto[] = typeRows.map((r) => ({
+      name: r.name,
+      rate: Number(r.rate),
+      currency: r.currency || 'USD',
+      count: Number(r.count),
+      total_amount: toCents(r.total_amount) / 100,
+    }));
+
+    const total = Number(counts?.total ?? 0);
+    const active = Number(counts?.active ?? 0);
+
+    return {
+      statusCode: 200,
+      message: 'Receipt taxes summary retrieved successfully',
+      data: {
+        total_count: total,
+        active_count: active,
+        inactive_count: Math.max(0, total - active),
+        receipts_count: Number(counts?.receipts ?? 0),
+        totals_by_currency,
+        by_scope,
+        by_type,
+        filter_options: {
+          names: nameRows.map((r) => r.name),
+          rates: rateRows.map((r) => Number(r.rate)),
+        },
+      },
     };
   }
 

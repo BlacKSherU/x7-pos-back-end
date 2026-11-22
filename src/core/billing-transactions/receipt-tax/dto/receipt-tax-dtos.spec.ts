@@ -3,6 +3,8 @@ import { validate } from 'class-validator';
 import { CreateReceiptTaxDto } from './create-receipt-tax.dto';
 import { UpdateReceiptTaxDto } from './update-receipt-tax.dto';
 import { UpdateReceiptTaxStatusDto } from './update-receipt-tax-status.dto';
+import { GetReceiptTaxesQueryDto } from './get-receipt-taxes-query.dto';
+import { GetReceiptTaxesSummaryQueryDto } from './get-receipt-taxes-summary-query.dto';
 import { ReceiptTaxScope } from '../constants/receipt-tax-scope.enum';
 
 const messagesFor = async (cls: any, plain: object): Promise<string[]> => {
@@ -59,6 +61,22 @@ describe('ReceiptTax DTOs', () => {
     ).toContain(
       'rate must be a number with at most 2 decimal places (column precision decimal(5,2))',
     );
+  });
+
+  it('accepts the tax type and rate filters on the list and the summary', async () => {
+    for (const cls of [GetReceiptTaxesQueryDto, GetReceiptTaxesSummaryQueryDto]) {
+      expect(
+        await messagesFor(cls, { taxName: 'IVA 19%', rate: 19.5 }),
+      ).toEqual([]);
+      expect(
+        (await messagesFor(cls, { rate: 19.555 })).some((m) =>
+          m.includes('decimal(5,2)'),
+        ),
+      ).toBe(true);
+    }
+    expect(
+      await messagesFor(GetReceiptTaxesSummaryQueryDto, { status: 'all' }),
+    ).toContain('property status should not exist');
   });
 
   it('requires a boolean isActive for the status change', async () => {
