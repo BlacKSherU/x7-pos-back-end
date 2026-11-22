@@ -25,6 +25,8 @@ import { AllPaginatedReceipts } from './dto/all-paginated-receipts.dto';
 
 import { ReceiptItem } from '../receipt-item/entities/receipt-item.entity';
 import { ReceiptTax } from '../receipt-tax/entities/receipt-tax.entity';
+import { ReceiptsCalculationService } from './receipts-calculation.service';
+import { validateFiscalDataPayload } from './utils/receipt-fiscal-data.util';
 
 @Injectable()
 export class ReceiptsService {
@@ -37,33 +39,16 @@ export class ReceiptsService {
     private readonly receiptItemRepo: Repository<ReceiptItem>,
     @Inject(getRepositoryToken(ReceiptTax))
     private readonly receiptTaxRepo: Repository<ReceiptTax>,
+    private readonly receiptsCalculationService: ReceiptsCalculationService,
   ) {}
 
+  /**
+   * Recalcula subtotal, total_tax, total_discount y grand_total del recibo (y los importes
+   * de sus ReceiptTax activos) con aritmética exacta en centavos, redondeo por línea con
+   * ajuste en la última línea y exención según fiscal_data. Ver ReceiptsCalculationService.
+   */
   async recalculateTotals(receiptId: number): Promise<void> {
-    const items = await this.receiptItemRepo.find({
-      where: { receipt_id: receiptId, is_active: true },
-    });
-    const taxes = await this.receiptTaxRepo.find({
-      where: { receipt_id: receiptId, is_active: true },
-    });
-
-    const subtotal = items.reduce(
-      (sum, item) => sum + Number(item.subtotal),
-      0,
-    );
-    const totalDiscount = items.reduce(
-      (sum, item) => sum + Number(item.discount_amount),
-      0,
-    );
-    const totalTax = taxes.reduce((sum, tax) => sum + Number(tax.amount), 0);
-    const grandTotal = subtotal + totalTax - totalDiscount;
-
-    await this.receiptRepo.update(receiptId, {
-      subtotal: Number(subtotal.toFixed(2)),
-      total_tax: Number(totalTax.toFixed(2)),
-      total_discount: Number(totalDiscount.toFixed(2)),
-      grand_total: Number(grandTotal.toFixed(2)),
-    });
+    await this.receiptsCalculationService.recalculate(receiptId);
   }
 
   async create(
@@ -101,21 +86,7 @@ export class ReceiptsService {
     }
 
     if (dto.fiscalData) {
-      try {
-        const parsed = JSON.parse(dto.fiscalData);
-        if (
-          typeof parsed !== 'object' ||
-          parsed === null ||
-          Array.isArray(parsed)
-        ) {
-          throw new BadRequestException(
-            'fiscalData must be a valid JSON object',
-          );
-        }
-      } catch (e) {
-        if (e instanceof BadRequestException) throw e;
-        throw new BadRequestException('fiscalData must be valid JSON');
-      }
+      validateFiscalDataPayload(dto.fiscalData);
     }
 
     const entity = this.receiptRepo.create({
@@ -343,11 +314,7 @@ export class ReceiptsService {
     if (dto.type !== undefined) updateData.type = dto.type;
     if (dto.fiscalData !== undefined) {
       if (dto.fiscalData) {
-        try {
-          JSON.parse(dto.fiscalData);
-        } catch {
-          throw new BadRequestException('fiscalData must be valid JSON');
-        }
+        validateFiscalDataPayload(dto.fiscalData);
       }
       updateData.fiscal_data = dto.fiscalData ?? null;
     }

@@ -12,6 +12,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ReceiptsService } from './receipts.service';
+import { ReceiptsCalculationService } from './receipts-calculation.service';
 import { Receipt } from './entities/receipt.entity';
 import { Order } from 'src/restaurant-operations/pos/orders/entities/order.entity';
 import { ReceiptItem } from '../receipt-item/entities/receipt-item.entity';
@@ -47,6 +48,7 @@ describe('ReceiptsService', () => {
   };
   const mockReceiptItemRepository = { find: jest.fn() };
   const mockReceiptTaxRepository = { find: jest.fn() };
+  const mockCalculationService = { recalculate: jest.fn() };
 
   const mockOrder = {
     id: 1,
@@ -84,6 +86,10 @@ describe('ReceiptsService', () => {
           provide: getRepositoryToken(ReceiptTax),
           useValue: mockReceiptTaxRepository,
         },
+        {
+          provide: ReceiptsCalculationService,
+          useValue: mockCalculationService,
+        },
       ],
     }).compile();
 
@@ -112,6 +118,162 @@ describe('ReceiptsService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  describe('recalculateTotals (Historia 10)', () => {
+    it('delegates the calculation to ReceiptsCalculationService', async () => {
+      mockCalculationService.recalculate.mockResolvedValueOnce(null);
+
+      await expect(service.recalculateTotals(7)).resolves.toBeUndefined();
+
+      expect(mockCalculationService.recalculate).toHaveBeenCalledWith(7);
+      expect(receiptRepository.update).not.toHaveBeenCalled();
+    });
+
+    it('propagates calculation errors (e.g. totals out of decimal(12,2) range)', async () => {
+      mockCalculationService.recalculate.mockRejectedValueOnce(
+        new BadRequestException('Receipt grand_total exceeds range'),
+      );
+
+      await expect(service.recalculateTotals(7)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
+
+  describe('fiscalData exemption payload (Historia 10)', () => {
+    const exemptFiscalData =
+      '{"tax_id": "J-12345678-9", "exemption_code": "EX-2026-001"}';
+
+    function mockSuccessfulCreate(fiscalData: string) {
+      const created = { ...mockReceipt, fiscal_data: fiscalData };
+      mockReceiptRepository.findOne
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(created);
+      mockReceiptRepository.create.mockReturnValue(created);
+      mockReceiptRepository.save.mockResolvedValue(created);
+    }
+
+    it('create stores the exemption payload in fiscal_data unchanged', async () => {
+      mockSuccessfulCreate(exemptFiscalData);
+
+      const result = await service.create(
+        {
+          orderId: 1,
+          type: ReceiptType.INVOICE,
+          fiscalData: exemptFiscalData,
+          currency: 'USD',
+        },
+        1,
+      );
+
+      expect(receiptRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ fiscal_data: exemptFiscalData }),
+      );
+      expect(result.data.fiscal_data).toBe(exemptFiscalData);
+    });
+
+    it('create accepts tax_exempt: true together with exemption_code', async () => {
+      const payload =
+        '{"tax_id": "123", "exemption_code": "EX-9", "tax_exempt": true}';
+      mockSuccessfulCreate(payload);
+
+      await expect(
+        service.create(
+          {
+            orderId: 1,
+            type: ReceiptType.INVOICE,
+            fiscalData: payload,
+            currency: 'USD',
+          },
+          1,
+        ),
+      ).resolves.toMatchObject({ statusCode: 201 });
+    });
+
+    it.each([
+      [
+        '{"tax_exempt": true}',
+        'fiscalData.exemption_code is required when tax_exempt is true',
+      ],
+      [
+        '{"tax_exempt": true, "exemption_code": "   "}',
+        'fiscalData.exemption_code must be a non-empty string of at most 64 characters',
+      ],
+      [
+        '{"exemption_code": 12345}',
+        'fiscalData.exemption_code must be a non-empty string of at most 64 characters',
+      ],
+      [
+        `{"exemption_code": "${'X'.repeat(65)}"}`,
+        'fiscalData.exemption_code must be a non-empty string of at most 64 characters',
+      ],
+      [
+        '{"tax_id": 12345678}',
+        'fiscalData.tax_id must be a non-empty string of at most 64 characters',
+      ],
+      ['{"tax_exempt": "yes"}', 'fiscalData.tax_exempt must be a boolean'],
+    ])(
+      'create rejects invalid exemption payload %s',
+      async (fiscalData, message) => {
+        mockReceiptRepository.findOne.mockResolvedValue(null);
+
+        await expect(
+          service.create(
+            {
+              orderId: 1,
+              type: ReceiptType.INVOICE,
+              fiscalData,
+              currency: 'USD',
+            },
+            1,
+          ),
+        ).rejects.toThrow(new BadRequestException(message));
+        expect(receiptRepository.save).not.toHaveBeenCalled();
+      },
+    );
+
+    it('update applies the exemption payload and recalculates totals', async () => {
+      mockReceiptRepository.findOne
+        .mockResolvedValueOnce(mockReceipt)
+        .mockResolvedValueOnce({
+          ...mockReceipt,
+          fiscal_data: exemptFiscalData,
+        });
+      mockReceiptRepository.update.mockResolvedValue(undefined);
+
+      const result = await service.update(
+        1,
+        { fiscalData: exemptFiscalData },
+        1,
+      );
+
+      expect(receiptRepository.update).toHaveBeenCalledWith(1, {
+        fiscal_data: exemptFiscalData,
+      });
+      expect(mockCalculationService.recalculate).toHaveBeenCalledWith(1);
+      expect(result.data.fiscal_data).toBe(exemptFiscalData);
+    });
+
+    it('update rejects tax_exempt: true without exemption_code', async () => {
+      mockReceiptRepository.findOne.mockResolvedValue(mockReceipt);
+
+      await expect(
+        service.update(1, { fiscalData: '{"tax_exempt": true}' }, 1),
+      ).rejects.toThrow(
+        'fiscalData.exemption_code is required when tax_exempt is true',
+      );
+      expect(receiptRepository.update).not.toHaveBeenCalled();
+      expect(mockCalculationService.recalculate).not.toHaveBeenCalled();
+    });
+
+    it('update rejects a fiscalData that is not a JSON object', async () => {
+      mockReceiptRepository.findOne.mockResolvedValue(mockReceipt);
+
+      await expect(
+        service.update(1, { fiscalData: '["EX-1"]' }, 1),
+      ).rejects.toThrow('fiscalData must be a valid JSON object');
+    });
   });
 
   describe('create', () => {

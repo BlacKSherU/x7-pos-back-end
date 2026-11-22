@@ -3,6 +3,7 @@ import { AuthModule } from 'src/auth/auth.module';
 
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ReceiptsService } from './receipts.service';
+import { ReceiptsCalculationService } from './receipts-calculation.service';
 import { ReceiptsController } from './receipts.controller';
 import { Receipt } from './entities/receipt.entity';
 import { Order } from 'src/restaurant-operations/pos/orders/entities/order.entity';
@@ -15,7 +16,7 @@ import { ReceiptTax } from '../receipt-tax/entities/receipt-tax.entity';
     TypeOrmModule.forFeature([Receipt, Order, ReceiptItem, ReceiptTax]),
   ],
   controllers: [ReceiptsController],
-  providers: [ReceiptsService],
-  exports: [ReceiptsService],
+  providers: [ReceiptsService, ReceiptsCalculationService],
+  exports: [ReceiptsService, ReceiptsCalculationService],
 })
 export class ReceiptsModule {}
