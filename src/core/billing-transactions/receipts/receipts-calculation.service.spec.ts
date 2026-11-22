@@ -223,9 +223,9 @@ describe('ReceiptsCalculationService', () => {
 
       expect(result.lines[0].taxable_base).toBe(0);
       expect(result.taxes.find((tax) => tax.id === 10)?.amount).toBe(0);
-      // el impuesto de recibo sólo grava la base positiva (10.00)
-      expect(result.taxes.find((tax) => tax.id === 11)?.amount).toBe(1);
-      expect(result.grand_total).toBe(10);
+      // el impuesto de recibo grava el subtotal del recibo (15.00 × 10% = 1.50, Historia 9)
+      expect(result.taxes.find((tax) => tax.id === 11)?.amount).toBe(1.5);
+      expect(result.grand_total).toBe(10.5); // 15.00 + 1.50 − 6.00
       expectBalanced(result);
     });
 
@@ -365,10 +365,10 @@ describe('ReceiptsCalculationService', () => {
         taxes: [receiptTax(10, '16.00'), itemTax(11, 2, '2.50', '0', 'Local')],
       });
 
-      // receipt: 29.00 × 16% = 4.64; item 2: 20.00 × 2.5% = 0.50
-      expect(result.total_tax).toBe(5.14);
-      expect(result.lines.map((line) => line.tax)).toEqual([1.44, 3.7]);
-      expect(result.grand_total).toBe(34.14); // 30.00 + 5.14 − 1.00
+      // receipt: subtotal 30.00 × 16% = 4.80 (Historia 9); item 2: 20.00 × 2.5% = 0.50
+      expect(result.total_tax).toBe(5.3);
+      expect(result.lines.map((line) => line.tax)).toEqual([1.6, 3.7]);
+      expect(result.grand_total).toBe(34.3); // 30.00 + 5.30 − 1.00
       expectBalanced(result);
     });
 
@@ -525,8 +525,8 @@ describe('ReceiptsCalculationService', () => {
       const result = service.calculate({ items, taxes, fiscalData });
 
       expect(result.tax_exempt).toBe(false);
-      // 22.50 × 19% = 4.28; 32.50 × 5% = 1.625 → 1.63
-      expect(result.total_tax).toBe(5.91);
+      // ítem: 22.50 × 19% = 4.275 → 4.28; recibo: subtotal 35.00 × 5% = 1.75
+      expect(result.total_tax).toBe(6.03);
       expectBalanced(result);
     });
   });

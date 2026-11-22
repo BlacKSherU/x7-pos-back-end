@@ -123,8 +123,9 @@ interface ItemTaxRow {
  *      ajusta en la ÚLTIMA línea (mayor receipt_item_id). Si al restar la última línea
  *      quedaría negativa, el resto se descuenta de las líneas anteriores (nunca hay
  *      impuestos negativos).
- *    - scope RECEIPT: la fila = round(Σ bases del recibo × tasa); su desglose por línea se
- *      calcula igual (round por línea + ajuste en la última) y se devuelve en `lines`.
+ *    - scope RECEIPT: la fila = round(subtotal del recibo × tasa), donde el subtotal es
+ *      Σ subtotales de línea antes de descuentos (misma regla que ReceiptTaxService, Historia 9);
+ *      su desglose por línea se calcula igual (round por línea + ajuste en la última).
  * 4. Impuestos con tasa 0 se tratan como importe fijo y se conservan.
  * 5. Exención (ver receipt-fiscal-data.util.ts): total_tax = 0, no se calcula ningún
  *    ReceiptTax y los importes de los ReceiptTax activos quedan en 0.00; fiscal_data no se toca.
@@ -351,10 +352,13 @@ export class ReceiptsCalculationService {
     }
 
     // Impuestos de recibo: importe global + desglose por línea con ajuste en la última.
-    const receiptBase = sumCents(items.map((item) => item.base));
+    // La base es el subtotal del recibo (Σ subtotales de línea, antes de descuentos), igual
+    // que el cálculo de ReceiptTaxService (Historia 9: "if global, it calculates on the
+    // receipt subtotal"); así un recálculo nunca contradice el importe creado.
+    const receiptBase = sumCents(items.map((item) => item.subtotal));
     for (const { tax, rate } of receiptRateTaxes) {
       tax.amount = taxOnBase(receiptBase, rate);
-      const lines = items.map((item) => taxOnBase(item.base, rate));
+      const lines = items.map((item) => taxOnBase(item.subtotal, rate));
       const diff = tax.amount - sumCents(lines);
       this.adjustLastLine(lines, diff);
       roundingAdjustment += diff;
