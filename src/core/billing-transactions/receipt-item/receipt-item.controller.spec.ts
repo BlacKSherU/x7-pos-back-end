@@ -36,6 +36,8 @@ const mockOneResponse: OneReceiptItemResponseDto = {
   data: {
     id: 1,
     receipt_id: 10,
+    receipt_invoice_number: 'INV-000001',
+    currency: 'USD',
     name: 'Burger Combo',
     sku: 'SKU-001',
     quantity: 2,
@@ -44,6 +46,7 @@ const mockOneResponse: OneReceiptItemResponseDto = {
     discount_amount: 2.5,
     total: 22.5,
     metadata: null,
+    is_active: true,
     created_at: new Date('2024-01-01'),
     updated_at: new Date('2024-01-01'),
   },
@@ -68,6 +71,7 @@ describe('ReceiptItemController', () => {
     create: jest.fn(),
     findAll: jest.fn(),
     findOne: jest.fn(),
+    findItemOptions: jest.fn(),
     update: jest.fn(),
     remove: jest.fn(),
   };
@@ -120,6 +124,38 @@ describe('ReceiptItemController', () => {
     });
   });
 
+  describe('findAll filters (header)', () => {
+    it('forwards search / receipt / item / status filters to the service', async () => {
+      const query: GetReceiptItemsQueryDto = {
+        search: 'burger',
+        receiptId: 10,
+        sku: 'SKU-001',
+        isActive: 'all',
+      };
+      mockService.findAll.mockResolvedValue(mockPaginatedResponse);
+
+      await controller.findAll(query, mockReq);
+
+      expect(mockService.findAll).toHaveBeenCalledWith(query, MERCHANT_ID);
+    });
+  });
+
+  describe('findItemOptions', () => {
+    it('should call service.findItemOptions with the merchantId', async () => {
+      const options = {
+        statusCode: 200,
+        message: 'ok',
+        data: [{ name: 'Burger Combo', sku: 'SKU-001', line_count: 3 }],
+      };
+      mockService.findItemOptions.mockResolvedValue(options);
+
+      const result = await controller.findItemOptions(mockReq);
+
+      expect(mockService.findItemOptions).toHaveBeenCalledWith(MERCHANT_ID);
+      expect(result.data).toHaveLength(1);
+    });
+  });
+
   describe('findOne', () => {
     it('should call service.findOne with id and merchantId', async () => {
       mockService.findOne.mockResolvedValue(mockOneResponse);
@@ -146,6 +182,27 @@ describe('ReceiptItemController', () => {
 
       expect(mockService.update).toHaveBeenCalledWith(1, dto, MERCHANT_ID);
       expect(result.data.metadata).toBe(dto.metadata);
+    });
+  });
+
+  describe('update (amounts and logical status)', () => {
+    it('forwards quantity / price / discount / isActive edits untouched to the service', async () => {
+      const dto: UpdateReceiptItemDto = {
+        quantity: 3,
+        unitPrice: 10,
+        discountAmount: 1,
+        isActive: false,
+      };
+      mockService.update.mockResolvedValue({
+        ...mockOneResponse,
+        message: 'Receipt item deleted successfully',
+        data: { ...mockOneResponse.data, is_active: false },
+      });
+
+      const result = await controller.update(1, dto, mockReq);
+
+      expect(mockService.update).toHaveBeenCalledWith(1, dto, MERCHANT_ID);
+      expect(result.data.is_active).toBe(false);
     });
   });
 
