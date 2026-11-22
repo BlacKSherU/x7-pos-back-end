@@ -1,6 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEnum,
+  IsIn,
   IsNumber,
   IsOptional,
   IsPositive,
@@ -13,7 +14,16 @@ export enum ReceiptTaxSortBy {
   CREATED_AT = 'createdAt',
   NAME = 'name',
   AMOUNT = 'amount',
+  RATE = 'rate',
 }
+
+export const RECEIPT_TAX_STATUS_FILTERS = [
+  'active',
+  'inactive',
+  'all',
+] as const;
+export type ReceiptTaxStatusFilter =
+  (typeof RECEIPT_TAX_STATUS_FILTERS)[number];
 
 export class GetReceiptTaxesQueryDto {
   @ApiPropertyOptional({ example: 10, description: 'Filter by receipt ID' })
@@ -44,6 +54,16 @@ export class GetReceiptTaxesQueryDto {
   @IsString()
   name?: string;
 
+  @ApiPropertyOptional({
+    enum: RECEIPT_TAX_STATUS_FILTERS,
+    default: 'active',
+    description:
+      'active (default): only taxes counted in receipt totals; inactive: deactivated taxes; all: both',
+  })
+  @IsOptional()
+  @IsIn(RECEIPT_TAX_STATUS_FILTERS)
+  status?: ReceiptTaxStatusFilter;
+
   @ApiPropertyOptional({ example: 1, description: 'Page number' })
   @IsOptional()
   @IsNumber()
@@ -63,6 +83,6 @@ export class GetReceiptTaxesQueryDto {
 
   @ApiPropertyOptional({ enum: ['ASC', 'DESC'], example: 'ASC' })
   @IsOptional()
-  @IsString()
+  @IsIn(['ASC', 'DESC'])
   sortOrder?: 'ASC' | 'DESC';
 }

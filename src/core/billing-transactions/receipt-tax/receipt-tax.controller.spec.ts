@@ -75,6 +75,7 @@ describe('ReceiptTaxController', () => {
     findAll: jest.fn(),
     findOne: jest.fn(),
     update: jest.fn(),
+    updateStatus: jest.fn(),
     remove: jest.fn(),
   };
 
@@ -99,7 +100,6 @@ describe('ReceiptTaxController', () => {
       receiptId: 10,
       name: 'IVA 19%',
       rate: 19,
-      amount: 4.75,
       scope: ReceiptTaxScope.RECEIPT,
     };
 
@@ -167,7 +167,7 @@ describe('ReceiptTaxController', () => {
   // ─── PATCH /receipt-taxes/:id ────────────────────────────────────────────────
 
   describe('update', () => {
-    const dto: UpdateReceiptTaxDto = { name: 'IVA actualizado', amount: 6.0 };
+    const dto: UpdateReceiptTaxDto = { name: 'IVA actualizado', rate: 16 };
 
     it('should update a receipt tax', async () => {
       const updated = {
@@ -179,6 +179,40 @@ describe('ReceiptTaxController', () => {
       const result = await controller.update(1, dto, mockRequest as any);
       expect(service.update).toHaveBeenCalledWith(1, dto, MERCHANT_ID);
       expect(result.statusCode).toBe(200);
+    });
+  });
+
+  // ─── PATCH /receipt-taxes/:id/status ─────────────────────────────────────────
+
+  describe('updateStatus', () => {
+    it('should activate/deactivate a receipt tax for the merchant', async () => {
+      const deactivated = {
+        ...mockOneResponse,
+        statusCode: 200,
+        message: 'Receipt tax deactivated successfully',
+        data: { ...mockTaxResponse, is_active: false },
+      };
+      jest.spyOn(service, 'updateStatus').mockResolvedValue(deactivated);
+      const result = await controller.updateStatus(
+        1,
+        { isActive: false },
+        mockRequest as any,
+      );
+      expect(service.updateStatus).toHaveBeenCalledWith(
+        1,
+        { isActive: false },
+        MERCHANT_ID,
+      );
+      expect(result.data.is_active).toBe(false);
+    });
+
+    it('should reject requests without a merchant', async () => {
+      await expect(
+        controller.updateStatus(1, { isActive: true }, {
+          user: { ...mockUser, merchant: undefined },
+        } as any),
+      ).rejects.toThrow(ForbiddenException);
+      expect(service.updateStatus).not.toHaveBeenCalled();
     });
   });
 

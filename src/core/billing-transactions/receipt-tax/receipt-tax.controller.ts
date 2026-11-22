@@ -20,6 +20,7 @@ import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-f
 import { ReceiptTaxService } from './receipt-tax.service';
 import { CreateReceiptTaxDto } from './dto/create-receipt-tax.dto';
 import { UpdateReceiptTaxDto } from './dto/update-receipt-tax.dto';
+import { UpdateReceiptTaxStatusDto } from './dto/update-receipt-tax-status.dto';
 import {
   GetReceiptTaxesQueryDto,
   ReceiptTaxSortBy,
@@ -85,7 +86,11 @@ export class ReceiptTaxController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ summary: 'Create a new receipt tax' })
+  @ApiOperation({
+    summary: 'Create a new receipt tax',
+    description:
+      'The amount is calculated by the server: ITEM scope → taxable base of the receipt item (subtotal − discount); RECEIPT scope → receipt subtotal. Rounded to the cent. The receipt totals are recalculated immediately.',
+  })
   @ApiBody({ type: CreateReceiptTaxDto })
   @ApiCreatedResponse({
     description: 'Receipt tax created',
@@ -123,6 +128,12 @@ export class ReceiptTaxController {
     enum: Object.values(ReceiptTaxScope),
   })
   @ApiQuery({ name: 'name', required: false, type: String })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['active', 'inactive', 'all'],
+    description: 'Defaults to active',
+  })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({
@@ -180,7 +191,11 @@ export class ReceiptTaxController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ summary: 'Update a receipt tax (name, rate, amount)' })
+  @ApiOperation({
+    summary: 'Update a receipt tax (name, rate, scope, item)',
+    description:
+      'The amount is recalculated by the server when rate, scope or item change, and the receipt totals are refreshed immediately. Inactive taxes must be activated before editing.',
+  })
   @ApiParam({ name: 'id', type: Number })
   @ApiBody({ type: UpdateReceiptTaxDto })
   @ApiOkResponse({
@@ -200,6 +215,38 @@ export class ReceiptTaxController {
     return this.receiptTaxService.update(id, dto, merchantId);
   }
 
+  @Patch(':id/status')
+  @Roles(UserRole.MERCHANT_ADMIN)
+  @Scopes(
+    Scope.MERCHANT_WEB,
+    Scope.MERCHANT_ANDROID,
+    Scope.MERCHANT_IOS,
+    Scope.MERCHANT_CLOVER,
+  )
+  @ApiOperation({
+    summary: 'Activate or deactivate a receipt tax',
+    description:
+      'Does not delete the record nor change its stored amount. Only active taxes count in the receipt totals, which are recalculated immediately.',
+  })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiBody({ type: UpdateReceiptTaxStatusDto })
+  @ApiOkResponse({
+    description: 'Receipt tax status updated',
+    type: OneReceiptTaxResponseDto,
+  })
+  @ApiBadRequestResponse({ description: 'Invalid data', type: ErrorResponse })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
+  @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorResponse })
+  @ApiNotFoundResponse({ description: 'Not found', type: ErrorResponse })
+  async updateStatus(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateReceiptTaxStatusDto,
+    @Request() req: ExpressRequest & { user?: AuthenticatedUser },
+  ): Promise<OneReceiptTaxResponseDto> {
+    const merchantId = this.merchantIdOf(req);
+    return this.receiptTaxService.updateStatus(id, dto, merchantId);
+  }
+
   @Delete(':id')
   @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
@@ -208,7 +255,9 @@ export class ReceiptTaxController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ summary: 'Delete a receipt tax' })
+  @ApiOperation({
+    summary: 'Delete a receipt tax (logical: same as deactivating it)',
+  })
   @ApiParam({ name: 'id', type: Number })
   @ApiOkResponse({
     description: 'Receipt tax deleted',
