@@ -6,4 +6,6 @@ export enum JournalEntryReferenceType {
   INVENTORY = 'INVENTORY',
   ADJUSTMENT = 'ADJUSTMENT',
   MANUAL = 'MANUAL',
+  /** Asiento generado desde un recibo de facturación (reference_id = receipts.id). */
+  RECEIPT = 'RECEIPT',
 }

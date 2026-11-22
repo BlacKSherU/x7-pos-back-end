@@ -18,6 +18,11 @@ import { JournalEntryReferenceType } from '../constants/journal-entry-reference-
 
 @Entity('journal_entries')
 @Index(['company_id', 'entry_number'], { unique: true })
+@Index('IDX_journal_entries_company_reference', [
+  'company_id',
+  'reference_type',
+  'reference_id',
+])
 export class JournalEntry {
   @ApiProperty({ example: 1, description: 'Journal Entry ID' })
   @PrimaryGeneratedColumn()
@@ -67,7 +72,7 @@ export class JournalEntry {
 
   @ApiProperty({
     example: JournalEntryReferenceType.ORDER,
-    description: 'Reference type (e.g. ORDER, PAYMENT, PAYROLL)',
+    description: 'Reference type (e.g. ORDER, PAYMENT, PAYROLL, RECEIPT)',
     enum: JournalEntryReferenceType,
     required: false,
     nullable: true,
