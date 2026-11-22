@@ -2,6 +2,11 @@
 /* eslint-disable @typescript-eslint/unbound-method */
 
 import { Test, TestingModule } from '@nestjs/testing';
+import { FiscalLockGuard } from '../receipts/fiscal-lock/fiscal-lock.guard';
+import {
+  FISCAL_LOCK_SOURCE_KEY,
+  FiscalLockSource,
+} from '../receipts/fiscal-lock/fiscal-lock.constants';
 import { Request as ExpressRequest } from 'express';
 import { ReceiptTaxController } from './receipt-tax.controller';
 import { ReceiptTaxService } from './receipt-tax.service';
@@ -45,6 +50,7 @@ const mockTaxResponse: ReceiptTaxResponseDto = {
   rate: 19,
   amount: 4.75,
   scope: ReceiptTaxScope.RECEIPT,
+  receipt_is_locked: false,
   created_at: new Date('2024-01-01'),
 };
 
@@ -84,7 +90,11 @@ describe('ReceiptTaxController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ReceiptTaxController],
       providers: [{ provide: ReceiptTaxService, useValue: mockService }],
-    }).compile();
+    })
+      // FiscalLockGuard (Historia 11) tiene su propio spec; aquí solo se prueba la delegación.
+      .overrideGuard(FiscalLockGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<ReceiptTaxController>(ReceiptTaxController);
     service = module.get<ReceiptTaxService>(ReceiptTaxService);
@@ -256,6 +266,27 @@ describe('ReceiptTaxController', () => {
       const result = await controller.remove(1, mockRequest as any);
       expect(service.remove).toHaveBeenCalledWith(1, MERCHANT_ID);
       expect(result.statusCode).toBe(200);
+    });
+  });
+
+  describe('Fiscal lock (Historia 11)', () => {
+    const lockSource = (method: keyof ReceiptTaxController) =>
+      Reflect.getMetadata(
+        FISCAL_LOCK_SOURCE_KEY,
+        ReceiptTaxController.prototype[method],
+      ) as FiscalLockSource | undefined;
+
+    it('guards creation by the receiptId of the body', () => {
+      expect(lockSource('create')).toBe(FiscalLockSource.BODY_RECEIPT);
+    });
+
+    it('guards every update / delete through the parent receipt', () => {
+      for (const method of ['update', 'updateStatus', 'remove'] as const) {
+        expect(lockSource(method)).toBe(FiscalLockSource.TAX_PARAM);
+      }
+      for (const method of ['findAll', 'findOne', 'getSummary'] as const) {
+        expect(lockSource(method)).toBeUndefined();
+      }
     });
   });
 });

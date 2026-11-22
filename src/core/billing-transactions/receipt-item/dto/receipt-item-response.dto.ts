@@ -17,6 +17,13 @@ export class ReceiptItemResponseDto {
   receipt_invoice_number?: string | null;
 
   @ApiProperty({
+    example: false,
+    description:
+      'true when the parent receipt is fiscally locked: the line cannot be edited or deleted (Historia 11)',
+  })
+  receipt_is_locked: boolean;
+
+  @ApiProperty({
     example: 'USD',
     description: 'Currency code (ISO 4217) of the parent receipt',
   })

@@ -51,6 +51,8 @@ import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Scopes } from 'src/auth/decorators/scopes.decorator';
 import { UserRole } from 'src/platform-saas/users/constants/role.enum';
 import { Scope } from 'src/platform-saas/users/constants/scope.enum';
+import { FiscalLock } from '../receipts/fiscal-lock/fiscal-lock.decorator';
+import { FiscalLockSource } from '../receipts/fiscal-lock/fiscal-lock.constants';
 
 @ApiTags('Core - Billing transactions - Receipt Items')
 @ApiBearerAuth()
@@ -79,6 +81,7 @@ export class ReceiptItemController {
   }
 
   @Post()
+  @FiscalLock(FiscalLockSource.BODY_RECEIPT)
   @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.MERCHANT_WEB,
@@ -227,6 +230,7 @@ export class ReceiptItemController {
   }
 
   @Patch(':id')
+  @FiscalLock(FiscalLockSource.ITEM_PARAM)
   @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.MERCHANT_WEB,
@@ -259,6 +263,7 @@ export class ReceiptItemController {
   }
 
   @Delete(':id')
+  @FiscalLock(FiscalLockSource.ITEM_PARAM)
   @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.MERCHANT_WEB,

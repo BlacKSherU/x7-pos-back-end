@@ -32,6 +32,7 @@ import { Order } from 'src/restaurant-operations/pos/orders/entities/order.entit
 import { ReceiptTaxScope } from './constants/receipt-tax-scope.enum';
 import { ReceiptItem } from '../receipt-item/entities/receipt-item.entity';
 import { ReceiptsService } from '../receipts/receipts.service';
+import { assertReceiptMutable } from '../receipts/utils/fiscal-lock.util';
 import {
   assertValidTaxRate,
   calculateTaxAmount,
@@ -194,6 +195,7 @@ export class ReceiptTaxService {
       scope: tax.scope,
       is_active: tax.is_active !== false,
       receipt_invoice_number: r?.invoice_number ?? null,
+      receipt_is_locked: r?.is_locked === true,
       currency: r?.currency ?? null,
       receipt_subtotal: r ? Number(r.subtotal ?? 0) : null,
       receipt_total_tax: r ? Number(r.total_tax ?? 0) : null,
@@ -277,6 +279,8 @@ export class ReceiptTaxService {
       dto.receiptId,
       merchantId,
     );
+    // Historia 11: no taxes can be added to a fiscally locked receipt.
+    assertReceiptMutable(receipt);
     const item = receiptItemId
       ? await this.findActiveItemOnReceipt(receiptItemId, receipt.id)
       : null;
@@ -553,6 +557,7 @@ export class ReceiptTaxService {
       tax.receipt_id,
       merchantId,
     );
+    assertReceiptMutable(receipt);
 
     if (!tax.is_active) {
       throw new BadRequestException(
@@ -618,7 +623,11 @@ export class ReceiptTaxService {
       throw new NotFoundException(`Receipt tax with ID ${id} not found`);
     }
 
-    await this.verifyMerchantOwnership(tax.receipt_id, merchantId);
+    const receipt = await this.verifyMerchantOwnership(
+      tax.receipt_id,
+      merchantId,
+    );
+    assertReceiptMutable(receipt);
 
     if (dto.isActive && !tax.is_active && tax.receipt_item_id) {
       const item = await this.receiptItemRepo.findOne({
@@ -666,6 +675,7 @@ export class ReceiptTaxService {
       tax.receipt_id,
       merchantId,
     );
+    assertReceiptMutable(receipt);
 
     await this.receiptTaxRepo.update(id, { is_active: false });
     await this.receiptsService.recalculateTotals(tax.receipt_id);

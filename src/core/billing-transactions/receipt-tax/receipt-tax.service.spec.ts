@@ -822,4 +822,52 @@ describe('ReceiptTaxService', () => {
       );
     });
   });
+
+  // ─── fiscal lock (Historia 11) ──────────────────────────────────────────────
+
+  describe('fiscal lock (Historia 11)', () => {
+    const LOCK_MESSAGE = 'Receipt is fiscally locked and cannot be modified.';
+
+    beforeEach(() => {
+      mockReceiptRepo.findOne.mockResolvedValue({
+        ...mockReceipt,
+        is_locked: true,
+      });
+    });
+
+    it('does not add taxes to a locked receipt', async () => {
+      await expect(
+        service.create(
+          {
+            receiptId: 10,
+            name: 'IVA 19%',
+            rate: 19,
+            scope: ReceiptTaxScope.RECEIPT,
+          } as CreateReceiptTaxDto,
+          MERCHANT_ID,
+        ),
+      ).rejects.toThrow(new ForbiddenException(LOCK_MESSAGE));
+      expect(mockReceiptTaxRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('does not edit, toggle or delete taxes of a locked receipt', async () => {
+      await expect(
+        service.update(1, { rate: 8 }, MERCHANT_ID),
+      ).rejects.toThrow(LOCK_MESSAGE);
+      await expect(
+        service.updateStatus(1, { isActive: false }, MERCHANT_ID),
+      ).rejects.toThrow(LOCK_MESSAGE);
+      await expect(service.remove(1, MERCHANT_ID)).rejects.toThrow(
+        LOCK_MESSAGE,
+      );
+      expect(mockReceiptTaxRepo.save).not.toHaveBeenCalled();
+      expect(mockReceiptTaxRepo.update).not.toHaveBeenCalled();
+    });
+
+    it('exposes receipt_is_locked so the grid can hide edit / delete', async () => {
+      const result = await service.findOne(1, MERCHANT_ID);
+      expect(result.data.receipt_is_locked).toBe(true);
+    });
+  });
 });
+

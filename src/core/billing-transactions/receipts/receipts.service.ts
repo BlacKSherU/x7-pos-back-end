@@ -53,6 +53,16 @@ import { ReceiptItem } from '../receipt-item/entities/receipt-item.entity';
 import { ReceiptTax } from '../receipt-tax/entities/receipt-tax.entity';
 import { ReceiptsCalculationService } from './receipts-calculation.service';
 import { validateFiscalDataPayload } from './utils/receipt-fiscal-data.util';
+import {
+  FISCAL_LOCK_MESSAGE,
+  assertReceiptMutable,
+} from './utils/fiscal-lock.util';
+
+/** Usuario autenticado que ejecuta una transición de estado (bloqueo fiscal, auditoría). */
+export interface ReceiptActor {
+  id: number;
+  role: string;
+}
 
 @Injectable()
 export class ReceiptsService {
@@ -299,6 +309,8 @@ export class ReceiptsService {
       where: { id, is_active: true },
     });
     if (!existing) throw new NotFoundException('Receipt not found');
+    // Historia 11: un recibo bloqueado no se edita (además del FiscalLockGuard del controlador).
+    assertReceiptMutable(existing);
 
     const existingOrder = await this.orderRepo.findOne({
       where: { id: existing.order_id },
@@ -384,6 +396,7 @@ export class ReceiptsService {
         'You can only delete receipts from your merchant',
       );
     }
+    assertReceiptMutable(existing);
 
     await this.receiptRepo.update(id, { is_active: false });
 
@@ -400,9 +413,13 @@ export class ReceiptsService {
   }
 
   /**
-   * Baja lógica (isActive = false) o reactivación (isActive = true) de un recibo.
-   * Busca el recibo en cualquier estado para poder reactivar los dados de baja; el
-   * histórico financiero (montos, items e impuestos) no se toca.
+   * Baja lógica (isActive = false) de un recibo; el histórico financiero (montos, items e
+   * impuestos) no se toca.
+   *
+   * Historia 11: un recibo dado de baja (is_active = false) o bloqueado (is_locked) es
+   * inmutable, así que ya NO se puede reactivar (isActive = true sobre un recibo inactivo) ni
+   * dar de baja uno bloqueado: 403 "Receipt is fiscally locked and cannot be modified.".
+   * Pedir el estado que ya tiene un recibo editable no escribe nada.
    */
   async updateStatus(
     id: number,
@@ -413,6 +430,7 @@ export class ReceiptsService {
       id,
       authenticatedUserMerchantId,
     );
+    assertReceiptMutable(existing);
 
     if (existing.is_active !== dto.isActive) {
       await this.receiptRepo.update(id, { is_active: dto.isActive });
@@ -428,6 +446,58 @@ export class ReceiptsService {
         ? 'Receipt reactivated successfully'
         : 'Receipt deactivated successfully',
       data: this.toResponseDto(updated),
+    };
+  }
+
+  /**
+   * Bloqueo fiscal explícito (Historia 11): is_locked pasa a true y se registran el usuario
+   * (processed_by_user_id) y el rol (processed_by_role) que lo ejecutan, con updated_at del
+   * momento del bloqueo. Solo recibos activos sin bloquear; el UPDATE es condicional
+   * (is_active = true y is_locked no true) para que dos bloqueos simultáneos no se pisen.
+   * Desde ese momento el recibo, sus líneas y sus impuestos son inmutables.
+   */
+  async lock(
+    id: number,
+    actor: ReceiptActor,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneReceiptResponseDto> {
+    const existing = await this.findOwnedReceipt(
+      id,
+      authenticatedUserMerchantId,
+    );
+    assertReceiptMutable(existing);
+    if (!actor?.id) {
+      throw new ForbiddenException('An authenticated user is required');
+    }
+
+    const lockedAt = new Date();
+    const changes = {
+      is_locked: true,
+      processed_by_user_id: actor.id,
+      processed_by_role: actor.role,
+      updated_at: lockedAt,
+    };
+    const result = await this.receiptRepo.update(
+      {
+        id,
+        is_active: true,
+        is_locked: Raw((column) => `COALESCE(${column}, false) = false`),
+      },
+      changes,
+    );
+    if (!result?.affected) {
+      throw new ForbiddenException(FISCAL_LOCK_MESSAGE);
+    }
+
+    const locked = (await this.receiptRepo.findOne({ where: { id } })) ?? {
+      ...existing,
+      ...changes,
+    };
+
+    return {
+      statusCode: 200,
+      message: 'Receipt locked successfully',
+      data: this.toResponseDto(locked),
     };
   }
 
@@ -773,6 +843,8 @@ export class ReceiptsService {
       currency: row.currency,
       is_active: row.is_active ?? true,
       is_locked: row.is_locked ?? false,
+      processed_by_user_id: row.processed_by_user_id ?? null,
+      processed_by_role: row.processed_by_role ?? null,
       created_at: row.created_at,
       updated_at: row.updated_at,
     };

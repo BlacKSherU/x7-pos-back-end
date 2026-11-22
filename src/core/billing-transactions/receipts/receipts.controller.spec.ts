@@ -4,6 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Request as ExpressRequest } from 'express';
 import { ReceiptsController } from './receipts.controller';
 import { ReceiptsService } from './receipts.service';
+import { FiscalLockGuard } from './fiscal-lock/fiscal-lock.guard';
 import { CreateReceiptDto } from './dto/create-receipt.dto';
 import { UpdateReceiptDto } from './dto/update-receipt.dto';
 import { GetReceiptsQueryDto } from './dto/get-receipts-query.dto';
@@ -19,6 +20,8 @@ import { ReceiptStatusFilter } from './constants/receipt-status-filter.enum';
 import { UserRole } from 'src/platform-saas/users/constants/role.enum';
 import { Scope } from 'src/platform-saas/users/constants/scope.enum';
 import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
+import { FISCAL_LOCK_MESSAGE } from './utils/fiscal-lock.util';
+import { FISCAL_LOCK_SOURCE_KEY, FiscalLockSource } from './fiscal-lock/fiscal-lock.constants';
 
 describe('ReceiptsController', () => {
   let controller: ReceiptsController;
@@ -34,6 +37,7 @@ describe('ReceiptsController', () => {
     getSummary: jest.fn(),
     getDetails: jest.fn(),
     getTaxBreakdown: jest.fn(),
+    lock: jest.fn(),
   };
 
   const mockUser = {
@@ -104,7 +108,11 @@ describe('ReceiptsController', () => {
           useValue: mockReceiptsService,
         },
       ],
-    }).compile();
+    })
+      // FiscalLockGuard (Historia 11) tiene su propio spec; aquí solo se prueba la delegación.
+      .overrideGuard(FiscalLockGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<ReceiptsController>(ReceiptsController);
     service = module.get<ReceiptsService>(ReceiptsService);
@@ -536,15 +544,14 @@ describe('ReceiptsController', () => {
       expect(result.data.is_active).toBe(false);
     });
 
-    it('reactivates a receipt with isActive=true', async () => {
-      mockReceiptsService.updateStatus.mockResolvedValue({
-        statusCode: 200,
-        message: 'Receipt reactivated successfully',
-        data: mockReceiptResponseData,
-      });
+    it('no longer reactivates: isActive=true on an inactive receipt is the fiscal lock 403 (Historia 11)', async () => {
+      mockReceiptsService.updateStatus.mockRejectedValue(
+        new ForbiddenException(FISCAL_LOCK_MESSAGE),
+      );
 
-      await controller.updateStatus(2, { isActive: true }, mockRequest);
-
+      await expect(
+        controller.updateStatus(2, { isActive: true }, mockRequest),
+      ).rejects.toThrow(FISCAL_LOCK_MESSAGE);
       expect(service.updateStatus).toHaveBeenCalledWith(
         2,
         { isActive: true },
@@ -652,6 +659,63 @@ describe('ReceiptsController', () => {
       expect(routes.indexOf('getTaxBreakdown')).toBeLessThan(
         routes.indexOf('findOne'),
       );
+    });
+  });
+
+  describe('Fiscal lock (Historia 11)', () => {
+    const lockSource = (method: keyof ReceiptsController) =>
+      Reflect.getMetadata(
+        FISCAL_LOCK_SOURCE_KEY,
+        ReceiptsController.prototype[method],
+      ) as FiscalLockSource | undefined;
+
+    it('protects every write route of a receipt with FiscalLockGuard', () => {
+      for (const method of [
+        'update',
+        'patch',
+        'updateStatus',
+        'remove',
+        'lock',
+      ] as const) {
+        expect(lockSource(method)).toBe(FiscalLockSource.RECEIPT_PARAM);
+      }
+      for (const method of [
+        'create',
+        'findAll',
+        'findOne',
+        'getDetails',
+      ] as const) {
+        expect(lockSource(method)).toBeUndefined();
+      }
+    });
+
+    it('PATCH /receipts/:id/lock locks with the authenticated user and role', async () => {
+      const response = {
+        statusCode: 200,
+        message: 'Receipt locked successfully',
+        data: {
+          ...mockReceiptResponseData,
+          is_locked: true,
+          processed_by_user_id: 1,
+          processed_by_role: UserRole.MERCHANT_ADMIN,
+        },
+      };
+      mockReceiptsService.lock.mockResolvedValue(response);
+
+      const result = await controller.lock(1, mockRequest);
+
+      expect(service.lock).toHaveBeenCalledWith(
+        1,
+        { id: 1, role: UserRole.MERCHANT_ADMIN },
+        1,
+      );
+      expect(result.data.is_locked).toBe(true);
+    });
+
+    it('PATCH /receipts/:id/lock rejects users without merchant', async () => {
+      const req = { user: { ...mockUser, merchant: undefined } } as any;
+      await expect(controller.lock(1, req)).rejects.toThrow(ForbiddenException);
+      expect(service.lock).not.toHaveBeenCalled();
     });
   });
 });

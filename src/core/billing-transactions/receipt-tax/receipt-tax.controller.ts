@@ -52,6 +52,8 @@ import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Scopes } from 'src/auth/decorators/scopes.decorator';
 import { UserRole } from 'src/platform-saas/users/constants/role.enum';
 import { Scope } from 'src/platform-saas/users/constants/scope.enum';
+import { FiscalLock } from '../receipts/fiscal-lock/fiscal-lock.decorator';
+import { FiscalLockSource } from '../receipts/fiscal-lock/fiscal-lock.constants';
 import { ReceiptTaxScope } from './constants/receipt-tax-scope.enum';
 
 @ApiTags('Core - Billing transactions - Receipt Taxes')
@@ -81,6 +83,7 @@ export class ReceiptTaxController {
   }
 
   @Post()
+  @FiscalLock(FiscalLockSource.BODY_RECEIPT)
   @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.MERCHANT_WEB,
@@ -236,6 +239,7 @@ export class ReceiptTaxController {
   }
 
   @Patch(':id')
+  @FiscalLock(FiscalLockSource.TAX_PARAM)
   @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.MERCHANT_WEB,
@@ -268,6 +272,7 @@ export class ReceiptTaxController {
   }
 
   @Patch(':id/status')
+  @FiscalLock(FiscalLockSource.TAX_PARAM)
   @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.MERCHANT_WEB,
@@ -300,6 +305,7 @@ export class ReceiptTaxController {
   }
 
   @Delete(':id')
+  @FiscalLock(FiscalLockSource.TAX_PARAM)
   @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.MERCHANT_WEB,

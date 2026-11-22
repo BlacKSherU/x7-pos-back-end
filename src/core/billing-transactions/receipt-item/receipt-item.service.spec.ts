@@ -669,4 +669,45 @@ describe('ReceiptItemService', () => {
       expect(mockReceiptItemRepo.update).not.toHaveBeenCalled();
     });
   });
+
+  // ─── fiscal lock (Historia 11) ──────────────────────────────────────────────
+
+  describe('fiscal lock (Historia 11)', () => {
+    const LOCK_MESSAGE = 'Receipt is fiscally locked and cannot be modified.';
+
+    beforeEach(() => {
+      mockReceiptRepo.findOne.mockResolvedValue({
+        ...mockReceipt,
+        is_locked: true,
+      });
+    });
+
+    it('does not add lines to a locked receipt', async () => {
+      await expect(
+        service.create(
+          { receiptId: 10, name: 'Soda', quantity: 1, unitPrice: 3 },
+          MERCHANT_ID,
+        ),
+      ).rejects.toThrow(new ForbiddenException(LOCK_MESSAGE));
+      expect(mockReceiptItemRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('does not edit, restore or delete lines of a locked receipt', async () => {
+      await expect(
+        service.update(1, { quantity: 3 }, MERCHANT_ID),
+      ).rejects.toThrow(LOCK_MESSAGE);
+      await expect(service.remove(1, MERCHANT_ID)).rejects.toThrow(
+        LOCK_MESSAGE,
+      );
+      expect(mockReceiptItemRepo.save).not.toHaveBeenCalled();
+      expect(mockReceiptItemRepo.update).not.toHaveBeenCalled();
+      expect(mockReceiptsService.recalculateTotals).not.toHaveBeenCalled();
+    });
+
+    it('exposes receipt_is_locked so the grid can hide edit / delete', async () => {
+      const result = await service.findOne(1, MERCHANT_ID);
+      expect(result.data.receipt_is_locked).toBe(true);
+    });
+  });
 });
+

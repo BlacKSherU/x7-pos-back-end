@@ -9,6 +9,7 @@ import { Repository, SelectQueryBuilder } from 'typeorm';
 
 import { Receipt } from '../receipts/entities/receipt.entity';
 import { ReceiptType } from '../receipts/constants/receipt-type.enum';
+import { FISCAL_LOCK_MESSAGE } from '../receipts/utils/fiscal-lock.util';
 import { Order } from 'src/restaurant-operations/pos/orders/entities/order.entity';
 import { Customer } from 'src/core/business-partners/customers/entities/customer.entity';
 import { Supplier } from 'src/core/business-partners/suppliers/entities/supplier.entity';
@@ -125,8 +126,8 @@ interface RawOrderMetrics {
   open_orders: string | number;
 }
 
-export const FISCAL_LOCK_MESSAGE =
-  'Receipt is fiscally locked and cannot be modified.';
+// Mensaje del 403 de bloqueo fiscal (Historia 11): una sola fuente en receipts/utils.
+export { FISCAL_LOCK_MESSAGE };
 
 const DEFAULT_PAGE_SIZE = 10;
 const DEFAULT_OPTIONS_LIMIT = 50;

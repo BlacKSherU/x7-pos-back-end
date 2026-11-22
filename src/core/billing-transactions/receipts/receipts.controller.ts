@@ -57,6 +57,10 @@ import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Scopes } from 'src/auth/decorators/scopes.decorator';
 import { UserRole } from 'src/platform-saas/users/constants/role.enum';
 import { Scope } from 'src/platform-saas/users/constants/scope.enum';
+import { FiscalLock } from './fiscal-lock/fiscal-lock.decorator';
+import { FiscalLockSource } from './fiscal-lock/fiscal-lock.constants';
+import { FISCAL_LOCK_MESSAGE } from './utils/fiscal-lock.util';
+import { ReceiptActor } from './receipts.service';
 
 @ApiTags('Core - Billing transactions - Receipts')
 @ApiBearerAuth()
@@ -82,6 +86,17 @@ export class ReceiptsController {
       );
     }
     return merchantId;
+  }
+
+  /** Usuario y rol que ejecutan la operación (bloqueo fiscal / auditoría). */
+  private actorOf(
+    req: ExpressRequest & { user?: AuthenticatedUser },
+  ): ReceiptActor {
+    const user = req.user;
+    if (!user?.id) {
+      throw new ForbiddenException('An authenticated user is required');
+    }
+    return { id: user.id, role: user.role };
   }
 
   @Post()
@@ -292,6 +307,7 @@ export class ReceiptsController {
   }
 
   @Put(':id')
+  @FiscalLock(FiscalLockSource.RECEIPT_PARAM)
   @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.MERCHANT_WEB,
@@ -325,6 +341,7 @@ export class ReceiptsController {
   }
 
   @Patch(':id')
+  @FiscalLock(FiscalLockSource.RECEIPT_PARAM)
   @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.MERCHANT_WEB,
@@ -361,6 +378,7 @@ export class ReceiptsController {
   }
 
   @Patch(':id/status')
+  @FiscalLock(FiscalLockSource.RECEIPT_PARAM)
   @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.MERCHANT_WEB,
@@ -369,9 +387,8 @@ export class ReceiptsController {
     Scope.MERCHANT_CLOVER,
   )
   @ApiOperation({
-    summary: 'Change receipt status (logical delete / reactivate)',
-    description:
-      'isActive=false performs a logical deletion (the financial history is kept); isActive=true reactivates a logically deleted receipt.',
+    summary: 'Change receipt status (logical delete)',
+    description: `isActive=false performs a logical deletion (the financial history is kept). Fiscal lock (Historia 11): inactive or locked receipts are immutable, so reactivating a logically deleted receipt or deactivating a locked one returns 403 "${FISCAL_LOCK_MESSAGE}".`,
   })
   @ApiParam({ name: 'id', type: Number })
   @ApiBody({ type: UpdateReceiptStatusDto })
@@ -396,7 +413,41 @@ export class ReceiptsController {
     );
   }
 
+  @Patch(':id/lock')
+  @FiscalLock(FiscalLockSource.RECEIPT_PARAM)
+  @Roles(UserRole.MERCHANT_ADMIN)
+  @Scopes(
+    Scope.MERCHANT_WEB,
+    Scope.MERCHANT_ANDROID,
+    Scope.MERCHANT_IOS,
+    Scope.MERCHANT_CLOVER,
+  )
+  @ApiOperation({
+    summary: 'Fiscally lock a receipt (Historia 11)',
+    description: `Sets is_locked = true and records processed_by_user_id / processed_by_role of the authenticated user (updated_at is refreshed). From then on the receipt, its items and its taxes are immutable: corrections go through credit / debit notes. Only active, unlocked receipts can be locked; otherwise 403 "${FISCAL_LOCK_MESSAGE}".`,
+  })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiOkResponse({
+    description: 'Receipt locked',
+    type: OneReceiptResponseDto,
+  })
+  @ApiBadRequestResponse({ description: 'Invalid id', type: ErrorResponse })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
+  @ApiNotFoundResponse({ description: 'Not found', type: ErrorResponse })
+  async lock(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: ExpressRequest & { user?: AuthenticatedUser },
+  ): Promise<OneReceiptResponseDto> {
+    const authenticatedUserMerchantId = this.merchantIdOf(req);
+    return this.receiptsService.lock(
+      id,
+      this.actorOf(req),
+      authenticatedUserMerchantId,
+    );
+  }
+
   @Delete(':id')
+  @FiscalLock(FiscalLockSource.RECEIPT_PARAM)
   @Roles(UserRole.MERCHANT_ADMIN)
   @Scopes(
     Scope.MERCHANT_WEB,

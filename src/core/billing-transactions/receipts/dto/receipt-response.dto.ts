@@ -57,6 +57,24 @@ export class ReceiptResponseDto {
   })
   is_locked: boolean;
 
+  @ApiProperty({
+    example: 7,
+    nullable: true,
+    required: false,
+    description:
+      'User that fiscally locked (processed) the receipt; set on the lock transition',
+  })
+  processed_by_user_id?: number | null;
+
+  @ApiProperty({
+    example: 'merchant_admin',
+    nullable: true,
+    required: false,
+    description:
+      'Role of the user that fiscally locked (processed) the receipt',
+  })
+  processed_by_role?: string | null;
+
   @ApiProperty({ example: '2024-01-15T08:00:00Z' })
   created_at: Date;
 

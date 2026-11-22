@@ -26,6 +26,7 @@ import { Receipt } from '../receipts/entities/receipt.entity';
 import { Order } from 'src/restaurant-operations/pos/orders/entities/order.entity';
 import { ReceiptsService } from '../receipts/receipts.service';
 import { computeReceiptItemAmounts } from './receipt-item-calculation';
+import { assertReceiptMutable } from '../receipts/utils/fiscal-lock.util';
 
 @Injectable()
 export class ReceiptItemService {
@@ -112,12 +113,13 @@ export class ReceiptItemService {
 
   private toResponse(
     item: ReceiptItem,
-    receipt?: Pick<Receipt, 'invoice_number' | 'currency'> | null,
+    receipt?: Pick<Receipt, 'invoice_number' | 'currency' | 'is_locked'> | null,
   ): ReceiptItemResponseDto {
     return {
       id: item.id,
       receipt_id: item.receipt_id,
       receipt_invoice_number: receipt?.invoice_number ?? null,
+      receipt_is_locked: receipt?.is_locked === true,
       currency: receipt?.currency ?? 'USD',
       name: item.name,
       sku: item.sku ?? null,
@@ -161,6 +163,8 @@ export class ReceiptItemService {
       dto.receiptId,
       merchantId,
     );
+    // Historia 11: no lines can be added to a fiscally locked receipt.
+    assertReceiptMutable(receipt);
 
     const entity = Object.assign(new ReceiptItem(), {
       receipt_id: dto.receiptId,
@@ -387,6 +391,7 @@ export class ReceiptItemService {
       item.receipt_id,
       merchantId,
     );
+    assertReceiptMutable(receipt);
 
     this.assertMetadata(dto.metadata);
 
@@ -446,6 +451,7 @@ export class ReceiptItemService {
       item.receipt_id,
       merchantId,
     );
+    assertReceiptMutable(receipt);
 
     await this.receiptItemRepo.update(id, { is_active: false });
     await this.receiptsService.recalculateTotals(item.receipt_id);

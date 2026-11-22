@@ -1,4 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { FiscalLockGuard } from '../receipts/fiscal-lock/fiscal-lock.guard';
+import {
+  FISCAL_LOCK_SOURCE_KEY,
+  FiscalLockSource,
+} from '../receipts/fiscal-lock/fiscal-lock.constants';
 import { Request as ExpressRequest } from 'express';
 import { ReceiptItemController } from './receipt-item.controller';
 import { ReceiptItemService } from './receipt-item.service';
@@ -37,6 +42,7 @@ const mockOneResponse: OneReceiptItemResponseDto = {
     id: 1,
     receipt_id: 10,
     receipt_invoice_number: 'INV-000001',
+    receipt_is_locked: false,
     currency: 'USD',
     name: 'Burger Combo',
     sku: 'SKU-001',
@@ -80,7 +86,11 @@ describe('ReceiptItemController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ReceiptItemController],
       providers: [{ provide: ReceiptItemService, useValue: mockService }],
-    }).compile();
+    })
+      // FiscalLockGuard (Historia 11) tiene su propio spec; aquí solo se prueba la delegación.
+      .overrideGuard(FiscalLockGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<ReceiptItemController>(ReceiptItemController);
   });
@@ -218,6 +228,27 @@ describe('ReceiptItemController', () => {
 
       expect(mockService.remove).toHaveBeenCalledWith(1, MERCHANT_ID);
       expect(result.message).toContain('deleted');
+    });
+  });
+
+  describe('Fiscal lock (Historia 11)', () => {
+    const lockSource = (method: keyof ReceiptItemController) =>
+      Reflect.getMetadata(
+        FISCAL_LOCK_SOURCE_KEY,
+        ReceiptItemController.prototype[method],
+      ) as FiscalLockSource | undefined;
+
+    it('guards creation by the receiptId of the body', () => {
+      expect(lockSource('create')).toBe(FiscalLockSource.BODY_RECEIPT);
+    });
+
+    it('guards every update / delete through the parent receipt', () => {
+      for (const method of ['update', 'remove'] as const) {
+        expect(lockSource(method)).toBe(FiscalLockSource.ITEM_PARAM);
+      }
+      for (const method of ['findAll', 'findOne', 'findItemOptions'] as const) {
+        expect(lockSource(method)).toBeUndefined();
+      }
     });
   });
 });

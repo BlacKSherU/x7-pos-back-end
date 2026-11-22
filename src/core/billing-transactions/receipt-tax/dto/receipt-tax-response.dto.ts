@@ -43,6 +43,13 @@ export class ReceiptTaxResponseDto {
   receipt_invoice_number?: string | null;
 
   @ApiProperty({
+    example: false,
+    description:
+      'true when the parent receipt is fiscally locked: the tax cannot be edited, toggled or deleted (Historia 11)',
+  })
+  receipt_is_locked: boolean;
+
+  @ApiProperty({
     example: 'USD',
     required: false,
     nullable: true,

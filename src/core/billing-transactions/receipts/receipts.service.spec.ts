@@ -27,6 +27,7 @@ import {
 import { ReceiptType } from './constants/receipt-type.enum';
 import { ReceiptStatusFilter } from './constants/receipt-status-filter.enum';
 import { ReceiptTaxScope } from '../receipt-tax/constants/receipt-tax-scope.enum';
+import { FISCAL_LOCK_MESSAGE } from './utils/fiscal-lock.util';
 
 describe('ReceiptsService', () => {
   let service: ReceiptsService;
@@ -1275,6 +1276,8 @@ describe('ReceiptsService', () => {
         currency: 'USD',
         is_active: true,
         is_locked: false,
+        processed_by_user_id: null,
+        processed_by_role: null,
         created_at: mockReceipt.created_at,
         updated_at: mockReceipt.updated_at,
       });
@@ -1467,18 +1470,28 @@ describe('ReceiptsService', () => {
       expect(result.data.is_active).toBe(false);
     });
 
-    it('reactivates a logically deleted receipt', async () => {
-      mockReceiptRepository.findOne
-        .mockResolvedValueOnce({ ...mockReceipt, is_active: false })
-        .mockResolvedValueOnce(mockReceipt);
-
-      const result = await service.updateStatus(1, { isActive: true }, 1);
-
-      expect(mockReceiptRepository.update).toHaveBeenCalledWith(1, {
-        is_active: true,
+    it('no longer reactivates a logically deleted receipt: 403 fiscal lock (Historia 11)', async () => {
+      mockReceiptRepository.findOne.mockResolvedValueOnce({
+        ...mockReceipt,
+        is_active: false,
       });
-      expect(result.message).toBe('Receipt reactivated successfully');
-      expect(result.data.is_active).toBe(true);
+
+      await expect(
+        service.updateStatus(1, { isActive: true }, 1),
+      ).rejects.toThrow(new ForbiddenException(FISCAL_LOCK_MESSAGE));
+      expect(mockReceiptRepository.update).not.toHaveBeenCalled();
+    });
+
+    it('does not deactivate a fiscally locked receipt (Historia 11)', async () => {
+      mockReceiptRepository.findOne.mockResolvedValueOnce({
+        ...mockReceipt,
+        is_locked: true,
+      });
+
+      await expect(
+        service.updateStatus(1, { isActive: false }, 1),
+      ).rejects.toThrow(FISCAL_LOCK_MESSAGE);
+      expect(mockReceiptRepository.update).not.toHaveBeenCalled();
     });
 
     it('does not write when the receipt already has the requested status', async () => {
@@ -2125,6 +2138,100 @@ describe('ReceiptsService', () => {
       await expect(service.getTaxBreakdown({}, 0)).rejects.toThrow(
         ForbiddenException,
       );
+    });
+  });
+
+  describe('fiscal lock (Historia 11)', () => {
+    const actor = { id: 7, role: 'merchant_admin' };
+
+    it('locks an active receipt recording processed_by_user_id, processed_by_role and updated_at', async () => {
+      const lockedRow = {
+        ...mockReceipt,
+        is_locked: true,
+        processed_by_user_id: 7,
+        processed_by_role: 'merchant_admin',
+      };
+      mockReceiptRepository.findOne
+        .mockResolvedValueOnce(mockReceipt)
+        .mockResolvedValueOnce(lockedRow);
+      mockReceiptRepository.update.mockResolvedValueOnce({ affected: 1 });
+      const before = Date.now();
+
+      const result = await service.lock(1, actor, 1);
+
+      const [criteria, changes] = mockReceiptRepository.update.mock.calls[0];
+      expect(criteria).toMatchObject({ id: 1, is_active: true });
+      // is_locked NULL cuenta como "no bloqueado" (columna nullable).
+      expect(criteria.is_locked.getSql('"is_locked"')).toBe(
+        'COALESCE("is_locked", false) = false',
+      );
+      expect(changes).toMatchObject({
+        is_locked: true,
+        processed_by_user_id: 7,
+        processed_by_role: 'merchant_admin',
+      });
+      expect(changes.updated_at).toBeInstanceOf(Date);
+      expect(changes.updated_at.getTime()).toBeGreaterThanOrEqual(before);
+      expect(result.message).toBe('Receipt locked successfully');
+      expect(result.data).toMatchObject({
+        is_locked: true,
+        processed_by_user_id: 7,
+        processed_by_role: 'merchant_admin',
+      });
+    });
+
+    it('rejects locking an already locked or inactive receipt with the exact 403 message', async () => {
+      for (const row of [
+        { ...mockReceipt, is_locked: true },
+        { ...mockReceipt, is_active: false },
+      ]) {
+        mockReceiptRepository.findOne.mockResolvedValueOnce(row);
+        await expect(service.lock(1, actor, 1)).rejects.toThrow(
+          new ForbiddenException(
+            'Receipt is fiscally locked and cannot be modified.',
+          ),
+        );
+      }
+      expect(mockReceiptRepository.update).not.toHaveBeenCalled();
+    });
+
+    it('answers 403 when a concurrent request locked the receipt first', async () => {
+      mockReceiptRepository.findOne.mockResolvedValueOnce(mockReceipt);
+      mockReceiptRepository.update.mockResolvedValueOnce({ affected: 0 });
+
+      await expect(service.lock(1, actor, 1)).rejects.toThrow(
+        FISCAL_LOCK_MESSAGE,
+      );
+    });
+
+    it('validates ownership before locking', async () => {
+      mockReceiptRepository.findOne.mockResolvedValueOnce({
+        ...mockReceipt,
+        merchant_id: 2,
+      });
+      await expect(service.lock(1, actor, 1)).rejects.toThrow(
+        ForbiddenException,
+      );
+      mockReceiptRepository.findOne.mockResolvedValueOnce(null);
+      await expect(service.lock(1, actor, 1)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(mockReceiptRepository.update).not.toHaveBeenCalled();
+    });
+
+    it('does not update or delete a locked receipt', async () => {
+      mockReceiptRepository.findOne.mockResolvedValue({
+        ...mockReceipt,
+        is_locked: true,
+      });
+      mockOrderRepository.findOne.mockResolvedValue(mockOrder);
+
+      await expect(
+        service.update(1, { currency: 'EUR' }, 1),
+      ).rejects.toThrow(FISCAL_LOCK_MESSAGE);
+      await expect(service.remove(1, 1)).rejects.toThrow(FISCAL_LOCK_MESSAGE);
+      expect(mockReceiptRepository.update).not.toHaveBeenCalled();
+      expect(mockCalculationService.recalculate).not.toHaveBeenCalled();
     });
   });
 });
