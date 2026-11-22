@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, In, Repository, SelectQueryBuilder } from 'typeorm';
 import { Merchant } from 'src/platform-saas/merchants/entities/merchant.entity';
@@ -11,13 +15,37 @@ import { Item } from 'src/inventory/products-inventory/stocks/items/entities/ite
 import { Movement } from 'src/inventory/products-inventory/stocks/movements/entities/movement.entity';
 import { MovementsStatus } from 'src/inventory/products-inventory/stocks/movements/constants/movements-status';
 import { Location } from 'src/inventory/products-inventory/stocks/locations/entities/location.entity';
+import { InventoryStockAlert } from 'src/inventory/stock-alerts/entities/inventory-stock-alert.entity';
+import { InventoryStockAlertStatus } from 'src/inventory/stock-alerts/constants/inventory-stock-alert-status.enum';
 import { ReceiptItem } from '../receipt-item/entities/receipt-item.entity';
+import { Receipt } from '../receipts/entities/receipt.entity';
 import { ReceiptType } from '../receipts/constants/receipt-type.enum';
-import { InventorySkuMappingSource } from './constants/inventory-deduction-status.enum';
+import {
+  InventoryComponentKind,
+  InventoryDeductionStatus,
+  InventorySkuMappingSource,
+} from './constants/inventory-deduction-status.enum';
+import {
+  StockAvailabilityStatus,
+  StockLevel,
+} from './constants/stock-availability-status.enum';
 import { GetInventorySyncQueryDto } from './dto/get-inventory-sync-query.dto';
+import {
+  GetInventorySyncMetricsQueryDto,
+  LowStockSummaryDto,
+  LowStockWarningDto,
+  OneInventorySyncMetricsResponse,
+} from './dto/inventory-sync-metrics.dto';
+import {
+  OneStockAvailabilityResponse,
+  StockAvailabilityComponentDto,
+  StockAvailabilityLineDto,
+  ValidateStockAvailabilityDto,
+} from './dto/validate-stock-availability.dto';
 import {
   AllPaginatedInventorySyncRows,
   InventorySyncComponentDto,
+  InventorySyncLocationDto,
   InventorySyncMovementDto,
   InventorySyncRowDto,
 } from './dto/inventory-sync-row.dto';
@@ -36,6 +64,12 @@ import {
 
 /** Líneas que se escanean como máximo cuando se filtra por estado (que se calcula en memoria). */
 export const STATUS_SCAN_LIMIT = 2000;
+
+/** Días de la ventana por defecto de las métricas del header (hoy incluido). */
+export const METRICS_DEFAULT_DAYS = 7;
+
+/** Alertas de stock bajo que se detallan en las métricas (el total se cuenta completo). */
+export const LOW_STOCK_WARNING_LIMIT = 10;
 
 /** Línea de recibo con los datos de su recibo, lista para evaluar contra inventario. */
 export interface SaleLine {
@@ -73,6 +107,22 @@ export interface LineRequirement {
   components: SaleComponent[];
 }
 
+/** Entrada de la validación de stock: una línea de recibo o un SKU suelto. */
+export interface AvailabilityInput {
+  receiptItemId: number | null;
+  sku: string | null;
+  itemName: string | null;
+  quantity: number;
+}
+
+interface AvailabilityContext {
+  alreadyDeducted: boolean;
+  location: Location | null;
+  stock: Map<StockKey, Item>;
+  /** Demanda total de todas las líneas validadas por stock item. */
+  demand: Map<StockKey, number>;
+}
+
 export interface LineFilters {
   invoiceNumber?: string;
   receiptId?: number;
@@ -101,6 +151,71 @@ function nextDay(date: string): string | null {
   }
   parsed.setUTCDate(parsed.getUTCDate() + 1);
   return parsed.toISOString().slice(0, 10);
+}
+
+/** Mismas reglas que StockLevelMonitorService: <= 0 agotado, bajo el mínimo es LOW. */
+export function stockLevelOf(
+  currentQty: number,
+  minimumQty: number | null | undefined,
+): StockLevel {
+  if (currentQty <= 0) {
+    return StockLevel.OUT_OF_STOCK;
+  }
+  if (minimumQty != null && currentQty < minimumQty) {
+    return StockLevel.LOW;
+  }
+  return StockLevel.OK;
+}
+
+/** Ventana de métricas: `dateTo` (por defecto hoy, UTC) y los días previos hasta completar 7. */
+export function metricsWindow(
+  query: { dateFrom?: string; dateTo?: string },
+  now: Date,
+): { dateFrom: string; dateTo: string } {
+  const dateTo = query.dateTo ?? now.toISOString().slice(0, 10);
+  if (!nextDay(dateTo)) {
+    throw new BadRequestException(`dateTo ${dateTo} is not a valid date`);
+  }
+  let dateFrom = query.dateFrom;
+  if (!dateFrom) {
+    const start = new Date(`${dateTo}T00:00:00.000Z`);
+    start.setUTCDate(start.getUTCDate() - (METRICS_DEFAULT_DAYS - 1));
+    dateFrom = start.toISOString().slice(0, 10);
+  }
+  return { dateFrom, dateTo };
+}
+
+const locationDto = (
+  location: Location | null,
+): InventorySyncLocationDto | null =>
+  location
+    ? { id: location.id, name: location.name, code: location.code ?? null }
+    : null;
+
+const round2 = (value: number): number => Math.round(value * 100) / 100;
+
+function stockItemName(item: Item): string {
+  if (item.supply) {
+    return item.supply.name;
+  }
+  const parts = [item.product?.name, item.variant?.name].filter(
+    (part): part is string => !!part,
+  );
+  return parts.length > 0 ? parts.join(' · ') : `Stock item #${item.id}`;
+}
+
+function mappingName(mapping: SkuMapping | null): string | null {
+  if (!mapping) {
+    return null;
+  }
+  if (mapping.source === InventorySkuMappingSource.SUPPLY) {
+    return mapping.supplyName;
+  }
+  return (
+    [mapping.productName, mapping.variantName]
+      .filter((part): part is string => !!part)
+      .join(' · ') || null
+  );
 }
 
 /**
@@ -132,6 +247,10 @@ export class BillingInventorySyncService {
     private readonly movementRepo: Repository<Movement>,
     @InjectRepository(Location)
     private readonly locationRepo: Repository<Location>,
+    @InjectRepository(Receipt)
+    private readonly receiptRepo: Repository<Receipt>,
+    @InjectRepository(InventoryStockAlert)
+    private readonly stockAlertRepo: Repository<InventoryStockAlert>,
   ) {}
 
   /** Grid paginado: cada línea de recibo con su SKU, stock, ubicación, movimientos y estado. */
@@ -172,6 +291,192 @@ export class BillingInventorySyncService {
       totalPages,
       hasNext: page < totalPages,
       hasPrev: page > 1,
+    };
+  }
+
+  /**
+   * KPIs del header: líneas deducidas, conteo por estado de deducción y alertas de stock bajo
+   * disparadas por las ventas del periodo (stock items con OUT_FOR_SALE que hoy están bajo el
+   * mínimo o agotados, según su `currentQty` real).
+   */
+  async getMetrics(
+    query: GetInventorySyncMetricsQueryDto,
+    merchantId: number,
+  ): Promise<OneInventorySyncMetricsResponse> {
+    const { dateFrom, dateTo } = metricsWindow(query, new Date());
+    const items = await this.linesQuery(merchantId, { dateFrom, dateTo })
+      .take(STATUS_SCAN_LIMIT)
+      .getMany();
+    const context = await this.merchantContext(merchantId);
+    const [rows, lowStock] = await Promise.all([
+      this.evaluateLines(items.map(toSaleLine), merchantId, context),
+      this.lowStockFromRecentSales(merchantId, dateFrom, dateTo),
+    ]);
+
+    const statusCounts = Object.fromEntries(
+      Object.values(InventoryDeductionStatus).map((status) => [status, 0]),
+    ) as Record<InventoryDeductionStatus, number>;
+    let itemsDeducted = 0;
+    let unitsDeducted = 0;
+    for (const row of rows) {
+      statusCounts[row.deductionStatus] += 1;
+      if (row.deducted) {
+        itemsDeducted += 1;
+        unitsDeducted += row.quantitySold;
+      }
+    }
+
+    return {
+      statusCode: 200,
+      message: 'Inventory sync metrics retrieved successfully',
+      data: {
+        dateFrom,
+        dateTo,
+        generatedAt: new Date(),
+        salesLocation: locationDto(context.salesLocation),
+        linesEvaluated: rows.length,
+        scanLimitReached: items.length >= STATUS_SCAN_LIMIT,
+        itemsDeducted,
+        unitsDeducted: round2(unitsDeducted),
+        statusCounts,
+        lowStock,
+      },
+    };
+  }
+
+  /**
+   * Validación previa a facturar: cuánto stock consumiría un recibo (o una lista de SKU y
+   * cantidades) en la ubicación de ventas y si alcanza. La demanda se suma por stock item entre
+   * todas las líneas. Solo lee: no reserva ni descuenta stock.
+   */
+  async validateStock(
+    dto: ValidateStockAvailabilityDto,
+    merchantId: number,
+  ): Promise<OneStockAvailabilityResponse> {
+    const invoiceNumber = dto.invoiceNumber?.trim();
+    const sources = [
+      dto.receiptId != null,
+      !!invoiceNumber,
+      (dto.items?.length ?? 0) > 0,
+    ].filter(Boolean).length;
+    if (sources !== 1) {
+      throw new BadRequestException(
+        'Provide exactly one of receiptId, invoiceNumber or items',
+      );
+    }
+
+    const context = await this.merchantContext(merchantId);
+    let location = context.salesLocation;
+    if (dto.locationId != null) {
+      location = await this.locationRepo.findOne({
+        where: { id: dto.locationId, merchantId, isActive: true },
+      });
+      if (!location) {
+        throw new NotFoundException(`Location ${dto.locationId} not found`);
+      }
+    }
+
+    let receipt: Pick<Receipt, 'id' | 'invoice_number' | 'order_id'> | null =
+      null;
+    let inputs: AvailabilityInput[];
+    let alreadyDeducted = false;
+    if (dto.items?.length) {
+      inputs = dto.items.map((item) => ({
+        receiptItemId: null,
+        sku: item.sku,
+        itemName: null,
+        quantity: item.quantity,
+      }));
+    } else {
+      receipt = await this.receiptRepo.findOne({
+        where:
+          dto.receiptId != null
+            ? { id: dto.receiptId, merchant_id: merchantId, is_active: true }
+            : {
+                invoice_number: invoiceNumber,
+                merchant_id: merchantId,
+                is_active: true,
+              },
+        select: { id: true, invoice_number: true, order_id: true },
+      });
+      if (!receipt) {
+        throw new NotFoundException(
+          dto.receiptId != null
+            ? `Receipt ${dto.receiptId} not found`
+            : `Receipt with invoice number ${invoiceNumber} not found`,
+        );
+      }
+      const lines = await this.linesQuery(merchantId, {
+        receiptId: receipt.id,
+      }).getMany();
+      inputs = lines.map(toSaleLine).map((line) => ({
+        receiptItemId: line.receiptItemId,
+        sku: line.sku,
+        itemName: line.itemName,
+        quantity: line.quantity,
+      }));
+      const order = (await this.ordersById(merchantId, [receipt.order_id])).get(
+        receipt.order_id,
+      );
+      alreadyDeducted = order?.inventory_consumed_at != null;
+    }
+
+    const requirements = await this.requirementsFor(inputs, context);
+    const demanded = alreadyDeducted
+      ? []
+      : requirements.flatMap((requirement) => requirement.components);
+    const demand = new Map<StockKey, number>();
+    for (const component of demanded) {
+      demand.set(
+        component.key,
+        (demand.get(component.key) ?? 0) + component.requiredQty,
+      );
+    }
+    const stock =
+      location && demanded.length > 0
+        ? await this.stockItemsAt(location.id, merchantId, demanded)
+        : new Map<StockKey, Item>();
+
+    const availabilityContext: AvailabilityContext = {
+      alreadyDeducted,
+      location,
+      stock,
+      demand,
+    };
+    const items = inputs.map((input, index) =>
+      this.availabilityLine(input, requirements[index], availabilityContext),
+    );
+    const count = (status: StockAvailabilityStatus) =>
+      items.filter((item) => item.status === status).length;
+
+    return {
+      statusCode: 200,
+      message: 'Stock availability validated successfully',
+      data: {
+        source: receipt ? 'RECEIPT' : 'ITEMS',
+        receiptId: receipt?.id ?? null,
+        invoiceNumber: receipt?.invoice_number ?? null,
+        orderId: receipt?.order_id ?? null,
+        location: locationDto(location),
+        allAvailable:
+          count(StockAvailabilityStatus.INSUFFICIENT_STOCK) === 0 &&
+          count(StockAvailabilityStatus.LOCATION_NOT_CONFIGURED) === 0,
+        summary: {
+          lines: items.length,
+          available: count(StockAvailabilityStatus.AVAILABLE),
+          lowStockAfterSale: count(
+            StockAvailabilityStatus.LOW_STOCK_AFTER_SALE,
+          ),
+          insufficientStock: count(StockAvailabilityStatus.INSUFFICIENT_STOCK),
+          notTracked: count(StockAvailabilityStatus.NOT_TRACKED),
+          alreadyDeducted: count(StockAvailabilityStatus.ALREADY_DEDUCTED),
+          locationNotConfigured: count(
+            StockAvailabilityStatus.LOCATION_NOT_CONFIGURED,
+          ),
+        },
+        items,
+        checkedAt: new Date(),
+      },
     };
   }
 
@@ -246,11 +551,12 @@ export class BillingInventorySyncService {
   protected async evaluateLines(
     lines: SaleLine[],
     merchantId: number,
+    knownContext?: MerchantInventoryContext,
   ): Promise<InventorySyncRowDto[]> {
     if (lines.length === 0) {
       return [];
     }
-    const context = await this.merchantContext(merchantId);
+    const context = knownContext ?? (await this.merchantContext(merchantId));
     const requirements = await this.requirementsFor(lines, context);
 
     const orderIds = unique(lines.map((line) => line.orderId));
@@ -571,6 +877,236 @@ export class BillingInventorySyncService {
       }
     }
     return map;
+  }
+
+  /**
+   * Stock items que las ventas del periodo deducieron (OUT_FOR_SALE) y que hoy están bajo el
+   * mínimo o agotados, con la alerta activa de inventario que les corresponda.
+   */
+  protected async lowStockFromRecentSales(
+    merchantId: number,
+    dateFrom: string,
+    dateTo: string,
+  ): Promise<LowStockSummaryDto> {
+    const empty: LowStockSummaryDto = {
+      total: 0,
+      outOfStock: 0,
+      low: 0,
+      activeAlerts: 0,
+      warnings: [],
+    };
+    const sold = await this.movementRepo
+      .createQueryBuilder('movement')
+      .select('movement.stockItemId', 'stockItemId')
+      .addSelect('SUM(movement.quantity)', 'soldQty')
+      .addSelect('MAX(movement.createdAt)', 'lastSaleAt')
+      .where('movement.merchantId = :merchantId', { merchantId })
+      .andWhere('movement.type = :type', {
+        type: MovementsStatus.OUT_FOR_SALE,
+      })
+      .andWhere('movement.isActive = :active', { active: true })
+      .andWhere('movement.createdAt >= :from', { from: dateFrom })
+      .andWhere('movement.createdAt < :to', { to: nextDay(dateTo) })
+      .groupBy('movement.stockItemId')
+      .getRawMany<{
+        stockItemId: number | string;
+        soldQty: number | string;
+        lastSaleAt: Date | string;
+      }>();
+    if (sold.length === 0) {
+      return empty;
+    }
+
+    const soldById = new Map(sold.map((row) => [Number(row.stockItemId), row]));
+    const items = await this.stockItemRepo.find({
+      where: { id: In([...soldById.keys()]), isActive: true },
+      relations: { product: true, variant: true, supply: true, location: true },
+    });
+    const flagged = items
+      .filter((item) => item.location?.merchantId === merchantId)
+      .map((item) => ({
+        item,
+        level: stockLevelOf(toNumber(item.currentQty), item.minimumQty),
+      }))
+      .filter(({ level }) => level !== StockLevel.OK);
+    if (flagged.length === 0) {
+      return empty;
+    }
+
+    const alerts = await this.stockAlertRepo.find({
+      where: {
+        merchantId,
+        stockItemId: In(flagged.map(({ item }) => item.id)),
+        status: InventoryStockAlertStatus.ACTIVE,
+      },
+      select: { id: true, stockItemId: true },
+      order: { triggeredAt: 'DESC' },
+    });
+    const alertByItem = new Map<number, number>();
+    for (const alert of alerts) {
+      if (!alertByItem.has(alert.stockItemId)) {
+        alertByItem.set(alert.stockItemId, alert.id);
+      }
+    }
+
+    const severity = (w: LowStockWarningDto): number =>
+      w.minimumQty ? w.currentQty / w.minimumQty : w.currentQty;
+    const warnings: LowStockWarningDto[] = flagged
+      .map(({ item, level }) => {
+        const sale = soldById.get(item.id);
+        return {
+          stockItemId: item.id,
+          name: stockItemName(item),
+          sku:
+            item.variant?.sku ?? item.product?.sku ?? item.supply?.sku ?? null,
+          kind:
+            item.supplyId != null
+              ? InventoryComponentKind.RAW_MATERIAL
+              : InventoryComponentKind.PRODUCT,
+          locationId: item.locationId,
+          locationName: item.location?.name ?? null,
+          currentQty: toNumber(item.currentQty),
+          minimumQty: item.minimumQty ?? null,
+          level,
+          soldQty: toNumber(sale?.soldQty),
+          lastSaleAt: new Date(sale?.lastSaleAt ?? 0),
+          alertId: alertByItem.get(item.id) ?? null,
+        };
+      })
+      .sort(
+        (a, b) =>
+          Number(b.level === StockLevel.OUT_OF_STOCK) -
+            Number(a.level === StockLevel.OUT_OF_STOCK) ||
+          severity(a) - severity(b) ||
+          b.soldQty - a.soldQty,
+      );
+
+    const outOfStock = warnings.filter(
+      (w) => w.level === StockLevel.OUT_OF_STOCK,
+    ).length;
+    return {
+      total: warnings.length,
+      outOfStock,
+      low: warnings.length - outOfStock,
+      activeAlerts: alertByItem.size,
+      warnings: warnings.slice(0, LOW_STOCK_WARNING_LIMIT),
+    };
+  }
+
+  private availabilityLine(
+    input: AvailabilityInput,
+    requirement: LineRequirement,
+    ctx: AvailabilityContext,
+  ): StockAvailabilityLineDto {
+    const mapping = requirement.mapping;
+    const sku = input.sku?.trim() ? input.sku.trim() : null;
+    const base = {
+      receiptItemId: input.receiptItemId,
+      sku,
+      itemName: input.itemName ?? mappingName(mapping) ?? sku ?? 'Unknown item',
+      quantity: input.quantity,
+      mappingSource: mapping?.source ?? null,
+      productName: mapping?.productName ?? mapping?.supplyName ?? null,
+      variantName: mapping?.variantName ?? null,
+    };
+    const result = (
+      status: StockAvailabilityStatus,
+      reason: string,
+      components: StockAvailabilityComponentDto[] = [],
+    ): StockAvailabilityLineDto => ({ ...base, status, reason, components });
+
+    if (requirement.components.length === 0) {
+      let reason: string;
+      if (!sku) {
+        reason = 'The line has no SKU, so it does not consume inventory.';
+      } else if (!mapping) {
+        reason = `SKU ${sku} does not match any product, variant or raw material.`;
+      } else if (mapping.source === InventorySkuMappingSource.SUPPLY) {
+        reason = `SKU ${sku} is a raw material; sales only deduct recipe components.`;
+      } else if (!requirement.hasRecipe) {
+        reason = `${base.itemName} has no recipe, so selling it does not deduct stock.`;
+      } else {
+        reason = `The recipe of ${base.itemName} has no component deducted on every sale.`;
+      }
+      return result(StockAvailabilityStatus.NOT_TRACKED, reason);
+    }
+    if (ctx.alreadyDeducted) {
+      return result(
+        StockAvailabilityStatus.ALREADY_DEDUCTED,
+        'Stock was already deducted for the order of this receipt.',
+      );
+    }
+    if (!ctx.location) {
+      return result(
+        StockAvailabilityStatus.LOCATION_NOT_CONFIGURED,
+        'No sales stock location is configured for the merchant; choose a location to validate.',
+      );
+    }
+
+    const components = requirement.components.map(
+      (component): StockAvailabilityComponentDto => {
+        const item = ctx.stock.get(component.key) ?? null;
+        const availableQty = item ? toNumber(item.currentQty) : 0;
+        const totalDemand =
+          ctx.demand.get(component.key) ?? component.requiredQty;
+        const remainingAfterSale = availableQty - totalDemand;
+        const minimumQty = item?.minimumQty ?? null;
+        let status = StockAvailabilityStatus.AVAILABLE;
+        if (totalDemand > availableQty) {
+          status = StockAvailabilityStatus.INSUFFICIENT_STOCK;
+        } else if (
+          totalDemand > 0 &&
+          stockLevelOf(remainingAfterSale, minimumQty) !== StockLevel.OK
+        ) {
+          status = StockAvailabilityStatus.LOW_STOCK_AFTER_SALE;
+        }
+        return {
+          key: component.key,
+          kind: component.kind,
+          name: component.name,
+          sku: component.sku,
+          stockItemId: item?.id ?? null,
+          requiredQty: component.requiredQty,
+          totalDemand,
+          availableQty,
+          remainingAfterSale,
+          minimumQty,
+          shortfall: Math.max(0, totalDemand - availableQty),
+          status,
+        };
+      },
+    );
+
+    const where = ctx.location.name;
+    const short = components.filter(
+      (c) => c.status === StockAvailabilityStatus.INSUFFICIENT_STOCK,
+    );
+    if (short.length > 0) {
+      return result(
+        StockAvailabilityStatus.INSUFFICIENT_STOCK,
+        `Not enough stock at ${where}: ${short
+          .map((c) => `${c.name} needs ${c.totalDemand}, has ${c.availableQty}`)
+          .join('; ')}.`,
+        components,
+      );
+    }
+    const low = components.filter(
+      (c) => c.status === StockAvailabilityStatus.LOW_STOCK_AFTER_SALE,
+    );
+    if (low.length > 0) {
+      return result(
+        StockAvailabilityStatus.LOW_STOCK_AFTER_SALE,
+        `Enough stock at ${where}, but ${low
+          .map((c) => `${c.name} drops to ${c.remainingAfterSale}`)
+          .join('; ')} (at or below the minimum).`,
+        components,
+      );
+    }
+    return result(
+      StockAvailabilityStatus.AVAILABLE,
+      `Enough stock at ${where}.`,
+      components,
+    );
   }
 
   private toRow(

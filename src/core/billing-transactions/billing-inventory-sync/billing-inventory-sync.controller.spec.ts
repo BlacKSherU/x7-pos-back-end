@@ -21,6 +21,8 @@ describe('BillingInventorySyncController', () => {
   let controller: BillingInventorySyncController;
   const service = {
     findAll: jest.fn(),
+    getMetrics: jest.fn(),
+    validateStock: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -54,5 +56,30 @@ describe('BillingInventorySyncController', () => {
       controller.findAll({}, requestFor(undefined)),
     ).rejects.toBeInstanceOf(ForbiddenException);
     expect(service.findAll).not.toHaveBeenCalled();
+  });
+
+  it('returns the header metrics of the merchant', async () => {
+    const metrics = { statusCode: 200, data: { itemsDeducted: 3 } };
+    service.getMetrics.mockResolvedValue(metrics);
+    const query = { dateFrom: '2026-11-16' };
+
+    await expect(controller.getMetrics(query, requestFor(5))).resolves.toBe(
+      metrics,
+    );
+    expect(service.getMetrics).toHaveBeenCalledWith(query, 5);
+  });
+
+  it('validates stock availability for the merchant', async () => {
+    const result = { statusCode: 200, data: { allAvailable: true } };
+    service.validateStock.mockResolvedValue(result);
+    const dto = { items: [{ sku: 'BURGER-01', quantity: 2 }] };
+
+    await expect(controller.validateStock(dto, requestFor(5))).resolves.toBe(
+      result,
+    );
+    expect(service.validateStock).toHaveBeenCalledWith(dto, 5);
+    await expect(
+      controller.validateStock(dto, requestFor(undefined)),
+    ).rejects.toBeInstanceOf(ForbiddenException);
   });
 });

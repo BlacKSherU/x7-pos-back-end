@@ -10,13 +10,16 @@ import { ProductRecipe } from 'src/inventory/products-inventory/recipes/entities
 import { Item } from 'src/inventory/products-inventory/stocks/items/entities/item.entity';
 import { Movement } from 'src/inventory/products-inventory/stocks/movements/entities/movement.entity';
 import { Location } from 'src/inventory/products-inventory/stocks/locations/entities/location.entity';
+import { InventoryStockAlert } from 'src/inventory/stock-alerts/entities/inventory-stock-alert.entity';
 import { ReceiptItem } from '../receipt-item/entities/receipt-item.entity';
+import { Receipt } from '../receipts/entities/receipt.entity';
 import { BillingInventorySyncController } from './billing-inventory-sync.controller';
 import { BillingInventorySyncService } from './billing-inventory-sync.service';
 
 /**
- * Facturación ↔ inventario: grid de líneas de recibo contra las deducciones de stock de su orden.
- * Solo lee las tablas de inventario; la deducción la sigue haciendo SaleInventoryDeductionService.
+ * Facturación ↔ inventario: grid de líneas de recibo contra las deducciones de stock de su orden,
+ * métricas del header y validación de stock previa a facturar. Solo lee las tablas de inventario;
+ * la deducción la sigue haciendo SaleInventoryDeductionService.
  */
 @Module({
   imports: [
@@ -32,6 +35,8 @@ import { BillingInventorySyncService } from './billing-inventory-sync.service';
       Item,
       Movement,
       Location,
+      Receipt,
+      InventoryStockAlert,
     ]),
   ],
   controllers: [BillingInventorySyncController],

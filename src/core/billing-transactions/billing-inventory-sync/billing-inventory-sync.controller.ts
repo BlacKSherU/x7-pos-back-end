@@ -1,7 +1,11 @@
 import {
+  Body,
   Controller,
   ForbiddenException,
   Get,
+  HttpCode,
+  HttpStatus,
+  Post,
   Query,
   Request,
   UseGuards,
@@ -11,6 +15,7 @@ import {
   ApiBearerAuth,
   ApiExtraModels,
   ApiForbiddenResponse,
+  ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -31,6 +36,14 @@ import { Scope } from 'src/platform-saas/users/constants/scope.enum';
 import { BillingInventorySyncService } from './billing-inventory-sync.service';
 import { GetInventorySyncQueryDto } from './dto/get-inventory-sync-query.dto';
 import { AllPaginatedInventorySyncRows } from './dto/inventory-sync-row.dto';
+import {
+  GetInventorySyncMetricsQueryDto,
+  OneInventorySyncMetricsResponse,
+} from './dto/inventory-sync-metrics.dto';
+import {
+  OneStockAvailabilityResponse,
+  ValidateStockAvailabilityDto,
+} from './dto/validate-stock-availability.dto';
 
 @ApiTags('Core - Billing transactions - Inventory sync')
 @ApiBearerAuth()
@@ -79,5 +92,68 @@ export class BillingInventorySyncController {
     @Request() req: ExpressRequest & { user?: AuthenticatedUser },
   ): Promise<AllPaginatedInventorySyncRows> {
     return this.service.findAll(query, this.merchantIdOf(req));
+  }
+
+  @Get('metrics')
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
+  @Scopes(
+    Scope.MERCHANT_WEB,
+    Scope.MERCHANT_ANDROID,
+    Scope.MERCHANT_IOS,
+    Scope.MERCHANT_CLOVER,
+  )
+  @ApiOperation({
+    summary: 'Inventory & billing stock sync KPIs',
+    description:
+      'Header metrics for a date window (default: the last 7 days): receipt lines whose stock was deducted, counts per deduction status, and low stock warnings triggered by recent sales (stock items with OUT_FOR_SALE movements in the window whose current quantity is now below the minimum or out of stock), with their active inventory stock alerts. Status counts scan the 2000 most recent receipt lines of the window.',
+  })
+  @ApiOkResponse({
+    description: 'Inventory sync metrics retrieved',
+    type: OneInventorySyncMetricsResponse,
+  })
+  @ApiBadRequestResponse({ description: 'Invalid query', type: ErrorResponse })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
+  @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorResponse })
+  async getMetrics(
+    @Query() query: GetInventorySyncMetricsQueryDto,
+    @Request() req: ExpressRequest & { user?: AuthenticatedUser },
+  ): Promise<OneInventorySyncMetricsResponse> {
+    return this.service.getMetrics(query, this.merchantIdOf(req));
+  }
+
+  @Post('validate-stock')
+  @HttpCode(HttpStatus.OK)
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
+  @Scopes(
+    Scope.MERCHANT_WEB,
+    Scope.MERCHANT_ANDROID,
+    Scope.MERCHANT_IOS,
+    Scope.MERCHANT_CLOVER,
+  )
+  @ApiOperation({
+    summary: 'Validate stock availability (pre-billing check)',
+    description:
+      'Checks whether the stock location (default: the merchant sales location) has enough stock for a receipt (by receiptId or exact invoiceNumber) or for a list of SKUs and quantities. Recipe components are aggregated per stock item across lines. Read-only: nothing is reserved or deducted.',
+  })
+  @ApiOkResponse({
+    description: 'Availability per line and component',
+    type: OneStockAvailabilityResponse,
+  })
+  @ApiBadRequestResponse({
+    description:
+      'Invalid body or not exactly one of receiptId, invoiceNumber, items',
+    type: ErrorResponse,
+  })
+  @ApiNotFoundResponse({
+    description: 'Receipt or location not found',
+    type: ErrorResponse,
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
+  @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorResponse })
+  async validateStock(
+    @Body() dto: ValidateStockAvailabilityDto,
+    @Request() req: ExpressRequest & { user?: AuthenticatedUser },
+  ): Promise<OneStockAvailabilityResponse> {
+    return this.service.validateStock(dto, this.merchantIdOf(req));
   }
 }

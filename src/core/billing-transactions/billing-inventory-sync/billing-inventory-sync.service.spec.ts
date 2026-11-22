@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/unbound-method */
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Merchant } from 'src/platform-saas/merchants/entities/merchant.entity';
@@ -14,16 +14,26 @@ import { Item } from 'src/inventory/products-inventory/stocks/items/entities/ite
 import { Movement } from 'src/inventory/products-inventory/stocks/movements/entities/movement.entity';
 import { MovementsStatus } from 'src/inventory/products-inventory/stocks/movements/constants/movements-status';
 import { Location } from 'src/inventory/products-inventory/stocks/locations/entities/location.entity';
+import { InventoryStockAlert } from 'src/inventory/stock-alerts/entities/inventory-stock-alert.entity';
+import { InventoryStockAlertStatus } from 'src/inventory/stock-alerts/constants/inventory-stock-alert-status.enum';
 import { ReceiptItem } from '../receipt-item/entities/receipt-item.entity';
+import { Receipt } from '../receipts/entities/receipt.entity';
 import { ReceiptType } from '../receipts/constants/receipt-type.enum';
 import {
   BillingInventorySyncService,
   STATUS_SCAN_LIMIT,
+  metricsWindow,
+  stockLevelOf,
 } from './billing-inventory-sync.service';
 import {
+  InventoryComponentKind,
   InventoryDeductionStatus,
   InventorySkuMappingSource,
 } from './constants/inventory-deduction-status.enum';
+import {
+  StockAvailabilityStatus,
+  StockLevel,
+} from './constants/stock-availability-status.enum';
 import { InventorySyncRowDto } from './dto/inventory-sync-row.dto';
 
 /** QueryBuilder falso: encadena todo y devuelve `many` en getMany/getManyAndCount. */
@@ -49,6 +59,7 @@ function qbMock<T>(many: T[] = [], count?: number) {
   qb.getManyAndCount = jest
     .fn()
     .mockResolvedValue([many, count ?? many.length]);
+  qb.getRawMany = jest.fn().mockResolvedValue([]);
   return qb;
 }
 
@@ -281,6 +292,9 @@ describe('BillingInventorySyncService', () => {
   const stockItemRepo = { createQueryBuilder: jest.fn(), find: jest.fn() };
   const movementRepo = { find: jest.fn(), createQueryBuilder: jest.fn() };
   const locationRepo = { findOne: jest.fn() };
+  const receiptRepo = { findOne: jest.fn() };
+  const stockAlertRepo = { find: jest.fn() };
+  let salesQb: ReturnType<typeof qbMock>;
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -300,6 +314,10 @@ describe('BillingInventorySyncService', () => {
     orderRepo.find.mockResolvedValue(orders);
     movementRepo.find.mockResolvedValue(movements);
     stockItemRepo.createQueryBuilder.mockReturnValue(stockQb);
+    salesQb = qbMock();
+    movementRepo.createQueryBuilder.mockReturnValue(salesQb);
+    stockItemRepo.find.mockResolvedValue([]);
+    stockAlertRepo.find.mockResolvedValue([]);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -314,6 +332,11 @@ describe('BillingInventorySyncService', () => {
         { provide: getRepositoryToken(Item), useValue: stockItemRepo },
         { provide: getRepositoryToken(Movement), useValue: movementRepo },
         { provide: getRepositoryToken(Location), useValue: locationRepo },
+        { provide: getRepositoryToken(Receipt), useValue: receiptRepo },
+        {
+          provide: getRepositoryToken(InventoryStockAlert),
+          useValue: stockAlertRepo,
+        },
       ],
     }).compile();
 
@@ -566,6 +589,360 @@ describe('BillingInventorySyncService', () => {
       );
       expect(rows.get(8)!.statusReason).toMatch(/not configured/);
       expect(stockItemRepo.createQueryBuilder).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getMetrics (header KPIs)', () => {
+    const otherMerchantItem = {
+      id: 99,
+      supplyId: 1,
+      locationId: 77,
+      location: { id: 77, name: 'Elsewhere', merchantId: 2 },
+      currentQty: 0,
+      minimumQty: null,
+    } as unknown as Item;
+
+    beforeEach(() => {
+      salesQb.getRawMany.mockResolvedValue([
+        { stockItemId: '45', soldQty: '4', lastSaleAt: '2026-11-20T15:01:00Z' },
+        { stockItemId: '46', soldQty: '1', lastSaleAt: '2026-11-20T15:01:00Z' },
+        { stockItemId: '48', soldQty: '6', lastSaleAt: '2026-11-21T09:00:00Z' },
+        { stockItemId: '99', soldQty: '2', lastSaleAt: '2026-11-21T09:00:00Z' },
+      ]);
+      stockItemRepo.find.mockResolvedValue([
+        { ...beefAtBackStore, supply: { name: 'Beef patty', sku: 'RM-BEEF' } },
+        { ...colaItem, product: { name: 'Cola 355ml', sku: 'COLA' } },
+        { ...potatoAtSales, supply: { name: 'Potato', sku: 'RM-POTATO' } },
+        otherMerchantItem,
+      ]);
+      stockAlertRepo.find.mockResolvedValue([{ id: 31, stockItemId: 46 }]);
+    });
+
+    it('counts deducted lines and deduction statuses in the window', async () => {
+      const { data } = await service.getMetrics(
+        { dateFrom: '2026-11-16', dateTo: '2026-11-22' },
+        MERCHANT_ID,
+      );
+
+      expect(data).toMatchObject({
+        dateFrom: '2026-11-16',
+        dateTo: '2026-11-22',
+        salesLocation: { id: 3, name: 'Main kitchen', code: 'MAIN' },
+        linesEvaluated: 9,
+        scanLimitReached: false,
+        itemsDeducted: 2,
+        unitsDeducted: 3,
+        statusCounts: {
+          DEDUCTED: 1,
+          PENDING: 1,
+          INSUFFICIENT_STOCK: 2,
+          FAILED: 2,
+          NOT_TRACKED: 3,
+        },
+      });
+      expect(linesQb.take).toHaveBeenCalledWith(STATUS_SCAN_LIMIT);
+      expect(linesQb.andWhere).toHaveBeenCalledWith(
+        'receipt.created_at < :dateToExclusive',
+        { dateToExclusive: '2026-11-23' },
+      );
+      // El contexto del merchant se calcula una sola vez.
+      expect(merchantRepo.findOne).toHaveBeenCalledTimes(1);
+    });
+
+    it('lists low stock warnings triggered by recent sales from real stock levels', async () => {
+      const { data } = await service.getMetrics(
+        { dateFrom: '2026-11-16', dateTo: '2026-11-22' },
+        MERCHANT_ID,
+      );
+
+      expect(salesQb.where).toHaveBeenCalledWith(
+        'movement.merchantId = :merchantId',
+        { merchantId: MERCHANT_ID },
+      );
+      expect(salesQb.andWhere).toHaveBeenCalledWith('movement.type = :type', {
+        type: MovementsStatus.OUT_FOR_SALE,
+      });
+      expect(salesQb.andWhere).toHaveBeenCalledWith(
+        'movement.createdAt < :to',
+        { to: '2026-11-23' },
+      );
+      expect(stockAlertRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            merchantId: MERCHANT_ID,
+            status: InventoryStockAlertStatus.ACTIVE,
+          }),
+        }),
+      );
+
+      // Beef (18/10) está bien y el item de otro merchant se descarta.
+      expect(data.lowStock).toMatchObject({
+        total: 2,
+        outOfStock: 1,
+        low: 1,
+        activeAlerts: 1,
+      });
+      expect(data.lowStock.warnings).toEqual([
+        expect.objectContaining({
+          stockItemId: 46,
+          name: 'Cola 355ml',
+          sku: 'COLA',
+          kind: InventoryComponentKind.PRODUCT,
+          level: StockLevel.OUT_OF_STOCK,
+          currentQty: -3,
+          minimumQty: 6,
+          soldQty: 1,
+          locationName: 'Main kitchen',
+          alertId: 31,
+        }),
+        expect.objectContaining({
+          stockItemId: 48,
+          name: 'Potato',
+          kind: InventoryComponentKind.RAW_MATERIAL,
+          level: StockLevel.LOW,
+          currentQty: 1,
+          soldQty: 6,
+          alertId: null,
+        }),
+      ]);
+    });
+
+    it('skips the stock lookup when no sale deducted stock in the window', async () => {
+      salesQb.getRawMany.mockResolvedValue([]);
+      const { data } = await service.getMetrics(
+        { dateTo: '2026-11-22' },
+        MERCHANT_ID,
+      );
+      expect(data.dateFrom).toBe('2026-11-16');
+      expect(data.lowStock).toEqual({
+        total: 0,
+        outOfStock: 0,
+        low: 0,
+        activeAlerts: 0,
+        warnings: [],
+      });
+      expect(stockItemRepo.find).not.toHaveBeenCalled();
+      expect(stockAlertRepo.find).not.toHaveBeenCalled();
+    });
+
+    it('defaults to the last 7 days and validates the window', () => {
+      const now = new Date('2026-11-22T10:00:00Z');
+      expect(metricsWindow({}, now)).toEqual({
+        dateFrom: '2026-11-16',
+        dateTo: '2026-11-22',
+      });
+      expect(metricsWindow({ dateTo: '2026-03-02' }, now)).toEqual({
+        dateFrom: '2026-02-24',
+        dateTo: '2026-03-02',
+      });
+      expect(() => metricsWindow({ dateTo: '2026-02-30' }, now)).toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('classifies stock levels like the stock level monitor', () => {
+      expect(stockLevelOf(0, 5)).toBe(StockLevel.OUT_OF_STOCK);
+      expect(stockLevelOf(-2, null)).toBe(StockLevel.OUT_OF_STOCK);
+      expect(stockLevelOf(4, 5)).toBe(StockLevel.LOW);
+      expect(stockLevelOf(5, 5)).toBe(StockLevel.OK);
+      expect(stockLevelOf(1, null)).toBe(StockLevel.OK);
+    });
+  });
+
+  describe('validateStock (pre-billing check)', () => {
+    it('validates the lines of a receipt against the sales location stock', async () => {
+      receiptRepo.findOne.mockResolvedValue({
+        id: 13,
+        invoice_number: 'INV-000013',
+        order_id: 43,
+      });
+      receiptItemRepo.createQueryBuilder.mockReturnValue(
+        qbMock([receiptLines[6], receiptLines[7]]),
+      );
+
+      const { data } = await service.validateStock(
+        { receiptId: 13 },
+        MERCHANT_ID,
+      );
+
+      expect(receiptRepo.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 13, merchant_id: MERCHANT_ID, is_active: true },
+        }),
+      );
+      expect(data).toMatchObject({
+        source: 'RECEIPT',
+        receiptId: 13,
+        invoiceNumber: 'INV-000013',
+        orderId: 43,
+        location: { id: 3, name: 'Main kitchen' },
+        allAvailable: false,
+        summary: { lines: 2, available: 1, insufficientStock: 1 },
+      });
+      expect(data.items[0]).toMatchObject({
+        receiptItemId: 7,
+        status: StockAvailabilityStatus.AVAILABLE,
+        components: [
+          expect.objectContaining({
+            name: 'Beef patty',
+            stockItemId: 47,
+            requiredQty: 2,
+            availableQty: 18,
+            remainingAfterSale: 16,
+          }),
+        ],
+      });
+      expect(data.items[1]).toMatchObject({
+        receiptItemId: 8,
+        status: StockAvailabilityStatus.INSUFFICIENT_STOCK,
+        components: [
+          expect.objectContaining({
+            name: 'Potato',
+            totalDemand: 3,
+            availableQty: 1,
+            shortfall: 2,
+          }),
+        ],
+      });
+      expect(data.items[1].reason).toContain('Potato needs 3, has 1');
+    });
+
+    it('aggregates the demand of an ad-hoc SKU list per stock item', async () => {
+      const { data } = await service.validateStock(
+        {
+          items: [
+            { sku: 'burger-01', quantity: 4 },
+            { sku: 'BURGER-01', quantity: 1 },
+            { sku: 'RM-SALT', quantity: 1 },
+            { sku: 'NOPE', quantity: 1 },
+          ],
+        },
+        MERCHANT_ID,
+      );
+
+      expect(receiptRepo.findOne).not.toHaveBeenCalled();
+      expect(data).toMatchObject({
+        source: 'ITEMS',
+        receiptId: null,
+        allAvailable: true,
+        summary: { lines: 4, lowStockAfterSale: 2, notTracked: 2 },
+      });
+      // 8 + 2 hamburguesas de carne: quedan 8, bajo el mínimo de 10.
+      expect(data.items[0]).toMatchObject({
+        itemName: 'Classic burger · Double',
+        mappingSource: InventorySkuMappingSource.VARIANT,
+        status: StockAvailabilityStatus.LOW_STOCK_AFTER_SALE,
+        components: [
+          expect.objectContaining({
+            requiredQty: 8,
+            totalDemand: 10,
+            remainingAfterSale: 8,
+            minimumQty: 10,
+          }),
+        ],
+      });
+      expect(data.items[2]).toMatchObject({
+        itemName: 'Salt',
+        status: StockAvailabilityStatus.NOT_TRACKED,
+      });
+      expect(data.items[2].reason).toMatch(/raw material/);
+      expect(data.items[3].reason).toMatch(/does not match/);
+    });
+
+    it('reports receipts whose order already deducted stock', async () => {
+      receiptRepo.findOne.mockResolvedValue({
+        id: 12,
+        invoice_number: 'INV-000012',
+        order_id: 42,
+      });
+      receiptItemRepo.createQueryBuilder.mockReturnValue(
+        qbMock([receiptLines[0], receiptLines[3]]),
+      );
+
+      const { data } = await service.validateStock(
+        { invoiceNumber: ' INV-000012 ' },
+        MERCHANT_ID,
+      );
+
+      expect(receiptRepo.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            invoice_number: 'INV-000012',
+            merchant_id: MERCHANT_ID,
+            is_active: true,
+          },
+        }),
+      );
+      expect(data.items.map((i) => i.status)).toEqual([
+        StockAvailabilityStatus.ALREADY_DEDUCTED,
+        StockAvailabilityStatus.NOT_TRACKED,
+      ]);
+      expect(data.allAvailable).toBe(true);
+      expect(stockItemRepo.createQueryBuilder).not.toHaveBeenCalled();
+    });
+
+    it('checks another location of the merchant when asked', async () => {
+      locationRepo.findOne
+        .mockResolvedValueOnce(salesLocation)
+        .mockResolvedValueOnce(backStore);
+
+      const { data } = await service.validateStock(
+        { items: [{ sku: 'BURGER-01', quantity: 1 }], locationId: 4 },
+        MERCHANT_ID,
+      );
+
+      expect(locationRepo.findOne).toHaveBeenLastCalledWith({
+        where: { id: 4, merchantId: MERCHANT_ID, isActive: true },
+      });
+      expect(stockQb.where).toHaveBeenCalledWith(
+        'item.locationId = :locationId',
+        { locationId: 4 },
+      );
+      expect(data.location).toMatchObject({ id: 4, name: 'Back store' });
+    });
+
+    it('flags tracked lines when there is no location to check', async () => {
+      merchantRepo.findOne.mockResolvedValue({
+        id: MERCHANT_ID,
+        companyId: 10,
+        defaultSalesStockLocationId: null,
+      });
+      const { data } = await service.validateStock(
+        { items: [{ sku: 'FRIES', quantity: 1 }] },
+        MERCHANT_ID,
+      );
+      expect(data.items[0].status).toBe(
+        StockAvailabilityStatus.LOCATION_NOT_CONFIGURED,
+      );
+      expect(data.allAvailable).toBe(false);
+      expect(data.location).toBeNull();
+    });
+
+    it('requires exactly one source and an existing receipt and location', async () => {
+      await expect(service.validateStock({}, MERCHANT_ID)).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+      await expect(
+        service.validateStock(
+          { receiptId: 1, items: [{ sku: 'FRIES', quantity: 1 }] },
+          MERCHANT_ID,
+        ),
+      ).rejects.toBeInstanceOf(BadRequestException);
+
+      receiptRepo.findOne.mockResolvedValue(null);
+      await expect(
+        service.validateStock({ receiptId: 404 }, MERCHANT_ID),
+      ).rejects.toBeInstanceOf(NotFoundException);
+
+      locationRepo.findOne
+        .mockResolvedValueOnce(salesLocation)
+        .mockResolvedValueOnce(null);
+      await expect(
+        service.validateStock(
+          { items: [{ sku: 'FRIES', quantity: 1 }], locationId: 99 },
+          MERCHANT_ID,
+        ),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
   });
 });
