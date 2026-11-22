@@ -4,6 +4,7 @@ import { ReceiptItemModule } from './receipt-item/receipt-item.module';
 import { ReceiptTaxModule } from './receipt-tax/receipt-tax.module';
 import { BillingFinancialSyncModule } from './billing-financial-sync/billing-financial-sync.module';
 import { BillingPartnerSyncModule } from './billing-partner-sync/billing-partner-sync.module';
+import { BillingInventorySyncModule } from './billing-inventory-sync/billing-inventory-sync.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { BillingPartnerSyncModule } from './billing-partner-sync/billing-partner
     ReceiptTaxModule,
     BillingFinancialSyncModule,
     BillingPartnerSyncModule,
+    BillingInventorySyncModule,
   ],
 })
 export class BillingTransactionsModule {}
