@@ -28,6 +28,7 @@ describe('ReceiptsController', () => {
     findAll: jest.fn(),
     findOne: jest.fn(),
     update: jest.fn(),
+    updateStatus: jest.fn(),
     remove: jest.fn(),
   };
 
@@ -57,6 +58,8 @@ describe('ReceiptsController', () => {
   const mockReceiptResponseData: ReceiptResponseDto = {
     id: 1,
     order_id: 1,
+    merchant_id: 1,
+    invoice_number: 'INV-000001',
     type: ReceiptType.INVOICE,
     fiscal_data: '{"tax_id": "12345678", "fiscal_number": "ABC123"}',
     subtotal: 100.0,
@@ -64,6 +67,8 @@ describe('ReceiptsController', () => {
     total_discount: 0,
     grand_total: 119.0,
     currency: 'USD',
+    is_active: true,
+    is_locked: false,
     created_at: new Date('2024-01-15T08:00:00Z'),
     updated_at: new Date('2024-01-15T08:00:00Z'),
   };
@@ -479,6 +484,75 @@ describe('ReceiptsController', () => {
       await controller.remove(999, mockRequest as any);
 
       expect(removeSpy).toHaveBeenCalledWith(999, mockUser.merchant.id);
+    });
+  });
+
+  describe('PATCH /receipts/:id (Historia 18)', () => {
+    it('delegates partial updates (including invoiceNumber) to the service', async () => {
+      const dto: UpdateReceiptDto = { invoiceNumber: 'INV-000900' };
+      mockReceiptsService.update.mockResolvedValue({
+        ...mockOneReceiptResponse,
+        statusCode: 200,
+      });
+
+      await controller.patch(1, dto, mockRequest);
+
+      expect(service.update).toHaveBeenCalledWith(1, dto, 1);
+    });
+
+    it('rejects users without merchant', async () => {
+      const req = { user: { ...mockUser, merchant: undefined } } as any;
+      await expect(controller.patch(1, {}, req)).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(service.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('PATCH /receipts/:id/status (Historia 18)', () => {
+    it('logically deletes a receipt with isActive=false', async () => {
+      const response = {
+        statusCode: 200,
+        message: 'Receipt deactivated successfully',
+        data: { ...mockReceiptResponseData, is_active: false },
+      };
+      mockReceiptsService.updateStatus.mockResolvedValue(response);
+
+      const result = await controller.updateStatus(
+        1,
+        { isActive: false },
+        mockRequest,
+      );
+
+      expect(service.updateStatus).toHaveBeenCalledWith(
+        1,
+        { isActive: false },
+        1,
+      );
+      expect(result.data.is_active).toBe(false);
+    });
+
+    it('reactivates a receipt with isActive=true', async () => {
+      mockReceiptsService.updateStatus.mockResolvedValue({
+        statusCode: 200,
+        message: 'Receipt reactivated successfully',
+        data: mockReceiptResponseData,
+      });
+
+      await controller.updateStatus(2, { isActive: true }, mockRequest);
+
+      expect(service.updateStatus).toHaveBeenCalledWith(
+        2,
+        { isActive: true },
+        1,
+      );
+    });
+
+    it('rejects users without merchant', async () => {
+      const req = { user: { ...mockUser, merchant: undefined } } as any;
+      await expect(
+        controller.updateStatus(1, { isActive: false }, req),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 });

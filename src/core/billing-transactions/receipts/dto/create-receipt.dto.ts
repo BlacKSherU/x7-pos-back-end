@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsNumber,
   IsNotEmpty,
@@ -7,6 +7,7 @@ import {
   IsOptional,
   MaxLength,
   IsEnum,
+  Matches,
 } from 'class-validator';
 import { ReceiptType } from '../constants/receipt-type.enum';
 
@@ -43,4 +44,16 @@ export class CreateReceiptDto {
   @IsNotEmpty()
   @MaxLength(10)
   currency: string;
+
+  @ApiPropertyOptional({
+    example: 'INV-000123',
+    description:
+      'Invoice number, unique per merchant. When omitted on create, the next sequential INV-###### number is assigned.',
+    maxLength: 50,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  @Matches(/\S/, { message: 'invoiceNumber must not be blank' })
+  invoiceNumber?: string;
 }

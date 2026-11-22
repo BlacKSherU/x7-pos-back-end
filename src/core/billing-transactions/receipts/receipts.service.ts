@@ -8,9 +8,11 @@ import {
   Inject,
 } from '@nestjs/common';
 import { InjectRepository, getRepositoryToken } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { FindOptionsWhere, ILike, Repository } from 'typeorm';
 import { CreateReceiptDto } from './dto/create-receipt.dto';
 import { UpdateReceiptDto } from './dto/update-receipt.dto';
+import { UpdateReceiptStatusDto } from './dto/update-receipt-status.dto';
+import { ReceiptStatusFilter } from './constants/receipt-status-filter.enum';
 import {
   GetReceiptsQueryDto,
   ReceiptSortBy,
@@ -118,19 +120,30 @@ export class ReceiptsService {
       }
     }
 
-    const entity = this.receiptRepo.create({
-      order_id: dto.orderId,
-      merchant_id: order.merchant_id,
-      type: typeValue,
-      fiscal_data: dto.fiscalData ?? null,
-      subtotal: 0,
-      total_tax: 0,
-      total_discount: 0,
-      grand_total: 0,
-      currency: dto.currency,
-    });
+    // Número de factura único por merchant (índice merchant_id + invoice_number):
+    // uno manual se valida antes de guardar; si no llega, se asigna el siguiente INV-######.
+    const manualInvoiceNumber = this.normalizeInvoiceNumber(dto.invoiceNumber);
+    if (manualInvoiceNumber) {
+      await this.assertInvoiceNumberAvailable(
+        order.merchant_id,
+        manualInvoiceNumber,
+      );
+    }
 
-    const saved = await this.receiptRepo.save(entity);
+    const saved = await this.saveWithInvoiceNumber(
+      {
+        order_id: dto.orderId,
+        merchant_id: order.merchant_id,
+        type: typeValue,
+        fiscal_data: dto.fiscalData ?? null,
+        subtotal: 0,
+        total_tax: 0,
+        total_discount: 0,
+        grand_total: 0,
+        currency: dto.currency,
+      },
+      manualInvoiceNumber,
+    );
 
     return this.findOne(saved.id, authenticatedUserMerchantId, 'Created');
   }
@@ -160,47 +173,44 @@ export class ReceiptsService {
       }
     }
 
-    const where: any = { is_active: true };
+    // El recibo guarda su merchant_id: se filtra por él directamente en vez de
+    // cargar antes todas las órdenes del merchant.
+    const where: FindOptionsWhere<Receipt> = {
+      merchant_id: authenticatedUserMerchantId,
+    };
+    const status = query.status ?? ReceiptStatusFilter.ACTIVE;
+    if (status !== ReceiptStatusFilter.ALL) {
+      where.is_active = status === ReceiptStatusFilter.ACTIVE;
+    }
     if (query.orderId) where.order_id = query.orderId;
     if (query.type) where.type = query.type;
 
-    const orderClause: any = {};
-    if (query.sortBy) {
-      const map: Record<ReceiptSortBy, string> = {
-        [ReceiptSortBy.CREATED_AT]: 'created_at',
-        [ReceiptSortBy.TYPE]: 'type',
-      };
-      orderClause[map[query.sortBy]] = query.sortOrder || 'DESC';
-    } else {
-      orderClause.created_at = 'DESC';
-    }
+    const sortColumns: Record<ReceiptSortBy, keyof Receipt> = {
+      [ReceiptSortBy.CREATED_AT]: 'created_at',
+      [ReceiptSortBy.TYPE]: 'type',
+      [ReceiptSortBy.INVOICE_NUMBER]: 'invoice_number',
+      [ReceiptSortBy.GRAND_TOTAL]: 'grand_total',
+    };
+    const sortOrder = query.sortBy ? query.sortOrder || 'DESC' : 'DESC';
+    const sortColumn = query.sortBy ? sortColumns[query.sortBy] : 'created_at';
+    // `id` desempata para que la paginación no repita ni salte filas.
+    const orderClause: Record<string, 'ASC' | 'DESC'> = {
+      [sortColumn]: sortOrder,
+      id: sortOrder,
+    };
 
-    if (!query.orderId) {
-      const merchantOrders = await this.orderRepo.find({
-        where: { merchant_id: authenticatedUserMerchantId },
-        select: ['id'],
-      });
-      const merchantOrderIds = merchantOrders.map((o) => o.id);
-
-      if (merchantOrderIds.length === 0) {
-        return {
-          statusCode: 200,
-          message: 'Receipts retrieved successfully',
-          data: [],
-          page,
-          limit,
-          total: 0,
-          totalPages: 0,
-          hasNext: false,
-          hasPrev: false,
-        } as AllPaginatedReceipts;
-      }
-
-      where.order_id = In(merchantOrderIds);
-    }
+    // Búsqueda alfanumérica (ILIKE, coincidencia parcial) en invoice_number o fiscal_data.
+    const term = query.search?.trim();
+    const whereClause: FindOptionsWhere<Receipt> | FindOptionsWhere<Receipt>[] =
+      term
+        ? [
+            { ...where, invoice_number: ILike(`%${escapeLike(term)}%`) },
+            { ...where, fiscal_data: ILike(`%${escapeLike(term)}%`) },
+          ]
+        : where;
 
     const [rows, total] = await this.receiptRepo.findAndCount({
-      where,
+      where: whereClause,
       order: orderClause,
       skip: (page - 1) * limit,
       take: limit,
@@ -208,19 +218,7 @@ export class ReceiptsService {
 
     const totalPages = Math.ceil(total / limit);
 
-    const data: ReceiptResponseDto[] = rows.map((r) => ({
-      id: r.id,
-      order_id: r.order_id,
-      type: r.type,
-      fiscal_data: r.fiscal_data ?? null,
-      subtotal: Number(r.subtotal),
-      total_tax: Number(r.total_tax),
-      total_discount: Number(r.total_discount),
-      grand_total: Number(r.grand_total),
-      currency: r.currency,
-      created_at: r.created_at,
-      updated_at: r.updated_at,
-    }));
+    const data: ReceiptResponseDto[] = rows.map((r) => this.toResponseDto(r));
 
     return {
       statusCode: 200,
@@ -259,19 +257,7 @@ export class ReceiptsService {
       );
     }
 
-    const dataForResponse: ReceiptResponseDto = {
-      id: row.id,
-      order_id: row.order_id,
-      type: row.type,
-      fiscal_data: row.fiscal_data ?? null,
-      subtotal: Number(row.subtotal),
-      total_tax: Number(row.total_tax),
-      total_discount: Number(row.total_discount),
-      grand_total: Number(row.grand_total),
-      currency: row.currency,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
-    };
+    const dataForResponse = this.toResponseDto(row);
 
     switch (createdUpdatedDeleted) {
       case 'Created':
@@ -352,8 +338,29 @@ export class ReceiptsService {
       updateData.fiscal_data = dto.fiscalData ?? null;
     }
     if (dto.currency !== undefined) updateData.currency = dto.currency;
+    if (dto.invoiceNumber !== undefined) {
+      const invoiceNumber = this.normalizeInvoiceNumber(dto.invoiceNumber);
+      if (!invoiceNumber) {
+        throw new BadRequestException('invoiceNumber must not be blank');
+      }
+      if (invoiceNumber !== existing.invoice_number) {
+        await this.assertInvoiceNumberAvailable(
+          existing.merchant_id,
+          invoiceNumber,
+          id,
+        );
+      }
+      updateData.invoice_number = invoiceNumber;
+    }
 
-    await this.receiptRepo.update(id, updateData);
+    try {
+      await this.receiptRepo.update(id, updateData);
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        throw this.invoiceNumberConflict(String(updateData.invoice_number));
+      }
+      throw error;
+    }
     await this.recalculateTotals(id);
 
     return this.findOne(id, authenticatedUserMerchantId, 'Updated');
@@ -386,19 +393,10 @@ export class ReceiptsService {
 
     await this.receiptRepo.update(id, { is_active: false });
 
-    const dataForResponse: ReceiptResponseDto = {
-      id: existing.id,
-      order_id: existing.order_id,
-      type: existing.type,
-      fiscal_data: existing.fiscal_data ?? null,
-      subtotal: Number(existing.subtotal),
-      total_tax: Number(existing.total_tax),
-      total_discount: Number(existing.total_discount),
-      grand_total: Number(existing.grand_total),
-      currency: existing.currency,
-      created_at: existing.created_at,
-      updated_at: existing.updated_at,
-    };
+    const dataForResponse = this.toResponseDto({
+      ...existing,
+      is_active: false,
+    });
 
     return {
       statusCode: 200,
@@ -407,22 +405,157 @@ export class ReceiptsService {
     };
   }
 
-  async generateInvoiceNumber(merchantId: number): Promise<string> {
-    const lastReceipt = await this.receiptRepo.findOne({
-      where: { merchant_id: merchantId },
-      order: { id: 'DESC' },
-    });
+  /**
+   * Baja lógica (isActive = false) o reactivación (isActive = true) de un recibo.
+   * Busca el recibo en cualquier estado para poder reactivar los dados de baja; el
+   * histórico financiero (montos, items e impuestos) no se toca.
+   */
+  async updateStatus(
+    id: number,
+    dto: UpdateReceiptStatusDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneReceiptResponseDto> {
+    const existing = await this.findOwnedReceipt(
+      id,
+      authenticatedUserMerchantId,
+    );
 
-    if (!lastReceipt || !lastReceipt.invoice_number) {
-      return 'INV-000001';
+    if (existing.is_active !== dto.isActive) {
+      await this.receiptRepo.update(id, { is_active: dto.isActive });
     }
 
-    const lastNumber = lastReceipt.invoice_number;
+    const updated =
+      (await this.receiptRepo.findOne({ where: { id } })) ??
+      ({ ...existing, is_active: dto.isActive } as Receipt);
 
-    const numericPart = Number(lastNumber.replace('INV-', ''));
-
-    const nextNumber = numericPart + 1;
-
-    return `INV-${nextNumber.toString().padStart(6, '0')}`;
+    return {
+      statusCode: 200,
+      message: dto.isActive
+        ? 'Receipt reactivated successfully'
+        : 'Receipt deactivated successfully',
+      data: this.toResponseDto(updated),
+    };
   }
+
+  /**
+   * Siguiente número de factura del merchant: INV- seguido del mayor consecutivo
+   * INV-###### existente + 1 (6 dígitos mínimo). Ignora los números manuales que no
+   * siguen ese formato, así nunca devuelve INV-NaN.
+   */
+  async generateInvoiceNumber(merchantId: number): Promise<string> {
+    const raw = await this.receiptRepo
+      .createQueryBuilder('r')
+      .select(
+        'MAX(CAST(SUBSTRING(r.invoice_number FROM 5) AS BIGINT))',
+        'last_sequence',
+      )
+      .where('r.merchant_id = :merchantId', { merchantId })
+      .andWhere("r.invoice_number ~ '^INV-[0-9]{1,15}$'")
+      .getRawOne<{ last_sequence: string | number | null }>();
+
+    const lastSequence = Number(raw?.last_sequence ?? 0) || 0;
+    return `INV-${(lastSequence + 1).toString().padStart(6, '0')}`;
+  }
+
+  /** Recibo del merchant en cualquier estado (activo o dado de baja). */
+  private async findOwnedReceipt(
+    id: number,
+    merchantId: number,
+  ): Promise<Receipt> {
+    if (!id || id <= 0) throw new BadRequestException('Invalid id');
+    if (!merchantId) {
+      throw new ForbiddenException('You must be associated with a merchant');
+    }
+    const receipt = await this.receiptRepo.findOne({ where: { id } });
+    if (!receipt) throw new NotFoundException('Receipt not found');
+    if (receipt.merchant_id !== merchantId) {
+      throw new ForbiddenException(
+        'You can only access receipts from your merchant',
+      );
+    }
+    return receipt;
+  }
+
+  private toResponseDto(row: Receipt): ReceiptResponseDto {
+    return {
+      id: row.id,
+      order_id: row.order_id,
+      merchant_id: row.merchant_id,
+      invoice_number: row.invoice_number ?? null,
+      type: row.type,
+      fiscal_data: row.fiscal_data ?? null,
+      subtotal: Number(row.subtotal ?? 0),
+      total_tax: Number(row.total_tax ?? 0),
+      total_discount: Number(row.total_discount ?? 0),
+      grand_total: Number(row.grand_total ?? 0),
+      currency: row.currency,
+      is_active: row.is_active ?? true,
+      is_locked: row.is_locked ?? false,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+    };
+  }
+
+  private normalizeInvoiceNumber(value?: string | null): string | null {
+    const trimmed = value?.trim();
+    return trimmed ? trimmed : null;
+  }
+
+  /** 409 si otro recibo del merchant ya usa ese número (activo o dado de baja). */
+  private async assertInvoiceNumberAvailable(
+    merchantId: number,
+    invoiceNumber: string,
+    excludeReceiptId?: number,
+  ): Promise<void> {
+    const clash = await this.receiptRepo.findOne({
+      where: { merchant_id: merchantId, invoice_number: invoiceNumber },
+    });
+    if (clash && clash.id !== excludeReceiptId) {
+      throw this.invoiceNumberConflict(invoiceNumber);
+    }
+  }
+
+  private invoiceNumberConflict(invoiceNumber: string): ConflictException {
+    return new ConflictException(
+      `Invoice number '${invoiceNumber}' is already used by another receipt of this merchant`,
+    );
+  }
+
+  /**
+   * Guarda el recibo con su número de factura. Con número manual, una colisión en el
+   * índice único (alta simultánea) es un 409. Con número automático se recalcula el
+   * siguiente consecutivo y se reintenta (hasta 3 veces) antes de responder 409.
+   */
+  private async saveWithInvoiceNumber(
+    data: Partial<Receipt>,
+    manualInvoiceNumber: string | null,
+  ): Promise<Receipt> {
+    const maxAttempts = manualInvoiceNumber ? 1 : 3;
+    let invoiceNumber = manualInvoiceNumber ?? '';
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      invoiceNumber =
+        manualInvoiceNumber ??
+        (await this.generateInvoiceNumber(data.merchant_id as number));
+      const entity = this.receiptRepo.create({
+        ...data,
+        invoice_number: invoiceNumber,
+      });
+      try {
+        return await this.receiptRepo.save(entity);
+      } catch (error) {
+        if (!isUniqueViolation(error)) throw error;
+      }
+    }
+    throw this.invoiceNumberConflict(invoiceNumber);
+  }
+}
+
+/** Violación de índice único de Postgres (p. ej. merchant_id + invoice_number). */
+function isUniqueViolation(error: unknown): boolean {
+  return (error as { code?: string } | null)?.code === '23505';
+}
+
+/** Escapa los comodines de LIKE para buscar el texto tal cual. */
+function escapeLike(value: string): string {
+  return value.replace(/[\\%_]/g, (c) => `\\${c}`);
 }
