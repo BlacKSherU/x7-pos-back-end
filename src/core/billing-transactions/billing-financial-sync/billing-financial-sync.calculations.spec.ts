@@ -5,7 +5,12 @@ import { ReceiptPostingStatus } from './constants/posting-status.enum';
 import {
   LedgerLineInput,
   aggregateByAccount,
+  calendarDate,
+  entryNumberBase,
   escapeLike,
+  pickEntryNumber,
+  planReceiptPosting,
+  verifyLedgerAggregates,
   fromCents,
   postingStatusOf,
   reconcileReceipt,
@@ -213,6 +218,138 @@ describe('billing-financial-sync calculations', () => {
   describe('escapeLike', () => {
     it('escapes LIKE wildcards', () => {
       expect(escapeLike('INV_10%\\')).toBe('INV\\_10\\%\\\\');
+    });
+  });
+
+  describe('verifyLedgerAggregates', () => {
+    it('verifies SQL aggregates the same way as journal lines', () => {
+      expect(
+        verifyLedgerAggregates(RECEIPT, 428, {
+          debit: 2928,
+          credit: 2928,
+          assetNetDebit: 2678,
+          liabilityNetCredit: 428,
+        }).is_balanced,
+      ).toBe(true);
+      expect(verifyLedgerAggregates(RECEIPT, 428, null).is_balanced).toBeNull();
+    });
+  });
+
+  describe('planReceiptPosting', () => {
+    const ACCOUNTS = {
+      cashAccountId: 1,
+      revenueAccountId: 3,
+      taxAccountId: 4,
+      discountAccountId: 2,
+    };
+
+    it('debits ASSET with grand_total and discounts, credits REVENUE with subtotal and LIABILITY with tax', () => {
+      const plan = planReceiptPosting(
+        { id: 10, invoice_number: 'INV-10', ...RECEIPT },
+        ACCOUNTS,
+      );
+      expect(plan).toEqual({
+        ok: true,
+        total: 29.28,
+        lines: [
+          {
+            account_id: 1,
+            debit: 26.78,
+            credit: 0,
+            description: 'Receipt INV-10 · amount collected',
+          },
+          {
+            account_id: 2,
+            debit: 2.5,
+            credit: 0,
+            description: 'Receipt INV-10 · discounts granted',
+          },
+          {
+            account_id: 3,
+            debit: 0,
+            credit: 25,
+            description: 'Receipt INV-10 · sales revenue',
+          },
+          {
+            account_id: 4,
+            debit: 0,
+            credit: 4.28,
+            description: 'Receipt INV-10 · tax liability',
+          },
+        ],
+      });
+      if (plan.ok) {
+        const debit = plan.lines.reduce(
+          (sum, l) => sum + Math.round(l.debit * 100),
+          0,
+        );
+        const credit = plan.lines.reduce(
+          (sum, l) => sum + Math.round(l.credit * 100),
+          0,
+        );
+        expect(debit).toBe(credit);
+      }
+    });
+
+    it('omits the tax and discount lines when those totals are zero', () => {
+      const plan = planReceiptPosting(
+        {
+          id: 5,
+          subtotal: 10,
+          total_tax: 0,
+          total_discount: 0,
+          grand_total: 10,
+        },
+        { cashAccountId: 1, revenueAccountId: 3 },
+      );
+      expect(plan.ok && plan.lines.map((l) => l.account_id)).toEqual([1, 3]);
+      expect(plan.ok && plan.lines[0].description).toBe(
+        'Receipt #5 · amount collected',
+      );
+    });
+
+    it.each([
+      [{ ...RECEIPT, grand_total: '26.79' }, ACCOUNTS, 'UNBALANCED_TOTALS'],
+      [
+        { ...RECEIPT, total_discount: '-1.00', grand_total: '30.28' },
+        ACCOUNTS,
+        'NEGATIVE_AMOUNTS',
+      ],
+      [
+        { subtotal: 0, total_tax: 0, total_discount: 0, grand_total: 0 },
+        ACCOUNTS,
+        'ZERO_AMOUNT',
+      ],
+      [RECEIPT, { ...ACCOUNTS, taxAccountId: null }, 'MISSING_TAX_ACCOUNT'],
+      [
+        RECEIPT,
+        { ...ACCOUNTS, discountAccountId: undefined },
+        'MISSING_DISCOUNT_ACCOUNT',
+      ],
+    ])('refuses to post %o (%#)', (totals, accounts, reason) => {
+      expect(planReceiptPosting({ id: 1, ...totals }, accounts)).toMatchObject({
+        ok: false,
+        reason,
+      });
+    });
+  });
+
+  describe('entry numbers and dates', () => {
+    it('derives RCPT-<invoice|id> and suffixes it until it is free', () => {
+      expect(entryNumberBase({ id: 7, invoice_number: ' INV-7 ' })).toBe(
+        'RCPT-INV-7',
+      );
+      expect(entryNumberBase({ id: 7, invoice_number: null })).toBe('RCPT-7');
+
+      const used = new Set(['RCPT-INV-7', 'RCPT-INV-7-2']);
+      expect(pickEntryNumber('RCPT-INV-7', used)).toBe('RCPT-INV-7-3');
+      expect(pickEntryNumber('RCPT-INV-7', used)).toBe('RCPT-INV-7-4');
+      expect(pickEntryNumber('RCPT-8', used)).toBe('RCPT-8');
+    });
+
+    it('keeps the calendar date of the receipt timestamp', () => {
+      expect(calendarDate(new Date(2026, 10, 20, 23, 59))).toBe('2026-11-20');
+      expect(calendarDate(new Date(2026, 0, 5, 0, 1))).toBe('2026-01-05');
     });
   });
 });

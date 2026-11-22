@@ -1,9 +1,11 @@
 import {
+  Body,
   Controller,
   ForbiddenException,
   Get,
   Param,
   ParseIntPipe,
+  Post,
   Query,
   Request,
   UseGuards,
@@ -11,6 +13,8 @@ import {
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiBody,
+  ApiCreatedResponse,
   ApiExtraModels,
   ApiForbiddenResponse,
   ApiNotFoundResponse,
@@ -42,6 +46,12 @@ import {
   AllPaginatedFinancialSyncRows,
   OneFinancialSyncLinesResponse,
 } from './dto/financial-sync-response.dto';
+import {
+  FinancialSyncPostingAccountsResponse,
+  OneFinancialSyncMetricsResponse,
+  PostBatchToLedgerResponse,
+} from './dto/financial-sync-metrics.dto';
+import { PostBatchToLedgerDto } from './dto/post-batch-to-ledger.dto';
 
 type AuthenticatedRequest = ExpressRequest & { user?: AuthenticatedUser };
 
@@ -93,6 +103,95 @@ export class BillingFinancialSyncController {
     @Request() req: AuthenticatedRequest,
   ): Promise<AllPaginatedFinancialSyncRows> {
     return this.service.findAll(query, this.merchantIdOf(req));
+  }
+
+  @Get('metrics')
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
+  @Scopes(
+    Scope.MERCHANT_WEB,
+    Scope.MERCHANT_ANDROID,
+    Scope.MERCHANT_IOS,
+    Scope.MERCHANT_CLOVER,
+  )
+  @ApiOperation({
+    summary: 'Ledger posting metrics (header KPIs)',
+    description:
+      'Posted / pending / unposted receipts, posted revenue (net credit on REVENUE accounts of posted receipt entries), DRAFT entries pending, balances of the LIABILITY tax accounts used by receipt entries and the overall balance status.',
+  })
+  @ApiOkResponse({
+    description: 'Metrics retrieved',
+    type: OneFinancialSyncMetricsResponse,
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
+  @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorResponse })
+  @ApiNotFoundResponse({
+    description: 'Merchant not found',
+    type: ErrorResponse,
+  })
+  getMetrics(
+    @Request() req: AuthenticatedRequest,
+  ): Promise<OneFinancialSyncMetricsResponse> {
+    return this.service.getMetrics(this.merchantIdOf(req));
+  }
+
+  @Get('posting-accounts')
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
+  @Scopes(
+    Scope.MERCHANT_WEB,
+    Scope.MERCHANT_ANDROID,
+    Scope.MERCHANT_IOS,
+    Scope.MERCHANT_CLOVER,
+  )
+  @ApiOperation({
+    summary: 'Ledger accounts available for batch posting',
+    description:
+      'Active ASSET, REVENUE, LIABILITY and EXPENSE accounts of the company, ordered by code.',
+  })
+  @ApiOkResponse({
+    description: 'Accounts retrieved',
+    type: FinancialSyncPostingAccountsResponse,
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
+  @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorResponse })
+  getPostingAccounts(
+    @Request() req: AuthenticatedRequest,
+  ): Promise<FinancialSyncPostingAccountsResponse> {
+    return this.service.getPostingAccounts(this.merchantIdOf(req));
+  }
+
+  @Post('post-batch')
+  @Roles(UserRole.MERCHANT_ADMIN)
+  @Scopes(
+    Scope.MERCHANT_WEB,
+    Scope.MERCHANT_ANDROID,
+    Scope.MERCHANT_IOS,
+    Scope.MERCHANT_CLOVER,
+  )
+  @ApiOperation({
+    summary: 'POST BATCH TO LEDGER',
+    description:
+      'In one transaction, generates and posts the sales journal entry of every unposted receipt (Dr ASSET grand_total, Dr discount total_discount, Cr REVENUE subtotal, Cr LIABILITY total_tax) and posts the balanced DRAFT entries of pending receipts. Idempotent: receipts already posted are skipped. Returns the refreshed header metrics.',
+  })
+  @ApiBody({ type: PostBatchToLedgerDto })
+  @ApiCreatedResponse({
+    description: 'Batch executed',
+    type: PostBatchToLedgerResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid body or account of the wrong type',
+    type: ErrorResponse,
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
+  @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorResponse })
+  @ApiNotFoundResponse({
+    description: 'Ledger account not found or inactive',
+    type: ErrorResponse,
+  })
+  postBatch(
+    @Body() dto: PostBatchToLedgerDto,
+    @Request() req: AuthenticatedRequest,
+  ): Promise<PostBatchToLedgerResponse> {
+    return this.service.postBatch(dto, this.merchantIdOf(req));
   }
 
   @Get(':receiptId/lines')

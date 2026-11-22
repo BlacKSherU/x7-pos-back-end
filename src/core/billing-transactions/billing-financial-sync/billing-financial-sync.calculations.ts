@@ -116,6 +116,54 @@ export interface LedgerReconciliation {
   verification: BalanceVerification;
 }
 
+/** Agregados del libro mayor de un recibo, en centavos. */
+export interface LedgerAggregatesCents {
+  debit: number;
+  credit: number;
+  assetNetDebit: number;
+  liabilityNetCredit: number;
+}
+
+/**
+ * Banderas de balance a partir de los totales del recibo, la suma de sus ReceiptTax
+ * activos y los agregados de sus asientos no anulados (null si no hay asientos).
+ */
+export function verifyLedgerAggregates(
+  receipt: ReceiptTotalsInput,
+  taxRecordsCents: number,
+  ledger: LedgerAggregatesCents | null,
+): BalanceVerification {
+  const subtotal = toCents(receipt.subtotal);
+  const tax = toCents(receipt.total_tax);
+  const discount = toCents(receipt.total_discount);
+  const grandTotal = toCents(receipt.grand_total);
+
+  const receiptTotalsConsistent = subtotal + tax - discount === grandTotal;
+  const receiptTaxesMatchTotal = taxRecordsCents === tax;
+  const entriesBalanced = ledger ? ledger.debit === ledger.credit : null;
+  const grandTotalMatchesAssets = ledger
+    ? ledger.assetNetDebit === grandTotal
+    : null;
+  const taxMatchesLiabilities = ledger
+    ? ledger.liabilityNetCredit === tax
+    : null;
+
+  return {
+    receipt_totals_consistent: receiptTotalsConsistent,
+    receipt_taxes_match_total: receiptTaxesMatchTotal,
+    entries_balanced: entriesBalanced,
+    grand_total_matches_assets: grandTotalMatchesAssets,
+    tax_matches_liabilities: taxMatchesLiabilities,
+    is_balanced: ledger
+      ? receiptTotalsConsistent &&
+        receiptTaxesMatchTotal &&
+        entriesBalanced === true &&
+        grandTotalMatchesAssets === true &&
+        taxMatchesLiabilities === true
+      : null,
+  };
+}
+
 /**
  * Cruza los totales del recibo con sus impuestos y con las líneas de sus asientos
  * no anulados. `ledgerLines` vacío ⇒ las banderas del libro mayor quedan en null.
@@ -125,61 +173,190 @@ export function reconcileReceipt(
   activeTaxAmounts: readonly (number | string)[],
   ledgerLines: readonly LedgerLineInput[],
 ): LedgerReconciliation {
-  const subtotal = toCents(receipt.subtotal);
-  const tax = toCents(receipt.total_tax);
-  const discount = toCents(receipt.total_discount);
-  const grandTotal = toCents(receipt.grand_total);
   const taxRecords = activeTaxAmounts.reduce<number>(
     (sum, amount) => sum + toCents(amount),
     0,
   );
 
-  let debit = 0;
-  let credit = 0;
-  let assetNetDebit = 0;
-  let liabilityNetCredit = 0;
+  const ledger: LedgerAggregatesCents = {
+    debit: 0,
+    credit: 0,
+    assetNetDebit: 0,
+    liabilityNetCredit: 0,
+  };
   for (const line of ledgerLines) {
     const lineDebit = toCents(line.debit);
     const lineCredit = toCents(line.credit);
-    debit += lineDebit;
-    credit += lineCredit;
+    ledger.debit += lineDebit;
+    ledger.credit += lineCredit;
     if (line.account_type === AccountType.ASSET) {
-      assetNetDebit += lineDebit - lineCredit;
+      ledger.assetNetDebit += lineDebit - lineCredit;
     } else if (line.account_type === AccountType.LIABILITY) {
-      liabilityNetCredit += lineCredit - lineDebit;
+      ledger.liabilityNetCredit += lineCredit - lineDebit;
     }
   }
 
-  const hasLedger = ledgerLines.length > 0;
-  const receiptTotalsConsistent = subtotal + tax - discount === grandTotal;
-  const receiptTaxesMatchTotal = taxRecords === tax;
-  const entriesBalanced = hasLedger ? debit === credit : null;
-  const grandTotalMatchesAssets = hasLedger
-    ? assetNetDebit === grandTotal
-    : null;
-  const taxMatchesLiabilities = hasLedger ? liabilityNetCredit === tax : null;
-
   return {
-    ledger_total_debit: fromCents(debit),
-    ledger_total_credit: fromCents(credit),
-    asset_net_debit: fromCents(assetNetDebit),
-    liability_net_credit: fromCents(liabilityNetCredit),
+    ledger_total_debit: fromCents(ledger.debit),
+    ledger_total_credit: fromCents(ledger.credit),
+    asset_net_debit: fromCents(ledger.assetNetDebit),
+    liability_net_credit: fromCents(ledger.liabilityNetCredit),
     receipt_taxes_total: fromCents(taxRecords),
-    verification: {
-      receipt_totals_consistent: receiptTotalsConsistent,
-      receipt_taxes_match_total: receiptTaxesMatchTotal,
-      entries_balanced: entriesBalanced,
-      grand_total_matches_assets: grandTotalMatchesAssets,
-      tax_matches_liabilities: taxMatchesLiabilities,
-      is_balanced: hasLedger
-        ? receiptTotalsConsistent &&
-          receiptTaxesMatchTotal &&
-          entriesBalanced === true &&
-          grandTotalMatchesAssets === true &&
-          taxMatchesLiabilities === true
-        : null,
-    },
+    verification: verifyLedgerAggregates(
+      receipt,
+      taxRecords,
+      ledgerLines.length > 0 ? ledger : null,
+    ),
   };
+}
+
+// ─── Posteo por lotes ───────────────────────────────────────────────────────
+
+/** Cuentas contables elegidas para generar los asientos de los recibos. */
+export interface PostingAccountIds {
+  cashAccountId: number;
+  revenueAccountId: number;
+  taxAccountId?: number | null;
+  discountAccountId?: number | null;
+}
+
+export type PostingSkipReason =
+  | 'NOT_FOUND'
+  | 'ALREADY_POSTED'
+  | 'UNBALANCED_DRAFT'
+  | 'ZERO_AMOUNT'
+  | 'NEGATIVE_AMOUNTS'
+  | 'UNBALANCED_TOTALS'
+  | 'MISSING_TAX_ACCOUNT'
+  | 'MISSING_DISCOUNT_ACCOUNT';
+
+export interface PlannedPostingLine {
+  account_id: number;
+  debit: number;
+  credit: number;
+  description: string;
+}
+
+export type ReceiptPostingPlan =
+  | { ok: true; lines: PlannedPostingLine[]; total: number }
+  | { ok: false; reason: PostingSkipReason; detail: string };
+
+export interface PostableReceipt extends ReceiptTotalsInput {
+  id: number;
+  invoice_number?: string | null;
+}
+
+export function receiptLabel(receipt: {
+  id: number;
+  invoice_number?: string | null;
+}): string {
+  return receipt.invoice_number?.trim() || `#${receipt.id}`;
+}
+
+/**
+ * Asiento de venta de un recibo (partida doble, en centavos):
+ *   Dr ASSET     grand_total
+ *   Dr descuento total_discount   (si > 0)
+ *   Cr REVENUE   subtotal
+ *   Cr LIABILITY total_tax        (si > 0)
+ * Cuadra porque grand_total = subtotal + total_tax − total_discount; si los totales del
+ * recibo no cumplen esa igualdad, no se postea.
+ */
+export function planReceiptPosting(
+  receipt: PostableReceipt,
+  accounts: PostingAccountIds,
+): ReceiptPostingPlan {
+  const subtotal = toCents(receipt.subtotal);
+  const tax = toCents(receipt.total_tax);
+  const discount = toCents(receipt.total_discount);
+  const grandTotal = toCents(receipt.grand_total);
+  const label = receiptLabel(receipt);
+
+  if ([subtotal, tax, discount, grandTotal].some((cents) => cents < 0)) {
+    return {
+      ok: false,
+      reason: 'NEGATIVE_AMOUNTS',
+      detail: `Receipt ${label} has negative totals`,
+    };
+  }
+  if (subtotal === 0 && grandTotal === 0) {
+    return {
+      ok: false,
+      reason: 'ZERO_AMOUNT',
+      detail: `Receipt ${label} has no amounts to post`,
+    };
+  }
+  if (subtotal + tax - discount !== grandTotal) {
+    return {
+      ok: false,
+      reason: 'UNBALANCED_TOTALS',
+      detail: `Receipt ${label}: subtotal + tax − discount ≠ grand total`,
+    };
+  }
+  if (tax > 0 && !accounts.taxAccountId) {
+    return {
+      ok: false,
+      reason: 'MISSING_TAX_ACCOUNT',
+      detail: `Receipt ${label} carries tax but no tax liability account was selected`,
+    };
+  }
+  if (discount > 0 && !accounts.discountAccountId) {
+    return {
+      ok: false,
+      reason: 'MISSING_DISCOUNT_ACCOUNT',
+      detail: `Receipt ${label} carries a discount but no discount account was selected`,
+    };
+  }
+
+  const lines: PlannedPostingLine[] = [];
+  const add = (
+    accountId: number | null | undefined,
+    debit: number,
+    credit: number,
+    what: string,
+  ) => {
+    if (!accountId || (debit === 0 && credit === 0)) return;
+    lines.push({
+      account_id: accountId,
+      debit: fromCents(debit),
+      credit: fromCents(credit),
+      description: `Receipt ${label} · ${what}`,
+    });
+  };
+  add(accounts.cashAccountId, grandTotal, 0, 'amount collected');
+  add(accounts.discountAccountId, discount, 0, 'discounts granted');
+  add(accounts.revenueAccountId, 0, subtotal, 'sales revenue');
+  add(accounts.taxAccountId, 0, tax, 'tax liability');
+
+  return { ok: true, lines, total: fromCents(grandTotal + discount) };
+}
+
+/** Número de asiento base de un recibo: RCPT-<invoice_number | id>. */
+export function entryNumberBase(receipt: {
+  id: number;
+  invoice_number?: string | null;
+}): string {
+  return `RCPT-${receipt.invoice_number?.trim() || receipt.id}`.slice(0, 90);
+}
+
+/**
+ * Primer número libre para `base` (el índice (company_id, entry_number) es único): base,
+ * luego base-2, base-3… Reserva el elegido en `used`.
+ */
+export function pickEntryNumber(base: string, used: Set<string>): string {
+  let candidate = base;
+  for (let n = 2; used.has(candidate); n++) {
+    candidate = `${base}-${n}`;
+  }
+  used.add(candidate);
+  return candidate;
+}
+
+/** Fecha de calendario (YYYY-MM-DD) de un timestamp sin zona leído por pg como hora local. */
+export function calendarDate(value: Date | string): string {
+  const date = value instanceof Date ? value : new Date(value);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
 /** Escapa los comodines de LIKE/ILIKE (\, % y _) de un texto de búsqueda. */

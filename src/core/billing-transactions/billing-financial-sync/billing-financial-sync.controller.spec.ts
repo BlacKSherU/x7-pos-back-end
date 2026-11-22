@@ -17,6 +17,9 @@ describe('BillingFinancialSyncController', () => {
   const service = {
     findAll: jest.fn(),
     findLines: jest.fn(),
+    getMetrics: jest.fn(),
+    getPostingAccounts: jest.fn(),
+    postBatch: jest.fn(),
   };
 
   const user: AuthenticatedUser = {
@@ -67,5 +70,30 @@ describe('BillingFinancialSyncController', () => {
     expect(() => controller.findAll({}, noMerchant)).toThrow(
       ForbiddenException,
     );
+  });
+
+  it('returns the header metrics of the merchant', async () => {
+    const response = { statusCode: 200, data: { posted_receipts: 3 } };
+    service.getMetrics.mockResolvedValue(response);
+
+    await expect(controller.getMetrics(req)).resolves.toBe(response);
+    expect(service.getMetrics).toHaveBeenCalledWith(7);
+  });
+
+  it('lists the accounts available for batch posting', async () => {
+    const response = { statusCode: 200, data: [] };
+    service.getPostingAccounts.mockResolvedValue(response);
+
+    await expect(controller.getPostingAccounts(req)).resolves.toBe(response);
+    expect(service.getPostingAccounts).toHaveBeenCalledWith(7);
+  });
+
+  it('runs POST BATCH TO LEDGER with the selected accounts', async () => {
+    const response = { statusCode: 201, data: { metrics: {} } };
+    service.postBatch.mockResolvedValue(response);
+    const dto = { cashAccountId: 1, revenueAccountId: 3, taxAccountId: 4 };
+
+    await expect(controller.postBatch(dto, req)).resolves.toBe(response);
+    expect(service.postBatch).toHaveBeenCalledWith(dto, 7);
   });
 });
