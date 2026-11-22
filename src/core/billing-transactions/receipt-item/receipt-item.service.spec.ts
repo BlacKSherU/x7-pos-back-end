@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ReceiptAuditService } from '../receipts/audit/receipt-audit.service';
 import { ReceiptItemService } from './receipt-item.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ReceiptItem } from './entities/receipt-item.entity';
@@ -67,6 +68,7 @@ describe('ReceiptItemService', () => {
     findOne: jest.fn(),
   };
   const mockReceiptsService = { recalculateTotals: jest.fn() };
+  const mockReceiptAudit = { record: jest.fn() };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -79,10 +81,12 @@ describe('ReceiptItemService', () => {
         { provide: getRepositoryToken(Receipt), useValue: mockReceiptRepo },
         { provide: getRepositoryToken(Order), useValue: mockOrderRepo },
         { provide: ReceiptsService, useValue: mockReceiptsService },
+        { provide: ReceiptAuditService, useValue: mockReceiptAudit },
       ],
     }).compile();
 
     service = module.get<ReceiptItemService>(ReceiptItemService);
+    mockReceiptAudit.record.mockResolvedValue(null);
 
     // Default happy-path mocks
     mockReceiptRepo.findOne.mockResolvedValue(mockReceipt);
@@ -709,5 +713,126 @@ describe('ReceiptItemService', () => {
       expect(result.data.receipt_is_locked).toBe(true);
     });
   });
-});
 
+  // ─── audit trail (Historia 6) ───────────────────────────────────────────────
+
+  describe('audit trail (Historia 6)', () => {
+    const actor = { id: 7, role: 'merchant_admin' };
+    const receiptWithTotals = {
+      ...mockReceipt,
+      merchant_id: MERCHANT_ID,
+      subtotal: '25.00',
+      total_tax: '0.00',
+      total_discount: '2.50',
+      grand_total: '22.50',
+    } as unknown as Receipt;
+    const before = {
+      subtotal: 25,
+      total_tax: 0,
+      total_discount: 2.5,
+      grand_total: 22.5,
+    };
+    const after = {
+      subtotal: 28,
+      total_tax: 0,
+      total_discount: 2.5,
+      grand_total: 25.5,
+    };
+    const recorded = () =>
+      mockReceiptAudit.record.mock.calls.map(
+        (call: unknown[]) => call[0] as Record<string, unknown>,
+      );
+
+    beforeEach(() => {
+      mockReceiptRepo.findOne.mockResolvedValue(receiptWithTotals);
+      mockReceiptsService.recalculateTotals.mockResolvedValue(after);
+    });
+
+    it('create records ITEM_MODIFIED with the totals before and after the recalculation', async () => {
+      await service.create(
+        { receiptId: 10, name: 'Soda', quantity: 1, unitPrice: 3 },
+        MERCHANT_ID,
+        actor,
+      );
+
+      expect(recorded()).toEqual([
+        expect.objectContaining({
+          receipt: receiptWithTotals,
+          action: 'ITEM_MODIFIED',
+          actor,
+          previous: before,
+          next: after,
+          metadata: expect.objectContaining({
+            operation: 'CREATED',
+            name: 'Soda',
+            quantity: 1,
+            unit_price: 3,
+            total: 3,
+          }),
+        }),
+      ]);
+      // El evento se registra después del recálculo (los totales nuevos ya existen).
+      expect(
+        mockReceiptsService.recalculateTotals.mock.invocationCallOrder[0],
+      ).toBeLessThan(mockReceiptAudit.record.mock.invocationCallOrder[0]);
+    });
+
+    it('update tags edits, logical deletions and restores', async () => {
+      await service.update(1, { quantity: 3 }, MERCHANT_ID, actor);
+      await service.update(1, { isActive: false }, MERCHANT_ID, actor);
+      mockReceiptItemRepo.findOne.mockResolvedValueOnce(
+        buildItem({ is_active: false }),
+      );
+      await service.update(1, { isActive: true }, MERCHANT_ID, actor);
+
+      expect(
+        recorded().map(
+          (event) => (event.metadata as { operation: string }).operation,
+        ),
+      ).toEqual(['UPDATED', 'DELETED', 'RESTORED']);
+      expect(recorded()[0]).toMatchObject({
+        action: 'ITEM_MODIFIED',
+        previous: before,
+        next: after,
+        metadata: { receipt_item_id: 1, quantity: 3 },
+      });
+    });
+
+    it('remove records ITEM_MODIFIED / DELETED', async () => {
+      await service.remove(1, MERCHANT_ID, actor);
+
+      expect(recorded()).toEqual([
+        expect.objectContaining({
+          action: 'ITEM_MODIFIED',
+          actor,
+          previous: before,
+          next: after,
+          metadata: expect.objectContaining({
+            operation: 'DELETED',
+            receipt_item_id: 1,
+          }),
+        }),
+      ]);
+    });
+
+    it('keeps the previous totals when the recalculation returns nothing', async () => {
+      mockReceiptsService.recalculateTotals.mockResolvedValueOnce(null);
+
+      await service.remove(1, MERCHANT_ID, actor);
+
+      expect(recorded()[0]).toMatchObject({ previous: before, next: before });
+    });
+
+    it('records nothing for a rejected change', async () => {
+      mockReceiptRepo.findOne.mockResolvedValue({
+        ...receiptWithTotals,
+        is_locked: true,
+      });
+
+      await expect(service.remove(1, MERCHANT_ID, actor)).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(mockReceiptAudit.record).not.toHaveBeenCalled();
+    });
+  });
+});

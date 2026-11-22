@@ -3,6 +3,8 @@
 /* eslint-disable @typescript-eslint/unbound-method */
 
 import { Test, TestingModule } from '@nestjs/testing';
+import { ReceiptAuditAction } from './audit/receipt-audit-action.enum';
+import { ReceiptAuditService } from './audit/receipt-audit.service';
 import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import {
@@ -77,6 +79,10 @@ describe('ReceiptsService', () => {
     createQueryBuilder: jest.fn(),
   };
   const mockCalculationService = { recalculate: jest.fn() };
+  const mockReceiptAudit = {
+    record: jest.fn(),
+    findForReceipt: jest.fn(),
+  };
 
   const mockOrder = {
     id: 1,
@@ -126,6 +132,7 @@ describe('ReceiptsService', () => {
           provide: ReceiptsCalculationService,
           useValue: mockCalculationService,
         },
+        { provide: ReceiptAuditService, useValue: mockReceiptAudit },
       ],
     }).compile();
 
@@ -149,6 +156,8 @@ describe('ReceiptsService', () => {
       makeQueryBuilder({ one: { last_sequence: null } }),
     );
     mockOrderRepository.findOne.mockResolvedValue(mockOrder);
+    mockReceiptAudit.record.mockResolvedValue(null);
+    mockReceiptAudit.findForReceipt.mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -163,13 +172,31 @@ describe('ReceiptsService', () => {
     it('delegates the calculation to ReceiptsCalculationService', async () => {
       mockCalculationService.recalculate.mockResolvedValueOnce(null);
 
-      await expect(service.recalculateTotals(7)).resolves.toBeUndefined();
+      await expect(service.recalculateTotals(7)).resolves.toBeNull();
 
       expect(mockCalculationService.recalculate).toHaveBeenCalledWith(7);
       expect(receiptRepository.update).not.toHaveBeenCalled();
     });
 
-    it('propagates calculation errors (e.g. totals out of decimal(12,2) range)', async () => {
+    it('returns the recalculated totals for the audit trail (Historia 6)', async () => {
+      mockCalculationService.recalculate.mockResolvedValueOnce({
+        subtotal: 100,
+        total_tax: 19,
+        total_discount: 5,
+        grand_total: 114,
+        taxes: [],
+        lines: [],
+      });
+
+      await expect(service.recalculateTotals(7)).resolves.toEqual({
+        subtotal: 100,
+        total_tax: 19,
+        total_discount: 5,
+        grand_total: 114,
+      });
+    });
+
+        it('propagates calculation errors (e.g. totals out of decimal(12,2) range)', async () => {
       mockCalculationService.recalculate.mockRejectedValueOnce(
         new BadRequestException('Receipt grand_total exceeds range'),
       );
@@ -2232,6 +2259,210 @@ describe('ReceiptsService', () => {
       await expect(service.remove(1, 1)).rejects.toThrow(FISCAL_LOCK_MESSAGE);
       expect(mockReceiptRepository.update).not.toHaveBeenCalled();
       expect(mockCalculationService.recalculate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('audit trail (Historia 6)', () => {
+    const actor = { id: 7, role: 'merchant_admin' };
+    const totalsOf = (row: typeof mockReceipt) => ({
+      subtotal: Number(row.subtotal),
+      total_tax: Number(row.total_tax),
+      total_discount: Number(row.total_discount),
+      grand_total: Number(row.grand_total),
+    });
+    const recorded = () =>
+      mockReceiptAudit.record.mock.calls.map(
+        (call: unknown[]) => call[0] as Record<string, unknown>,
+      );
+
+    it('create records CREATED with the user, role and the new totals', async () => {
+      mockReceiptRepository.findOne
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(mockReceipt);
+      mockReceiptRepository.create.mockReturnValue(mockReceipt);
+      mockReceiptRepository.save.mockResolvedValue(mockReceipt);
+
+      await service.create(
+        { orderId: 1, type: ReceiptType.INVOICE, currency: 'USD' },
+        1,
+        actor,
+      );
+
+      expect(recorded()).toEqual([
+        expect.objectContaining({
+          receipt: mockReceipt,
+          action: ReceiptAuditAction.CREATED,
+          actor,
+          next: totalsOf(mockReceipt),
+          metadata: expect.objectContaining({
+            source: 'manual',
+            invoice_number: 'INV-000001',
+          }),
+        }),
+      ]);
+    });
+
+    it('update records UPDATED with the totals before and after the recalculation and the changed fields', async () => {
+      mockReceiptRepository.findOne.mockResolvedValue(mockReceipt);
+      mockReceiptRepository.update.mockResolvedValue({ affected: 1 });
+      mockCalculationService.recalculate.mockResolvedValueOnce({
+        subtotal: 100,
+        total_tax: 0,
+        total_discount: 0,
+        grand_total: 100,
+        taxes: [],
+        lines: [],
+      });
+
+      await service.update(
+        1,
+        {
+          currency: 'EUR',
+          fiscalData:
+            '{"tax_id": "12345678", "exemption_code": "EX-1", "tax_exempt": true}',
+        },
+        1,
+        actor,
+      );
+
+      const [event] = recorded();
+      expect(event).toMatchObject({
+        action: ReceiptAuditAction.UPDATED,
+        actor,
+        previous: {
+          subtotal: 100,
+          total_tax: 19,
+          total_discount: 0,
+          grand_total: 119,
+        },
+        next: { subtotal: 100, total_tax: 0, total_discount: 0, grand_total: 100 },
+        metadata: { changed_fields: ['currency', 'fiscal_data'] },
+      });
+    });
+
+    it('update does not list fields sent with their current value as changed', async () => {
+      mockReceiptRepository.findOne.mockResolvedValue(mockReceipt);
+      mockReceiptRepository.update.mockResolvedValue({ affected: 1 });
+      mockCalculationService.recalculate.mockResolvedValueOnce(null);
+
+      await service.update(1, { currency: 'USD' }, 1, actor);
+
+      expect(recorded()[0]).toMatchObject({
+        action: ReceiptAuditAction.UPDATED,
+        previous: totalsOf(mockReceipt),
+        next: totalsOf(mockReceipt),
+        metadata: { changed_fields: [] },
+      });
+    });
+
+    it('remove and updateStatus(isActive=false) record DEACTIVATED with unchanged totals', async () => {
+      mockReceiptRepository.findOne.mockResolvedValue(mockReceipt);
+      mockReceiptRepository.update.mockResolvedValue({ affected: 1 });
+
+      await service.remove(1, 1, actor);
+      await service.updateStatus(1, { isActive: false }, 1, actor);
+
+      expect(recorded()).toEqual([
+        expect.objectContaining({
+          action: ReceiptAuditAction.DEACTIVATED,
+          actor,
+          previous: totalsOf(mockReceipt),
+          next: totalsOf(mockReceipt),
+          metadata: { via: 'delete' },
+        }),
+        expect.objectContaining({
+          action: ReceiptAuditAction.DEACTIVATED,
+          metadata: { via: 'status' },
+        }),
+      ]);
+    });
+
+    it('updateStatus without a real change records nothing', async () => {
+      mockReceiptRepository.findOne.mockResolvedValue(mockReceipt);
+
+      await service.updateStatus(1, { isActive: true }, 1, actor);
+
+      expect(mockReceiptAudit.record).not.toHaveBeenCalled();
+    });
+
+    it('lock records LOCKED with the locking user and role', async () => {
+      mockReceiptRepository.findOne
+        .mockResolvedValueOnce(mockReceipt)
+        .mockResolvedValueOnce({ ...mockReceipt, is_locked: true });
+      mockReceiptRepository.update.mockResolvedValueOnce({ affected: 1 });
+
+      await service.lock(1, actor, 1);
+
+      expect(recorded()).toEqual([
+        expect.objectContaining({
+          action: ReceiptAuditAction.LOCKED,
+          actor,
+          previous: totalsOf(mockReceipt),
+          next: totalsOf(mockReceipt),
+        }),
+      ]);
+    });
+
+    it('records nothing when the operation is rejected', async () => {
+      mockReceiptRepository.findOne.mockResolvedValue({
+        ...mockReceipt,
+        is_locked: true,
+      });
+
+      await expect(service.lock(1, actor, 1)).rejects.toThrow(
+        FISCAL_LOCK_MESSAGE,
+      );
+      await expect(service.remove(1, 1, actor)).rejects.toThrow(
+        FISCAL_LOCK_MESSAGE,
+      );
+      expect(mockReceiptAudit.record).not.toHaveBeenCalled();
+    });
+
+    it('getActivityLog returns the events of an owned receipt in any state', async () => {
+      const events = [
+        { id: 1, action: ReceiptAuditAction.CREATED },
+        { id: 2, action: ReceiptAuditAction.LOCKED },
+      ];
+      mockReceiptRepository.findOne.mockResolvedValueOnce({
+        ...mockReceipt,
+        is_active: false,
+      });
+      mockReceiptAudit.findForReceipt.mockResolvedValueOnce(events);
+
+      const result = await service.getActivityLog(1, 1);
+
+      expect(mockReceiptRepository.findOne).toHaveBeenCalledWith({
+        where: { id: 1 },
+      });
+      expect(mockReceiptAudit.findForReceipt).toHaveBeenCalledWith(1);
+      expect(result).toEqual({
+        statusCode: 200,
+        message: 'Receipt activity log retrieved successfully',
+        data: {
+          receipt_id: 1,
+          invoice_number: 'INV-000001',
+          currency: 'USD',
+          events,
+        },
+      });
+    });
+
+    it('getActivityLog validates ownership', async () => {
+      mockReceiptRepository.findOne.mockResolvedValueOnce({
+        ...mockReceipt,
+        merchant_id: 2,
+      });
+      await expect(service.getActivityLog(1, 1)).rejects.toThrow(
+        ForbiddenException,
+      );
+      mockReceiptRepository.findOne.mockResolvedValueOnce(null);
+      await expect(service.getActivityLog(1, 1)).rejects.toThrow(
+        NotFoundException,
+      );
+      await expect(service.getActivityLog(0, 1)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(mockReceiptAudit.findForReceipt).not.toHaveBeenCalled();
     });
   });
 });

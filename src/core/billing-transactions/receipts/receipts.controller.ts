@@ -60,7 +60,8 @@ import { Scope } from 'src/platform-saas/users/constants/scope.enum';
 import { FiscalLock } from './fiscal-lock/fiscal-lock.decorator';
 import { FiscalLockSource } from './fiscal-lock/fiscal-lock.constants';
 import { FISCAL_LOCK_MESSAGE } from './utils/fiscal-lock.util';
-import { ReceiptActor } from './receipts.service';
+import { ReceiptActor, receiptActorOf } from './audit/receipt-audit.util';
+import { ReceiptActivityLogResponseDto } from './audit/dto/receipt-activity-log-response.dto';
 
 @ApiTags('Core - Billing transactions - Receipts')
 @ApiBearerAuth()
@@ -127,7 +128,11 @@ export class ReceiptsController {
     @Request() req: ExpressRequest & { user?: AuthenticatedUser },
   ): Promise<OneReceiptResponseDto> {
     const authenticatedUserMerchantId = this.merchantIdOf(req);
-    return this.receiptsService.create(dto, authenticatedUserMerchantId);
+    return this.receiptsService.create(
+      dto,
+      authenticatedUserMerchantId,
+      receiptActorOf(req.user),
+    );
   }
 
   @Get()
@@ -306,6 +311,36 @@ export class ReceiptsController {
     return this.receiptsService.getDetails(id, authenticatedUserMerchantId);
   }
 
+  @Get(':id/activity-log')
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
+  @Scopes(
+    Scope.MERCHANT_WEB,
+    Scope.MERCHANT_ANDROID,
+    Scope.MERCHANT_IOS,
+    Scope.MERCHANT_CLOVER,
+  )
+  @ApiOperation({
+    summary: 'Receipt activity log / audit trail (Historia 6)',
+    description:
+      'Every lifecycle event of a receipt of the merchant (CREATED, UPDATED, LOCKED, TAX_MODIFIED, ITEM_MODIFIED, DEACTIVATED, MODIFICATION_BLOCKED, ADJUSTMENT_ISSUED) in exact chronological order (created_at, id), with the user id, role, user name, timestamp and the subtotal / total_tax / total_discount / grand_total before and after each event.',
+  })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiOkResponse({
+    description: 'Receipt activity log retrieved',
+    type: ReceiptActivityLogResponseDto,
+  })
+  @ApiBadRequestResponse({ description: 'Invalid id', type: ErrorResponse })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
+  @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorResponse })
+  @ApiNotFoundResponse({ description: 'Not found', type: ErrorResponse })
+  async getActivityLog(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: ExpressRequest & { user?: AuthenticatedUser },
+  ): Promise<ReceiptActivityLogResponseDto> {
+    const authenticatedUserMerchantId = this.merchantIdOf(req);
+    return this.receiptsService.getActivityLog(id, authenticatedUserMerchantId);
+  }
+
   @Put(':id')
   @FiscalLock(FiscalLockSource.RECEIPT_PARAM)
   @Roles(UserRole.MERCHANT_ADMIN)
@@ -337,7 +372,12 @@ export class ReceiptsController {
     @Request() req: ExpressRequest & { user?: AuthenticatedUser },
   ): Promise<OneReceiptResponseDto> {
     const authenticatedUserMerchantId = this.merchantIdOf(req);
-    return this.receiptsService.update(id, dto, authenticatedUserMerchantId);
+    return this.receiptsService.update(
+      id,
+      dto,
+      authenticatedUserMerchantId,
+      receiptActorOf(req.user),
+    );
   }
 
   @Patch(':id')
@@ -374,7 +414,12 @@ export class ReceiptsController {
     @Request() req: ExpressRequest & { user?: AuthenticatedUser },
   ): Promise<OneReceiptResponseDto> {
     const authenticatedUserMerchantId = this.merchantIdOf(req);
-    return this.receiptsService.update(id, dto, authenticatedUserMerchantId);
+    return this.receiptsService.update(
+      id,
+      dto,
+      authenticatedUserMerchantId,
+      receiptActorOf(req.user),
+    );
   }
 
   @Patch(':id/status')
@@ -410,6 +455,7 @@ export class ReceiptsController {
       id,
       dto,
       authenticatedUserMerchantId,
+      receiptActorOf(req.user),
     );
   }
 
@@ -470,6 +516,10 @@ export class ReceiptsController {
     @Request() req: ExpressRequest & { user?: AuthenticatedUser },
   ): Promise<OneReceiptResponseDto> {
     const authenticatedUserMerchantId = this.merchantIdOf(req);
-    return this.receiptsService.remove(id, authenticatedUserMerchantId);
+    return this.receiptsService.remove(
+      id,
+      authenticatedUserMerchantId,
+      receiptActorOf(req.user),
+    );
   }
 }

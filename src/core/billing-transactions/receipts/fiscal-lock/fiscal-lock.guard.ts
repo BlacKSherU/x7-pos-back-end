@@ -3,6 +3,7 @@ import {
   ExecutionContext,
   ForbiddenException,
   Injectable,
+  Logger,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
@@ -19,6 +20,13 @@ import {
   FISCAL_LOCK_SOURCE_KEY,
   FiscalLockSource,
 } from './fiscal-lock.constants';
+import { ReceiptAuditLog } from '../audit/entities/receipt-audit-log.entity';
+import { ReceiptAuditAction } from '../audit/receipt-audit-action.enum';
+import {
+  buildReceiptAuditEntry,
+  receiptActorOf,
+  snapshotTotals,
+} from '../audit/receipt-audit.util';
 
 type GuardRequest = Request & {
   user?: AuthenticatedUser;
@@ -53,9 +61,15 @@ export function toPositiveInt(value: unknown): number | null {
  * Si el id no es válido, el registro no existe o es de otro merchant, deja pasar la petición
  * para que el pipe / servicio responda su 400 / 404 / 403 habitual (sin filtrar información
  * de recibos ajenos).
+ *
+ * Historia 6: cada intento bloqueado queda en el audit trail del recibo como
+ * MODIFICATION_BLOCKED (usuario, rol, método y ruta). Si esa escritura falla se registra el
+ * error y se responde igualmente el 403.
  */
 @Injectable()
 export class FiscalLockGuard implements CanActivate {
+  private readonly logger = new Logger(FiscalLockGuard.name);
+
   constructor(
     private readonly reflector: Reflector,
     private readonly dataSource: DataSource,
@@ -81,9 +95,42 @@ export class FiscalLockGuard implements CanActivate {
     if (!merchantId || receipt.merchant_id !== merchantId) return true;
 
     if (isReceiptFiscallyLocked(receipt)) {
+      await this.recordBlockedAttempt(receipt, source, request);
       throw new ForbiddenException(FISCAL_LOCK_MESSAGE);
     }
     return true;
+  }
+
+  /** MODIFICATION_BLOCKED en el audit trail; nunca impide responder el 403. */
+  private async recordBlockedAttempt(
+    receipt: Receipt,
+    source: FiscalLockSource,
+    request: GuardRequest,
+  ): Promise<void> {
+    try {
+      const totals = snapshotTotals(receipt);
+      await this.dataSource.getRepository(ReceiptAuditLog).save(
+        buildReceiptAuditEntry({
+          receipt,
+          action: ReceiptAuditAction.MODIFICATION_BLOCKED,
+          actor: receiptActorOf(request.user),
+          previous: totals,
+          next: totals,
+          metadata: {
+            method: request.method ?? null,
+            path: request.originalUrl ?? request.url ?? null,
+            source,
+            target_id: request.params?.id ?? null,
+            reason: receipt.is_active === false ? 'INACTIVE' : 'LOCKED',
+          },
+        }),
+      );
+    } catch (error) {
+      this.logger.error(
+        `Could not record MODIFICATION_BLOCKED for receipt ${receipt.id}`,
+        error instanceof Error ? error.stack : String(error),
+      );
+    }
   }
 
   /** Id del recibo afectado por la petición, o null si no se puede determinar. */

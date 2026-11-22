@@ -33,11 +33,25 @@ import { ReceiptTaxScope } from './constants/receipt-tax-scope.enum';
 import { ReceiptItem } from '../receipt-item/entities/receipt-item.entity';
 import { ReceiptsService } from '../receipts/receipts.service';
 import { assertReceiptMutable } from '../receipts/utils/fiscal-lock.util';
+import { ReceiptAuditService } from '../receipts/audit/receipt-audit.service';
+import { ReceiptAuditAction } from '../receipts/audit/receipt-audit-action.enum';
+import {
+  ReceiptActor,
+  snapshotTotals,
+} from '../receipts/audit/receipt-audit.util';
 import {
   assertValidTaxRate,
   calculateTaxAmount,
   toCents,
 } from './receipt-tax-calculation';
+
+/** Operación sobre un impuesto registrada en el audit trail (TAX_MODIFIED). */
+type TaxOperation =
+  | 'CREATED'
+  | 'UPDATED'
+  | 'ACTIVATED'
+  | 'DEACTIVATED'
+  | 'DELETED';
 
 type ResponseKind =
   | 'Created'
@@ -77,7 +91,37 @@ export class ReceiptTaxService {
     @InjectRepository(ReceiptItem)
     private readonly receiptItemRepo: Repository<ReceiptItem>,
     private readonly receiptsService: ReceiptsService,
+    private readonly receiptAudit: ReceiptAuditService,
   ) {}
+
+  /**
+   * Recalcula los totales del recibo y registra TAX_MODIFIED (Historia 6) con los totales
+   * antes (los del recibo leído antes del cambio) y después del recálculo.
+   */
+  private async recalculateAndAudit(
+    receipt: Receipt,
+    tax: ReceiptTax,
+    operation: TaxOperation,
+    actor?: ReceiptActor | null,
+  ): Promise<void> {
+    const previous = snapshotTotals(receipt);
+    const totals = await this.receiptsService.recalculateTotals(receipt.id);
+    await this.receiptAudit.record({
+      receipt,
+      action: ReceiptAuditAction.TAX_MODIFIED,
+      actor,
+      previous,
+      next: totals ?? previous,
+      metadata: {
+        operation,
+        receipt_tax_id: tax.id,
+        name: tax.name,
+        rate: Number(tax.rate),
+        scope: tax.scope,
+        receipt_item_id: tax.receipt_item_id ?? null,
+      },
+    });
+  }
 
   // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -257,6 +301,7 @@ export class ReceiptTaxService {
   async create(
     dto: CreateReceiptTaxDto,
     merchantId: number,
+    actor?: ReceiptActor | null,
   ): Promise<OneReceiptTaxResponseDto> {
     this.assertMerchant(merchantId);
 
@@ -296,7 +341,7 @@ export class ReceiptTaxService {
     });
 
     const saved = await this.receiptTaxRepo.save(entity);
-    await this.receiptsService.recalculateTotals(receipt.id);
+    await this.recalculateAndAudit(receipt, saved, 'CREATED', actor);
 
     return this.findOne(saved.id, merchantId, 'Created');
   }
@@ -544,6 +589,7 @@ export class ReceiptTaxService {
     id: number,
     dto: UpdateReceiptTaxDto,
     merchantId: number,
+    actor?: ReceiptActor | null,
   ): Promise<OneReceiptTaxResponseDto> {
     this.assertValidId(id);
     this.assertMerchant(merchantId);
@@ -596,7 +642,7 @@ export class ReceiptTaxService {
     }
 
     await this.receiptTaxRepo.save(tax);
-    await this.receiptsService.recalculateTotals(tax.receipt_id);
+    await this.recalculateAndAudit(receipt, tax, 'UPDATED', actor);
 
     return this.findOne(id, merchantId, 'Updated');
   }
@@ -610,6 +656,7 @@ export class ReceiptTaxService {
     id: number,
     dto: UpdateReceiptTaxStatusDto,
     merchantId: number,
+    actor?: ReceiptActor | null,
   ): Promise<OneReceiptTaxResponseDto> {
     this.assertValidId(id);
     this.assertMerchant(merchantId);
@@ -646,7 +693,12 @@ export class ReceiptTaxService {
 
     if (tax.is_active !== dto.isActive) {
       await this.receiptTaxRepo.update(id, { is_active: dto.isActive });
-      await this.receiptsService.recalculateTotals(tax.receipt_id);
+      await this.recalculateAndAudit(
+        receipt,
+        tax,
+        dto.isActive ? 'ACTIVATED' : 'DEACTIVATED',
+        actor,
+      );
     }
 
     return this.findOne(
@@ -660,6 +712,7 @@ export class ReceiptTaxService {
   async remove(
     id: number,
     merchantId: number,
+    actor?: ReceiptActor | null,
   ): Promise<OneReceiptTaxResponseDto> {
     this.assertValidId(id);
     this.assertMerchant(merchantId);
@@ -678,7 +731,7 @@ export class ReceiptTaxService {
     assertReceiptMutable(receipt);
 
     await this.receiptTaxRepo.update(id, { is_active: false });
-    await this.receiptsService.recalculateTotals(tax.receipt_id);
+    await this.recalculateAndAudit(receipt, tax, 'DELETED', actor);
 
     return {
       ...RESPONSE_BY_KIND.Deleted,

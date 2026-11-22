@@ -84,6 +84,11 @@ import { TaxType } from 'src/core/configuration/constants/tax-type.enum';
 import { TipDistributionMethod } from 'src/core/configuration/constants/tip-distribution-method.enum';
 import { CompletePurchaseDto } from './dto/complete-purchase.dto';
 import { Receipt } from 'src/core/billing-transactions/receipts/entities/receipt.entity';
+import { ReceiptAuditLog } from 'src/core/billing-transactions/receipts/audit/entities/receipt-audit-log.entity';
+import {
+  buildSettlementAuditEntries,
+  receiptActorOf,
+} from 'src/core/billing-transactions/receipts/audit/receipt-audit.util';
 import { ReceiptsService } from 'src/core/billing-transactions/receipts/receipts.service';
 import { ReceiptType } from 'src/core/billing-transactions/receipts/constants/receipt-type.enum';
 import { SettlementStatus } from 'src/restaurant-operations/tips/tip-settlements/constants/settlement-status.enum';
@@ -890,6 +895,13 @@ export class OrdersService {
       });
 
       await queryRunner.manager.save(receipt);
+
+      // Historia 6: audit trail del recibo nacido bloqueado (CREATED + LOCKED), en la misma
+      // transacción que la liquidación para que no quede un recibo sin historial.
+      await queryRunner.manager.save(
+        ReceiptAuditLog,
+        buildSettlementAuditEntries(receipt, receiptActorOf(user)),
+      );
 
       // Handle tip settlements based on the provided tip type and configuration
       for (const payment of dto.payments) {

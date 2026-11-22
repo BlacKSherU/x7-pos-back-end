@@ -53,6 +53,7 @@ import { UserRole } from 'src/platform-saas/users/constants/role.enum';
 import { Scope } from 'src/platform-saas/users/constants/scope.enum';
 import { FiscalLock } from '../receipts/fiscal-lock/fiscal-lock.decorator';
 import { FiscalLockSource } from '../receipts/fiscal-lock/fiscal-lock.constants';
+import { receiptActorOf } from '../receipts/audit/receipt-audit.util';
 
 @ApiTags('Core - Billing transactions - Receipt Items')
 @ApiBearerAuth()
@@ -111,7 +112,11 @@ export class ReceiptItemController {
     @Request() req: ExpressRequest & { user?: AuthenticatedUser },
   ): Promise<OneReceiptItemResponseDto> {
     const merchantId = this.merchantIdOf(req);
-    return this.receiptItemService.create(dto, merchantId);
+    return this.receiptItemService.create(
+      dto,
+      merchantId,
+      receiptActorOf(req.user),
+    );
   }
 
   @Get()
@@ -259,7 +264,12 @@ export class ReceiptItemController {
     @Request() req: ExpressRequest & { user?: AuthenticatedUser },
   ): Promise<OneReceiptItemResponseDto> {
     const merchantId = this.merchantIdOf(req);
-    return this.receiptItemService.update(id, dto, merchantId);
+    return this.receiptItemService.update(
+      id,
+      dto,
+      merchantId,
+      receiptActorOf(req.user),
+    );
   }
 
   @Delete(':id')
@@ -290,6 +300,10 @@ export class ReceiptItemController {
     @Request() req: ExpressRequest & { user?: AuthenticatedUser },
   ): Promise<OneReceiptItemResponseDto> {
     const merchantId = this.merchantIdOf(req);
-    return this.receiptItemService.remove(id, merchantId);
+    return this.receiptItemService.remove(
+      id,
+      merchantId,
+      receiptActorOf(req.user),
+    );
   }
 }

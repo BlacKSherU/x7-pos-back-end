@@ -35,6 +35,9 @@ const mockReq = { user: mockReqUser } as unknown as ExpressRequest & {
   user?: AuthenticatedUser;
 };
 
+/** Actor de auditoría (Historia 6) que el controlador pasa al servicio. */
+const ACTOR = { id: mockReqUser.id, role: mockReqUser.role };
+
 const mockOneResponse: OneReceiptItemResponseDto = {
   statusCode: 200,
   message: 'Receipt item retrieved successfully',
@@ -116,7 +119,7 @@ describe('ReceiptItemController', () => {
 
       const result = await controller.create(dto, mockReq);
 
-      expect(mockService.create).toHaveBeenCalledWith(dto, MERCHANT_ID);
+      expect(mockService.create).toHaveBeenCalledWith(dto, MERCHANT_ID, ACTOR);
       expect(result.statusCode).toBe(201);
     });
   });
@@ -190,7 +193,12 @@ describe('ReceiptItemController', () => {
 
       const result = await controller.update(1, dto, mockReq);
 
-      expect(mockService.update).toHaveBeenCalledWith(1, dto, MERCHANT_ID);
+      expect(mockService.update).toHaveBeenCalledWith(
+        1,
+        dto,
+        MERCHANT_ID,
+        ACTOR,
+      );
       expect(result.data.metadata).toBe(dto.metadata);
     });
   });
@@ -211,7 +219,12 @@ describe('ReceiptItemController', () => {
 
       const result = await controller.update(1, dto, mockReq);
 
-      expect(mockService.update).toHaveBeenCalledWith(1, dto, MERCHANT_ID);
+      expect(mockService.update).toHaveBeenCalledWith(
+        1,
+        dto,
+        MERCHANT_ID,
+        ACTOR,
+      );
       expect(result.data.is_active).toBe(false);
     });
   });
@@ -226,7 +239,7 @@ describe('ReceiptItemController', () => {
 
       const result = await controller.remove(1, mockReq);
 
-      expect(mockService.remove).toHaveBeenCalledWith(1, MERCHANT_ID);
+      expect(mockService.remove).toHaveBeenCalledWith(1, MERCHANT_ID, ACTOR);
       expect(result.message).toContain('deleted');
     });
   });

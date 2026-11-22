@@ -54,6 +54,7 @@ import { UserRole } from 'src/platform-saas/users/constants/role.enum';
 import { Scope } from 'src/platform-saas/users/constants/scope.enum';
 import { FiscalLock } from '../receipts/fiscal-lock/fiscal-lock.decorator';
 import { FiscalLockSource } from '../receipts/fiscal-lock/fiscal-lock.constants';
+import { receiptActorOf } from '../receipts/audit/receipt-audit.util';
 import { ReceiptTaxScope } from './constants/receipt-tax-scope.enum';
 
 @ApiTags('Core - Billing transactions - Receipt Taxes')
@@ -113,7 +114,11 @@ export class ReceiptTaxController {
     @Request() req: ExpressRequest & { user?: AuthenticatedUser },
   ): Promise<OneReceiptTaxResponseDto> {
     const merchantId = this.merchantIdOf(req);
-    return this.receiptTaxService.create(dto, merchantId);
+    return this.receiptTaxService.create(
+      dto,
+      merchantId,
+      receiptActorOf(req.user),
+    );
   }
 
   @Get()
@@ -268,7 +273,12 @@ export class ReceiptTaxController {
     @Request() req: ExpressRequest & { user?: AuthenticatedUser },
   ): Promise<OneReceiptTaxResponseDto> {
     const merchantId = this.merchantIdOf(req);
-    return this.receiptTaxService.update(id, dto, merchantId);
+    return this.receiptTaxService.update(
+      id,
+      dto,
+      merchantId,
+      receiptActorOf(req.user),
+    );
   }
 
   @Patch(':id/status')
@@ -301,7 +311,12 @@ export class ReceiptTaxController {
     @Request() req: ExpressRequest & { user?: AuthenticatedUser },
   ): Promise<OneReceiptTaxResponseDto> {
     const merchantId = this.merchantIdOf(req);
-    return this.receiptTaxService.updateStatus(id, dto, merchantId);
+    return this.receiptTaxService.updateStatus(
+      id,
+      dto,
+      merchantId,
+      receiptActorOf(req.user),
+    );
   }
 
   @Delete(':id')
@@ -330,6 +345,10 @@ export class ReceiptTaxController {
     @Request() req: ExpressRequest & { user?: AuthenticatedUser },
   ): Promise<OneReceiptTaxResponseDto> {
     const merchantId = this.merchantIdOf(req);
-    return this.receiptTaxService.remove(id, merchantId);
+    return this.receiptTaxService.remove(
+      id,
+      merchantId,
+      receiptActorOf(req.user),
+    );
   }
 }

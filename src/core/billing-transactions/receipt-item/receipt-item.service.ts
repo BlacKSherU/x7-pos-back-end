@@ -27,6 +27,15 @@ import { Order } from 'src/restaurant-operations/pos/orders/entities/order.entit
 import { ReceiptsService } from '../receipts/receipts.service';
 import { computeReceiptItemAmounts } from './receipt-item-calculation';
 import { assertReceiptMutable } from '../receipts/utils/fiscal-lock.util';
+import { ReceiptAuditService } from '../receipts/audit/receipt-audit.service';
+import { ReceiptAuditAction } from '../receipts/audit/receipt-audit-action.enum';
+import {
+  ReceiptActor,
+  snapshotTotals,
+} from '../receipts/audit/receipt-audit.util';
+
+/** Operación sobre una línea registrada en el audit trail (ITEM_MODIFIED). */
+type ItemOperation = 'CREATED' | 'UPDATED' | 'DELETED' | 'RESTORED';
 
 @Injectable()
 export class ReceiptItemService {
@@ -38,7 +47,39 @@ export class ReceiptItemService {
     @InjectRepository(Order)
     private readonly orderRepo: Repository<Order>,
     private readonly receiptsService: ReceiptsService,
+    private readonly receiptAudit: ReceiptAuditService,
   ) {}
+
+  /**
+   * Recalcula los totales del recibo y registra ITEM_MODIFIED (Historia 6) con los totales
+   * antes (los del recibo leído antes del cambio) y después del recálculo.
+   */
+  private async recalculateAndAudit(
+    receipt: Receipt,
+    item: ReceiptItem,
+    operation: ItemOperation,
+    actor?: ReceiptActor | null,
+  ): Promise<void> {
+    const previous = snapshotTotals(receipt);
+    const totals = await this.receiptsService.recalculateTotals(receipt.id);
+    await this.receiptAudit.record({
+      receipt,
+      action: ReceiptAuditAction.ITEM_MODIFIED,
+      actor,
+      previous,
+      next: totals ?? previous,
+      metadata: {
+        operation,
+        receipt_item_id: item.id,
+        name: item.name,
+        sku: item.sku ?? null,
+        quantity: Number(item.quantity),
+        unit_price: Number(item.unit_price),
+        discount_amount: Number(item.discount_amount),
+        total: Number(item.total),
+      },
+    });
+  }
 
   // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -140,6 +181,7 @@ export class ReceiptItemService {
   async create(
     dto: CreateReceiptItemDto,
     merchantId: number,
+    actor?: ReceiptActor | null,
   ): Promise<OneReceiptItemResponseDto> {
     if (!merchantId) {
       throw new ForbiddenException('You must be associated with a merchant');
@@ -176,7 +218,7 @@ export class ReceiptItemService {
     });
 
     const saved = await this.receiptItemRepo.save(entity);
-    await this.receiptsService.recalculateTotals(dto.receiptId);
+    await this.recalculateAndAudit(receipt, saved, 'CREATED', actor);
 
     return {
       statusCode: 201,
@@ -371,6 +413,7 @@ export class ReceiptItemService {
     id: number,
     dto: UpdateReceiptItemDto,
     merchantId: number,
+    actor?: ReceiptActor | null,
   ): Promise<OneReceiptItemResponseDto> {
     if (!id || id <= 0) {
       throw new BadRequestException('Invalid receipt item ID');
@@ -410,14 +453,17 @@ export class ReceiptItemService {
     if (dto.isActive !== undefined) item.is_active = dto.isActive;
 
     const saved = await this.receiptItemRepo.save(item);
-    await this.receiptsService.recalculateTotals(item.receipt_id);
 
     let message = 'Receipt item updated successfully';
+    let operation: ItemOperation = 'UPDATED';
     if (wasActive && saved.is_active === false) {
       message = 'Receipt item deleted successfully';
+      operation = 'DELETED';
     } else if (!wasActive && saved.is_active !== false) {
       message = 'Receipt item restored successfully';
+      operation = 'RESTORED';
     }
+    await this.recalculateAndAudit(receipt, saved, operation, actor);
 
     return {
       statusCode: 200,
@@ -430,6 +476,7 @@ export class ReceiptItemService {
   async remove(
     id: number,
     merchantId: number,
+    actor?: ReceiptActor | null,
   ): Promise<OneReceiptItemResponseDto> {
     if (!id || id <= 0) {
       throw new BadRequestException('Invalid receipt item ID');
@@ -454,7 +501,7 @@ export class ReceiptItemService {
     assertReceiptMutable(receipt);
 
     await this.receiptItemRepo.update(id, { is_active: false });
-    await this.receiptsService.recalculateTotals(item.receipt_id);
+    await this.recalculateAndAudit(receipt, item, 'DELETED', actor);
 
     return {
       statusCode: 200,

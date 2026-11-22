@@ -42,6 +42,9 @@ const mockRequest = { user: mockUser } as unknown as ExpressRequest & {
   user?: AuthenticatedUser;
 };
 
+/** Actor de auditoría (Historia 6) que el controlador pasa al servicio. */
+const ACTOR = { id: mockUser.id, role: mockUser.role };
+
 const mockTaxResponse: ReceiptTaxResponseDto = {
   id: 1,
   receipt_id: 10,
@@ -117,7 +120,7 @@ describe('ReceiptTaxController', () => {
     it('should create a receipt tax successfully', async () => {
       jest.spyOn(service, 'create').mockResolvedValue(mockOneResponse);
       const result = await controller.create(dto, mockRequest as any);
-      expect(service.create).toHaveBeenCalledWith(dto, MERCHANT_ID);
+      expect(service.create).toHaveBeenCalledWith(dto, MERCHANT_ID, ACTOR);
       expect(result.statusCode).toBe(201);
       expect(result.data.name).toBe('IVA 19%');
     });
@@ -125,7 +128,7 @@ describe('ReceiptTaxController', () => {
     it('should pass merchant id from request', async () => {
       jest.spyOn(service, 'create').mockResolvedValue(mockOneResponse);
       await controller.create(dto, mockRequest as any);
-      expect(service.create).toHaveBeenCalledWith(dto, MERCHANT_ID);
+      expect(service.create).toHaveBeenCalledWith(dto, MERCHANT_ID, ACTOR);
     });
 
     it('should propagate service errors', async () => {
@@ -214,7 +217,7 @@ describe('ReceiptTaxController', () => {
       };
       jest.spyOn(service, 'update').mockResolvedValue(updated);
       const result = await controller.update(1, dto, mockRequest as any);
-      expect(service.update).toHaveBeenCalledWith(1, dto, MERCHANT_ID);
+      expect(service.update).toHaveBeenCalledWith(1, dto, MERCHANT_ID, ACTOR);
       expect(result.statusCode).toBe(200);
     });
   });
@@ -239,6 +242,7 @@ describe('ReceiptTaxController', () => {
         1,
         { isActive: false },
         MERCHANT_ID,
+        ACTOR,
       );
       expect(result.data.is_active).toBe(false);
     });
@@ -264,7 +268,7 @@ describe('ReceiptTaxController', () => {
       };
       jest.spyOn(service, 'remove').mockResolvedValue(deleted);
       const result = await controller.remove(1, mockRequest as any);
-      expect(service.remove).toHaveBeenCalledWith(1, MERCHANT_ID);
+      expect(service.remove).toHaveBeenCalledWith(1, MERCHANT_ID, ACTOR);
       expect(result.statusCode).toBe(200);
     });
   });

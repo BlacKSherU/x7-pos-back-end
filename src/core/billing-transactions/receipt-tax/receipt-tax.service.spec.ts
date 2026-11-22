@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 
 import { Test, TestingModule } from '@nestjs/testing';
+import { ReceiptAuditService } from '../receipts/audit/receipt-audit.service';
 import { ReceiptTaxService, itemTaxableBase } from './receipt-tax.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ReceiptTax } from './entities/receipt-tax.entity';
@@ -66,6 +67,7 @@ describe('ReceiptTaxService', () => {
   const mockOrderRepo = { findOne: jest.fn() };
   const mockReceiptItemRepo = { findOne: jest.fn() };
   const mockReceiptsService = { recalculateTotals: jest.fn() };
+  const mockReceiptAudit = { record: jest.fn() };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -82,10 +84,12 @@ describe('ReceiptTaxService', () => {
           useValue: mockReceiptItemRepo,
         },
         { provide: ReceiptsService, useValue: mockReceiptsService },
+        { provide: ReceiptAuditService, useValue: mockReceiptAudit },
       ],
     }).compile();
 
     service = module.get<ReceiptTaxService>(ReceiptTaxService);
+    mockReceiptAudit.record.mockResolvedValue(null);
 
     mockTax = baseTax();
     // Happy-path defaults
@@ -869,5 +873,113 @@ describe('ReceiptTaxService', () => {
       expect(result.data.receipt_is_locked).toBe(true);
     });
   });
-});
 
+  // ─── audit trail (Historia 6) ───────────────────────────────────────────────
+
+  describe('audit trail (Historia 6)', () => {
+    const actor = { id: 7, role: 'merchant_admin' };
+    const receiptWithTotals = {
+      ...mockReceipt,
+      merchant_id: MERCHANT_ID,
+      total_tax: '0.00',
+      total_discount: '0.00',
+      grand_total: '125.00',
+    } as unknown as Receipt;
+    const before = {
+      subtotal: 125,
+      total_tax: 0,
+      total_discount: 0,
+      grand_total: 125,
+    };
+    const after = {
+      subtotal: 125,
+      total_tax: 23.75,
+      total_discount: 0,
+      grand_total: 148.75,
+    };
+    const recorded = () =>
+      mockReceiptAudit.record.mock.calls.map(
+        (call: unknown[]) => call[0] as Record<string, unknown>,
+      );
+    const operations = () =>
+      recorded().map(
+        (event) => (event.metadata as { operation: string }).operation,
+      );
+
+    beforeEach(() => {
+      mockReceiptRepo.findOne.mockResolvedValue(receiptWithTotals);
+      mockReceiptsService.recalculateTotals.mockResolvedValue(after);
+    });
+
+    it('create records TAX_MODIFIED with the totals before and after the recalculation', async () => {
+      await service.create(
+        {
+          receiptId: 10,
+          name: 'IVA 19%',
+          rate: 19,
+          scope: ReceiptTaxScope.RECEIPT,
+        },
+        MERCHANT_ID,
+        actor,
+      );
+
+      expect(recorded()).toEqual([
+        expect.objectContaining({
+          receipt: receiptWithTotals,
+          action: 'TAX_MODIFIED',
+          actor,
+          previous: before,
+          next: after,
+          metadata: {
+            operation: 'CREATED',
+            receipt_tax_id: 1,
+            name: 'IVA 19%',
+            rate: 19,
+            scope: ReceiptTaxScope.RECEIPT,
+            receipt_item_id: null,
+          },
+        }),
+      ]);
+    });
+
+    it('update, deactivation, activation and delete are tagged by operation', async () => {
+      await service.update(1, { rate: 16 }, MERCHANT_ID, actor);
+      await service.updateStatus(1, { isActive: false }, MERCHANT_ID, actor);
+      mockTax = { ...baseTax(), is_active: false };
+      await service.updateStatus(1, { isActive: true }, MERCHANT_ID, actor);
+      mockTax = baseTax();
+      await service.remove(1, MERCHANT_ID, actor);
+
+      expect(operations()).toEqual([
+        'UPDATED',
+        'DEACTIVATED',
+        'ACTIVATED',
+        'DELETED',
+      ]);
+      expect(recorded()[0]).toMatchObject({
+        action: 'TAX_MODIFIED',
+        actor,
+        previous: before,
+        next: after,
+        metadata: { receipt_tax_id: 1, rate: 16 },
+      });
+    });
+
+    it('a status request that changes nothing records nothing', async () => {
+      await service.updateStatus(1, { isActive: true }, MERCHANT_ID, actor);
+      expect(mockReceiptAudit.record).not.toHaveBeenCalled();
+    });
+
+    it('records nothing for a rejected change', async () => {
+      mockReceiptRepo.findOne.mockResolvedValue({
+        ...receiptWithTotals,
+        is_locked: true,
+      });
+
+      await expect(service.remove(1, MERCHANT_ID, actor)).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(mockReceiptAudit.record).not.toHaveBeenCalled();
+    });
+  });
+});

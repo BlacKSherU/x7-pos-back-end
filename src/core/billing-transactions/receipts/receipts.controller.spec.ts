@@ -38,6 +38,7 @@ describe('ReceiptsController', () => {
     getDetails: jest.fn(),
     getTaxBreakdown: jest.fn(),
     lock: jest.fn(),
+    getActivityLog: jest.fn(),
   };
 
   const mockUser = {
@@ -62,6 +63,9 @@ describe('ReceiptsController', () => {
   const mockRequest = { user: mockRequestUser } as unknown as ExpressRequest & {
     user?: AuthenticatedUser;
   };
+
+  /** Actor de auditoría (Historia 6) que el controlador pasa al servicio. */
+  const ACTOR = { id: mockUser.id, role: mockUser.role };
 
   const mockReceiptResponseData: ReceiptResponseDto = {
     id: 1,
@@ -140,7 +144,11 @@ describe('ReceiptsController', () => {
 
       const result = await controller.create(createDto, mockRequest as any);
 
-      expect(createSpy).toHaveBeenCalledWith(createDto, mockUser.merchant.id);
+      expect(createSpy).toHaveBeenCalledWith(
+        createDto,
+        mockUser.merchant.id,
+        ACTOR,
+      );
       expect(result).toEqual(mockOneReceiptResponse);
       expect(result.statusCode).toBe(201);
       expect(result.message).toBe('Receipt created successfully');
@@ -156,7 +164,11 @@ describe('ReceiptsController', () => {
       await expect(
         controller.create(createDto, mockRequest as any),
       ).rejects.toThrow(errorMessage);
-      expect(createSpy).toHaveBeenCalledWith(createDto, mockUser.merchant.id);
+      expect(createSpy).toHaveBeenCalledWith(
+        createDto,
+        mockUser.merchant.id,
+        ACTOR,
+      );
     });
 
     it('should throw ForbiddenException if user has no merchant_id', async () => {
@@ -184,7 +196,7 @@ describe('ReceiptsController', () => {
 
       await controller.create(createDto, mockRequest as any);
 
-      expect(createSpy).toHaveBeenCalledWith(createDto, 1);
+      expect(createSpy).toHaveBeenCalledWith(createDto, 1, ACTOR);
     });
   });
 
@@ -352,6 +364,7 @@ describe('ReceiptsController', () => {
         receiptId,
         updateDto,
         mockUser.merchant.id,
+        ACTOR,
       );
       expect(result).toEqual(updatedResponse);
       expect(result.statusCode).toBe(200);
@@ -378,6 +391,7 @@ describe('ReceiptsController', () => {
         receiptId,
         partialDto,
         mockUser.merchant.id,
+        ACTOR,
       );
     });
 
@@ -393,6 +407,7 @@ describe('ReceiptsController', () => {
         receiptId,
         updateDto,
         mockUser.merchant.id,
+        ACTOR,
       );
     });
 
@@ -430,6 +445,7 @@ describe('ReceiptsController', () => {
         999,
         updateDto,
         mockUser.merchant.id,
+        ACTOR,
       );
     });
   });
@@ -448,7 +464,11 @@ describe('ReceiptsController', () => {
 
       const result = await controller.remove(receiptId, mockRequest as any);
 
-      expect(removeSpy).toHaveBeenCalledWith(receiptId, mockUser.merchant.id);
+      expect(removeSpy).toHaveBeenCalledWith(
+        receiptId,
+        mockUser.merchant.id,
+        ACTOR,
+      );
       expect(result).toEqual(deleteResponse);
       expect(result.statusCode).toBe(200);
       expect(result.message).toBe('Receipt deleted successfully');
@@ -462,7 +482,11 @@ describe('ReceiptsController', () => {
       await expect(
         controller.remove(receiptId, mockRequest as any),
       ).rejects.toThrow(errorMessage);
-      expect(removeSpy).toHaveBeenCalledWith(receiptId, mockUser.merchant.id);
+      expect(removeSpy).toHaveBeenCalledWith(
+        receiptId,
+        mockUser.merchant.id,
+        ACTOR,
+      );
     });
 
     it('should throw ForbiddenException if user has no merchant_id', async () => {
@@ -495,7 +519,7 @@ describe('ReceiptsController', () => {
 
       await controller.remove(999, mockRequest as any);
 
-      expect(removeSpy).toHaveBeenCalledWith(999, mockUser.merchant.id);
+      expect(removeSpy).toHaveBeenCalledWith(999, mockUser.merchant.id, ACTOR);
     });
   });
 
@@ -509,7 +533,7 @@ describe('ReceiptsController', () => {
 
       await controller.patch(1, dto, mockRequest);
 
-      expect(service.update).toHaveBeenCalledWith(1, dto, 1);
+      expect(service.update).toHaveBeenCalledWith(1, dto, 1, ACTOR);
     });
 
     it('rejects users without merchant', async () => {
@@ -540,6 +564,7 @@ describe('ReceiptsController', () => {
         1,
         { isActive: false },
         1,
+        ACTOR,
       );
       expect(result.data.is_active).toBe(false);
     });
@@ -556,6 +581,7 @@ describe('ReceiptsController', () => {
         2,
         { isActive: true },
         1,
+        ACTOR,
       );
     });
 
@@ -716,6 +742,46 @@ describe('ReceiptsController', () => {
       const req = { user: { ...mockUser, merchant: undefined } } as any;
       await expect(controller.lock(1, req)).rejects.toThrow(ForbiddenException);
       expect(service.lock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('GET /receipts/:id/activity-log (Historia 6)', () => {
+    it('returns the audit trail of the receipt for the merchant', async () => {
+      const response = {
+        statusCode: 200,
+        message: 'Receipt activity log retrieved successfully',
+        data: {
+          receipt_id: 5,
+          invoice_number: 'INV-000005',
+          currency: 'USD',
+          events: [],
+        },
+      };
+      mockReceiptsService.getActivityLog.mockResolvedValue(response);
+
+      const result = await controller.getActivityLog(5, mockRequest);
+
+      expect(service.getActivityLog).toHaveBeenCalledWith(5, 1);
+      expect(result).toBe(response);
+    });
+
+    it('rejects users without merchant', async () => {
+      const req = { user: { ...mockUser, merchant: undefined } } as any;
+      await expect(controller.getActivityLog(5, req)).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(service.getActivityLog).not.toHaveBeenCalled();
+    });
+
+    it('is readable by admins and users and is not fiscally locked (read only)', () => {
+      const handler = ReceiptsController.prototype.getActivityLog;
+      expect(Reflect.getMetadata('roles', handler)).toEqual([
+        UserRole.MERCHANT_ADMIN,
+        UserRole.MERCHANT_USER,
+      ]);
+      expect(
+        Reflect.getMetadata(FISCAL_LOCK_SOURCE_KEY, handler),
+      ).toBeUndefined();
     });
   });
 });

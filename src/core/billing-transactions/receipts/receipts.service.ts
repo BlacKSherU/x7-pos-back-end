@@ -57,12 +57,13 @@ import {
   FISCAL_LOCK_MESSAGE,
   assertReceiptMutable,
 } from './utils/fiscal-lock.util';
+import { ReceiptAuditService } from './audit/receipt-audit.service';
+import { ReceiptAuditAction } from './audit/receipt-audit-action.enum';
+import { ReceiptActor, snapshotTotals } from './audit/receipt-audit.util';
+import { ReceiptTotalsSnapshot } from './audit/entities/receipt-audit-log.entity';
+import { ReceiptActivityLogResponseDto } from './audit/dto/receipt-activity-log-response.dto';
 
-/** Usuario autenticado que ejecuta una transición de estado (bloqueo fiscal, auditoría). */
-export interface ReceiptActor {
-  id: number;
-  role: string;
-}
+export type { ReceiptActor } from './audit/receipt-audit.util';
 
 @Injectable()
 export class ReceiptsService {
@@ -76,20 +77,27 @@ export class ReceiptsService {
     @Inject(getRepositoryToken(ReceiptTax))
     private readonly receiptTaxRepo: Repository<ReceiptTax>,
     private readonly receiptsCalculationService: ReceiptsCalculationService,
+    private readonly receiptAudit: ReceiptAuditService,
   ) {}
 
   /**
    * Recalcula subtotal, total_tax, total_discount y grand_total del recibo (y los importes
    * de sus ReceiptTax activos) con aritmética exacta en centavos, redondeo por línea con
    * ajuste en la última línea y exención según fiscal_data. Ver ReceiptsCalculationService.
+   * Devuelve los totales resultantes (para el audit trail, Historia 6) o null si el recibo no
+   * existe.
    */
-  async recalculateTotals(receiptId: number): Promise<void> {
-    await this.receiptsCalculationService.recalculate(receiptId);
+  async recalculateTotals(
+    receiptId: number,
+  ): Promise<ReceiptTotalsSnapshot | null> {
+    const result = await this.receiptsCalculationService.recalculate(receiptId);
+    return result ? snapshotTotals(result) : null;
   }
 
   async create(
     dto: CreateReceiptDto,
     authenticatedUserMerchantId: number,
+    actor?: ReceiptActor | null,
   ): Promise<OneReceiptResponseDto> {
     if (!authenticatedUserMerchantId) {
       throw new ForbiddenException('You must be associated with a merchant');
@@ -149,6 +157,20 @@ export class ReceiptsService {
       },
       manualInvoiceNumber,
     );
+
+    await this.receiptAudit.record({
+      receipt: saved,
+      action: ReceiptAuditAction.CREATED,
+      actor,
+      next: snapshotTotals(saved),
+      metadata: {
+        source: 'manual',
+        order_id: saved.order_id,
+        invoice_number: saved.invoice_number ?? null,
+        type: saved.type,
+        currency: saved.currency,
+      },
+    });
 
     return this.findOne(saved.id, authenticatedUserMerchantId, 'Created');
   }
@@ -299,6 +321,7 @@ export class ReceiptsService {
     id: number,
     dto: UpdateReceiptDto,
     authenticatedUserMerchantId: number,
+    actor?: ReceiptActor | null,
   ): Promise<OneReceiptResponseDto> {
     if (!id || id <= 0) throw new BadRequestException('Invalid id');
     if (!authenticatedUserMerchantId) {
@@ -367,7 +390,17 @@ export class ReceiptsService {
       }
       throw error;
     }
-    await this.recalculateTotals(id);
+    const previous = snapshotTotals(existing);
+    const totals = await this.recalculateTotals(id);
+
+    await this.receiptAudit.record({
+      receipt: existing,
+      action: ReceiptAuditAction.UPDATED,
+      actor,
+      previous,
+      next: totals ?? previous,
+      metadata: { changed_fields: changedFields(existing, updateData) },
+    });
 
     return this.findOne(id, authenticatedUserMerchantId, 'Updated');
   }
@@ -375,6 +408,7 @@ export class ReceiptsService {
   async remove(
     id: number,
     authenticatedUserMerchantId: number,
+    actor?: ReceiptActor | null,
   ): Promise<OneReceiptResponseDto> {
     if (!id || id <= 0) throw new BadRequestException('Invalid id');
     if (!authenticatedUserMerchantId) {
@@ -399,6 +433,7 @@ export class ReceiptsService {
     assertReceiptMutable(existing);
 
     await this.receiptRepo.update(id, { is_active: false });
+    await this.recordDeactivation(existing, actor, 'delete');
 
     const dataForResponse = this.toResponseDto({
       ...existing,
@@ -425,6 +460,7 @@ export class ReceiptsService {
     id: number,
     dto: UpdateReceiptStatusDto,
     authenticatedUserMerchantId: number,
+    actor?: ReceiptActor | null,
   ): Promise<OneReceiptResponseDto> {
     const existing = await this.findOwnedReceipt(
       id,
@@ -434,6 +470,10 @@ export class ReceiptsService {
 
     if (existing.is_active !== dto.isActive) {
       await this.receiptRepo.update(id, { is_active: dto.isActive });
+      // Solo puede ser una baja: un recibo inactivo es inmutable (no se reactiva).
+      if (!dto.isActive) {
+        await this.recordDeactivation(existing, actor, 'status');
+      }
     }
 
     const updated =
@@ -493,6 +533,16 @@ export class ReceiptsService {
       ...existing,
       ...changes,
     };
+
+    const totals = snapshotTotals(locked);
+    await this.receiptAudit.record({
+      receipt: locked,
+      action: ReceiptAuditAction.LOCKED,
+      actor,
+      previous: totals,
+      next: totals,
+      metadata: { invoice_number: locked.invoice_number ?? null },
+    });
 
     return {
       statusCode: 200,
@@ -809,6 +859,49 @@ export class ReceiptsService {
     return `INV-${(lastSequence + 1).toString().padStart(6, '0')}`;
   }
 
+  /**
+   * Audit trail del recibo (Historia 6): todos sus eventos en orden cronológico exacto
+   * (created_at, id) con usuario, rol, nombre del usuario, timestamp y los totales antes /
+   * después de cada evento. Recibos del merchant en cualquier estado.
+   */
+  async getActivityLog(
+    id: number,
+    authenticatedUserMerchantId: number,
+  ): Promise<ReceiptActivityLogResponseDto> {
+    const receipt = await this.findOwnedReceipt(
+      id,
+      authenticatedUserMerchantId,
+    );
+    const events = await this.receiptAudit.findForReceipt(receipt.id);
+    return {
+      statusCode: 200,
+      message: 'Receipt activity log retrieved successfully',
+      data: {
+        receipt_id: receipt.id,
+        invoice_number: receipt.invoice_number ?? null,
+        currency: receipt.currency,
+        events,
+      },
+    };
+  }
+
+  /** Evento DEACTIVATED (baja lógica): los totales no cambian. */
+  private async recordDeactivation(
+    receipt: Receipt,
+    actor: ReceiptActor | null | undefined,
+    via: 'delete' | 'status',
+  ): Promise<void> {
+    const totals = snapshotTotals(receipt);
+    await this.receiptAudit.record({
+      receipt,
+      action: ReceiptAuditAction.DEACTIVATED,
+      actor,
+      previous: totals,
+      next: totals,
+      metadata: { via },
+    });
+  }
+
   /** Recibo del merchant en cualquier estado (activo o dado de baja). */
   private async findOwnedReceipt(
     id: number,
@@ -902,6 +995,20 @@ export class ReceiptsService {
     }
     throw this.invoiceNumberConflict(invoiceNumber);
   }
+}
+
+/** Columnas de la cabecera que una edición cambia de verdad (para el audit trail). */
+function changedFields(
+  existing: Receipt,
+  updateData: QueryDeepPartialEntity<Receipt>,
+): string[] {
+  return Object.entries(updateData)
+    .filter(
+      ([key, value]) =>
+        (existing as unknown as Record<string, unknown>)[key] !== value,
+    )
+    .map(([key]) => key)
+    .sort();
 }
 
 interface RawTaxBreakdownRow {
