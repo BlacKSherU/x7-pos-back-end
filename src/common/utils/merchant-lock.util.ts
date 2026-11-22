@@ -9,6 +9,8 @@ export const MerchantLockScope = {
   KITCHEN_STATIONS: 7302,
   /** Keyed by company id: moving the default payment config between rows. */
   COMPANY_PAYMENT_DEFAULT: 7303,
+  /** Credit / debit note numbers and the cumulative credit check of a merchant's receipts. */
+  RECEIPT_ADJUSTMENT_NOTES: 7304,
 } as const;
 
 export type MerchantLockScope =
