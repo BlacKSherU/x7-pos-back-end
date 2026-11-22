@@ -46,6 +46,8 @@ import {
 import { AuthenticatedUser } from '../../../auth/interfaces/authenticated-user.interface';
 import { OneReceiptResponseDto } from './dto/receipt-response.dto';
 import { AllPaginatedReceipts } from './dto/all-paginated-receipts.dto';
+import { GetReceiptsSummaryQueryDto } from './dto/get-receipts-summary-query.dto';
+import { ReceiptSummaryResponseDto } from './dto/receipt-summary-response.dto';
 import { ErrorResponse } from 'src/common/dtos/error-response.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
@@ -153,6 +155,40 @@ export class ReceiptsController {
   ): Promise<AllPaginatedReceipts> {
     const authenticatedUserMerchantId = this.merchantIdOf(req);
     return this.receiptsService.findAll(query, authenticatedUserMerchantId);
+  }
+
+  // Rutas estáticas antes de ':id' (si no, ParseIntPipe recibiría 'summary').
+  @Get('summary')
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
+  @Scopes(
+    Scope.MERCHANT_WEB,
+    Scope.MERCHANT_ANDROID,
+    Scope.MERCHANT_IOS,
+    Scope.MERCHANT_CLOVER,
+  )
+  @ApiOperation({
+    summary: 'Receipts KPIs (Command Hub Header)',
+    description:
+      'Active / inactive / locked receipt counts and sums of grand_total, subtotal, taxes and discounts of the merchant, filtered by is_active (`status`, active by default), with breakdowns by type and currency.',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: Object.values(ReceiptStatusFilter),
+  })
+  @ApiOkResponse({
+    description: 'Receipts summary retrieved',
+    type: ReceiptSummaryResponseDto,
+  })
+  @ApiBadRequestResponse({ description: 'Invalid query', type: ErrorResponse })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
+  @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorResponse })
+  async getSummary(
+    @Query() query: GetReceiptsSummaryQueryDto,
+    @Request() req: ExpressRequest & { user?: AuthenticatedUser },
+  ): Promise<ReceiptSummaryResponseDto> {
+    const authenticatedUserMerchantId = this.merchantIdOf(req);
+    return this.receiptsService.getSummary(query, authenticatedUserMerchantId);
   }
 
   @Get(':id')

@@ -14,6 +14,7 @@ import {
 import { AllPaginatedReceipts } from './dto/all-paginated-receipts.dto';
 import { ForbiddenException } from '@nestjs/common';
 import { ReceiptType } from './constants/receipt-type.enum';
+import { ReceiptStatusFilter } from './constants/receipt-status-filter.enum';
 
 import { UserRole } from 'src/platform-saas/users/constants/role.enum';
 import { Scope } from 'src/platform-saas/users/constants/scope.enum';
@@ -30,6 +31,7 @@ describe('ReceiptsController', () => {
     update: jest.fn(),
     updateStatus: jest.fn(),
     remove: jest.fn(),
+    getSummary: jest.fn(),
   };
 
   const mockUser = {
@@ -553,6 +555,42 @@ describe('ReceiptsController', () => {
       await expect(
         controller.updateStatus(1, { isActive: false }, req),
       ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('GET /receipts/summary (Historia 19)', () => {
+    it('returns the KPIs of the authenticated merchant', async () => {
+      const summary = {
+        statusCode: 200,
+        message: 'Receipts summary retrieved successfully',
+        data: { total_receipts: 3, grand_total: 120.5 },
+      };
+      mockReceiptsService.getSummary.mockResolvedValue(summary);
+
+      const result = await controller.getSummary(
+        { status: ReceiptStatusFilter.ACTIVE },
+        mockRequest,
+      );
+
+      expect(service.getSummary).toHaveBeenCalledWith(
+        { status: ReceiptStatusFilter.ACTIVE },
+        1,
+      );
+      expect(result).toBe(summary);
+    });
+
+    it('rejects users without merchant', async () => {
+      const req = { user: { ...mockUser, merchant: undefined } } as any;
+      await expect(controller.getSummary({}, req)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('is registered before GET :id so "summary" is not parsed as an id', () => {
+      const routes = Object.getOwnPropertyNames(ReceiptsController.prototype);
+      expect(routes.indexOf('getSummary')).toBeLessThan(
+        routes.indexOf('findOne'),
+      );
     });
   });
 });

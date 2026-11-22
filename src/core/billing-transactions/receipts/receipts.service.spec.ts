@@ -1375,4 +1375,163 @@ describe('ReceiptsService', () => {
       );
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Historia 19: KPIs del Command Hub Header
+  // ---------------------------------------------------------------------------
+  describe('getSummary (Historia 19)', () => {
+    const rawRows = [
+      // tipo, moneda, activo, bloqueado, recibos, subtotal, impuestos, descuentos, total
+      {
+        type: ReceiptType.INVOICE,
+        currency: 'USD',
+        is_active: true,
+        is_locked: true,
+        receipts: '2',
+        subtotal: '200.10',
+        total_tax: '38.02',
+        total_discount: '10.00',
+        grand_total: '228.12',
+      },
+      {
+        type: ReceiptType.RECEIPT,
+        currency: 'USD',
+        is_active: true,
+        is_locked: false,
+        receipts: '1',
+        subtotal: '0.10',
+        total_tax: '0.20',
+        total_discount: '0.00',
+        grand_total: '0.30',
+      },
+      {
+        type: ReceiptType.RECEIPT,
+        currency: 'EUR',
+        is_active: true,
+        is_locked: false,
+        receipts: '1',
+        subtotal: '50.00',
+        total_tax: '0.00',
+        total_discount: '0.00',
+        grand_total: '50.00',
+      },
+      {
+        type: ReceiptType.INVOICE,
+        currency: 'USD',
+        is_active: false,
+        is_locked: false,
+        receipts: '4',
+        subtotal: '400.00',
+        total_tax: '0.00',
+        total_discount: '0.00',
+        grand_total: '400.00',
+      },
+    ];
+
+    it('aggregates active receipts of the merchant by default (counts and grand_total in cents)', async () => {
+      const qb = makeQueryBuilder({ many: rawRows });
+      mockReceiptRepository.createQueryBuilder.mockReturnValueOnce(qb);
+
+      const result = await service.getSummary({}, 1);
+
+      expect(qb.where).toHaveBeenCalledWith('r.merchant_id = :merchantId', {
+        merchantId: 1,
+      });
+      expect(result.statusCode).toBe(200);
+      expect(result.data).toMatchObject({
+        status: ReceiptStatusFilter.ACTIVE,
+        total_receipts: 4,
+        active_receipts: 4,
+        inactive_receipts: 4,
+        locked_receipts: 2,
+        currency: 'USD',
+        grand_total: 228.42,
+        subtotal: 200.2,
+        total_tax: 38.22,
+        total_discount: 10,
+        average_ticket: 76.14,
+      });
+      expect(result.data.by_type).toEqual([
+        { type: ReceiptType.INVOICE, receipts: 2, grand_total: 228.12 },
+        { type: ReceiptType.RECEIPT, receipts: 2, grand_total: 0.3 },
+      ]);
+      expect(result.data.by_currency).toEqual([
+        { currency: 'USD', receipts: 3, grand_total: 228.42, total_tax: 38.22 },
+        { currency: 'EUR', receipts: 1, grand_total: 50, total_tax: 0 },
+      ]);
+    });
+
+    it('sums logically deleted receipts with status=inactive', async () => {
+      mockReceiptRepository.createQueryBuilder.mockReturnValueOnce(
+        makeQueryBuilder({ many: rawRows }),
+      );
+
+      const result = await service.getSummary(
+        { status: ReceiptStatusFilter.INACTIVE },
+        1,
+      );
+
+      expect(result.data).toMatchObject({
+        status: ReceiptStatusFilter.INACTIVE,
+        total_receipts: 4,
+        grand_total: 400,
+        locked_receipts: 0,
+        average_ticket: 100,
+      });
+    });
+
+    it('sums every receipt with status=all', async () => {
+      mockReceiptRepository.createQueryBuilder.mockReturnValueOnce(
+        makeQueryBuilder({ many: rawRows }),
+      );
+
+      const result = await service.getSummary(
+        { status: ReceiptStatusFilter.ALL },
+        1,
+      );
+
+      expect(result.data.total_receipts).toBe(8);
+      expect(result.data.grand_total).toBe(628.42);
+    });
+
+    it('returns zeros and USD for a merchant without receipts', async () => {
+      mockReceiptRepository.createQueryBuilder.mockReturnValueOnce(
+        makeQueryBuilder({ many: [] }),
+      );
+
+      const result = await service.getSummary({}, 1);
+
+      expect(result.data).toMatchObject({
+        total_receipts: 0,
+        active_receipts: 0,
+        grand_total: 0,
+        average_ticket: 0,
+        currency: 'USD',
+        by_currency: [],
+      });
+      expect(result.data.by_type).toEqual([
+        { type: ReceiptType.INVOICE, receipts: 0, grand_total: 0 },
+        { type: ReceiptType.RECEIPT, receipts: 0, grand_total: 0 },
+      ]);
+    });
+
+    it('accepts raw booleans as strings', async () => {
+      mockReceiptRepository.createQueryBuilder.mockReturnValueOnce(
+        makeQueryBuilder({
+          many: [{ ...rawRows[0], is_active: 't', is_locked: 'f' }],
+        }),
+      );
+
+      const result = await service.getSummary({}, 1);
+
+      expect(result.data.active_receipts).toBe(2);
+      expect(result.data.locked_receipts).toBe(0);
+    });
+
+    it('requires a merchant', async () => {
+      await expect(service.getSummary({}, undefined as any)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+  });
 });

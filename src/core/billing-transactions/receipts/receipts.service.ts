@@ -24,6 +24,12 @@ import {
   ReceiptResponseDto,
 } from './dto/receipt-response.dto';
 import { AllPaginatedReceipts } from './dto/all-paginated-receipts.dto';
+import { GetReceiptsSummaryQueryDto } from './dto/get-receipts-summary-query.dto';
+import {
+  ReceiptSummaryByCurrencyDto,
+  ReceiptSummaryResponseDto,
+} from './dto/receipt-summary-response.dto';
+import { ReceiptType } from './constants/receipt-type.enum';
 
 import { ReceiptItem } from '../receipt-item/entities/receipt-item.entity';
 import { ReceiptTax } from '../receipt-tax/entities/receipt-tax.entity';
@@ -438,6 +444,129 @@ export class ReceiptsService {
   }
 
   /**
+   * KPIs del módulo Receipts (Command Hub Header): conteo de recibos activos / dados de baja
+   * / bloqueados y sumas de grand_total, subtotal, impuestos y descuentos del merchant,
+   * filtradas por is_active (`status`, activos por defecto). Los importes se suman en
+   * centavos enteros y se expresan en la moneda con más recibos; el resto va en by_currency.
+   */
+  async getSummary(
+    query: GetReceiptsSummaryQueryDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<ReceiptSummaryResponseDto> {
+    if (!authenticatedUserMerchantId) {
+      throw new ForbiddenException('You must be associated with a merchant');
+    }
+    const status = query.status ?? ReceiptStatusFilter.ACTIVE;
+
+    const qb = this.receiptRepo
+      .createQueryBuilder('r')
+      .select('r.type', 'type')
+      .addSelect('r.currency', 'currency')
+      .addSelect('r.is_active', 'is_active')
+      .addSelect('COALESCE(r.is_locked, false)', 'is_locked')
+      .addSelect('COUNT(r.id)', 'receipts')
+      .addSelect('COALESCE(SUM(r.subtotal), 0)', 'subtotal')
+      .addSelect('COALESCE(SUM(r.total_tax), 0)', 'total_tax')
+      .addSelect('COALESCE(SUM(r.total_discount), 0)', 'total_discount')
+      .addSelect('COALESCE(SUM(r.grand_total), 0)', 'grand_total')
+      .where('r.merchant_id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
+      .groupBy('r.type')
+      .addGroupBy('r.currency')
+      .addGroupBy('r.is_active')
+      .addGroupBy('COALESCE(r.is_locked, false)');
+
+    const rows = (await qb.getRawMany<RawSummaryRow>()).map((row) => ({
+      type: row.type,
+      currency: (row.currency || 'USD').toUpperCase(),
+      isActive: toBoolean(row.is_active),
+      isLocked: toBoolean(row.is_locked),
+      receipts: Number(row.receipts) || 0,
+      subtotal: toCents(row.subtotal),
+      totalTax: toCents(row.total_tax),
+      totalDiscount: toCents(row.total_discount),
+      grandTotal: toCents(row.grand_total),
+    }));
+
+    const matching = rows.filter(
+      (row) =>
+        status === ReceiptStatusFilter.ALL ||
+        row.isActive === (status === ReceiptStatusFilter.ACTIVE),
+    );
+    const count = (list: typeof rows) =>
+      list.reduce((sum, row) => sum + row.receipts, 0);
+
+    // Totales por moneda (centavos) y moneda principal = la de más recibos.
+    const currencies = new Map<
+      string,
+      { receipts: number; grandTotal: number; totalTax: number }
+    >();
+    for (const row of matching) {
+      const acc = currencies.get(row.currency) ?? {
+        receipts: 0,
+        grandTotal: 0,
+        totalTax: 0,
+      };
+      acc.receipts += row.receipts;
+      acc.grandTotal += row.grandTotal;
+      acc.totalTax += row.totalTax;
+      currencies.set(row.currency, acc);
+    }
+    const byCurrency: ReceiptSummaryByCurrencyDto[] = [...currencies.entries()]
+      .sort(
+        ([codeA, a], [codeB, b]) =>
+          b.receipts - a.receipts || codeA.localeCompare(codeB),
+      )
+      .map(([currency, acc]) => ({
+        currency,
+        receipts: acc.receipts,
+        grand_total: fromCents(acc.grandTotal),
+        total_tax: fromCents(acc.totalTax),
+      }));
+    const currency = byCurrency[0]?.currency ?? 'USD';
+    const inCurrency = matching.filter((row) => row.currency === currency);
+    const sumCents = (
+      key: 'subtotal' | 'totalTax' | 'totalDiscount' | 'grandTotal',
+    ) => inCurrency.reduce((sum, row) => sum + row[key], 0);
+    const currencyReceipts = count(inCurrency);
+    const grandTotalCents = sumCents('grandTotal');
+
+    return {
+      statusCode: 200,
+      message: 'Receipts summary retrieved successfully',
+      data: {
+        status,
+        total_receipts: count(matching),
+        active_receipts: count(rows.filter((row) => row.isActive)),
+        inactive_receipts: count(rows.filter((row) => !row.isActive)),
+        locked_receipts: count(matching.filter((row) => row.isLocked)),
+        currency,
+        grand_total: fromCents(grandTotalCents),
+        subtotal: fromCents(sumCents('subtotal')),
+        total_tax: fromCents(sumCents('totalTax')),
+        total_discount: fromCents(sumCents('totalDiscount')),
+        average_ticket: currencyReceipts
+          ? fromCents(Math.round(grandTotalCents / currencyReceipts))
+          : 0,
+        by_type: Object.values(ReceiptType).map((type) => {
+          const ofType = matching.filter((row) => row.type === type);
+          return {
+            type,
+            receipts: count(ofType),
+            grand_total: fromCents(
+              ofType
+                .filter((row) => row.currency === currency)
+                .reduce((sum, row) => sum + row.grandTotal, 0),
+            ),
+          };
+        }),
+        by_currency: byCurrency,
+      },
+    };
+  }
+
+  /**
    * Siguiente número de factura del merchant: INV- seguido del mayor consecutivo
    * INV-###### existente + 1 (6 dígitos mínimo). Ignora los números manuales que no
    * siguen ese formato, así nunca devuelve INV-NaN.
@@ -548,6 +677,33 @@ export class ReceiptsService {
     }
     throw this.invoiceNumberConflict(invoiceNumber);
   }
+}
+
+interface RawSummaryRow {
+  type: ReceiptType;
+  currency: string | null;
+  is_active: boolean | string;
+  is_locked: boolean | string;
+  receipts: string | number;
+  subtotal: string | number | null;
+  total_tax: string | number | null;
+  total_discount: string | number | null;
+  grand_total: string | number | null;
+}
+
+/** Importe decimal (string de Postgres o number) → centavos enteros. */
+function toCents(value: string | number | null | undefined): number {
+  const n = Number(value ?? 0);
+  return Number.isFinite(n) ? Math.round(n * 100) : 0;
+}
+
+function fromCents(cents: number): number {
+  return cents / 100;
+}
+
+/** Los booleanos crudos llegan como boolean o como 't'/'true' según el driver. */
+function toBoolean(value: boolean | string | null | undefined): boolean {
+  return value === true || value === 't' || value === 'true';
 }
 
 /** Violación de índice único de Postgres (p. ej. merchant_id + invoice_number). */
