@@ -592,7 +592,7 @@ INSERT INTO nav_item (surface, application_id, feature_id, code, label, icon, de
   ('saas_web', 6, 13, 'users-auth-profiles', 'GLOBAL USERS DIRECTORY', 'badge', 'Global Users Directory view.', '/saas-admin/users', 2, 'screen', 'live'),
   ('merchant_web', 6, 13, 'user-management', 'COMPANY USERS DIRECTORY', 'manage_accounts', 'Company Users Directory view.', '/dashboard/users', 2, 'screen', 'live'),
   ('merchant_web', 7, NULL, 'billing-transactions-hub', 'BILLING & TRANSACTIONS COMMAND HUB', 'receipt_long', 'Receipts issued, their line items and the taxes they carry.', '/app/billing-transactions', 1, 'hub', 'live'),
-  ('merchant_web', 7, 15, 'receipt-orders', 'RECEIPTS', 'receipt_long', 'Receipts issued for paid orders.', '/app/billing-transactions/receipt-orders', 2, 'screen', 'in_development'),
+  ('merchant_web', 7, 15, 'receipt-orders', 'RECEIPTS', 'receipt_long', 'Receipts issued for paid orders.', '/app/billing-transactions/receipt-orders', 2, 'screen', 'live'),
   ('merchant_web', 7, 14, 'receipt-items', 'RECEIPT ITEMS', 'list', 'Line items printed on each receipt.', '/app/billing-transactions/receipt-items', 3, 'screen', 'in_development'),
   ('merchant_web', 7, 16, 'receipt-taxes', 'RECEIPTS TAXES', 'percent', 'Tax lines allocated to each receipt.', '/app/billing-transactions/receipt-taxes', 4, 'screen', 'in_development'),
   ('merchant_web', 8, NULL, 'configuration-hub', 'CONFIGURATION COMMAND HUB', 'settings_applications', 'Merchant overtime rules, payroll rules, tax rules and tip distribution rules.', '/app/configuration', 1, 'hub', 'live'),
