@@ -22,8 +22,10 @@ import { CreateReceiptItemDto } from './dto/create-receipt-item.dto';
 import { UpdateReceiptItemDto } from './dto/update-receipt-item.dto';
 import {
   GetReceiptItemsQueryDto,
+  RECEIPT_ITEM_STATUS_FILTERS,
   ReceiptItemSortBy,
 } from './dto/get-receipt-items-query.dto';
+import { ReceiptItemOptionsResponseDto } from './dto/receipt-item-options.dto';
 import {
   ApiBearerAuth,
   ApiBadRequestResponse,
@@ -117,9 +119,37 @@ export class ReceiptItemController {
     Scope.MERCHANT_IOS,
     Scope.MERCHANT_CLOVER,
   )
-  @ApiOperation({ summary: 'Get all receipt items (paginated)' })
+  @ApiOperation({
+    summary: 'Get all receipt items (paginated)',
+    description:
+      'Lines of the merchant active receipts. Filters: search (description/SKU), receiptId (invoice/receipt selector), sku or itemName (item selector) and isActive (logical status).',
+  })
   @ApiQuery({ name: 'receiptId', required: false, type: Number })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'Partial match on description (name) or SKU',
+  })
   @ApiQuery({ name: 'name', required: false, type: String })
+  @ApiQuery({
+    name: 'sku',
+    required: false,
+    type: String,
+    description: 'Exact SKU (item selector)',
+  })
+  @ApiQuery({
+    name: 'itemName',
+    required: false,
+    type: String,
+    description: 'Exact item name (item selector, lines without SKU)',
+  })
+  @ApiQuery({
+    name: 'isActive',
+    required: false,
+    enum: RECEIPT_ITEM_STATUS_FILTERS,
+    description: "'true' (default) | 'false' | 'all'",
+  })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({
@@ -141,6 +171,33 @@ export class ReceiptItemController {
   ): Promise<AllPaginatedReceiptItems> {
     const merchantId = this.merchantIdOf(req);
     return this.receiptItemService.findAll(query, merchantId);
+  }
+
+  // Declared before ':id' so "item-options" is not parsed as an id.
+  @Get('item-options')
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
+  @Scopes(
+    Scope.MERCHANT_WEB,
+    Scope.MERCHANT_ANDROID,
+    Scope.MERCHANT_IOS,
+    Scope.MERCHANT_CLOVER,
+  )
+  @ApiOperation({
+    summary: 'Distinct items (name + SKU) of the merchant receipt lines',
+    description:
+      'Feeds the item selector of the INVOICE LINE ITEMS header. Only active lines of active receipts; up to 500 entries ordered by name.',
+  })
+  @ApiOkResponse({
+    description: 'Item options retrieved',
+    type: ReceiptItemOptionsResponseDto,
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
+  @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorResponse })
+  async findItemOptions(
+    @Request() req: ExpressRequest & { user?: AuthenticatedUser },
+  ): Promise<ReceiptItemOptionsResponseDto> {
+    const merchantId = this.merchantIdOf(req);
+    return this.receiptItemService.findItemOptions(merchantId);
   }
 
   @Get(':id')

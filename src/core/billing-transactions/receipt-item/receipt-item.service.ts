@@ -17,6 +17,10 @@ import {
   ReceiptItemResponseDto,
 } from './dto/receipt-item-response.dto';
 import { AllPaginatedReceiptItems } from './dto/all-paginated-receipt-items.dto';
+import {
+  ReceiptItemOptionDto,
+  ReceiptItemOptionsResponseDto,
+} from './dto/receipt-item-options.dto';
 import { ReceiptItem } from './entities/receipt-item.entity';
 import { Receipt } from '../receipts/entities/receipt.entity';
 import { Order } from 'src/restaurant-operations/pos/orders/entities/order.entity';
@@ -86,6 +90,11 @@ export class ReceiptItemService {
       if (e instanceof BadRequestException) throw e;
       throw new BadRequestException('metadata must be valid JSON');
     }
+  }
+
+  /** Escapes LIKE wildcards so a search for "50%" or "A_B" is literal. */
+  private escapeLike(term: string): string {
+    return term.replace(/[\\%_]/g, (ch) => `\\${ch}`);
   }
 
   private normalizeName(name: string): string {
@@ -192,13 +201,19 @@ export class ReceiptItemService {
       await this.verifyMerchantOwnership(query.receiptId, merchantId);
     }
 
-    // Build query: filter items only for this merchant's receipts
+    // Build query: only lines of this merchant's active receipts
     const qb = this.receiptItemRepo
       .createQueryBuilder('ri')
       .innerJoinAndSelect('ri.receipt', 'receipt')
       .innerJoin(Order, 'order', 'order.id = receipt.order_id')
       .where('order.merchant_id = :merchantId', { merchantId })
-      .andWhere('ri.is_active = :isActive', { isActive: true });
+      .andWhere('receipt.is_active = :receiptActive', { receiptActive: true });
+
+    // Logical status: active by default, 'false' = deleted lines, 'all' = both
+    const status = query.isActive ?? 'true';
+    if (status !== 'all') {
+      qb.andWhere('ri.is_active = :isActive', { isActive: status === 'true' });
+    }
 
     if (query.receiptId) {
       qb.andWhere('ri.receipt_id = :receiptId', {
@@ -206,10 +221,28 @@ export class ReceiptItemService {
       });
     }
 
+    const search = query.search?.trim();
+    if (search) {
+      qb.andWhere(
+        "(ri.name ILIKE :search ESCAPE '\\' OR COALESCE(ri.sku, '') ILIKE :search ESCAPE '\\')",
+        { search: `%${this.escapeLike(search)}%` },
+      );
+    }
+
     if (query.name) {
-      qb.andWhere('LOWER(ri.name) LIKE LOWER(:name)', {
-        name: `%${query.name}%`,
+      qb.andWhere("ri.name ILIKE :name ESCAPE '\\'", {
+        name: `%${this.escapeLike(query.name)}%`,
       });
+    }
+
+    // Item selector: exact SKU, or exact name for lines without SKU
+    const sku = query.sku?.trim();
+    if (sku) {
+      qb.andWhere('LOWER(ri.sku) = LOWER(:sku)', { sku });
+    }
+    const itemName = query.itemName?.trim();
+    if (itemName) {
+      qb.andWhere('LOWER(ri.name) = LOWER(:itemName)', { itemName });
     }
 
     const total = await qb.getCount();
@@ -244,6 +277,51 @@ export class ReceiptItemService {
       totalPages,
       hasNext: page < totalPages,
       hasPrev: page > 1,
+    };
+  }
+
+  /**
+   * Distinct items (name + SKU) of the merchant's active lines on active receipts, for
+   * the item selector of the INVOICE LINE ITEMS header. Capped at 500 entries.
+   */
+  async findItemOptions(
+    merchantId: number,
+  ): Promise<ReceiptItemOptionsResponseDto> {
+    if (!merchantId) {
+      throw new ForbiddenException('You must be associated with a merchant');
+    }
+
+    const rows = await this.receiptItemRepo
+      .createQueryBuilder('ri')
+      .innerJoin('ri.receipt', 'receipt')
+      .innerJoin(Order, 'order', 'order.id = receipt.order_id')
+      .select('ri.name', 'name')
+      .addSelect('ri.sku', 'sku')
+      .addSelect('COUNT(ri.id)', 'line_count')
+      .where('order.merchant_id = :merchantId', { merchantId })
+      .andWhere('receipt.is_active = :receiptActive', { receiptActive: true })
+      .andWhere('ri.is_active = :isActive', { isActive: true })
+      .groupBy('ri.name')
+      .addGroupBy('ri.sku')
+      .orderBy('ri.name', 'ASC')
+      .addOrderBy('ri.sku', 'ASC')
+      .limit(500)
+      .getRawMany<{
+        name: string;
+        sku: string | null;
+        line_count: string | number;
+      }>();
+
+    const data: ReceiptItemOptionDto[] = rows.map((r) => ({
+      name: r.name,
+      sku: r.sku ?? null,
+      line_count: Number(r.line_count),
+    }));
+
+    return {
+      statusCode: 200,
+      message: 'Receipt item options retrieved successfully',
+      data,
     };
   }
 

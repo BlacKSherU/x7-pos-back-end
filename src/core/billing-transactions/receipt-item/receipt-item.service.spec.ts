@@ -324,6 +324,86 @@ describe('ReceiptItemService', () => {
       ).rejects.toThrow(NotFoundException);
     });
 
+    it('only lists lines of active receipts and active lines by default', async () => {
+      const mockQb = buildMockQb([], 0);
+      mockReceiptItemRepo.createQueryBuilder.mockReturnValue(mockQb);
+
+      await service.findAll({}, MERCHANT_ID);
+
+      expect(mockQb.andWhere).toHaveBeenCalledWith(
+        'receipt.is_active = :receiptActive',
+        { receiptActive: true },
+      );
+      expect(mockQb.andWhere).toHaveBeenCalledWith(
+        'ri.is_active = :isActive',
+        { isActive: true },
+      );
+    });
+
+    it("isActive='false' lists only logically deleted lines", async () => {
+      const mockQb = buildMockQb([buildItem({ is_active: false })], 1);
+      mockReceiptItemRepo.createQueryBuilder.mockReturnValue(mockQb);
+
+      const result = await service.findAll({ isActive: 'false' }, MERCHANT_ID);
+
+      expect(mockQb.andWhere).toHaveBeenCalledWith(
+        'ri.is_active = :isActive',
+        { isActive: false },
+      );
+      expect(result.data[0].is_active).toBe(false);
+    });
+
+    it("isActive='all' does not filter by line status", async () => {
+      const mockQb = buildMockQb([], 0);
+      mockReceiptItemRepo.createQueryBuilder.mockReturnValue(mockQb);
+
+      await service.findAll({ isActive: 'all' }, MERCHANT_ID);
+
+      const conditions = mockQb.andWhere.mock.calls.map((c) => c[0]);
+      expect(conditions).not.toContain('ri.is_active = :isActive');
+    });
+
+    it('search matches description OR SKU, case-insensitive, with LIKE wildcards escaped', async () => {
+      const mockQb = buildMockQb([], 0);
+      mockReceiptItemRepo.createQueryBuilder.mockReturnValue(mockQb);
+
+      await service.findAll({ search: '  50%_off  ' }, MERCHANT_ID);
+
+      expect(mockQb.andWhere).toHaveBeenCalledWith(
+        expect.stringMatching(/ri\.name ILIKE :search.*OR.*ri\.sku.*ILIKE :search/),
+        { search: '%50\\%\\_off%' },
+      );
+    });
+
+    it('ignores a blank search', async () => {
+      const mockQb = buildMockQb([], 0);
+      mockReceiptItemRepo.createQueryBuilder.mockReturnValue(mockQb);
+
+      await service.findAll({ search: '   ' }, MERCHANT_ID);
+
+      const conditions = mockQb.andWhere.mock.calls.map((c) => String(c[0]));
+      expect(conditions.some((c) => c.includes(':search'))).toBe(false);
+    });
+
+    it('item selector filters by exact SKU or exact item name', async () => {
+      const mockQb = buildMockQb([], 0);
+      mockReceiptItemRepo.createQueryBuilder.mockReturnValue(mockQb);
+
+      await service.findAll(
+        { sku: ' SKU-001 ', itemName: 'Burger Combo' },
+        MERCHANT_ID,
+      );
+
+      expect(mockQb.andWhere).toHaveBeenCalledWith(
+        'LOWER(ri.sku) = LOWER(:sku)',
+        { sku: 'SKU-001' },
+      );
+      expect(mockQb.andWhere).toHaveBeenCalledWith(
+        'LOWER(ri.name) = LOWER(:itemName)',
+        { itemName: 'Burger Combo' },
+      );
+    });
+
     it('should return empty paginated result when no items', async () => {
       const mockQb = buildMockQb([], 0);
       mockReceiptItemRepo.createQueryBuilder.mockReturnValue(mockQb);
@@ -332,6 +412,52 @@ describe('ReceiptItemService', () => {
       expect(result.data).toHaveLength(0);
       expect(result.total).toBe(0);
       expect(result.hasNext).toBe(false);
+    });
+  });
+
+  // ─── findItemOptions ──────────────────────────────────────────────────────────
+
+  describe('findItemOptions', () => {
+    const buildRawQb = (rows: unknown[]) => ({
+      innerJoin: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+      addGroupBy: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      addOrderBy: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn().mockResolvedValue(rows),
+    });
+
+    it('returns distinct name/SKU pairs of the merchant with numeric counts', async () => {
+      const qb = buildRawQb([
+        { name: 'Burger Combo', sku: 'SKU-001', line_count: '3' },
+        { name: 'Fries', sku: null, line_count: '1' },
+      ]);
+      mockReceiptItemRepo.createQueryBuilder.mockReturnValue(qb);
+
+      const result = await service.findItemOptions(MERCHANT_ID);
+
+      expect(qb.where).toHaveBeenCalledWith('order.merchant_id = :merchantId', {
+        merchantId: MERCHANT_ID,
+      });
+      expect(qb.andWhere).toHaveBeenCalledWith('ri.is_active = :isActive', {
+        isActive: true,
+      });
+      expect(result.statusCode).toBe(200);
+      expect(result.data).toEqual([
+        { name: 'Burger Combo', sku: 'SKU-001', line_count: 3 },
+        { name: 'Fries', sku: null, line_count: 1 },
+      ]);
+    });
+
+    it('should throw ForbiddenException when merchantId is missing', async () => {
+      await expect(service.findItemOptions(null as any)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 

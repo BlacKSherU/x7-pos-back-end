@@ -71,6 +71,7 @@ describe('ReceiptItemController', () => {
     create: jest.fn(),
     findAll: jest.fn(),
     findOne: jest.fn(),
+    findItemOptions: jest.fn(),
     update: jest.fn(),
     remove: jest.fn(),
   };
@@ -120,6 +121,38 @@ describe('ReceiptItemController', () => {
       expect(mockService.findAll).toHaveBeenCalledWith(query, MERCHANT_ID);
       expect(result.data.length).toBe(1);
       expect(result.total).toBe(1);
+    });
+  });
+
+  describe('findAll filters (header)', () => {
+    it('forwards search / receipt / item / status filters to the service', async () => {
+      const query: GetReceiptItemsQueryDto = {
+        search: 'burger',
+        receiptId: 10,
+        sku: 'SKU-001',
+        isActive: 'all',
+      };
+      mockService.findAll.mockResolvedValue(mockPaginatedResponse);
+
+      await controller.findAll(query, mockReq);
+
+      expect(mockService.findAll).toHaveBeenCalledWith(query, MERCHANT_ID);
+    });
+  });
+
+  describe('findItemOptions', () => {
+    it('should call service.findItemOptions with the merchantId', async () => {
+      const options = {
+        statusCode: 200,
+        message: 'ok',
+        data: [{ name: 'Burger Combo', sku: 'SKU-001', line_count: 3 }],
+      };
+      mockService.findItemOptions.mockResolvedValue(options);
+
+      const result = await controller.findItemOptions(mockReq);
+
+      expect(mockService.findItemOptions).toHaveBeenCalledWith(MERCHANT_ID);
+      expect(result.data).toHaveLength(1);
     });
   });
 

@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { CreateReceiptItemDto } from './create-receipt-item.dto';
 import { UpdateReceiptItemDto } from './update-receipt-item.dto';
+import { GetReceiptItemsQueryDto } from './get-receipt-items-query.dto';
 
 /**
  * Same options as the global pipe (src/app.setup.ts): the precision checks of the DTOs
@@ -51,6 +52,35 @@ describe('ReceiptItem DTO validation', () => {
     await expect(
       pipe.transform({ ...validCreate, ...patch }, bodyOf(CreateReceiptItemDto)),
     ).rejects.toThrow(BadRequestException);
+  });
+
+  describe('list filters (query string)', () => {
+    const queryOf: ArgumentMetadata = {
+      type: 'query',
+      metatype: GetReceiptItemsQueryDto,
+    };
+
+    it("keeps isActive='false' as the string 'false' (no Boolean('false') === true trap)", async () => {
+      const result = (await pipe.transform(
+        { isActive: 'false', receiptId: '10', search: 'burger', sku: 'SKU-001' },
+        queryOf,
+      )) as GetReceiptItemsQueryDto;
+      expect(result.isActive).toBe('false');
+      expect(result.receiptId).toBe(10);
+      expect(result.search).toBe('burger');
+    });
+
+    it.each(['true', 'false', 'all'])('accepts isActive=%s', async (value) => {
+      await expect(
+        pipe.transform({ isActive: value }, queryOf),
+      ).resolves.toBeDefined();
+    });
+
+    it('rejects an unknown isActive value', async () => {
+      await expect(
+        pipe.transform({ isActive: 'maybe' }, queryOf),
+      ).rejects.toThrow(BadRequestException);
+    });
   });
 
   it('accepts a partial update with amounts, sku null and isActive', async () => {
