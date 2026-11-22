@@ -10,6 +10,8 @@ import {
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { Order } from 'src/restaurant-operations/pos/orders/entities/order.entity';
+import { Customer } from 'src/core/business-partners/customers/entities/customer.entity';
+import { Supplier } from 'src/core/business-partners/suppliers/entities/supplier.entity';
 
 import { ReceiptType } from '../constants/receipt-type.enum';
 
@@ -138,4 +140,41 @@ export class Receipt {
   })
   @Column({ type: 'varchar', length: 50, nullable: true })
   invoice_number: string;
+
+  // ---- Billing ↔ Business Partners (enlace explícito del recibo con un socio) ----
+
+  @ApiProperty({
+    example: 12,
+    required: false,
+    nullable: true,
+    description:
+      'Customer explicitly linked to the receipt. Null = the receipt belongs to the order customer.',
+  })
+  @Index('IDX_receipts_customer_id')
+  @Column({ type: 'int', name: 'customer_id', nullable: true })
+  customer_id?: number | null;
+
+  @ManyToOne(() => Customer, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({
+    name: 'customer_id',
+    foreignKeyConstraintName: 'FK_receipts_customer_id',
+  })
+  customer?: Customer | null;
+
+  @ApiProperty({
+    example: 3,
+    required: false,
+    nullable: true,
+    description: 'Supplier explicitly linked to the receipt.',
+  })
+  @Index('IDX_receipts_supplier_id')
+  @Column({ type: 'int', name: 'supplier_id', nullable: true })
+  supplier_id?: number | null;
+
+  @ManyToOne(() => Supplier, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({
+    name: 'supplier_id',
+    foreignKeyConstraintName: 'FK_receipts_supplier_id',
+  })
+  supplier?: Supplier | null;
 }
