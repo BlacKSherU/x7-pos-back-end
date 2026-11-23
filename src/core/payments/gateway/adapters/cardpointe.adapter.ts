@@ -25,6 +25,7 @@ import {
   ProviderResponse,
   toMinorUnits,
 } from './adapter-http';
+import { GatewayEndpoints, gatewayEndpoints } from '../gateway-endpoints';
 
 interface CardPointeResponse {
   respstat?: string;
@@ -56,6 +57,7 @@ export class CardPointeAdapter implements IPaymentGateway {
   constructor(
     private readonly http: HttpService,
     private readonly credentials: Record<string, string>,
+    private readonly endpoints: GatewayEndpoints = gatewayEndpoints(),
   ) {}
 
   async charge(request: ChargeRequest): Promise<PaymentResultDto> {
@@ -85,7 +87,7 @@ export class CardPointeAdapter implements IPaymentGateway {
       );
     }
     const hsn = request.deviceIdentifier;
-    const base = `https://${boltSite}.cardpointe.net/api`;
+    const base = this.endpoints.bolt(boltSite);
 
     const connected = await providerRequest<CardPointeResponse>(this.http, {
       method: 'POST',
@@ -157,6 +159,16 @@ export class CardPointeAdapter implements IPaymentGateway {
     return this.result(PaymentOperation.VOID, response, null);
   }
 
+  async inquire(transactionId: string): Promise<PaymentResultDto> {
+    const { site, username, password, merchantId } = this.credentials;
+    const response = await providerRequest<CardPointeResponse>(this.http, {
+      method: 'GET',
+      url: `${this.endpoints.cardpointeGateway(site)}/inquire/${encodeURIComponent(transactionId)}/${encodeURIComponent(merchantId)}`,
+      auth: { username, password },
+    });
+    return this.result(PaymentOperation.INQUIRE, response, null);
+  }
+
   /** Con decimales = unidades mayores ("10.50"); sin decimales = menores (CLP "1000"). */
   private amount(amount: number, currency: string): string {
     return amount.toFixed(currencyDecimals(currency));
@@ -169,7 +181,7 @@ export class CardPointeAdapter implements IPaymentGateway {
     const { site, username, password } = this.credentials;
     return providerRequest<CardPointeResponse>(this.http, {
       method: 'PUT',
-      url: `https://${site}.cardconnect.com/cardconnect/rest/${endpoint}`,
+      url: `${this.endpoints.cardpointeGateway(site)}/${endpoint}`,
       auth: { username, password },
       headers: { 'Content-Type': 'application/json' },
       data: body,

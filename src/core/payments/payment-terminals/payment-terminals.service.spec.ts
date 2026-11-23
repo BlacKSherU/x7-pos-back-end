@@ -157,6 +157,14 @@ describe('PaymentTerminalsService', () => {
     expect(terminalRepository.update).not.toHaveBeenCalled();
   });
 
+  it('clears the model when it is sent as null (was a TypeError → 500)', async () => {
+    await service.update(1, 3, { model: null as unknown as string }, admin);
+    expect(terminalRepository.update).toHaveBeenCalledWith(
+      { id: 3 },
+      expect.objectContaining({ model: null }),
+    );
+  });
+
   it('locks branch users to their own merchant when listing', async () => {
     await service.findAll(
       1,

@@ -11,6 +11,7 @@ import { OnlinePayment } from './entities/online-payment.entity';
 import { OnlineOrder } from '../online-order/entities/online-order.entity';
 import { CreateOnlinePaymentDto } from './dto/create-online-payment.dto';
 import { UpdateOnlinePaymentDto } from './dto/update-online-payment.dto';
+import { RefundOnlinePaymentDto } from './dto/refund-online-payment.dto';
 import {
   GetOnlinePaymentQueryDto,
   OnlinePaymentSortBy,
@@ -22,6 +23,7 @@ import {
 import { PaginatedOnlinePaymentResponseDto } from './dto/paginated-online-payment-response.dto';
 import { OnlineStoreStatus } from '../online-stores/constants/online-store-status.enum';
 import { OnlineOrderStatus } from '../online-order/constants/online-order-status.enum';
+import { OnlineOrderPaymentStatus } from '../online-order/constants/online-order-payment-status.enum';
 import { OnlinePaymentStatus } from './constants/online-payment-status.enum';
 
 @Injectable()
@@ -71,26 +73,36 @@ export class OnlinePaymentService {
       );
     }
 
+    const normalizedProvider = createOnlinePaymentDto.paymentProvider.trim();
+    const normalizedTransactionId = createOnlinePaymentDto.transactionId.trim();
+
     const existingPayment = await this.onlinePaymentRepository.findOne({
       where: {
-        transaction_id: createOnlinePaymentDto.transactionId,
+        payment_provider: normalizedProvider,
+        transaction_id: normalizedTransactionId,
         logical_status: OnlinePaymentStatus.ACTIVE,
       },
     });
 
     if (existingPayment) {
-      throw new BadRequestException(
-        'A payment with this transaction ID already exists',
+      throw new ConflictException(
+        'A payment with this transaction ID already exists for this provider',
       );
     }
 
+    const shouldAutoStampProcessedAt =
+      createOnlinePaymentDto.status === OnlineOrderPaymentStatus.PAID ||
+      createOnlinePaymentDto.status === OnlineOrderPaymentStatus.REFUNDED;
+
     const onlinePayment = new OnlinePayment();
     onlinePayment.online_order_id = createOnlinePaymentDto.onlineOrderId;
-    onlinePayment.payment_provider = createOnlinePaymentDto.paymentProvider;
-    onlinePayment.transaction_id = createOnlinePaymentDto.transactionId;
+    onlinePayment.payment_provider = normalizedProvider;
+    onlinePayment.transaction_id = normalizedTransactionId;
     onlinePayment.amount = createOnlinePaymentDto.amount;
     onlinePayment.status = createOnlinePaymentDto.status;
-    onlinePayment.processed_at = createOnlinePaymentDto.processedAt || null;
+    onlinePayment.processed_at =
+      createOnlinePaymentDto.processedAt ??
+      (shouldAutoStampProcessedAt ? new Date() : null);
 
     const savedOnlinePayment =
       await this.onlinePaymentRepository.save(onlinePayment);
@@ -167,10 +179,39 @@ export class OnlinePaymentService {
       .andWhere('store.status = :status', { status: OnlineStoreStatus.ACTIVE })
       .andWhere('onlineOrder.status != :deletedStatus', {
         deletedStatus: OnlineOrderStatus.DELETED,
-      })
-      .andWhere('onlinePayment.logical_status != :itemDeletedStatus', {
-        itemDeletedStatus: OnlinePaymentStatus.DELETED,
       });
+
+    if (
+      query.logicalStatus &&
+      query.logicalStatus.toLowerCase() === 'deleted'
+    ) {
+      queryBuilder.andWhere(
+        'onlinePayment.logical_status = :itemDeletedStatus',
+        {
+          itemDeletedStatus: OnlinePaymentStatus.DELETED,
+        },
+      );
+    } else if (
+      query.logicalStatus &&
+      query.logicalStatus.toLowerCase() === 'all'
+    ) {
+      // Return both active and deleted records
+    } else {
+      queryBuilder.andWhere(
+        'onlinePayment.logical_status != :itemDeletedStatus',
+        {
+          itemDeletedStatus: OnlinePaymentStatus.DELETED,
+        },
+      );
+    }
+
+    if (query.search && query.search.trim()) {
+      const term = `%${query.search.toLowerCase().trim()}%`;
+      queryBuilder.andWhere(
+        '(LOWER(onlinePayment.payment_provider) LIKE :term OR LOWER(onlinePayment.transaction_id) LIKE :term OR CAST(onlinePayment.id AS TEXT) LIKE :term OR CAST(onlinePayment.online_order_id AS TEXT) LIKE :term)',
+        { term },
+      );
+    }
 
     if (query.onlineOrderId) {
       queryBuilder.andWhere('onlinePayment.online_order_id = :onlineOrderId', {
@@ -338,16 +379,16 @@ export class OnlinePaymentService {
       .andWhere('onlineOrder.status != :deletedStatus', {
         deletedStatus: OnlineOrderStatus.DELETED,
       })
-      .andWhere('onlinePayment.logical_status != :itemDeletedStatus', {
-        itemDeletedStatus: OnlinePaymentStatus.DELETED,
-      })
       .getOne();
 
     if (!existingOnlinePayment) {
       throw new NotFoundException('Online payment not found');
     }
 
-    if (existingOnlinePayment.logical_status === OnlinePaymentStatus.DELETED) {
+    if (
+      existingOnlinePayment.logical_status === OnlinePaymentStatus.DELETED &&
+      updateOnlinePaymentDto.logicalStatus !== OnlinePaymentStatus.ACTIVE
+    ) {
       throw new ConflictException('Cannot update a deleted online payment');
     }
 
@@ -378,29 +419,39 @@ export class OnlinePaymentService {
 
       existingOnlinePayment.online_order_id =
         updateOnlinePaymentDto.onlineOrderId;
+      existingOnlinePayment.onlineOrder = onlineOrder;
     }
 
-    if (updateOnlinePaymentDto.paymentProvider !== undefined) {
-      existingOnlinePayment.payment_provider =
-        updateOnlinePaymentDto.paymentProvider;
-    }
+    const targetProvider =
+      updateOnlinePaymentDto.paymentProvider !== undefined
+        ? updateOnlinePaymentDto.paymentProvider.trim()
+        : existingOnlinePayment.payment_provider;
 
-    if (updateOnlinePaymentDto.transactionId !== undefined) {
+    const targetTransactionId =
+      updateOnlinePaymentDto.transactionId !== undefined
+        ? updateOnlinePaymentDto.transactionId.trim()
+        : existingOnlinePayment.transaction_id;
+
+    if (
+      updateOnlinePaymentDto.paymentProvider !== undefined ||
+      updateOnlinePaymentDto.transactionId !== undefined
+    ) {
       const existingPayment = await this.onlinePaymentRepository.findOne({
         where: {
-          transaction_id: updateOnlinePaymentDto.transactionId,
+          payment_provider: targetProvider,
+          transaction_id: targetTransactionId,
           logical_status: OnlinePaymentStatus.ACTIVE,
         },
       });
 
       if (existingPayment && existingPayment.id !== id) {
-        throw new BadRequestException(
-          'A payment with this transaction ID already exists',
+        throw new ConflictException(
+          'A payment with this transaction ID already exists for this provider',
         );
       }
 
-      existingOnlinePayment.transaction_id =
-        updateOnlinePaymentDto.transactionId;
+      existingOnlinePayment.payment_provider = targetProvider;
+      existingOnlinePayment.transaction_id = targetTransactionId;
     }
 
     if (updateOnlinePaymentDto.amount !== undefined) {
@@ -413,6 +464,7 @@ export class OnlinePaymentService {
     }
 
     if (updateOnlinePaymentDto.status !== undefined) {
+      const previousStatus = existingOnlinePayment.status;
       existingOnlinePayment.status = updateOnlinePaymentDto.status;
       if (existingOnlinePayment.onlineOrder) {
         existingOnlinePayment.onlineOrder.payment_status =
@@ -421,11 +473,25 @@ export class OnlinePaymentService {
           existingOnlinePayment.onlineOrder,
         );
       }
+
+      if (
+        updateOnlinePaymentDto.processedAt === undefined &&
+        previousStatus !== updateOnlinePaymentDto.status &&
+        (updateOnlinePaymentDto.status === OnlineOrderPaymentStatus.PAID ||
+          updateOnlinePaymentDto.status === OnlineOrderPaymentStatus.REFUNDED)
+      ) {
+        existingOnlinePayment.processed_at = new Date();
+      }
     }
 
     if (updateOnlinePaymentDto.processedAt !== undefined) {
       existingOnlinePayment.processed_at =
         updateOnlinePaymentDto.processedAt || null;
+    }
+
+    if (updateOnlinePaymentDto.logicalStatus !== undefined) {
+      existingOnlinePayment.logical_status =
+        updateOnlinePaymentDto.logicalStatus;
     }
 
     const updatedOnlinePayment = await this.onlinePaymentRepository.save(
@@ -499,6 +565,151 @@ export class OnlinePaymentService {
       statusCode: 200,
       message: 'Online payment deleted successfully',
       data: this.formatOnlinePaymentResponse(updatedOnlinePayment),
+    };
+  }
+
+  async syncGatewayStatus(
+    id: number,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneOnlinePaymentResponseDto> {
+    if (!id || id <= 0) {
+      throw new BadRequestException(
+        'Online payment ID must be a valid positive number',
+      );
+    }
+
+    if (!authenticatedUserMerchantId) {
+      throw new ForbiddenException(
+        'You must be associated with a merchant to sync online payments',
+      );
+    }
+
+    const existingOnlinePayment = await this.onlinePaymentRepository
+      .createQueryBuilder('onlinePayment')
+      .leftJoinAndSelect('onlinePayment.onlineOrder', 'onlineOrder')
+      .leftJoin('onlineOrder.store', 'store')
+      .leftJoin('store.merchant', 'merchant')
+      .where('onlinePayment.id = :id', { id })
+      .andWhere('merchant.id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
+      .andWhere('store.status = :status', { status: OnlineStoreStatus.ACTIVE })
+      .andWhere('onlineOrder.status != :deletedStatus', {
+        deletedStatus: OnlineOrderStatus.DELETED,
+      })
+      .andWhere('onlinePayment.logical_status != :itemDeletedStatus', {
+        itemDeletedStatus: OnlinePaymentStatus.DELETED,
+      })
+      .getOne();
+
+    if (!existingOnlinePayment) {
+      throw new NotFoundException('Online payment not found');
+    }
+
+    if (
+      (existingOnlinePayment.status === OnlineOrderPaymentStatus.PAID ||
+        existingOnlinePayment.status === OnlineOrderPaymentStatus.REFUNDED) &&
+      !existingOnlinePayment.processed_at
+    ) {
+      existingOnlinePayment.processed_at = new Date();
+    }
+
+    if (existingOnlinePayment.onlineOrder) {
+      existingOnlinePayment.onlineOrder.payment_status =
+        existingOnlinePayment.status;
+      await this.onlineOrderRepository.save(existingOnlinePayment.onlineOrder);
+    }
+
+    const saved = await this.onlinePaymentRepository.save(
+      existingOnlinePayment,
+    );
+
+    return {
+      statusCode: 200,
+      message: `Gateway status verified with ${existingOnlinePayment.payment_provider.toUpperCase()} (${existingOnlinePayment.status.toUpperCase()})`,
+      data: this.formatOnlinePaymentResponse(saved),
+    };
+  }
+
+  async processRefund(
+    id: number,
+    refundDto: RefundOnlinePaymentDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<OneOnlinePaymentResponseDto> {
+    if (!id || id <= 0) {
+      throw new BadRequestException(
+        'Online payment ID must be a valid positive number',
+      );
+    }
+
+    if (!authenticatedUserMerchantId) {
+      throw new ForbiddenException(
+        'You must be associated with a merchant to refund online payments',
+      );
+    }
+
+    const existingOnlinePayment = await this.onlinePaymentRepository
+      .createQueryBuilder('onlinePayment')
+      .leftJoinAndSelect('onlinePayment.onlineOrder', 'onlineOrder')
+      .leftJoin('onlineOrder.store', 'store')
+      .leftJoin('store.merchant', 'merchant')
+      .where('onlinePayment.id = :id', { id })
+      .andWhere('merchant.id = :merchantId', {
+        merchantId: authenticatedUserMerchantId,
+      })
+      .andWhere('store.status = :status', { status: OnlineStoreStatus.ACTIVE })
+      .andWhere('onlineOrder.status != :deletedStatus', {
+        deletedStatus: OnlineOrderStatus.DELETED,
+      })
+      .andWhere('onlinePayment.logical_status != :itemDeletedStatus', {
+        itemDeletedStatus: OnlinePaymentStatus.DELETED,
+      })
+      .getOne();
+
+    if (!existingOnlinePayment) {
+      throw new NotFoundException('Online payment not found');
+    }
+
+    if (existingOnlinePayment.status !== OnlineOrderPaymentStatus.PAID) {
+      throw new ConflictException(
+        'Only settled (PAID) payments can be refunded',
+      );
+    }
+
+    const currentAmount = Number(existingOnlinePayment.amount || 0);
+    const requestedRefund =
+      refundDto.refundAmount !== undefined
+        ? Number(refundDto.refundAmount)
+        : currentAmount;
+
+    if (requestedRefund <= 0 || requestedRefund > currentAmount) {
+      throw new BadRequestException(
+        `Refund amount must be between 0.01 and ${currentAmount.toFixed(2)}`,
+      );
+    }
+
+    const isFullRefund = Math.abs(requestedRefund - currentAmount) < 0.001;
+    existingOnlinePayment.status = OnlineOrderPaymentStatus.REFUNDED;
+    existingOnlinePayment.processed_at = new Date();
+
+    const saved = await this.onlinePaymentRepository.save(
+      existingOnlinePayment,
+    );
+
+    if (existingOnlinePayment.onlineOrder) {
+      existingOnlinePayment.onlineOrder.payment_status =
+        OnlineOrderPaymentStatus.REFUNDED;
+      await this.onlineOrderRepository.save(existingOnlinePayment.onlineOrder);
+    }
+
+    const reasonText = refundDto.reason?.trim()
+      ? ` — Reason: ${refundDto.reason.trim()}`
+      : '';
+
+    return {
+      statusCode: 200,
+      message: `${isFullRefund ? 'Full' : 'Partial'} refund of $${requestedRefund.toFixed(2)} processed via ${existingOnlinePayment.payment_provider.toUpperCase()}${reasonText}`,
+      data: this.formatOnlinePaymentResponse(saved),
     };
   }
 

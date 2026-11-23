@@ -25,8 +25,7 @@ import {
   ProviderResponse,
   toMinorUnits,
 } from './adapter-http';
-
-const STRIPE_API = 'https://api.stripe.com/v1';
+import { GatewayEndpoints, gatewayEndpoints } from '../gateway-endpoints';
 
 interface StripeCardDetails {
   brand?: string | null;
@@ -100,6 +99,7 @@ export class StripeAdapter implements IPaymentGateway {
   constructor(
     private readonly http: HttpService,
     private readonly credentials: Record<string, string>,
+    private readonly endpoints: GatewayEndpoints = gatewayEndpoints(),
   ) {}
 
   async charge(request: ChargeRequest): Promise<PaymentResultDto> {
@@ -203,13 +203,86 @@ export class StripeAdapter implements IPaymentGateway {
     });
   }
 
+  /**
+   * Un intent sin capturar se cancela. Uno ya cobrado (los cobros del POS se capturan al
+   * momento) no admite cancelación en Stripe: su anulación es la devolución total antes
+   * del pago al comercio, que Stripe revierte sin comisión de reembolso.
+   */
   async void(request: VoidRequest): Promise<PaymentResultDto> {
+    const operation = PaymentOperation.VOID;
     const response = await this.post<StripePaymentIntent>(
       `/payment_intents/${encodeURIComponent(request.transactionId)}/cancel`,
       {},
       request.idempotencyKey,
     );
-    return this.intentResult(PaymentOperation.VOID, response);
+    const error = isNetworkError(response)
+      ? undefined
+      : (response.data as StripeErrorBody).error;
+    if (
+      !isNetworkError(response) &&
+      response.status === 400 &&
+      error?.payment_intent?.status === 'succeeded'
+    ) {
+      const refunded = await this.post<StripeRefund>(
+        '/refunds',
+        { payment_intent: request.transactionId },
+        request.idempotencyKey && `${request.idempotencyKey}:refund`,
+      );
+      if (isNetworkError(refunded) || refunded.status >= 300) {
+        return this.errorResult(operation, refunded, null);
+      }
+      const refund = refunded.data as StripeRefund;
+      const status =
+        REFUND_STATUS[refund.status] === PaymentResultStatus.DECLINED
+          ? PaymentResultStatus.DECLINED
+          : PaymentResultStatus.APPROVED;
+      return buildPaymentResult({
+        provider: this.provider,
+        operation,
+        status,
+        transactionId: refund.id,
+        authorizationCode: null,
+        amount: fromMinorUnits(refund.amount, refund.currency),
+        currency: refund.currency.toUpperCase(),
+        message:
+          status === PaymentResultStatus.APPROVED
+            ? 'Voided (captured payment reversed in full)'
+            : `Void ${refund.status}: ${refund.failure_reason ?? 'no reason given'}`,
+        providerCode: refund.status,
+      });
+    }
+    return this.intentResult(operation, response);
+  }
+
+  async inquire(transactionId: string): Promise<PaymentResultDto> {
+    const operation = PaymentOperation.INQUIRE;
+    const response = await providerRequest<
+      StripePaymentIntent | StripeErrorBody
+    >(this.http, {
+      method: 'GET',
+      url: `${this.endpoints.stripeApi}/payment_intents/${encodeURIComponent(transactionId)}`,
+      params: { 'expand[]': 'latest_charge' },
+      headers: { Authorization: `Bearer ${this.credentials.secretKey}` },
+    });
+    if (isNetworkError(response) || response.status >= 300) {
+      return this.errorResult(operation, response, transactionId);
+    }
+    const intent = response.data as StripePaymentIntent;
+    const result = this.fromIntent(operation, intent);
+    // Un intent de reader recién enviado también está en requires_payment_method: solo es
+    // un rechazo si trae last_payment_error; si no, el cliente aún no pasa la tarjeta.
+    if (
+      intent.status === 'requires_payment_method' &&
+      !intent.last_payment_error
+    ) {
+      return {
+        ...result,
+        status: PaymentResultStatus.PENDING,
+        success: false,
+        message: 'Waiting for the customer card',
+      };
+    }
+    return result;
   }
 
   private metadata(orderReference?: string): Record<string, string> {
@@ -228,7 +301,7 @@ export class StripeAdapter implements IPaymentGateway {
     ).toString();
     return providerRequest<T | StripeErrorBody>(this.http, {
       method: 'POST',
-      url: `${STRIPE_API}${path}`,
+      url: `${this.endpoints.stripeApi}${path}`,
       data: body,
       headers: {
         Authorization: `Bearer ${this.credentials.secretKey}`,

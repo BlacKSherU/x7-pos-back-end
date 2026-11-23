@@ -11,6 +11,7 @@ import type { OrderItem } from '../order-item/entities/order-item.entity';
 import type { OrderTax } from '../order-taxes/entities/order-tax.entity';
 import { OrderItemStatus } from '../order-item/constants/order-item-status.enum';
 import { KitchenStatus } from './constants/kitchen-status.enum';
+import { OrderPaymentStatus } from '../order-payments/constants/order-payment-status.enum';
 
 describe('order-aggregation.util', () => {
   describe('computeOrderTotal', () => {
@@ -122,6 +123,20 @@ describe('order-aggregation.util', () => {
 
     it('should return 0 for empty list', () => {
       expect(computePaidTotalFromPayments([])).toBe(0);
+    });
+
+    it('should skip voided payments (amount and tip)', () => {
+      const payments = [
+        { amount: 10, tip_amount: 2, is_refund: false },
+        {
+          amount: 20,
+          tip_amount: 3,
+          is_refund: false,
+          status: OrderPaymentStatus.VOIDED,
+        },
+      ];
+      expect(computePaidTotalFromPayments(payments)).toBe(12);
+      expect(computeTipTotalFromPayments(payments)).toBe(2);
     });
   });
 

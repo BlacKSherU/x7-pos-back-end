@@ -57,6 +57,41 @@ export class GetOnlineOrderItemQueryDto {
   createdDate?: string;
 
   @ApiPropertyOptional({
+    example: 'PENDING',
+    description:
+      'Filter by kitchen line preparation status (PENDING, IN_PREPARATION, READY, SERVED)',
+  })
+  @IsOptional()
+  @IsString()
+  kitchenLineStatus?: string;
+
+  @ApiPropertyOptional({
+    example: 'active',
+    description: 'Filter by status (all, active, deleted)',
+  })
+  @IsOptional()
+  @IsString()
+  status?: string;
+
+  @ApiPropertyOptional({
+    example: 'Burger',
+    description:
+      'Search by product name, variant name, notes, order ID or item ID',
+  })
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'Filter by POS order line item ID',
+  })
+  @IsOptional()
+  @Transform(({ value }) => toInt(value))
+  @IsNumber()
+  orderItemId?: number;
+
+  @ApiPropertyOptional({
     example: 1,
     description: 'Page number for pagination (minimum 1)',
     minimum: 1,

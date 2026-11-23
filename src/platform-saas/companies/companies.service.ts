@@ -12,6 +12,7 @@ import {
 } from './dtos/company-response.dto';
 import {
   CompanyProfileDto,
+  CompanyProfileMetricsDto,
   CompanyProfileResponseDto,
 } from './dtos/company-profile.dto';
 import { ErrorHandler } from '../../common/utils/error-handler.util';
@@ -42,6 +43,20 @@ const CONFIGURATION_TYPE_LABELS: Record<string, string> = {
   merchant_payroll_rule: 'Payroll Rules',
   merchant_overtime_rule: 'Overtime Rules',
 };
+
+/** `merchant_tax_rule` from either `merchant_tax_rule` or `{"name":"merchant_tax_rule"}`. */
+export function normalizeConfigurationType(raw: unknown): string | undefined {
+  if (typeof raw !== 'string' || raw.trim() === '') return undefined;
+  const value = raw.trim();
+  if (!value.startsWith('{')) return value;
+  try {
+    const parsed: unknown = JSON.parse(value);
+    const name = (parsed as { name?: unknown } | null)?.name;
+    return typeof name === 'string' && name.trim() ? name.trim() : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 @Injectable()
 export class CompaniesService {
@@ -198,18 +213,26 @@ export class CompaniesService {
     user: AuthenticatedUser,
   ): Promise<CompanyConfigurationsResponseDto> {
     const companyId = await this.resolveUserCompanyId(user);
+    return this.getConfigurationsForCompany(companyId);
+  }
 
+  /** Configuration records of one company (`{ summary, items }`), without access checks. */
+  async getConfigurationsForCompany(
+    companyId: number,
+  ): Promise<CompanyConfigurationsResponseDto> {
     const configurations = await this.configurationRepo.find({
       where: { company: { id: companyId } },
       relations: ['merchant'],
       order: { updatedAt: 'DESC' },
     });
+    const types = await this.configurationTypesById(companyId);
 
     const items: CompanyConfigurationItemDto[] = configurations.map(
       (configuration) => {
-        const configType = (configuration as Configuration & { type?: string })
-          .type;
-        const configurationType = configType ?? 'configuration';
+        const configurationType =
+          (configuration as Configuration & { type?: string }).type ??
+          types.get(Number(configuration.id)) ??
+          'configuration';
 
         return {
           id: configuration.id,
@@ -347,6 +370,30 @@ export class CompaniesService {
     return String(value).slice(0, 10);
   }
 
+  /**
+   * Discriminator (`type` column) of each configuration row, by id. TypeORM does not map the
+   * single-table-inheritance column as a property, and the child entities register their
+   * discriminator as `{ name: '...' }`, so rows written by the API hold `{"name":"..."}`
+   * while rows seeded by SQL hold the plain value: both are normalized here.
+   */
+  private async configurationTypesById(
+    companyId: number,
+  ): Promise<Map<number, string>> {
+    const rows = await this.configurationRepo.query(
+      `SELECT id, type FROM configuration WHERE company_id = $1`,
+      [companyId],
+    );
+    const types = new Map<number, string>();
+    for (const row of (rows ?? []) as {
+      id: number | string;
+      type: unknown;
+    }[]) {
+      const type = normalizeConfigurationType(row.type);
+      if (type) types.set(Number(row.id), type);
+    }
+    return types;
+  }
+
   private getConfigurationLabel(type: string): string {
     return (
       CONFIGURATION_TYPE_LABELS[type] ??
@@ -365,6 +412,27 @@ export class CompaniesService {
       ErrorHandler.notFound(ErrorMessage.COMPANY_NOT_FOUND);
     }
 
+    const metrics = await this.getProfileMetrics(companyId);
+
+    return {
+      id: company.id,
+      name: company.name,
+      tax_id: company.tax_id,
+      rut: company.tax_id,
+      email: company.email,
+      phone: company.phone,
+      address: company.address,
+      city: company.city,
+      state: company.state,
+      country: company.country,
+      metrics,
+    };
+  }
+
+  /** Profile counters of a company: active branches, B2B customers and suppliers. */
+  async getProfileMetrics(
+    companyId: number,
+  ): Promise<CompanyProfileMetricsDto> {
     const [
       activeMerchantBranches,
       globalCorporateCustomers,
@@ -378,25 +446,14 @@ export class CompaniesService {
     ]);
 
     return {
-      id: company.id,
-      name: company.name,
-      tax_id: company.tax_id,
-      rut: company.tax_id,
-      email: company.email,
-      phone: company.phone,
-      address: company.address,
-      city: company.city,
-      state: company.state,
-      country: company.country,
-      metrics: {
-        activeMerchantBranches,
-        globalCorporateCustomers,
-        authorizedMasterSuppliers,
-      },
+      activeMerchantBranches,
+      globalCorporateCustomers,
+      authorizedMasterSuppliers,
     };
   }
 
-  private async resolveUserCompanyId(user: AuthenticatedUser): Promise<number> {
+  /** Company of the user's merchant. Portal administrators have none (403). */
+  async resolveUserCompanyId(user: AuthenticatedUser): Promise<number> {
     if (user.role === UserRole.PORTAL_ADMIN) {
       ErrorHandler.forbidden(
         'Portal administrators must use company endpoints by ID.',

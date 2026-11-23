@@ -25,6 +25,8 @@ describe('OnlinePaymentController', () => {
     findOne: jest.fn(),
     update: jest.fn(),
     remove: jest.fn(),
+    syncGatewayStatus: jest.fn(),
+    processRefund: jest.fn(),
   };
 
   const mockUser = {
@@ -281,6 +283,48 @@ describe('OnlinePaymentController', () => {
         errorMessage,
       );
       expect(removeSpy).toHaveBeenCalledWith(1, mockUser.merchant.id);
+    });
+  });
+
+  describe('POST /online-payments/:id/sync-gateway (syncGateway)', () => {
+    it('should trigger gateway status sync', async () => {
+      const syncSpy = jest.spyOn(service, 'syncGatewayStatus');
+      const syncResponse: OneOnlinePaymentResponseDto = {
+        ...mockOnlinePaymentResponse,
+        statusCode: 200,
+        message: 'Gateway status verified with STRIPE (PAID)',
+      };
+      syncSpy.mockResolvedValue(syncResponse);
+
+      const result = await controller.syncGateway(1, mockRequest);
+
+      expect(syncSpy).toHaveBeenCalledWith(1, mockUser.merchant.id);
+      expect(result).toEqual(syncResponse);
+    });
+  });
+
+  describe('POST /online-payments/:id/refund (processRefund)', () => {
+    it('should dispatch a refund', async () => {
+      const refundSpy = jest.spyOn(service, 'processRefund');
+      const refundResponse: OneOnlinePaymentResponseDto = {
+        ...mockOnlinePaymentResponse,
+        statusCode: 200,
+        message: 'Full refund of $125.99 processed via STRIPE',
+      };
+      refundSpy.mockResolvedValue(refundResponse);
+
+      const result = await controller.processRefund(
+        1,
+        { refundAmount: 125.99, reason: 'Customer request' },
+        mockRequest,
+      );
+
+      expect(refundSpy).toHaveBeenCalledWith(
+        1,
+        { refundAmount: 125.99, reason: 'Customer request' },
+        mockUser.merchant.id,
+      );
+      expect(result).toEqual(refundResponse);
     });
   });
 });
