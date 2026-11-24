@@ -55,12 +55,14 @@ describe('ReceiptsService', () => {
       'select',
       'addSelect',
       'innerJoin',
+      'leftJoin',
       'where',
       'andWhere',
       'groupBy',
       'addGroupBy',
       'orderBy',
       'addOrderBy',
+      'limit',
     ]) {
       qb[method] = jest.fn().mockReturnValue(qb);
     }
@@ -72,6 +74,8 @@ describe('ReceiptsService', () => {
   const mockOrderRepository = {
     findOne: jest.fn(),
     find: jest.fn(),
+    createQueryBuilder: jest.fn(),
+    manager: { query: jest.fn() },
   };
   const mockReceiptItemRepository = { find: jest.fn() };
   const mockReceiptTaxRepository = {
@@ -2463,6 +2467,124 @@ describe('ReceiptsService', () => {
         BadRequestException,
       );
       expect(mockReceiptAudit.findForReceipt).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('findOrderOptions', () => {
+    const row = (id: number, extra: Record<string, unknown> = {}) => ({
+      id,
+      order_number: String(id).padStart(4, '0'),
+      status: 'paid',
+      order_type: 'take_out',
+      total: '34510.00',
+      is_paid: true,
+      created_at: new Date('2026-11-24T10:00:00Z'),
+      customer_name: 'Cliente Mesón',
+      issued_types: '',
+      ...extra,
+    });
+
+    beforeEach(() => {
+      mockOrderRepository.manager.query.mockResolvedValue([
+        { base_currency: 'CLP' },
+      ]);
+    });
+
+    it('rejects users without a merchant', async () => {
+      await expect(service.findOrderOptions({}, 0)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('lists the merchant orders newest first with the company base currency', async () => {
+      const qb = makeQueryBuilder({
+        many: [row(139), row(130, { issued_types: 'INVOICE,RECEIPT' })],
+      });
+      mockOrderRepository.createQueryBuilder.mockReturnValueOnce(qb);
+
+      const result = await service.findOrderOptions({}, 46);
+
+      expect(qb.where).toHaveBeenCalledWith('o.merchant_id = :merchantId', {
+        merchantId: 46,
+      });
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        'o.logical_status = :active',
+        { active: 'active' },
+      );
+      expect(qb.orderBy).toHaveBeenCalledWith('o.created_at', 'DESC');
+      expect(qb.limit).toHaveBeenCalledWith(20);
+      expect(mockOrderRepository.manager.query).toHaveBeenCalledWith(
+        expect.stringContaining('base_currency'),
+        [46],
+      );
+      expect(result.data.default_currency).toBe('CLP');
+      expect(result.data.orders).toEqual([
+        expect.objectContaining({ id: 139, total: 34510, issued_types: [] }),
+        expect.objectContaining({
+          id: 130,
+          issued_types: [ReceiptType.INVOICE, ReceiptType.RECEIPT],
+        }),
+      ]);
+    });
+
+    it('leaves out orders that already have an active receipt of the requested type', async () => {
+      const qb = makeQueryBuilder({ many: [] });
+      mockOrderRepository.createQueryBuilder.mockReturnValueOnce(qb);
+
+      await service.findOrderOptions({ type: ReceiptType.INVOICE }, 46);
+
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        expect.stringContaining('NOT EXISTS'),
+        { type: ReceiptType.INVOICE },
+      );
+    });
+
+    it('searches order number and customer (escaped) or the exact order id', async () => {
+      const qb = makeQueryBuilder({ many: [] });
+      mockOrderRepository.createQueryBuilder.mockReturnValueOnce(qb);
+
+      await service.findOrderOptions({ search: '13%', limit: 5 }, 46);
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        '(o.order_number ILIKE :like OR c.name ILIKE :like OR o.id = :exactId)',
+        { like: '%13\\%%', exactId: -1 },
+      );
+      expect(qb.limit).toHaveBeenCalledWith(5);
+
+      const qbId = makeQueryBuilder({ many: [] });
+      mockOrderRepository.createQueryBuilder.mockReturnValueOnce(qbId);
+      await service.findOrderOptions({ search: '138' }, 46);
+      expect(qbId.andWhere).toHaveBeenCalledWith(expect.any(String), {
+        like: '%138%',
+        exactId: 138,
+      });
+    });
+
+    it('prepends the included order when the page does not contain it', async () => {
+      const page = makeQueryBuilder({ many: [row(139)] });
+      const current = makeQueryBuilder({ one: row(130) });
+      mockOrderRepository.createQueryBuilder
+        .mockReturnValueOnce(page)
+        .mockReturnValueOnce(current);
+
+      const result = await service.findOrderOptions(
+        { includeOrderId: 130, limit: 1 },
+        46,
+      );
+
+      expect(current.andWhere).toHaveBeenCalledWith(
+        'o.id = :includeOrderId',
+        { includeOrderId: 130 },
+      );
+      expect(result.data.orders.map((o) => o.id)).toEqual([130, 139]);
+    });
+
+    it('does not query the included order again when it is already listed', async () => {
+      const page = makeQueryBuilder({ many: [row(130)] });
+      mockOrderRepository.createQueryBuilder.mockReturnValueOnce(page);
+
+      await service.findOrderOptions({ includeOrderId: 130 }, 46);
+
+      expect(mockOrderRepository.createQueryBuilder).toHaveBeenCalledTimes(1);
     });
   });
 });

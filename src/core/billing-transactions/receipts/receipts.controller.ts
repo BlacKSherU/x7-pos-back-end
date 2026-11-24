@@ -20,6 +20,10 @@ import { SUBSCRIPTION_FEATURE_IDS } from 'src/common/subscription/subscription-f
 
 import { ReceiptsService } from './receipts.service';
 import { CreateReceiptDto } from './dto/create-receipt.dto';
+import {
+  GetReceiptOrderOptionsQueryDto,
+  ReceiptOrderOptionsResponseDto,
+} from './dto/receipt-order-options.dto';
 import { UpdateReceiptDto } from './dto/update-receipt.dto';
 import { UpdateReceiptStatusDto } from './dto/update-receipt-status.dto';
 import { ReceiptStatusFilter } from './constants/receipt-status-filter.enum';
@@ -181,7 +185,35 @@ export class ReceiptsController {
     return this.receiptsService.findAll(query, authenticatedUserMerchantId);
   }
 
-  // Rutas estáticas antes de ':id' (si no, ParseIntPipe recibiría 'summary' o 'tax-breakdown').
+  // Rutas estáticas antes de ':id' (si no, ParseIntPipe recibiría 'summary', 'tax-breakdown' u
+  // 'order-options').
+  @Get('order-options')
+  @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
+  @Scopes(
+    Scope.MERCHANT_WEB,
+    Scope.MERCHANT_ANDROID,
+    Scope.MERCHANT_IOS,
+    Scope.MERCHANT_CLOVER,
+  )
+  @ApiOperation({
+    summary: 'Orders of the merchant that can be billed',
+    description:
+      'Feeds the searchable order selector of NEW RECEIPT. Active orders of the merchant, newest first (up to `limit`, 20 by default, 50 max). With `type`, orders that already have an active receipt of that type are left out. `search` matches the order number or customer name (partial) or the exact order ID. Also returns the base currency of the merchant company as the default currency.',
+  })
+  @ApiOkResponse({
+    description: 'Order options retrieved',
+    type: ReceiptOrderOptionsResponseDto,
+  })
+  @ApiBadRequestResponse({ description: 'Invalid query', type: ErrorResponse })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorResponse })
+  @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorResponse })
+  async findOrderOptions(
+    @Query() query: GetReceiptOrderOptionsQueryDto,
+    @Request() req: ExpressRequest & { user?: AuthenticatedUser },
+  ): Promise<ReceiptOrderOptionsResponseDto> {
+    return this.receiptsService.findOrderOptions(query, this.merchantIdOf(req));
+  }
+
   @Get('summary')
   @Roles(UserRole.MERCHANT_ADMIN, UserRole.MERCHANT_USER)
   @Scopes(

@@ -39,6 +39,12 @@ import {
 } from './dto/receipt-summary-response.dto';
 import { ReceiptType } from './constants/receipt-type.enum';
 import {
+  GetReceiptOrderOptionsQueryDto,
+  RECEIPT_ORDER_OPTIONS_DEFAULT_LIMIT,
+  ReceiptOrderOptionDto,
+  ReceiptOrderOptionsResponseDto,
+} from './dto/receipt-order-options.dto';
+import {
   ReceiptDetailItemDto,
   ReceiptDetailTaxDto,
   ReceiptDetailsResponseDto,
@@ -173,6 +179,114 @@ export class ReceiptsService {
     });
 
     return this.findOne(saved.id, authenticatedUserMerchantId, 'Created');
+  }
+
+  /**
+   * Órdenes del merchant que se pueden facturar (selector de NEW RECEIPT). Con `type` deja fuera
+   * las que ya tienen un recibo activo de ese tipo (create respondería 409). Más recientes primero.
+   */
+  async findOrderOptions(
+    query: GetReceiptOrderOptionsQueryDto,
+    authenticatedUserMerchantId: number,
+  ): Promise<ReceiptOrderOptionsResponseDto> {
+    if (!authenticatedUserMerchantId) {
+      throw new ForbiddenException('You must be associated with a merchant');
+    }
+    const limit = query.limit ?? RECEIPT_ORDER_OPTIONS_DEFAULT_LIMIT;
+
+    const base = () =>
+      this.orderRepo
+        .createQueryBuilder('o')
+        .leftJoin('o.customer', 'c')
+        .select('o.id', 'id')
+        .addSelect('o.order_number', 'order_number')
+        .addSelect('o.status', 'status')
+        .addSelect('o.type', 'order_type')
+        .addSelect('o.total', 'total')
+        .addSelect('o.is_paid', 'is_paid')
+        .addSelect('o.created_at', 'created_at')
+        .addSelect('c.name', 'customer_name')
+        .addSelect(
+          `(SELECT COALESCE(string_agg(DISTINCT r.type::text, ','), '') FROM receipts r WHERE r.order_id = o.id AND r.is_active = true)`,
+          'issued_types',
+        )
+        .where('o.merchant_id = :merchantId', {
+          merchantId: authenticatedUserMerchantId,
+        })
+        .andWhere('o.logical_status = :active', { active: 'active' });
+
+    const qb = base();
+    if (query.type) {
+      qb.andWhere(
+        'NOT EXISTS (SELECT 1 FROM receipts r WHERE r.order_id = o.id AND r.type = :type AND r.is_active = true)',
+        { type: query.type },
+      );
+    }
+    if (query.search) {
+      const like = `%${escapeLike(query.search)}%`;
+      const exactId = /^\d{1,9}$/.test(query.search)
+        ? Number(query.search)
+        : -1;
+      qb.andWhere(
+        '(o.order_number ILIKE :like OR c.name ILIKE :like OR o.id = :exactId)',
+        { like, exactId },
+      );
+    }
+    qb.orderBy('o.created_at', 'DESC').addOrderBy('o.id', 'DESC').limit(limit);
+
+    type OrderOptionRow = {
+      id: number;
+      order_number: string;
+      status: string;
+      order_type: string;
+      total: string | number;
+      is_paid: boolean;
+      created_at: Date;
+      customer_name: string | null;
+      issued_types: string;
+    };
+    const rows = await qb.getRawMany<OrderOptionRow>();
+
+    if (
+      query.includeOrderId &&
+      !rows.some((row) => Number(row.id) === query.includeOrderId)
+    ) {
+      const current = await base()
+        .andWhere('o.id = :includeOrderId', {
+          includeOrderId: query.includeOrderId,
+        })
+        .getRawOne<OrderOptionRow>();
+      if (current) rows.unshift(current);
+    }
+
+    const orders: ReceiptOrderOptionDto[] = rows.map((row) => ({
+      id: Number(row.id),
+      order_number: row.order_number,
+      status: row.status,
+      order_type: row.order_type,
+      total: Number(row.total),
+      is_paid: Boolean(row.is_paid),
+      created_at: row.created_at,
+      customer_name: row.customer_name ?? null,
+      issued_types: row.issued_types
+        ? (row.issued_types.split(',') as ReceiptType[])
+        : [],
+    }));
+
+    const currencyRows: Array<{ base_currency: string | null }> =
+      await this.orderRepo.manager.query(
+        'SELECT c.base_currency FROM merchant m JOIN company c ON c.id = m."companyId" WHERE m.id = $1',
+        [authenticatedUserMerchantId],
+      );
+
+    return {
+      statusCode: 200,
+      message: 'Receipt order options retrieved successfully',
+      data: {
+        default_currency: currencyRows[0]?.base_currency ?? null,
+        orders,
+      },
+    };
   }
 
   async findAll(

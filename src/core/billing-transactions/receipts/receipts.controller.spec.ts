@@ -35,6 +35,7 @@ describe('ReceiptsController', () => {
     updateStatus: jest.fn(),
     remove: jest.fn(),
     getSummary: jest.fn(),
+    findOrderOptions: jest.fn(),
     getDetails: jest.fn(),
     getTaxBreakdown: jest.fn(),
     lock: jest.fn(),
@@ -782,6 +783,26 @@ describe('ReceiptsController', () => {
       expect(
         Reflect.getMetadata(FISCAL_LOCK_SOURCE_KEY, handler),
       ).toBeUndefined();
+    });
+  });
+
+  describe('GET /receipts/order-options', () => {
+    it('delegates to the service with the merchant of the user', async () => {
+      const response = {
+        statusCode: 200,
+        message: 'Receipt order options retrieved successfully',
+        data: { default_currency: 'CLP', orders: [] },
+      };
+      mockReceiptsService.findOrderOptions.mockResolvedValue(response);
+      const query = { type: ReceiptType.INVOICE, search: '0009' };
+
+      await expect(
+        controller.findOrderOptions(query, mockRequest),
+      ).resolves.toBe(response);
+      expect(mockReceiptsService.findOrderOptions).toHaveBeenCalledWith(
+        query,
+        mockUser.merchant.id,
+      );
     });
   });
 });
