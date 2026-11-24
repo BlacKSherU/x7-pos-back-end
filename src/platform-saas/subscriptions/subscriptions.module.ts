@@ -18,12 +18,15 @@ import { FeaturesModule } from './features/features.module';
 import { PlanFeaturesModule } from './plan-features/plan-features.module';
 import { SubscriptionPaymentsModule } from './subscription-payments/subscription-payments.module';
 import { NavigationModule } from './navigation/navigation.module';
+import { MailModule } from '../../mail/mail.module';
+import { SubscriptionDunningService } from '../../modules/saas/subscriptions/services/subscription-dunning.service';
 
 @Module({
   controllers: [SubscriptionsController],
-  providers: [SubscriptionsService],
+  providers: [SubscriptionsService, SubscriptionDunningService],
   exports: [
     SubscriptionsService,
+    SubscriptionDunningService,
     NavigationModule,
     TypeOrmModule.forFeature([
       FeatureShiftRole,
@@ -33,6 +36,7 @@ import { NavigationModule } from './navigation/navigation.module';
     ]),
   ],
   imports: [
+    MailModule,
     TypeOrmModule.forFeature([
       CompanySubscription,
       SubscriptionPayment,

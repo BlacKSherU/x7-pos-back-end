@@ -6,6 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { LegacyRutSubscriber } from './platform-saas/companies/legacy-rut.subscriber';
 import { validateEnv } from './config/environment';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ScheduleModule } from '@nestjs/schedule';
 import './database/pg-date-parser';
 import './database/pg-int8-parser';
 
@@ -33,6 +34,7 @@ import { RestaurantOperationsModule } from './restaurant-operations/restaurant-o
     // a global limit would throttle a whole restaurant sharing one IP.
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 60 }]),
     EventEmitterModule.forRoot(),
+    ScheduleModule.forRoot(),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
